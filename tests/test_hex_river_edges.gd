@@ -32,6 +32,10 @@ func run_all_tests() -> void:
 	test_get_river_edges_for_map_bulk()
 	test_cross_map_isolation()
 	test_round_trip_through_hex_map_data()
+	test_elevation_raw_and_subtype_round_trip()
+	test_cliff_edge_round_trip()
+	test_cliff_edge_high_side_canonicalizes()
+	test_cliff_detector_basic()
 	test_loader_auto_flips_non_canonical_json()
 	test_loader_drops_non_adjacent_warning_ok()
 	test_terrain_has_river_cached_on_load()
@@ -73,6 +77,8 @@ func _make_minimal_map(map_id: String) -> HexMapData:
 
 func _cleanup() -> void:
 	for m in [MAP_A, MAP_B]:
+		CampaignRepository.db.query_with_bindings(
+			"DELETE FROM hex_cliff_edges WHERE map_id = ?", [m])
 		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM hex_river_edges WHERE map_id = ?", [m])
 		CampaignRepository.db.query_with_bindings(
@@ -291,6 +297,100 @@ func test_round_trip_through_hex_map_data() -> void:
 	check(got.crossing == HexRiverEdgeData.CROSSING_BRIDGE, "crossing round-trip")
 	_cleanup()
 	print("  round_trip_through_hex_map_data: OK")
+
+
+func test_elevation_raw_and_subtype_round_trip() -> void:
+	# Regression (2026-06-26): save_hex_map's INSERT omitted elevation_raw +
+	# biome_subtype, so INSERT OR REPLACE reset both to the column default on every
+	# save — the in-game Get Hex Info panel then read 0.0 raw elevation even on
+	# mountains. Both must survive a full save_hex_map -> load_hex_map round-trip.
+	_setup_campaign()
+	var m := _make_minimal_map(MAP_A)
+	var peak: HexTerrainData = m.hexes[Vector2i(0, 0)]
+	peak.elevation = "mountains"
+	peak.elevation_raw = 0.873
+	peak.biome_subtype = "mountains_volcanic"
+	check(CampaignRepository.save_hex_map(m, TEST_CAMPAIGN), "map should save")
+	var loaded := CampaignRepository.load_hex_map(MAP_A)
+	check(loaded != null, "map should load")
+	var rt: HexTerrainData = loaded.get_hex(Vector2i(0, 0))
+	check(rt != null, "peak hex should load")
+	check(absf(rt.elevation_raw - 0.873) < 1.0e-4,
+		"elevation_raw must round-trip; got %f" % rt.elevation_raw)
+	check(rt.biome_subtype == "mountains_volcanic",
+		"biome_subtype must round-trip; got '%s'" % rt.biome_subtype)
+	_cleanup()
+	print("  elevation_raw_and_subtype_round_trip: OK")
+
+
+func test_cliff_edge_round_trip() -> void:
+	# Migration 176: cliff/canyon edges round-trip through save_hex_map -> load_hex_map
+	# with type / height_ft / high_side intact (gdd-cliffs-canyons.md §3).
+	_setup_campaign()
+	var m := _make_minimal_map(MAP_A)
+	# A canyon wall between (0,0) [HIGH] and (0,1) [low]. (0,0) is lex-lower -> it owns.
+	var c := HexCliffEdgeData.make(Vector2i(0, 0), Vector2i(0, 1), 1800, HexCliffEdgeData.CANYON)
+	check(c != null, "make should produce an adjacent cliff edge")
+	m.cliff_edges.append(c)
+	check(CampaignRepository.save_hex_map(m, TEST_CAMPAIGN), "map with a cliff edge should save")
+	var loaded := CampaignRepository.load_hex_map(MAP_A)
+	check(loaded != null and loaded.cliff_edges.size() == 1,
+		"loaded map should carry 1 cliff edge; got %d" % loaded.cliff_edges.size())
+	var got: HexCliffEdgeData = loaded.cliff_edges[0]
+	check(got.cliff_type == HexCliffEdgeData.CANYON, "cliff_type round-trip")
+	check(got.height_ft == 1800, "height_ft round-trip; got %d" % got.height_ft)
+	check(got.hex_q == 0 and got.hex_r == 0, "owner is the lex-lower hex (0,0)")
+	check(got.high_side == 0, "high_side 0: owner (0,0) is the high hex")
+	_cleanup()
+	print("  cliff_edge_round_trip: OK")
+
+
+func test_cliff_edge_high_side_canonicalizes() -> void:
+	# When the HIGH hex is lex-higher, make() canonicalizes to the lex-lower (low) owner
+	# and sets high_side=1 (the neighbour is the top); this survives the round-trip.
+	_setup_campaign()
+	var m := _make_minimal_map(MAP_A)
+	var c := HexCliffEdgeData.make(Vector2i(1, 0), Vector2i(0, 0), 600, HexCliffEdgeData.CLIFF)
+	check(c != null and c.hex_q == 0 and c.hex_r == 0, "owner canonicalized to lex-lower (0,0)")
+	check(c.high_side == 1, "high_side 1: the neighbour (1,0) is the high hex")
+	m.cliff_edges.append(c)
+	check(CampaignRepository.save_hex_map(m, TEST_CAMPAIGN), "save")
+	var loaded := CampaignRepository.load_hex_map(MAP_A)
+	check(loaded.cliff_edges.size() == 1, "one cliff edge loaded")
+	var got: HexCliffEdgeData = loaded.cliff_edges[0]
+	check(got.hex_q == 0 and got.hex_r == 0 and got.high_side == 1,
+		"owner + high_side survive the round-trip")
+	_cleanup()
+	print("  cliff_edge_high_side_canonicalizes: OK")
+
+
+func test_cliff_detector_basic() -> void:
+	# CliffDetector flags only steep cross-edge deltas; a river on the LOW side makes a
+	# canyon; ocean coasts are skipped; high_side + height_ft are set (gdd §4).
+	var grid := {
+		Vector2i(0, 0): {"elevation_raw": 0.80, "water": ""},        # high
+		Vector2i(0, 1): {"elevation_raw": 0.30, "water": ""},        # low + river -> canyon
+		Vector2i(0, 2): {"elevation_raw": 0.32, "water": ""},        # gentle vs (0,1) -> no
+		Vector2i(-1, 0): {"elevation_raw": 0.20, "water": "ocean"},  # ocean coast -> skip
+		Vector2i(2, 0): {"elevation_raw": 0.85, "water": ""},        # high
+		Vector2i(2, 1): {"elevation_raw": 0.40, "water": ""},        # low, no river -> cliff
+	}
+	var rivers := {Vector2i(0, 1): true}
+	var edges := CliffDetector.detect(grid, rivers, 0.12)   # pinned threshold for determinism
+	check(edges.size() == 2, "two steep edges (ocean coast + gentle excluded); got %d" % edges.size())
+	var by_owner := {}
+	for ed in edges:
+		by_owner[Vector2i(ed.hex_q, ed.hex_r)] = ed
+	var canyon: HexCliffEdgeData = by_owner.get(Vector2i(0, 0))
+	check(canyon != null and canyon.cliff_type == HexCliffEdgeData.CANYON,
+		"river-floor edge classified as canyon")
+	check(canyon != null and canyon.high_side == 0, "(0,0) is the high hex (owner)")
+	check(canyon != null and canyon.height_ft > 12000 and canyon.height_ft < 13000,
+		"0.50 delta ~= 12762 ft; got %d" % (canyon.height_ft if canyon != null else -1))
+	var cliff: HexCliffEdgeData = by_owner.get(Vector2i(2, 0))
+	check(cliff != null and cliff.cliff_type == HexCliffEdgeData.CLIFF,
+		"no-river edge classified as cliff")
+	print("  cliff_detector_basic: OK")
 
 
 func test_terrain_has_river_cached_on_load() -> void:

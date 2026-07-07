@@ -1783,6 +1783,11 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 	""", [campaign_id, region_map_id])
 	var heads: Array = db.query_result.duplicate(true)
 	var placed := 0
+	# A seat settlement gets its OWN toponym, NOT the domain's realm/ruler name (which read
+	# as long ruler-named towns — Jedidiah 2026-06-29). Deterministic per seat hex; deduped
+	# across the seats placed in this pass.
+	var seat_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
+	var seat_used := {}
 	for d in heads:
 		var seat := Vector2i(int(d["location_hex_q"]), int(d["location_hex_r"]))
 		var soff := WorldGrid.axial_to_offset(seat)
@@ -1800,7 +1805,12 @@ func _materialize_county_settlements(campaign_id: String, region_map_id: String,
 		# party into the top-left ocean.) The §2 "ignore Class VI" rule still applies to
 		# NON-capital hamlets, which M4-2 never places — it only seats realm-heads.
 		var culture := str(d.get("culture_id", ""))
-		var dname := str(d.get("name", "Settlement"))
+		# Own settlement toponym (the bug was using d["name"] = the domain's realm name).
+		var name_bank := NameBankLoader.bank_for(culture)
+		var name_rng := WorldGenRng.stream(seat_seed, "seat_settlement_name", 0, "%d,%d" % [seat.x, seat.y])
+		var dname := NameAssembler.settlement_name(name_bank, name_rng, seat_used, culture, mc <= 2)
+		if dname.strip_edges().is_empty():
+			dname = str(d.get("name", "Settlement"))   # safety net for a culture with no name bank
 		var dom_id := str(d["id"])
 		# Seat already has a settlement (an M2b Class III+ city)? Don't double-place.
 		db.query_with_bindings(
@@ -2139,51 +2149,15 @@ func _create_pocket_realm(campaign_id: String, region_map_id: String, campaign_s
 ## across that boundary (computed from REAL adjacency via HexRiverEdgeData, not a
 ## hardcoded offset table). One crossing per 24-mile edge (placed on the first child
 ## edge in deterministic order); flow/navigability/width carried from the source.
-func _materialize_rivers(campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
-	var in_window := _in_window_parents(region_map_id)
-	if in_window.is_empty():
-		return true
+func _materialize_rivers(_campaign_id: String, region_map_id: String, result: Dictionary) -> bool:
+	# Continuous-geography (the only world-gen since the 2026-06-25 cutover):
+	# RegionZoomIn.build_start_region already wrote field-based 6-mile rivers
+	# (corner-graph drainage) straight onto the region map. Just report their count —
+	# the legacy 24-mile→6-mile projection is retired (it would double-write).
 	var db = CampaignRepository.db
-	var placed := 0
-	for re in SettingRepository.list_river_edges(campaign_id):
-		var hq := int(re["hex_q"])
-		var hr := int(re["hex_r"])
-		var e := int(re["edge"])
-		if e < 0 or e >= 6:
-			continue
-		var hn: Vector2i = Vector2i(hq, hr) + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[e]
-		# Both parents must be in-window so both child blocks exist on the play map.
-		if not in_window.has("%d,%d" % [hq, hr]) or not in_window.has("%d,%d" % [hn.x, hn.y]):
-			continue
-		var hn_children := _child_set(hn.x, hn.y)
-		var crossing := str(re.get("crossing", "none"))
-		var flow := int(re.get("flow_clockwise", 1))
-		var nav := str(re.get("navigability", "river_craft"))
-		var width := str(re.get("width_category", ""))
-		var crossing_used := false
-		for cqi in 4:
-			for cri in 4:
-				var c := _carrier_child(hq, hr, cqi, cri)
-				for ce in 6:
-					var nb: Vector2i = c + HexRiverEdgeData.EDGE_NEIGHBOR_OFFSETS[ce]
-					if not hn_children.has("%d,%d" % [nb.x, nb.y]):
-						continue
-					var canon := HexRiverEdgeData.canonicalize_edge(c.x, c.y, nb.x, nb.y)
-					if not bool(canon.get("adjacent", false)):
-						continue
-					var this_crossing := "none"
-					if crossing != "none" and not crossing_used:
-						this_crossing = crossing
-						crossing_used = true
-					if not db.query_with_bindings("""
-						INSERT OR IGNORE INTO hex_river_edges
-							(map_id, hex_q, hex_r, edge, flow_clockwise, navigability, crossing, width_category)
-						VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-					""", [region_map_id, int(canon["hex_q"]), int(canon["hex_r"]), int(canon["edge"]), flow, nav, this_crossing, width]):
-						result["errors"].append("river edge insert failed")
-						return false
-					placed += 1
-	result["river_edge_count"] = placed
+	db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM hex_river_edges WHERE map_id = ?", [region_map_id])
+	result["river_edge_count"] = int(db.query_result[0].get("n", 0)) if not db.query_result.is_empty() else 0
 	return true
 
 
@@ -2418,16 +2392,6 @@ func _reconstruct_path(prev: Dictionary, start: String, end: String) -> Array:
 	return out
 
 
-## The 16 child "q,r" keys of a 24-mile parent (the same layout RegionZoomIn writes).
-func _child_set(pq: int, pr: int) -> Dictionary:
-	var out := {}
-	for cqi in 4:
-		for cri in 4:
-			var ch := _carrier_child(pq, pr, cqi, cri)
-			out["%d,%d" % [ch.x, ch.y]] = true
-	return out
-
-
 ## True if a 6-mile child hex's 24-mile parent is in the window (so it exists on the
 ## play map). Floor-divides the offset coords by 4 (correct for negative parents).
 func _hex_in_window(in_window: Dictionary, hex: Vector2i) -> bool:
@@ -2491,22 +2455,31 @@ func _cube_round(x: float, y: float, z: float) -> Vector2i:
 func _build_ruler(campaign_id: String, campaign_seed: int, p: Dictionary) -> String:
 	var rc := str(p.get("ruler_class", ""))
 	var level := int(p.get("ruler_level", 1))
+	var ruler_id := ""
 	if _is_beastman_class(rc):
-		return BeastmanRulerMaterializer.build_and_persist(rc, level, campaign_id, p)
-	var roll := WorldGenRng.stream(campaign_seed, "ruler_template", 0, str(p.get("id", ""))).randi_range(3, 18)
-	var builder := ClassedNpcBuilder.new()
-	var res: Dictionary = builder.build_and_persist(rc, campaign_id, {
-		"level": level,
-		"character_type": "npc",
-		"tier": "named",
-		"role": "ruler",
-		"culture_id": str(p.get("culture_id", "")),
-		"generate_personality": true,
-		"forced_roll": roll,
-	})
-	if res is Dictionary and bool(res.get("ok", false)):
-		return str(res.get("character_id", ""))
-	return ""
+		ruler_id = BeastmanRulerMaterializer.build_and_persist(rc, level, campaign_id, p)
+	else:
+		var roll := WorldGenRng.stream(campaign_seed, "ruler_template", 0, str(p.get("id", ""))).randi_range(3, 18)
+		var builder := ClassedNpcBuilder.new()
+		var res: Dictionary = builder.build_and_persist(rc, campaign_id, {
+			"level": level,
+			"character_type": "npc",
+			"tier": "named",
+			"role": "ruler",
+			"culture_id": str(p.get("culture_id", "")),
+			"generate_personality": true,
+			"forced_roll": roll,
+		})
+		if res is Dictionary and bool(res.get("ok", false)):
+			ruler_id = str(res.get("character_id", ""))
+	# StrategicDisposition (gdd-ruler-ai.md §4 Phase 0). The beastman path has
+	# no personality JSON → the builder degrades to the neutral baseline. The
+	# realm row does not exist yet, so relational dicts stay empty here (no
+	# realm_relations exist at materialization anyway). Non-fatal on failure.
+	if not ruler_id.is_empty():
+		if StrategicDispositionBuilder.build_and_persist_for_character(ruler_id) == null:
+			push_warning("SettingMaterializer._build_ruler: disposition build failed for character=%s" % ruler_id)
+	return ruler_id
 
 
 ## A polity's CROWN domain — its ruler's apex / personal seat. ABSTRACTED (no

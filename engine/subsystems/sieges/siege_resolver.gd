@@ -349,6 +349,11 @@ static func apply_method(siege_id: String, method: String, params: Dictionary = 
 		"sally":
 			# Defender exits the stronghold for a pitched battle. Per RAW L780-783,
 			# the siege ends and a normal field battle is fought immediately.
+			# Phase D: a defender who chose withstand_siege (defender_posture='hold_fast')
+			# holds the walls and does NOT sortie. 'undecided' (the default) leaves the
+			# sally available exactly as before.
+			if String(SiegeRepository.get_siege(siege_id).get("defender_posture", "")) == "hold_fast":
+				return {"ok": false, "error": "defender_holding_fast", "method": method}
 			var battle_id_sally: String = _begin_sally(siege_id, day, dice_roller)
 			return {"ok": not battle_id_sally.is_empty(), "battle_id": battle_id_sally}
 		"surrender":

@@ -24,6 +24,14 @@ const REASON_DEPARTURE_NO_SUCCESSOR := "departure_no_successor"
 const REASON_COMMANDER_DEAD_GRACE_EXPIRED := "commander_dead_grace_expired"
 const REASON_SUPPLY_COLLAPSE := "supply_collapse"
 const REASON_ANNIHILATION := "annihilation"
+## A frontier raider war-band (NpcRaidDriver) disperses after the player concedes the extraction —
+## it takes its spoils and scatters (brigands → unaligned pool, no severance). See migration 185.
+const REASON_RAID_CONCLUDED := "raid_concluded"
+## A half-built defender levy (ExtractionResistanceRouter._materialize_defender) failed to finish
+## mustering (no supply row / no officer / nothing garrisoned) and must be torn down cleanly rather
+## than left as an assembling phantom. No units were ever assigned on this path, so the per-source
+## release logic never runs in practice — this reason exists so `disband` doesn't silently no-op.
+const REASON_MUSTER_FAILED := "muster_failed"
 
 const VALID_REASONS := [
 	REASON_VOLUNTARY,
@@ -31,6 +39,8 @@ const VALID_REASONS := [
 	REASON_COMMANDER_DEAD_GRACE_EXPIRED,
 	REASON_SUPPLY_COLLAPSE,
 	REASON_ANNIHILATION,
+	REASON_RAID_CONCLUDED,
+	REASON_MUSTER_FAILED,
 ]
 
 

@@ -1,0 +1,443 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Cland Cuinn",
+      "Ui Brain",
+      "Ui Neill",
+      "Cland Cormaic",
+      "Ui Eogain",
+      "Cland Diarmata",
+      "the xing Li",
+      "the xing Wang",
+      "the xing Zhao",
+      "the xing Chen",
+      "the xing Sun",
+      "Ui Fergusa",
+      "Macconn",
+      "Macbran",
+      "Macaed",
+      "Macniall",
+      "Maccormac",
+      "Macdiarmait",
+      "Macfergus",
+      "Maceogan",
+      "Maclugaid",
+      "Macdomnall"
+    ],
+    "dungeon_ruin": [
+      "the Cairn of the Cland",
+      "the Drowned Rath"
+    ],
+    "epithet": [
+      "the Far-Sailed",
+      "Silk-getter",
+      "the Iron-handed",
+      "of the Great River",
+      "the Oath-keeper",
+      "Cheng-breaker",
+      "the Mandate-holder",
+      "the Hound",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Airgeadanagh",
+      "Ardaobh",
+      "Bandaoinis",
+      "Beagdubh",
+      "Bobhgannan",
+      "Dearguann",
+      "Deisceartguanna",
+      "Dubhaoir",
+      "Eachuangach",
+      "Fadahubh",
+      "Fionnlingach",
+      "Iarannlinnach",
+      "Iartharlubh",
+      "Inmheanachmubh",
+      "Iochtarseach",
+      "Jinorshanav",
+      "Mibhsiadh",
+      "Morsiadhal",
+      "Naomhsiann",
+      "Nuasich",
+      "Oirthearsing",
+      "Orgatubhan",
+      "Seachtrachwanagh",
+      "Seanyuanagh",
+      "Sibhanagh",
+      "Tonghavdaobh",
+      "Tuaisceartdaoinis",
+      "Uachtardubh",
+      "Yanangannan",
+      "Yubhguann"
+    ],
+    "military_unit": [
+      "s fian and the cland-host, plus the Sinitic Ying and the colored Banner:",
+      ","
+    ],
+    "personal_female": [
+      "Deirbhile",
+      "Etain",
+      "Mor",
+      "Fionnuala",
+      "Ailbhe",
+      "Sadbh",
+      "Grainne",
+      "Mugain",
+      "Wang Yurong",
+      "Li Meixiang",
+      "Zhao Zhilan",
+      "Chen Wanqing",
+      "Sun Caiyun",
+      "Huang Yuyan",
+      "Brin",
+      "Eogin",
+      "Gaian",
+      "Gaianin",
+      "Numan",
+      "Numanin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Conn",
+      "Bran",
+      "Aed",
+      "Niall",
+      "Cormac",
+      "Diarmait",
+      "Fergus",
+      "Eogan",
+      "Lugaid",
+      "Domnall",
+      "Li Zhongyan",
+      "Wang Mingyuan",
+      "Zhao Dewei",
+      "Chen Anguo",
+      "Sun Jingyao",
+      "Huang Baoshan",
+      "Zhou Wenbo",
+      "Xu Shenglong",
+      "Etaan",
+      "Mugaan",
+      "Gaian",
+      "Gaianan",
+      "Numan",
+      "Numanan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Dun-Fusang",
+      "Iarann-cheng",
+      "Si-abha",
+      "Rath-Cuinn",
+      "Da-jiang-baile",
+      "Tuli-cill",
+      "Airgeadanagh",
+      "Ardcunnan",
+      "Bandubh",
+      "Beagdun",
+      "Bobhlingach",
+      "Deargmatobh",
+      "Deisceartmiobhcill",
+      "Dubhrath",
+      "Eachseang",
+      "Fadashenn",
+      "Fionnshimargh",
+      "Iarannshuangbhaile",
+      "Iartharanagh",
+      "Inmheanachcunnan",
+      "Iochtardubh",
+      "Jinordun",
+      "Mibhlingach",
+      "Mormatobh",
+      "Naomhmiobhcill",
+      "Nuarath",
+      "Oirthearseang",
+      "Orgashenn",
+      "Seachtrachshimargh",
+      "Seanshuangbhaile",
+      "Sibhanagh",
+      "Tonghavcunnan",
+      "Tuaisceartdubh",
+      "Uachtardun",
+      "Yananlingach",
+      "Yubhmatobh",
+      "Airgeadmiobhcill",
+      "Ardrath",
+      "Banseang",
+      "Beagshenn"
+    ],
+    "ship": [
+      "s pride:",
+      ","
+    ],
+    "tavern": [
+      "The Jade Cup",
+      "The Silk and Salmon",
+      "The Far-Sailed Hound",
+      "The Ard Airgead",
+      "The Ban Bobh",
+      "The Beag Each",
+      "The Dearg Iarann",
+      "The Dubh Jinor",
+      "The Fada Mibh",
+      "The Fionn Sibh",
+      "The Iarann Tonghav",
+      "The Mor Yanan"
+    ]
+  },
+  "culture_id": "cinwyn",
+  "family": [
+    "celtic",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_cinwyn.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "cinwyn",
+  "lexicon": {
+    "adjectives": {
+      "black": "dubh",
+      "fair": "fionn",
+      "far": "fada",
+      "golden": "orga",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarann",
+      "little": "beag",
+      "new": "nua",
+      "old": "sean",
+      "red": "dearg",
+      "sacred": "naomh",
+      "white": "ban"
+    },
+    "directional": {
+      "east": "oirthear",
+      "inner": "inmheanach",
+      "lower": "iochtar",
+      "north": "tuaisceart",
+      "outer": "seachtrach",
+      "south": "deisceart",
+      "upper": "uachtar",
+      "west": "iarthar"
+    },
+    "feature_words": {
+      "bay": "wanagh",
+      "cape": "siadh",
+      "coast": "anagh",
+      "ford": "dubh",
+      "forest": "linnach",
+      "hill": "lingach",
+      "isle": "daoinis",
+      "lake": "hubh",
+      "marsh": "seach",
+      "mountain": "shanav",
+      "narrows": "siadhal",
+      "neck": "sing",
+      "pass": "guanna",
+      "plain": "yuanagh",
+      "ridge": "gannan",
+      "river": "siann",
+      "road": "daobh",
+      "sea": "haoir",
+      "stream": "sich",
+      "track": "tubhan",
+      "vale": "guann",
+      "waste": "huangach",
+      "way": "lubh",
+      "wood": "mubh"
+    },
+    "resources": {
+      "bronze": "tonghav",
+      "cattle": "bobh",
+      "gold": "jinor",
+      "grain": "mibh",
+      "horse": "each",
+      "iron": "iarann",
+      "jade": "yubh",
+      "salt": "yanan",
+      "silk": "sibh",
+      "silver": "airgead"
+    },
+    "settlement_words": {
+      "citadel": "rath",
+      "city": "seang",
+      "fort": "dun",
+      "hamlet": "cunnan",
+      "market": "shimargh",
+      "port": "matobh",
+      "temple_town": "miobhcill",
+      "town": "shenn",
+      "village": "shuangbhaile"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Goidelic [quality|feature|saint](stem) + element (Dun-derg, red-fort; Ard-mor, great-height) fused to Sinitic quality+type heads (Jin-cheng, golden-city; Da-jiang, great-river): the capital Dun-Fusang (the fort of Fusang), Iarann-cheng (the iron-walled city), Si-abha (the silk-river).",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "jade"
+      ],
+      "male": [
+        "an"
+      ]
+    },
+    "patronymic_form": "the Goidelic ruling stock keep the Mac- (son of) / O-/Ua- (descendant of) patronymic and a cland (wider clan) / fine (kin-group) name; the Sinitic populace keep the clan-surname (xing) first, then the given name (ming), with generation-names within a zu; the throne fuses both - a flaith who carries both an O- lineage and a granted xing of the Mandate-court.",
+    "toponymic_suffixes": [
+      "cheng",
+      "jiang",
+      "shan",
+      "guan",
+      "Dun-",
+      "Rath-",
+      "Baile-",
+      "Cill-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "sunken river-duns and fallen warlord cheng: 'the Dun of [name]', 'the Cairn of the Cland', 'the Ruined Cheng of [warlord]', 'the Drowned Rath'",
+    "military_units": "the ri's fian (war-band) and the cland-host, plus the Sinitic Ying (camp/army) and the colored Banner: 'the Fian of Fusangwyn', 'the Hound-Banner', 'the Azure Banner of the cheng'",
+    "ships": "river-keels and silk-traders, named for beasts and the clan's pride: 'the Silk-Hound', 'the Red Salmon', 'Raven of the Jiang', 'Pride of Fusang'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Cup', 'The Silk and Salmon', 'The Far-Sailed Hound'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic theonym_set), Sinitic variants SECONDARY (family_east_asian theonym_sets.sinitic, rendered in the jinxian -di/-jun celestial register), never real Celtic/Chinese gods. The Goidelic warrior-clans keep their sword-and-oath powers honored at the nemed-grove; the conquered silk-empire keeps its Celestial Bureaucracy under the Mandate of Heaven, and the two are quietly identified (one power, two faces). All human cultures allow Lawful/Neutral/Chaotic: Lawful reads the just Mandate-throne and the sworn cland-oath, Neutral reads the older clan ancestral war-dead and the local earth-and-grain powers.",
+    "clergy_ladder": {
+      "1": "Cill-gilla (temple-servant, novice) / Daoshi-tu",
+      "3": "Cruimther (priest) / Daoshi",
+      "5": "Saccart (sacrifice-priest, mass-priest) / Fashi (ritual-master)",
+      "7": "Ard-chruimther (high priest) / Gaogong",
+      "9": "Ollam-cruimther (the supreme priest) / Tianshi (celestial master)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fuath (Goidelic spectres) or mo (Sinitic demon-marshals), keep their morphs + an epithet: Maraxus -> Maragan the War-Brand (Sinitic Maluo the War-Fire Marshal); Vacidus -> Faicid the Unmaker (Sinitic Wuci the Devourer); Lusanto -> Losand the Hoard-Worm (Sinitic Lusan the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Gaian": "the green mountain over the grain-altar",
+      "Orlann": "an iron sword crossed with a coiled torc",
+      "Toran": "a sun-disc over a crossed sword and the seal of office"
+    },
+    "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Cill (church/cell), or the Miao (Sinitic temple) of [power]: 'the Nemed of Toran', 'the Miao of Tuli-di'; the ancestral Ci (Sinitic clan-shrine) for the zu.",
+    "saints_pattern": "the deified war-dead and ri of the Goidelic cland, honored at the nemed-grove and the cill; and the worthy officials and heroes of the silk-empire enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaian (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
+      "Numeno": "Numan (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
+      "Orlandus": "Orlann (Sinitic Aolan-jun) - iron, oath, war",
+      "Realta": "Realtan (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy",
+      "Tulrius": "Toran (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+    },
+    "the_one": "Eternan (Celtic; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eternan - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Eternan foremost, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers as the fuath (Goidelic spectres/foes) or the Sinitic mo (demon-marshals), warded and unworshipped; the cland-oath, the just ri and the Mandate-throne are the social ideal",
+      "Neutral": "the ancestral war-dead (the Goidelic cland-forebears and the deified ri) and the Sinitic ancestors (the zu) and local earth-and-grain powers; the great powers invoked at the nemed (sacred grove) and the miao situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Goidelic clanhold ladder raised to a feudal civ, ascending, with the Sinitic mandarin co-titles beneath. Toisech (clan-chief, leader) barony over a Toiseacht (chiefry); Ri-criche (border-king, march-king) march over a Crioch (border-territory); Flaith (lord, noble) county over a Flaithes (lordship); Mor-flaith (great-lord) duchy over a Mor-thuath (great tuath); Ri-tuaithe (king of a tuath, petty-king) principality over a Tuath (petty kingdom); Ruiri (over-king) kingdom over a Ruirecht; Ard-ri (high-king, the one who holds the Mandate-throne) empire over the Ard-riocht (the high-kingdom). The conquered silk-empire keeps its Sinitic Wang (king-of-the-old-line, now a vassal-prince) and the five peerages Gong > Hou > Bo > Nan beneath the Gaelic crown, plus the Dudu frontier-commanders and the Confucian officials who run the cheng-cities. The brithem (judge) and the fili/ollam (poet-sage), and the Sinitic Daoshi, stand outside the ladder. Rank titles fuse the real Gaelic and Chinese registers (allowed).",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Ard-ri": "Ard-rigan",
+      "Flaith": "Banflaith",
+      "Mor-flaith": "Mor-bhanflaith",
+      "Ri-criche": "Rigan-criche",
+      "Ri-tuaithe": "Rigan-tuaithe",
+      "Ruiri": "Ruirigan",
+      "Toisech": "Bantoisech"
+    },
+    "government": "feudal (a Goidelic warrior-clan aristocracy over the Sinitic silk-empire: the ard-ri and his cland-kin at the Mandate-throne, the flaith and ri-tuaithe over the river-cheng, the cland-sworn caur-champions of the war-band; the Sinitic mandarinate - the wang, the five peerages and the Confucian officials - serve beneath and run the cheng-cities and the silk-revenues)",
+    "heir": "Ri-damna (the king's heir-apparent, the throne-worthy; the Sinitic court calls him Taizi, the crown-prince)",
+    "honorifics": {
+      "champion": "Caur (Goidelic champion) / Wushi (Sinitic warrior)",
+      "elder": "Sinsear (the elder) / the Bixia at the Mandate-throne",
+      "lady": "Bantigerna / Furen",
+      "lord": "Tigerna / Daren",
+      "your_grace": "A thigerna / Dianxia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Toiseacht",
+        "ruler": "Baron",
+        "ruler_native": "Toisech"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Flaithes",
+        "ruler": "Count",
+        "ruler_native": "Flaith"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Mor-thuath",
+        "ruler": "Duke",
+        "ruler_native": "Mor-flaith"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Ard-riocht",
+        "ruler": "Emperor",
+        "ruler_native": "Ard-ri"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Ruirecht",
+        "ruler": "King",
+        "ruler_native": "Ruiri"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Crioch",
+        "ruler": "Marquis",
+        "ruler_native": "Ri-criche"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Tuath",
+        "ruler": "Prince",
+        "ruler_native": "Ri-tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Mionn (the sworn oath) / Mengyue (Sinitic sworn covenant)",
+      "liege": "Tigerna",
+      "tribute": "Cain (Goidelic tribute) / Gongfu (Sinitic tribute)",
+      "vassal": "Ceile (sworn client) / Chen (Sinitic subject)"
+    }
+  }
+}

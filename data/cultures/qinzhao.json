@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "qinzhao",
+      "csv_id": "BASE_09",
+      "culture_class": "base",
+      "catalog_number": null,
+      "demonym": "Qinzhao",
+      "toponym": "Qinguo",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ"
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.85,
+      "defense": 0.6,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.55,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.7,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.6
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.55,
+        "mercantile": 0.15,
+        "religious": 0.15,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "crossbowmen",
+        "heavy_infantry",
+        "heavy_cavalry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "self_interest": -1.0,
+        "in_group_loyalty": 0.5,
+        "stress_reactivity": 0.5,
+        "epistemic_curiosity": 0.5,
+        "expressiveness": 0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.7,
+      "primitive": 0.3
+    }
+  },
+  "flavor": {
+    "name_bank_key": "qinzhao",
+    "phonemic_palette": "Sinitic: monosyllabic morphemes; syllable (C)(G)V(C) with only -n/-ng codas; tones (unmarked); no consonant clusters; surname(1) + given(1-2); celestial titles -di/-jun/-wang.",
+    "phenotype_notes": "Features of the Chinese analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Sinitic",
+      "language_family": "east_asian",
+      "script": "own_script"
+    },
+    "social_structure": "feudal",
+    "values": {
+      "core_values": [
+        "honor",
+        "glory",
+        "cunning"
+      ],
+      "taboos": [
+        "breaking a sworn oath",
+        "cowardice in battle"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Chinese register; deity-morphs in name_bank 'jinxian'."
+    },
+    "architecture_style": {
+      "primary_material": "timber",
+      "aesthetic": "fortified",
+      "signature_feature": "timber halls of the Jinxian"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "wisdom",
+        "death"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Qinzhaon (Chinese) — the generic Chinese base culture (BASE_09); civilized.",
+      "one_paragraph": "The Qinzhaon are the generic Chinese base culture (BASE_09) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Chinese register (lexicon, titles, religion, and names) of its source member culture."
+    }
+  }
+}

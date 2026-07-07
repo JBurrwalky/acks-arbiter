@@ -39,3 +39,19 @@ static func decode_owner_map(rle: String, ordered_hexes: Array) -> Dictionary:
 		var h = ordered_hexes[i]
 		out[Vector2i(int(h["q"]), int(h["r"]))] = owner
 	return out
+
+
+## Zip the decoded runs against canonical-ordered hexes → {Vector2i -> value},
+## keeping EVERY hex including '' entries. Used for the culture_by_hex and
+## territory_by_hex layers, where the frame is authoritative: a hex absent from
+## the map (or mapped to '') means "no culture / not this frame", and the view
+## must NOT fall back to the present-day value. `ordered_hexes` MUST be in
+## list_hexes order.
+static func decode_value_map(rle: String, ordered_hexes: Array) -> Dictionary:
+	var vals := decode_runs(rle)
+	var out := {}
+	var n: int = mini(vals.size(), ordered_hexes.size())
+	for i in n:
+		var h = ordered_hexes[i]
+		out[Vector2i(int(h["q"]), int(h["r"]))] = vals[i]
+	return out

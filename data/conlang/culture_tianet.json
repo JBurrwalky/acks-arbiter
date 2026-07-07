@@ -1,0 +1,361 @@
+{
+  "kit_id": "tianet",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_38",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (egyptian) backbone + east_asian (sinitic) overlay (cross-family blend, Egyptian-leaning)",
+  "synthesis_sources": [
+    "BASE_05",
+    "BASE_09"
+  ],
+  "homeland": "Longkem",
+  "blend": {
+    "backbone": "near_eastern (egyptian: the per-netjer river-temples, the nesut/per-aa god-king register, the dj/tj/kh phonology and -aa/-et endings, construct-chain toponyms Per-/Niut-/Ta-, the funerary-cult and Nile-flood ideology, VSO with triconsonantal roots)",
+    "overlay": "east_asian (sinitic: the cheng walled-cities, the Confucian scribal mandarinate, the celestial court and Mandate of Heaven, monosyllabic river/silk/jade/tea material vocabulary, the warlord-province administration)",
+    "lean": "Egyptian-heavy - a Nile-temple god-kingship enthroned over a Sinitic scribal-bureaucratic civilization: the per-aa and his temple-priesthood crown the realm, the mandarin court and walled river-cities administer it beneath. The dragon serves the sun-disc; the celestial bureau keeps the god-king's ledgers."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_05 (Egyptian / Abydosian) x BASE_09 (Sinitic / Jinxian). CIV/CLAN DECIDED by inheritance: Egyptian base = Civilized, Sinitic base = Civilized, and any Civ parent -> Civ, so Longkem is Civilized (feudal). Concept: an Egypto-Sinitic realm - the dragon and the sun-disc fused. A Nile-style god-kingship of river-temples and hieroglyphic scribes married to a Sinitic celestial court of walled cities and a mandarin bureaucracy. Backbone = Egyptian (the ruling temple/god-king register, the per-netjer river-temples, the nesut/per-aa titles, construct-chain toponyms, the dj/tj/kh phonology); overlay/substrate = Sinitic (the cheng cities, the silk-and-jade material economy, the Confucian-style scribal mandarinate, the river/canal bureaucracy). Common-word lexicon and rank titles use the real Egyptian and Chinese registers fused (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Egyptian reflexes PRIMARY via abydosian, Sinitic morphs SECONDARY via family_east_asian theonym_sets.sinitic / jinxian), never real Egyptian/Chinese gods. All human cultures allow Lawful/Neutral/Chaotic. Ruler/domain DISPLAY titles are English (or an approved foreign term: 'Pharaoh' at the kingdom tier); conlang titles live in ruler_native/domain_native for NPC dialogue. APPROVED FOREIGN TERM: kingdom display = 'Pharaoh' (the commonly-known Egyptian term, set in 'ruler').",
+  "phonology": {
+    "palette": "Egyptian (Afro-Asiatic) backbone - dj, tj, kh, h, sh, q; l tends to r; v tends to w; long -aa and -et endings; triconsonantal stems; VSO clause order; theophoric on morphed canon-stems (Tjuraa-, Djeroraa-, Riaret-) - meeting a Sinitic overlay: monosyllabic morphemes, the celestial -di/-jun/-wang court titles, the cheng/jiang/shan toponyms. Per the CSV: tonal contours flattened onto triconsonantal roots; Sinitic monosyllables fitted to Egyptian root-patterns and re-vowelled to -aa/-et; sharp -n/-ng Sinitic codas softened toward the Egyptian inventory; heavy temple/Nile register dominant, Sinitic material-and-river words substrated beneath. Theophoric on the Egyptian reflexes (Tjuraa-, Djeroraa-) with Sinitic celestial-court variants (Tuli-di, Lianta-mu).",
+    "phonotactics": "CVC; Egyptian clusters dj/tj/kh and long -aa; Sinitic monosyllables re-shaped to triconsonantal roots and given -aa/-et; -n/-ng Sinitic codas retained only where they sit easily on the Egyptian frame; VSO order; construct-chain Per-/Niut-/Ta- toponyms over Sinitic feature-roots.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "near-eastern (egyptian) phonology dominant",
+      "sound_changes": [
+        "Sinitic tones dropped entirely; the bare monosyllable kept as a consonant-vowel skeleton",
+        "Sinitic isolating monosyllables fitted to Egyptian triconsonantal roots: a thin root gains a dj/tj/kh onset or an Egyptian medial, and is re-vowelled to the Egyptian set (Sinitic -ang/-eng/-uan re-formed toward -aa/-et, e.g. jiang>djara, sheng>tjaret)",
+        "Egyptian l>r and v>w applied to every borrowed root; Egyptian dj/tj/kh flavor imposed on the onset where a root would otherwise be too plain",
+        "Sinitic -n/-ng codas kept only where they fall easily on the Egyptian frame; otherwise resolved to a vowel or an Egyptian coda; very short roots take a long -aa or feminine -et",
+        "clause/name order is Egyptian VSO with the construct chain (Per-/Niut-/Ta-/Pa-); Egyptian root-initial weight, no Sinitic tones surviving"
+      ],
+      "source_tilt": "river/canal/silk/jade/tea/material/market/bureaucratic words from Sinitic roots (the scribal-mercantile substrate keeps its river-and-trade vocabulary); rule/kin-line/temple/Nile/land/quality/abstract/war words from Egyptian roots (the god-king and temple register); every chosen root then run through the one Egyptian-shaped sound-law so the seam is invisible",
+      "portmanteaus": [
+        "city niut-aat+cheng>niutjeng (the great walled river-city)",
+        "fort menenu+zhai>menedjai (the temple-fort)",
+        "temple_town per-netjer+miao>pernemiao (the river-temple town)",
+        "citadel sebakh+chengbao>sebadjeng (the high citadel)",
+        "son sa+zi>sadji (the god-king's get; the heir-blood)",
+        "daughter sat+nu>satnu (the temple-daughter)",
+        "silk insy+si>insidj (the dyed river-silk)",
+        "sacred djeser+sheng>djesheng (temple-holy)"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Sinitic river/silk/material/bureaucratic roots + Egyptian rule/kin/temple/Nile roots, all run through one Egyptian-shaped sound-law (tones dropped, monosyllables fitted to triconsonantal roots and re-vowelled to -aa/-et, l>r, v>w, dj/tj/kh flavor, VSO); portmanteaus mark the blended institutions and bloodline. No slashes - one word per concept.",
+    "feature_words": {
+      "river": "djara",
+      "stream": "ximer",
+      "lake": "hube",
+      "sea": "wadj-wer",
+      "bay": "khent",
+      "cape": "ta-djer",
+      "isle": "iudao",
+      "mountain": "shandjew",
+      "hill": "qaling",
+      "ridge": "akhet",
+      "forest": "metjen",
+      "desert": "deshret",
+      "plain": "yuwen",
+      "marsh": "idehu",
+      "ford": "djatu",
+      "pass": "rogwan",
+      "vale": "gudaa",
+      "coast": "wedjeb",
+      "neck": "nehebet",
+      "narrows": "seger",
+      "waste": "huangret",
+      "road": "watu",
+      "way": "mitru",
+      "track": "shemet"
+    },
+    "settlement_words": {
+      "hamlet": "whyt",
+      "village": "niut-sheri",
+      "town": "niutjen",
+      "city": "niutjeng",
+      "fort": "menedjai",
+      "port": "mer-matu",
+      "market": "khushi",
+      "temple_town": "pernemiao",
+      "citadel": "sebadjeng"
+    },
+    "kinship": {
+      "son": "sadji",
+      "daughter": "satnu",
+      "house": "per-jia",
+      "kin": "djezu",
+      "ancestor": "tepi-zong"
+    },
+    "adjectives": {
+      "great": "aat",
+      "little": "nedjes",
+      "old": "iaw",
+      "new": "maw",
+      "black": "kem",
+      "white": "hedj",
+      "red": "desher",
+      "golden": "nebjin",
+      "iron": "biatie",
+      "high": "qagao",
+      "far": "wayao",
+      "sacred": "djesheng",
+      "fair": "nefer"
+    },
+    "resources": {
+      "salt": "hemyan",
+      "iron": "biatie",
+      "bronze": "hemtong",
+      "silver": "hedjin",
+      "gold": "nebjin",
+      "jade": "khesyu",
+      "silk": "insidj",
+      "grain": "itmi",
+      "tea": "chaa",
+      "horse": "remha"
+    },
+    "directional": {
+      "upper": "khent",
+      "lower": "pehu",
+      "north": "mehbei",
+      "south": "resnan",
+      "east": "iabdong",
+      "west": "imenxi",
+      "inner": "imynei",
+      "outer": "rwtwai"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Per- (house/temple-of; Egyptian construct)",
+      "Niut- (city-of; Egyptian)",
+      "Ta- (land-of; Egyptian)",
+      "Pa- (the; Egyptian)",
+      "-cheng (walled city; Sinitic, fused as -djeng)",
+      "-djara (river; from Sinitic jiang on the Egyptian frame)"
+    ],
+    "patronymic_form": "the Egyptian ruling temple-house keeps filiation 'sa' (son-of) and theophoric construct given-names with no inherited surname; the Sinitic scribal mandarinate keeps the surname-first (xing) clan-name and lineage (zu/zong); the throne fuses both - a nesut who carries a Per- temple-house and a Sinitic court-surname beneath.",
+    "gendered_endings": {
+      "male": "(consonant) / -mose / -hotep (Egyptian); auspicious virtue-meanings (Sinitic)",
+      "female": "-et / -it / -nefru (Egyptian); -hime-less flower/jade meanings re-vowelled (Sinitic)"
+    },
+    "diminutive_form": "-sheri (Egyptian little) / Xiao- (Sinitic little, prefixed)",
+    "compounding_rule": "Egyptian construct chains (Per-[god], Niut-[feature], Ta-[land], Pa-[noun]) layered over Sinitic quality+type compounds re-shaped to the Egyptian frame: the capital Longkem (the dragon-of-the-black-land), Per-Tjuraa (temple-city of the sun), Niutjeng-Aat (the great walled river-city)."
+  },
+  "title_ladder": {
+    "government": "feudal (an Egyptian god-king temple-state over a Sinitic celestial-court bureaucracy: the per-aa and the nesut at the crown with the temple-priesthood, the heqa-aa princes and sepati nomarchs administering through the Sinitic mandarinate of dudu-governors and scribal officials; the per-netjer river-temples and the celestial bureau order all beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hatia-nan",
+        "domain_native": "Hatiat"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Wer-dudu",
+        "domain_native": "Khaset"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Sepati-bo",
+        "domain_native": "Sepat"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Mer-mesha",
+        "domain_native": "Mesha"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Heqa-aa",
+        "domain_native": "Heqat-aat"
+      },
+      "kingdom": {
+        "ruler": "Pharaoh",
+        "domain": "Kingdom",
+        "ruler_native": "Nesut-wang",
+        "domain_native": "Nesutat"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Per-aa-di",
+        "domain_native": "Per-aat-guo"
+      }
+    },
+    "_tiers_note": "Egyptian ladder, ascending, with the Sinitic celestial-court co-titles fused beneath. Hatia-nan (mayor + Sinitic baron) barony; Wer-dudu (great-one of the frontier-land + Sinitic frontier-commander) march; Sepati-bo (nomarch + Sinitic count) county; Mer-mesha (army-overseer/general) duchy; Heqa-aa (great ruler) principality; Nesut-wang (king + Sinitic wang) kingdom - DISPLAYED as 'Pharaoh', the commonly-known term, over a Nesutat; Per-aa-di (the Great House + Sinitic huangdi-emperor) empire over the Per-aat-guo. The Sinitic mandarinate (the dudu-governors, the scribal officials) administers the nomes beneath the Egyptian temple-crown. The hem-netjer priesthood and the daoshi ritual-masters stand outside the ladder. Rank titles fuse the real Egyptian and Chinese registers (allowed).",
+    "heir": "Sa-Nesut (king's son / crown prince; Egyptian); the Taizi (Sinitic crown prince) beneath",
+    "honorifics": {
+      "lord": "Neb / Daren",
+      "lady": "Nebet / Furen",
+      "champion": "Aha (Egyptian warrior) / Wushi (Sinitic warrior)",
+      "your_grace": "Hem-ek (your person/majesty) / Dianxia",
+      "elder": "Smer (the elder; senior courtier)"
+    },
+    "vassalage": {
+      "liege": "Neb / Jun (sovereign)",
+      "vassal": "Bak (servant) / Chen (subject)",
+      "fealty": "Ankh (the living-oath) / Mengyue (sworn covenant)",
+      "tribute": "Inu (Egyptian) / Gongfu (Sinitic)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Pharaoh' at the kingdom tier). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Per-aa-di": "Per-aat-di",
+      "Nesut-wang": "Nesyt-wang",
+      "Heqa-aa": "Heqat-aat",
+      "Mer-mesha": "Mer-mesha-et",
+      "Sepati-bo": "Sepatit-bo",
+      "Wer-dudu": "Wert-dudu",
+      "Hatia-nan": "Hatiat-nan"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "Pharaoh": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Pharaoh (kingdom)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Egyptian ruling temple-stock carry a theophoric given + filiation (sa-X) and an earned epithet, no inherited surname; the Sinitic scribal mandarinate carry a clan-surname (xing) first + given name; the throne fuses both - a theophoric given under a Per- temple-house with a court-surname; order given-first for the Egyptian register, family-first for the Sinitic.",
+    "surname_source": [
+      "Egyptian filiation (sa = son-of)",
+      "Egyptian theophoric given (Tjuraa-hotep = Tjuraa-is-content)",
+      "Sinitic clan-surname (xing, monosyllabic)",
+      "Per- temple-house / deed-office epithet"
+    ],
+    "dual_register": "the Egyptian temple-aristocracy keep theophoric god-king names (Tjuraa-, Djeroraa-, Mery-, Sa-) on the morphed canon-stems; the Sinitic mandarinate keep xing + ming with a courtesy-name (zi) and sobriquet (hao) for the learned.",
+    "theophoric": "given names built from the morphed deity-names + an Egyptian element (X-hotep, X-mose, Mery-X, Sa-X) for the temple-stock; the Sinitic officials invoke the celestial powers' epithets and virtues rather than the god-name directly (Tian-en = heaven's grace; a temple-name honoring Tuli-di). e.g. Tjuraa-hotep, Mery-Djeroraa; Li Zhongyan (the scribal register).",
+    "diminutive": "-sheri (Egyptian) / Xiao- (Sinitic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Egyptian reflexes PRIMARY (family_near_eastern egyptian sub-palette, the abydosian column: phoneme-morphs through Egyptian phonology, l>r, v>w, -us/-a>-aa/-et, dj/tj/kh flavor), Sinitic celestial-court variants SECONDARY (family_east_asian.json theonym_sets.sinitic, the jinxian column: the -di/-jun/-mu celestial bureau) - never real Egyptian/Chinese gods. The two are named as one power under two faces: the sun-disc of the river-temple and the celestial emperor of the bureau are the same god. Lawful/Neutral/Chaotic; a god-king funerary cult fused with a Mandate-of-Heaven celestial bureaucracy.",
+    "the_one": "Atjernaa (Egyptian; < Aeternus; Sinitic Aiteng) - the hidden distant maker and Highest Heaven, source of the Mandate, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tjuraa (Sinitic Tuli-di) - the sun-disc and right-order; the Sun-Justice Emperor of the celestial bureau",
+      "Delorum": "Djeroraa (Sinitic Delu) - lord of the peaceful dead, the funerary judge",
+      "Gaiandus": "Gauandj (Sinitic Gaidun-di) - the enduring earth and the river-flood, lord of mountains and grain",
+      "Numeno": "Numenaa (Sinitic Numeng-jun) - sky-wisdom and the scribal arts, the Sage Lord of winds",
+      "Realta": "Riaret (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Atjernaa the Highest Heaven, Tjuraa the just sun-disc (Tuli-di of the celestial bureau), Gauandj of the river-flood, Riaret the merciful - ordered by the funerary rites of the per-netjer and the Confucian celestial ritual alike; names the Chaotic powers the Hefau-kin (the serpent-brood) and the demon-marshals (mo), warded",
+      "Neutral": "the deified god-kings and akhu (the justified dead) of the ruling temple-house and the ancestral zu of the mandarin clans (honored at the Ci shrine and the tomb-temple); the great powers and the local earth-and-grain and river-spirits invoked at the per-netjer and the miao situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - the Hefau-kin and the demon-marshals - and names the Lawful powers, and Atjernaa, as the tyrant-gods of the throne and the bureau to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as the Hefau-kin (the great-serpent brood; Egyptian) or the demon-marshals (mo; Sinitic), keep their morphs + an epithet: Maraxus -> Marakhu the City-Burner (Sinitic Maluo the War-Fire Marshal); Vacidus -> Wakedjet the Devouring Hefau (Sinitic Wuci the Devourer); Lusanto -> Lusandj the Hoard-Serpent (Sinitic Lusan the Coin-Serpent).",
+    "clergy_ladder": {
+      "1": "Wab (purification-priest/acolyte) / Daoshi-tu",
+      "3": "Hem-netjer (god's-servant/priest) / Daoshi",
+      "5": "Hem-netjer Sen-nu (second prophet) / Fashi (ritual-master)",
+      "7": "Hem-netjer Tepy (first prophet/high priest) / Gaogong",
+      "9": "Hem-netjer Aa (great prophet) / Tianshi (celestial master)"
+    },
+    "religious_orders_pattern": "the Per-netjer (god's-house/river-temple) of [power]: 'the Per-netjer of Tjuraa'; the celestial Miao (temple) of the same power for the bureau: 'the Miao of Tuli-di'.",
+    "saints_pattern": "the deified god-kings and akhu (the justified dead; maa-kheru) venerated at the tomb-temples, and the worthy officials and deified heroes enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
+    "holy_symbol_motifs": {
+      "Tjuraa": "a sun-disc above the feather of right-order, coiled by the river-dragon",
+      "Djeroraa": "the crook and flail over a tomb-pylon and the celestial seal",
+      "Gauandj": "the alluvial flood-field beneath the dragon and the grain-altar"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-barques and war-junks: 'Barque of Tjuraa', 'the Jade Dragon', 'Beloved of the Djara', 'the Heaven-Mandate'",
+    "military_units": "the [god] Division and the [color] Banner: 'the Division of Tjuraa', 'the Azure Dragon Banner', 'the Sun-Disc Companies'",
+    "taverns": "'The [Adjective] [Noun]': 'The Golden Lotus', 'The Jade Sun-Cup', 'The Dragon and Lotus'",
+    "dungeons_ruins": "buried god-king tombs and fallen river-cheng: 'the Tomb of Per-aa [name]', 'the Sunken Per-netjer', 'the Ruined Niutjeng of [warlord]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tjuraa-hotep",
+      "Tjuraa-mose",
+      "Djeroraa-nakht",
+      "Mery-Tjuraa",
+      "Sa-Riaret",
+      "Numenaa-hotep",
+      "Gauandj-mose",
+      "Pa-Tjuraa",
+      "Li Zhongyan",
+      "Wang Yunlong",
+      "Zhao Mingyuan",
+      "Chen Bowen",
+      "Sun Anguo",
+      "Ma Shenglong",
+      "Sa-Djeroraa",
+      "Mery-Numenaa"
+    ],
+    "personal_f": [
+      "Riaret-nefru",
+      "Mery-Riaret",
+      "Tjuraa-et",
+      "Djeroraa-et",
+      "Riaret-nefret",
+      "Sat-Tjuraa",
+      "Numenaa-et",
+      "Li Yurong",
+      "Wang Meixiang",
+      "Zhao Fenghua",
+      "Chen Zhilan",
+      "Sun Suyin",
+      "Sat-Riaret",
+      "Tjuraa-nefru",
+      "Sat-Djeroraa",
+      "Mery-Numenaa"
+    ],
+    "houses_filiation": [
+      "per-Tjuraa",
+      "per-Djeroraa",
+      "per-Riaret",
+      "per-Numenaa",
+      "per-Gauandj",
+      "sa-Tjuraa",
+      "sa-Djeroraa",
+      "the Li (mandarin clan)",
+      "the Wang (mandarin clan)",
+      "the Zhao (mandarin clan)",
+      "the Chen (mandarin clan)",
+      "sa-Riaret"
+    ],
+    "epithets_cognomina": [
+      "maa-kheru (the justified)",
+      "Sun-faced",
+      "the River-blessed",
+      "Dragon-of-the-Gate",
+      "the Loyal (Zhong)",
+      "Jade-blade",
+      "the Far-marching",
+      "the Enduring"
+    ],
+    "flagship_settlements": [
+      "Longkem (the chief seat - the dragon of the black-land)",
+      "Per-Tjuraa (temple-city of the sun)",
+      "Niutjeng-Aat (the great walled river-city)",
+      "Menedjai-Khaset (the frontier temple-fort)",
+      "Pernemiao-Djara (the river-temple town)",
+      "Sebadjeng (the high citadel)"
+    ]
+  }
+}

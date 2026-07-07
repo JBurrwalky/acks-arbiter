@@ -729,6 +729,50 @@ func _connect_domain_signals() -> void:
 	EventBus.income_collected.connect(_on_income_collected)
 	EventBus.stronghold_completed.connect(_on_stronghold_completed)
 	EventBus.domain_morale_changed.connect(_on_domain_morale_changed)
+	# Ruler AI Seam A (gdd-ruler-ai.md §9.1): retroactive, cosmetic narration of
+	# an NPC ruler's executed monthly action. ruler_action_taken fires ONLY for
+	# active-LOD rulers (the 6-mile play window + buffer), so the LOD gate is the
+	# relevance filter — off-camera backdrop rulers never reach the log.
+	EventBus.ruler_action_taken.connect(_on_ruler_action_taken)
+	# Army-warfare §7.6 world-log integration: every concluded field battle surfaces
+	# in the unified log — silent NPC-vs-NPC (npc_battle_resolved) and interactive
+	# player battles (pc_battle_concluded). battle_concluded carries only
+	# (battle_id, outcome), so the handler re-queries BattleRepository for context.
+	EventBus.battle_concluded.connect(_on_battle_concluded)
+	# Phase F (gdd-army-warfare.md §4.10.5): NPC-domain threat escalation surfaces each stage.
+	EventBus.threat_escalated.connect(_on_threat_escalated)
+	# Phase F (§4.10.3): the player's post-victory siege choice (Besiege / Encamp / March-on).
+	EventBus.siege_decision_resolved.connect(_on_siege_decision_resolved)
+
+
+func _on_siege_decision_resolved(stronghold_id: String, choice: String) -> void:
+	var phrases := {
+		"besiege": "your army lays siege to the stronghold",
+		"encamp": "your army holds the field and encamps",
+		"march_on": "your army breaks off and marches on",
+	}
+	var phrase: String = String(phrases.get(choice, "the victorious army decides its next move"))
+	_append("combat", "siege_decision_resolved",
+		"After the victory, %s" % phrase,
+		stronghold_id, "", {"stronghold_id": stronghold_id, "choice": choice})
+
+
+func _on_threat_escalated(threat_id: String, domain_id: String, stage: String) -> void:
+	var phrases := {
+		"fielded": "A challenger takes the field",
+		"battle_offered": "battle is offered",
+		"battle_refused": "the ruler refuses battle - the challenger pillages the domain",
+		"siege_started": "a siege begins",
+		# Player-domain hostile extraction (migration 185 surface).
+		"raid_launched": "enemy raiders cross into the frontier",
+		"extraction_threatened": "an enemy army demands extraction - resist or concede",
+		"extraction_resisted": "the garrison musters to resist the raiders",
+		"extraction_conceded": "the raiders are allowed to take their spoils",
+	}
+	var phrase: String = String(phrases.get(stage, stage))
+	_append("domain", "threat_escalated",
+		"Domain %s: %s" % [domain_id, phrase],
+		domain_id, "", {"threat_id": threat_id, "stage": stage})
 
 
 func _on_domain_event(domain_id: String, event: Dictionary) -> void:
@@ -756,6 +800,75 @@ func _on_domain_morale_changed(domain_id: String, old_morale: int, new_morale: i
 		"Domain %s morale: %d -> %d" % [domain_id, old_morale, new_morale],
 		domain_id, "",
 		{"old_morale": old_morale, "new_morale": new_morale})
+
+
+## Ruler AI Seam A production caller (gdd-ruler-ai.md §9.1, handoff §10.2).
+## Narrates the executed action retroactively via RulerActionNarrator (the
+## deterministic template under the mock provider; real prose only once a
+## provider is configured — never a conversation, always a one-line summary of
+## what the engine already did) and files it as a live log entry.
+##
+## variant_key = the decree kind (empty for non-decrees): a large realm may
+## issue two distinct decree kinds the same month, both surfacing as
+## action_id "issue_decree" — the kind keeps their narration-cache slots apart.
+## calendar_day = now: the signal fires synchronously inside the monthly tick,
+## so Timekeeping is already on the tick's day; passing it lets the narrator
+## reuse ruler_ai_state.narration_cache instead of re-generating.
+func _on_ruler_action_taken(ruler_npc_id: String, domain_id: String,
+		action_id: String, outcome: Dictionary) -> void:
+	var variant_key: String = String(outcome.get("decree_kind", ""))
+	var calendar_day: int = Timekeeping.get_calendar_day()
+	var env: ResponseEnvelope = RulerActionNarrator.narrate_action(
+		ruler_npc_id, domain_id, action_id, outcome, calendar_day, variant_key)
+	var text: String = env.text if env != null else ""
+	if text.strip_edges().is_empty():
+		# Degrade to a bare engine-truth line if narration somehow yields nothing.
+		text = "%s: %s" % [_name(ruler_npc_id), String(outcome.get("summary", action_id))]
+	_append("domain", "ruler_action", text, ruler_npc_id, domain_id,
+		{"action_id": action_id, "is_fallback": env.is_fallback if env != null else true})
+
+
+## Army-warfare §7.6 world-log integration. Fires for every concluded field battle
+## (silent NPC-vs-NPC and interactive player battles). Re-queries the row because
+## battle_concluded carries no belligerent context.
+func _on_battle_concluded(battle_id: String, outcome: String) -> void:
+	var battle: Dictionary = BattleRepository.get_battle(battle_id)
+	if battle.is_empty():
+		return
+	var atk_id := String(battle.get("attacker_army_id", ""))
+	var def_id := String(battle.get("defender_army_id", ""))
+	var atk := _army_name(atk_id)
+	var def := _army_name(def_id)
+	var is_player := int(battle.get("is_player_involved", 0)) == 1
+	var log_type := "pc_battle_concluded" if is_player else "npc_battle_resolved"
+	var text := "%s." % _battle_outcome_phrase(outcome, atk, def)
+	_append("combat", log_type, text, atk_id, def_id,
+		{"battle_id": battle_id, "outcome": outcome, "is_player_involved": is_player})
+
+
+func _army_name(army_id: String) -> String:
+	if army_id.is_empty():
+		return "an army"
+	var army: Dictionary = ArmyRepository.get_army(army_id)
+	var nm := String(army.get("name", ""))
+	return nm if not nm.is_empty() else "an army"
+
+
+## Readable one-line battle outcome for the unified log (gdd-army-warfare.md §7.6).
+func _battle_outcome_phrase(outcome: String, atk: String, def: String) -> String:
+	match outcome:
+		"attacker_victory", "defender_annihilation":
+			return "%s defeated %s" % [atk, def]
+		"defender_victory", "attacker_annihilation":
+			return "%s defeated %s" % [def, atk]
+		"mutual_withdrawal_draw":
+			return "%s and %s broke off the battle" % [atk, def]
+		"attacker_voluntary_withdrawal":
+			return "%s withdrew before %s" % [atk, def]
+		"defender_voluntary_withdrawal":
+			return "%s withdrew before %s" % [def, atk]
+		_:
+			return "%s clashed with %s" % [atk, def]
 
 
 # ---------------------------------------------------------------------------

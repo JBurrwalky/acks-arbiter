@@ -663,7 +663,11 @@ CREATE TABLE IF NOT EXISTS hex_maps (
     parent_map_id TEXT REFERENCES hex_maps(id),
     parent_anchor_q INTEGER,
     parent_anchor_r INTEGER,
-    parent_hex_footprint TEXT NOT NULL DEFAULT '[]'
+    parent_hex_footprint TEXT NOT NULL DEFAULT '[]',
+    -- Migration 177: the cliff-detection threshold (adaptive percentile) pinned at the
+    -- FIRST build of a regional_6mi map, reused on frontier growth so cliffs stay stable
+    -- as the map grows (gdd-region-zoom-in.md §6). NULL → fall back to adaptive.
+    cliff_threshold REAL
 );
 
 -- fog_state is per-campaign (scoped through hex_maps.campaign_id)
@@ -735,6 +739,23 @@ CREATE TABLE IF NOT EXISTS hex_river_edges (
 
 CREATE INDEX IF NOT EXISTS idx_hex_river_edges_owner
     ON hex_river_edges(map_id, hex_q, hex_r);
+
+-- Migration 176: cliff / canyon edges — impassable elevation gradients
+-- (gdd-cliffs-canyons.md §3). Per-edge feature mirroring hex_river_edges.
+CREATE TABLE IF NOT EXISTS hex_cliff_edges (
+    map_id       TEXT    NOT NULL REFERENCES hex_maps(id),
+    hex_q        INTEGER NOT NULL,
+    hex_r        INTEGER NOT NULL,
+    edge         INTEGER NOT NULL CHECK(edge BETWEEN 0 AND 5),
+    cliff_type   TEXT    NOT NULL DEFAULT 'cliff'
+        CHECK(cliff_type IN ('cliff', 'canyon')),
+    height_ft    INTEGER NOT NULL DEFAULT 0,
+    high_side    INTEGER NOT NULL DEFAULT 0 CHECK(high_side IN (0, 1)),
+    PRIMARY KEY (map_id, hex_q, hex_r, edge)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hex_cliff_edges_owner
+    ON hex_cliff_edges(map_id, hex_q, hex_r);
 
 -- Migration 166: runtime `roads` as first-class entities (ordered hex path + class
 -- + purpose + name). hex_overlays carries per-cell render geometry; this carries
@@ -894,6 +915,24 @@ CREATE INDEX IF NOT EXISTS idx_domain_hexes_domain_id
     ON domain_hexes (domain_id);
 CREATE INDEX IF NOT EXISTS idx_domain_hexes_map_id
     ON domain_hexes (map_id);
+
+-- Migration 183: per-domain requisition/loot accounting (army-warfare Phase B,
+-- gdd-army-warfare.md §4.3 / daw_campaigning_armies.xml L324-347). Cross-army,
+-- per-domain: 6-month requisition cooldown + 60 gp/family combined ceiling +
+-- families lost. Ceiling resets each 6-month period (population-recovery proxy).
+CREATE TABLE IF NOT EXISTS domain_extraction_ledger (
+    campaign_id                        TEXT    NOT NULL REFERENCES campaigns(id),
+    domain_id                          TEXT    NOT NULL REFERENCES domains(id),
+    period_anchor_calendar_day         INTEGER NOT NULL DEFAULT 0,
+    last_requisition_calendar_day      INTEGER NOT NULL DEFAULT -1,
+    cumulative_extracted_gp_per_family REAL    NOT NULL DEFAULT 0.0,
+    families_lost                      INTEGER NOT NULL DEFAULT 0,
+    created_at                         TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at                         TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (campaign_id, domain_id)
+);
+CREATE INDEX IF NOT EXISTS idx_domain_extraction_ledger_campaign
+    ON domain_extraction_ledger(campaign_id);
 
 -- Migration 057: Domain followers roster (Domain Phase 0 schema only;
 -- Phase 5 ships the follower_arrival_resolver that writes here).
@@ -1878,6 +1917,10 @@ CREATE TABLE IF NOT EXISTS armies (
     daily_penalty_state             TEXT    NOT NULL DEFAULT '{}',
     rng_seed_stream                 INTEGER NOT NULL DEFAULT 0,
     notes                           TEXT    NOT NULL DEFAULT '',
+    -- Migration 186: one-off vs standing muster tag driving post-battle teardown.
+    -- Code-validated (no CHECK) against ArmyRepository.PROVENANCE_*:
+    -- 'standing' | 'resistance_levy' | 'call_to_arms'.
+    provenance                      TEXT    NOT NULL DEFAULT 'standing',
     created_at                      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_armies_campaign ON armies(campaign_id);
@@ -2165,15 +2208,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_call_to_arms_state_unique_active
 
 -- Migration 082: domain_threats — Phase 9A active-threat tracking per
 -- ax_domain_level_encounters.xml + acore_axioms §bandits L611-630.
--- Kinds: encounter / bandit_swarm / npc_challenger / settled_lair.
+-- Kinds: encounter / bandit_swarm / npc_challenger / settled_lair /
+--   hostile_extraction (migration 185 — an NPC army looting/requisitioning
+--   the player's domain; the player Resists or Concedes from the threats sub-tab).
 -- Partial unique indexes ensure at most one active bandit_swarm and
--- npc_challenger per domain.
+-- npc_challenger per domain, and at most one active hostile_extraction per
+-- (domain, raider army).
 CREATE TABLE IF NOT EXISTS domain_threats (
     id                          TEXT    PRIMARY KEY,
     campaign_id                 TEXT    NOT NULL REFERENCES campaigns(id),
     domain_id                   TEXT    NOT NULL REFERENCES domains(id),
     kind                        TEXT    NOT NULL
-        CHECK(kind IN ('encounter', 'bandit_swarm', 'npc_challenger', 'settled_lair')),
+        CHECK(kind IN ('encounter', 'bandit_swarm', 'npc_challenger', 'settled_lair', 'hostile_extraction')),
     status                      TEXT    NOT NULL DEFAULT 'active'
         CHECK(status IN ('active', 'defeated', 'negotiated', 'departed')),
     creature_key                TEXT    NOT NULL DEFAULT '',
@@ -2206,6 +2252,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_bandit_swarm
     ON domain_threats(domain_id) WHERE kind = 'bandit_swarm' AND status = 'active';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_challenger
     ON domain_threats(domain_id) WHERE kind = 'npc_challenger' AND status = 'active';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_hostile_extraction
+    ON domain_threats(domain_id, linked_army_id) WHERE kind = 'hostile_extraction' AND status = 'active';
 
 -- Migration 083: market_class_modifiers — Phase 9A temporary market-class
 -- shifts driven by Vagaries-of-Recruitment commerce_disrupted/commerce_improves
@@ -2283,6 +2331,10 @@ CREATE TABLE IF NOT EXISTS sieges (
     outcome                     TEXT    NOT NULL DEFAULT ''
         CHECK(outcome IN ('', 'captured', 'liberated', 'destroyed', 'surrendered',
                           'departed', 'sallied_won', 'sallied_lost')),
+    -- Phase D (migration 184): defender posture. 'undecided' = pre-Phase-D behavior; the
+    -- withstand_siege action sets 'hold_fast' (garrison holds inside, no sortie). Read ONLY in
+    -- the voluntary 'sally' branch of siege_resolver.apply_method.
+    defender_posture            TEXT    NOT NULL DEFAULT 'undecided',
     payload_json                TEXT    NOT NULL DEFAULT '{}',
     created_at                  TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at                  TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -3724,6 +3776,7 @@ CREATE TABLE IF NOT EXISTS setting_polities (
     morale_seed TEXT NOT NULL DEFAULT '[]',
     internal_vassals TEXT NOT NULL DEFAULT '[]',
     name TEXT NOT NULL DEFAULT '',
+    culture_synthesis_parents TEXT NOT NULL DEFAULT '[]',
     PRIMARY KEY (campaign_id, id)
 );
 
@@ -3872,20 +3925,99 @@ CREATE TABLE IF NOT EXISTS setting_poi_seeds (
 );
 
 -- History-replay frames (§7.2 replay_frames[]; history-sim §15,
--- REPLAY_CADENCE = 4 ticks). owner_by_hex is run-length encoded over the
--- canonical hex order (r ASC, then q ASC): runs of "polity_id:count" joined
--- by ';' ('' polity_id = unowned). The palette is per-campaign stable so a
--- realm keeps its color across frames (gdd-campaign-creation-ui.md §7).
+-- REPLAY_CADENCE = 4 ticks). Each *_by_hex is run-length encoded over the
+-- canonical hex order (r ASC, then q ASC): runs of "value:count" joined by ';'
+-- ('' value = none). owner_by_hex holds polity ownership; culture_by_hex the
+-- dominant culture_id per hex; territory_by_hex the civ/borderlands/wilderness
+-- class (migration 180) — so the replay animates political, culture AND
+-- territory layers epoch by epoch, not just ownership. The palette is
+-- per-campaign stable so a realm keeps its color across frames
+-- (gdd-campaign-creation-ui.md §7).
 CREATE TABLE IF NOT EXISTS setting_replay_frames (
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
     tick INTEGER NOT NULL,
     owner_by_hex TEXT NOT NULL DEFAULT '',
+    culture_by_hex TEXT NOT NULL DEFAULT '',
+    territory_by_hex TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (campaign_id, tick)
 );
 
+-- seed_label (migration 180): a stable culture-seed identity per polity
+-- ("Vallican_01") for the replay tooltip, so realms that never earn a proper
+-- name still read as their seed culture rather than a bare pol id.
 CREATE TABLE IF NOT EXISTS setting_replay_palette (
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
     polity_id TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '',
+    seed_label TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (campaign_id, polity_id)
 );
+
+-- StrategicDisposition strategic layer, one row per NPC ruler (migration 181;
+-- gdd-ruler-ai.md §10, approved 2026-06-28; struct per gdd-npc-personality.md
+-- §8.2). Derived — and regenerable — from characters.personality +
+-- characters.alignment via StrategicDispositionBuilder. The 7 strategic-axis
+-- ints snapshot the personality axes at build time; the 8 weights are the §8.3
+-- derivation outputs (floats clamped 0-1). aggression_toward /
+-- alliance_preference are serialized {realm_id: float} JSON dicts, '{}' when
+-- realm relations are absent (gdd-ruler-ai.md §4.3 graceful degradation).
+CREATE TABLE IF NOT EXISTS ruler_dispositions (
+    character_id TEXT PRIMARY KEY REFERENCES characters(id),
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    motivation_primary TEXT NOT NULL DEFAULT '',
+    motivation_secondary TEXT NOT NULL DEFAULT '',
+    epistemic_curiosity INTEGER NOT NULL DEFAULT 5,
+    societal_orthodoxy INTEGER NOT NULL DEFAULT 5,
+    affective_compassion INTEGER NOT NULL DEFAULT 5,
+    stress_reactivity INTEGER NOT NULL DEFAULT 5,
+    self_interest INTEGER NOT NULL DEFAULT 5,
+    in_group_loyalty INTEGER NOT NULL DEFAULT 5,
+    mysticism INTEGER NOT NULL DEFAULT 5,
+    research_weight REAL NOT NULL DEFAULT 0.0,
+    religious_weight REAL NOT NULL DEFAULT 0.0,
+    economic_weight REAL NOT NULL DEFAULT 0.0,
+    military_weight REAL NOT NULL DEFAULT 0.0,
+    expansion_weight REAL NOT NULL DEFAULT 0.0,
+    fortification_weight REAL NOT NULL DEFAULT 0.0,
+    diplomatic_weight REAL NOT NULL DEFAULT 0.0,
+    oppression_weight REAL NOT NULL DEFAULT 0.0,
+    crisis_response TEXT NOT NULL DEFAULT 'defensive'
+        CHECK(crisis_response IN ('aggressive', 'defensive', 'diplomatic', 'cautious')),
+    aggression_toward TEXT NOT NULL DEFAULT '{}',
+    alliance_preference TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ruler_dispositions_campaign
+    ON ruler_dispositions(campaign_id);
+
+-- Migration 182: ruler_ai_state — per-ruler planner runtime state, one row per
+-- NPC ruler the Regional-LOD system has ever activated (gdd-ruler-ai.md §10,
+-- approved by Jedidiah 2026-06-28). Persists what the Phase-3 in-memory LOD
+-- cache could not: the ruler's current LOD tier (§8.1 'active'/'backdrop') for
+-- save/load reconciliation, the §8.2 demotion grace stamp (demotion_pending_day
+-- is the calendar day the ruler LEFT the play window's geometry; NULL when not
+-- pending — the ruler stays active until ~1 month elapses or it re-enters),
+-- the last strategic turn taken (day + top-scored action id, written by
+-- RulerAI.process_campaign_month), and a small {cache_key: entry} JSON
+-- narration cache so Seam-A retroactive narration is not regenerated for the
+-- same (day, action) — gdd-ruler-ai.md §9.1. Derived runtime state: a
+-- drop-and-rebuild loses only narration cache and grace stamps (the next
+-- RulerLodManager.sync regenerates tiers), so it is non-destructive in practice.
+CREATE TABLE IF NOT EXISTS ruler_ai_state (
+    character_id TEXT PRIMARY KEY REFERENCES characters(id),
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    lod_tier TEXT NOT NULL DEFAULT 'backdrop'
+        CHECK(lod_tier IN ('active', 'backdrop')),
+    last_strategic_turn_day INTEGER NOT NULL DEFAULT 0,
+    last_action_id TEXT NOT NULL DEFAULT '',
+    demotion_pending_day INTEGER,
+    narration_cache TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ruler_ai_state_campaign
+    ON ruler_ai_state(campaign_id);
+

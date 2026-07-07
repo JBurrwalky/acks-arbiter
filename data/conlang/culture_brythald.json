@@ -1,0 +1,369 @@
+{
+  "kit_id": "brythald",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "celtic"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "catalog_number": 7,
+  "csv_id": "HYB_01",
+  "sub_palette": "anglo_saxon + brythonic-substrate (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_02"
+  ],
+  "homeland": "Bryten",
+  "blend": {
+    "backbone": "germanic (anglo-saxon / Old English)",
+    "overlay": "celtic (brythonic / Welsh-Cumbric substrate)",
+    "lean": "Germanic-heavy - an Anglo-Saxon warrior-aristocracy settled over a Romano-Brittonic populace and largely Anglicized it. This INVERTS the old Gundic lean (which was Celtic-backbone / Germanic-overlay)."
+  },
+  "government": "clanhold",
+  "civ_or_clan": "clan",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "REPLACES the old Gundic kit (catalog 7 / HYB_01). Cross-family blend (Germanic + Celtic), now leaning GERMANIC: a 'Ye Olde Merry England' / Arthurian analog - Anglo-Saxon (Old English) kingdoms grown over a Romano-Brittonic substrate. Backbone = Germanic (anglo_saxon: Old English phonology, the burh-and-tun land, the cyning/ealdor/thegn register, the dithematic Aethel-/Os-/-wald name-stock); substrate = Celtic (brythonic: Caer-/Pen- toponyms, ap- patronymics, initial mutation, the lateral ll, the older Brittonic name-stock and the seintiau). Common-word lexicon and rank titles use the real Old-English and Welsh registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Anglo-Saxon reflexes primary, Brythonic variants secondary), never real gods. CIV/CLAN DECIDED (2026-06-27): Clanhold. Both parent bases - Thiodmark (Germanic) and Albawyn (Celtic) - are assigned Clanhold (gdd-culture-emergence-and-territory.md §3.2), so by the inheritance rule (Clan+Clan -> Clan) Brythald is a Clanhold culture: a Germanic clan-kingship (the cyning and his sworn hearth-troop) over a Brittonic substrate, NOT a centralized feudal state. STILL OPEN: alignment (Lawful vs Neutral) is a design choice - Arthurian Camelot reads Lawful (the just high-king and the sworn fellowship), an older Anglo-Saxon heathen layer reads Neutral. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Old English (Anglo-Saxon) backbone: root-initial stress; palatalized velars (c>ch, sc>sh, g>y; cild>child, sceap>sheep, gear>year); the dental fricatives th/dh; front rounded vowels and phonemic vowel length; ea/eo diphthongs; the guttural h (/x/, niht); the dithematic name-stock (Aethel-, Os-, Ead-, Wulf-, -wald, -here, -ric, -mund). A Brythonic substrate adds initial consonant mutation, the lateral fricative ll, Caer-/Pen-/Tre- toponyms and ap-/map- patronymics. Theophoric on the Anglo-Saxon reflexes (Thulor-, Eorland-) with Brythonic variants (Toran-, Orlann-).",
+    "phonotactics": "CVC with OE clusters (st, sc, hl, hr, hw, wr, cn); root-initial stress; dithematic compounds; the Brythonic substrate adds mutation-clusters and the lateral fricative.",
+    "transparent_ratio": 0.45,
+    "fusion_rules": {
+      "lean": "germanic (anglo-saxon / Old English) phonology dominant",
+      "sound_changes": [
+        "Brythonic lateral ll and lenition adapted to OE: word-initial ll>hl, medial ll>ll, soft-mutated b/d/g>p/t/c (de-lenited to the OE stop)",
+        "OE palatalization imposed on inherited roots: c>ch and sc>sh before front vowels (caer kept hard as a fixed toponym; coed>chedd)",
+        "Brythonic w/y/dd vowels and spirants folded into the OE system: w>ea/eo or u, y>i, final -dd>th, and the Brythonic -on/-en/-w endings drop",
+        "OE root-initial stress on every word; OE clusters (st, sc, hl, hr, hw) permitted; the Brythonic penult-stress is overridden",
+        "very short Brythonic roots take an OE -e or -a; OE th/dh, ea/eo diphthongs and the guttural h retained as signature phonemes"
+      ],
+      "source_tilt": "land/water/terrain words lean Brythonic substrate roots (afon, cwm, pen, caer, nant, llyn, coed run through the OE filter); kin-line/quality/abstract/rule/war words from Old English roots (sunu, micel, eald, halig, mearc); every root then filtered to one OE-shaped phonology so the split is inaudible",
+      "portmanteaus": [
+        "fort caer+burh>caerburh",
+        "temple llan+ealh>hlanealh",
+        "citadel caer+heah-burh>caerheah",
+        "kin tud+cynn>tudcynn",
+        "son map+sunu>mapsunu",
+        "daughter merch+dohtor>merchdoht",
+        "sacred halig+llan>halhlan",
+        "clan tud+maeg>tudmaeg"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Brythonic land/water/terrain roots + Old English rule/kin/quality roots, all run through one OE-shaped sound-law (palatalization, lateral-ll adaptation, root-initial stress, dropped Brythonic endings); portmanteaus mark the blended institutions and bloodline. One Anglo-Brittonic tongue, not Old English with a Welsh gloss.",
+    "feature_words": {
+      "river": "afon",
+      "stream": "nant",
+      "lake": "llin",
+      "sea": "sae",
+      "bay": "aberth",
+      "cape": "penras",
+      "isle": "ynes",
+      "mountain": "penmunt",
+      "hill": "bryndun",
+      "ridge": "trumhrycg",
+      "forest": "chedd",
+      "wood": "gwidu",
+      "plain": "gwaunfeld",
+      "marsh": "morfen",
+      "ford": "rhyd",
+      "pass": "bwlchgeat",
+      "vale": "cwm",
+      "march": "mearc",
+      "coast": "traethstrand",
+      "neck": "heals",
+      "narrows": "culnaru",
+      "waste": "diffwesten",
+      "road": "sarnstraet",
+      "way": "weg",
+      "track": "llwybeth"
+    },
+    "settlement_words": {
+      "hamlet": "trefcot",
+      "village": "treftun",
+      "town": "burh",
+      "city": "caerchester",
+      "fort": "caerburh",
+      "port": "porthyth",
+      "market": "marchnceap",
+      "temple_town": "hlanealh",
+      "citadel": "caerheah"
+    },
+    "kinship": {
+      "son": "mapsunu",
+      "daughter": "merchdoht",
+      "house": "hendreall",
+      "kin": "tudcynn",
+      "ancestor": "henfaeder"
+    },
+    "adjectives": {
+      "great": "micel",
+      "little": "lytel",
+      "old": "eald",
+      "new": "niwe",
+      "black": "sweart",
+      "white": "hwit",
+      "red": "read",
+      "golden": "gylden",
+      "iron": "iren",
+      "high": "heah",
+      "far": "feor",
+      "sacred": "halhlan",
+      "fair": "faeger"
+    },
+    "resources": {
+      "salt": "sealt",
+      "iron": "iren",
+      "bronze": "ar",
+      "silver": "seolfor",
+      "gold": "gold",
+      "amber": "glaer",
+      "cattle": "feoh",
+      "grain": "corn",
+      "mead": "medu",
+      "horse": "hors"
+    },
+    "directional": {
+      "upper": "uppe",
+      "lower": "nither",
+      "north": "north",
+      "south": "suth",
+      "east": "east",
+      "west": "west",
+      "inner": "innan",
+      "outer": "uttera"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-tun (farmstead / -ton)",
+      "-ham (homestead / -ham)",
+      "-burh (fort / -bury, -borough)",
+      "-ceaster (Roman town / -chester, -caster)",
+      "-dun (hill / -don)",
+      "-leah (clearing / -ley)",
+      "-ford (ford)",
+      "Caer- (Brythonic fort)",
+      "Pen- (Brythonic head/hill)"
+    ],
+    "patronymic_form": "Old English patronymic -sunu (son of) / -ing (of the kin of); the noble houses keep dithematic lineage-names and -ingas / -ingatun lineage-steads; the Brythonic substrate keeps ap- / map- (son of) and the tud (kindred/people).",
+    "gendered_endings": {
+      "male": "-here / -wine / -wald / -ric / -mund (OE dithematic deuterothemes)",
+      "female": "-burh / -gyth / -hild / -flaed / -wynn (OE); -wen (Brythonic)"
+    },
+    "diminutive_form": "-el / -ing; -an (Brythonic)",
+    "compounding_rule": "[quality|feature|animal](stem) + element: Sweart-weald (black-forest), Read-dun (red-hill), Aesc-burh (ash-fort); the Brythonic substrate yields Caer- and Pen- compounds (Caer-Vyrdin, Pen-bryn) and the -ingas lineage-steads."
+  },
+  "title_ladder": {
+    "government": "clanhold (a Germanic clan-kingship over a Brittonic substrate: the cyning and his aethelings, the ealdormen of the shires, the thegns sworn to the hearth-troop; the witan counsels, the Brittonic tud endures beneath - kindred-and-comitatus bound, not a centralized feudal state)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Thegn",
+        "domain_native": "Thegnland"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Mearc-weard",
+        "domain_native": "Mearc"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Ealdorman",
+        "domain_native": "Scir"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Heretoga",
+        "domain_native": "Heretogdom"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Undercyning",
+        "domain_native": "Under-rice"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Cyning",
+        "domain_native": "Cynerice"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Bretwalda",
+        "domain_native": "Brytenrice"
+      }
+    },
+    "_tiers_note": "Anglo-Saxon ladder, ascending, with the Bretwalda (the 'Britain-ruler', wide-overlord of all Bryten - the Arthurian high-king) at the crown. Thegn (sworn retainer-lord) barony; Mearc-weard (march-warden) march; Ealdorman (shire-ruler) county over a Scir (shire); Heretoga (war-leader; *harja-tugon) duchy; Undercyning (under-king) principality; Cyning (king) kingdom over a Cynerice; Bretwalda (over-king of Britain) empire over the Brytenrice. The witega (sage-prophet) and the Brittonic derwydd stand outside the ladder. Brythonic substrate variants at the crown: Penteyrn (chief-lord) / Gwledig (the Romano-British over-ruler, cf. the Arthurian Dux). Rank titles fuse the real Old-English and Welsh registers (allowed).",
+    "heir": "Aetheling (the throne-worthy prince; the heir-elect)",
+    "honorifics": {
+      "lord": "Hlaford",
+      "lady": "Hlaefdige",
+      "champion": "Cempa (champion) / Cadwr (Brythonic battle-lord)",
+      "your_grace": "Min Hlaford / Min Cyning",
+      "elder": "Ealdor / Witega"
+    },
+    "vassalage": {
+      "liege": "Hlaford",
+      "vassal": "Thegn / Mann (sworn retainer)",
+      "fealty": "Hold-ath (oath of fealty) / Treow (troth)",
+      "tribute": "Gafol"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Bretwalda": "Brytencwen",
+      "Cyning": "Cwen",
+      "Undercyning": "Under-cwen",
+      "Heretoga": "Heretoge",
+      "Ealdorman": "Ealdor-hlaefdige",
+      "Mearc-weard": "Mearc-hlaefdige",
+      "Thegn": "Thegn-hlaefdige"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "Old English dithematic personal name + patronymic (-sunu / -ing); the noble houses carry an -ingas lineage-name; deed/animal bynames for the renowned; the Brittonic commons keep ap- / map- patronymics and the tud. Order given-first.",
+    "surname_source": [
+      "-ingas lineage (OE noble houses)",
+      "patronymic -sunu / -ing",
+      "Brythonic ap- / map-",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Anglo-Saxon ruling stock keep OE dithematic names (Aethel-, Os-, Ead-, -wald, -here, -ric); the Romano-Brittonic commons keep Brythonic names (the Cad-, Cyn-, Mael-, Owain stems with ap- patronymics).",
+    "theophoric": "OE devotional names on the morphed stems (the Os- 'god-' element, Aelf- 'numinous-'): Os-here (god's-army), Aelf-red (counsel of the numinous); the Brittonic substrate keeps Mael- (devotee) and Gwas- (servant): Mael-Toran, Gwas-Gaian.",
+    "diminutive": "-el / -ing; -an (Brythonic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Anglo-Saxon reflexes PRIMARY (from family_germanic theonym_ancestors, the anglo_saxon column), Brythonic variants SECONDARY (reflexed from family_celtic theonym_set into p-Celtic), never real Germanic/Celtic gods. ALIGNMENT LENS IS PROVISIONAL: Arthurian Bryten reads Lawful (Aetern the Wyrd-father and the sworn fellowship of the Round Board), but an older Anglo-Saxon heathen layer reads Neutral (the ielde and the hus-wihta). Both treatments given below pending Jedidiah's alignment decision (see gdd-culture-emergence-and-territory.md open questions).",
+    "the_one": "Aetern (< Aeternus; Brythonic Eternan) - the Ancient One, the Wyrd-father above the lesser powers",
+    "sample_deity_renames": {
+      "Tulrius": "Thulor (Bryth. Toran) - the sun, the just brightness",
+      "Gaiandus": "Geand (Bryth. Gaian) - the enduring earth",
+      "Orlandus": "Eorland (Bryth. Orlann) - iron, oath, war",
+      "Realta": "Realda (Bryth. Realtan) - the mother, the mercy-star",
+      "Numeno": "Numen (Bryth. Numan) - sky, lightning, sky-wisdom"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aetern foremost, Thulor the just-bright, Realda the merciful, Geand the steadfast earth - and names the Chaotic powers deoflu (devils), warded and unworshipped; the sworn fellowship and the just high-king are the social ideal",
+      "Neutral": "ancestral and local - the ielde (forebears and heroes), the hus-wihta (house-spirits), the powers of hearg-grove, holy well and hearth; the great gods invoked situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aetern - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as deoflu (devils) rather than worshipped, keep their morphs + an epithet: Maraxus -> Mearox the War-Brand (Bryth. Maragan); Vacidus -> Waecid the Unmaker (Bryth. Faicid); Lusanto -> Lusand the Hoard-Wyrm (Bryth. Losand).",
+    "clergy_ladder": {
+      "1": "Ealh-thegn (temple-servant, novice)",
+      "3": "Wih-preost (holy-priest)",
+      "5": "Hearg-weard (grove-shrine warden, seer-priest)",
+      "7": "Ealdor-preost (high priest)",
+      "9": "Witega (the supreme sage-prophet)"
+    },
+    "religious_orders_pattern": "the Ealh (temple) or Hearg (grove-shrine) of [power]: 'the Ealh of Thulor', 'the Hearg of Geand'; the Brythonic substrate keeps Llan- (sacred enclosure): 'Llan-Toran'.",
+    "saints_pattern": "the ielde (ancestral heroes) and the hallowed dead of the cynn, honored at the beorg (barrow), the holy well (wielle) and the grove; the Brittonic seintiau (saints) honored at the Llan.",
+    "holy_symbol_motifs": {
+      "Thulor": "a sun-wheel over the ash-tree",
+      "Geand": "the green hill beneath the standing stones (the Brittonic meini)",
+      "Eorland": "an iron sword crossed with a spear"
+    }
+  },
+  "banks_patterns": {
+    "ships": "the keel and the long-ship, named in OE kennings: 'the Grey Goose', 'the Wave-Stallion', 'Raven of the Weald'",
+    "military_units": "the [lineage] fyrd (levy) and the cyning's hearth-weru (hearth-troop / comitatus): 'the Fyrd of Bryten', 'the Ash-spears', 'the fellowship of the Round Board'",
+    "taverns": "'The [Adjective] [Noun]': 'The White Hart', 'The Boar and Spear', 'The Green Knight'",
+    "dungeons_ruins": "fallen burhs, barrow-howes and the old Roman ceasters: 'the Burh of [name]', 'the Barrow of the Aethelings', 'the broken Caer'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Aethelwald",
+      "Oswine",
+      "Cynric",
+      "Eadric",
+      "Beorhtwulf",
+      "Aelfhere",
+      "Wulfstan",
+      "Osric",
+      "Aescwine",
+      "Wihtred",
+      "Cerdic",
+      "Penda",
+      "Cadwallon",
+      "Maelgwn",
+      "Owain",
+      "Cynan",
+      "Geraint",
+      "Cadwr",
+      "Caedmon",
+      "Urien"
+    ],
+    "personal_f": [
+      "Aethelflaed",
+      "Eadgyth",
+      "Cyneburh",
+      "Wulfrun",
+      "Aelfwynn",
+      "Mildgyth",
+      "Osgyth",
+      "Seaxburh",
+      "Hild",
+      "Breguswith",
+      "Gwenhwyfar",
+      "Rhiannon",
+      "Eluned",
+      "Morgen",
+      "Branwen",
+      "Heledd",
+      "Aethelthryth",
+      "Cwenburh",
+      "Generys",
+      "Eormenhild"
+    ],
+    "clan_houses": [
+      "the Oiscingas (royal house)",
+      "the Wuffingas",
+      "the Iclingas",
+      "the Aescingas",
+      "the Cerdicingas",
+      "the Cadwaladring (Brythonic royal line)",
+      "Tud Owain (the Brittonic kindred of Owain)",
+      "the Penbrygingas",
+      "the Wihtwaringas",
+      "Tud Urien",
+      "the Osfridingas",
+      "the Maelgwning (Brythonic line)"
+    ],
+    "epithets_cognomina": [
+      "the White Hart",
+      "Battle-glad (the Cadwr)",
+      "the Fair (faeger)",
+      "of the Round Board",
+      "Iron-arm",
+      "of Bryten",
+      "the Oath-keeper (the hold-eorl)",
+      "the Red Dragon (the Brittonic Draig)"
+    ],
+    "flagship_settlements": [
+      "Caer-Lundein (the chief seat; the Brittonic London)",
+      "Wintanceaster (the royal burh)",
+      "Camaloth (the high-seat of the Round Board)",
+      "Aescburh (the ash-fort)",
+      "Read-dun (the red hill)",
+      "Glaestingaburh (the isle of the holy well)"
+    ]
+  }
+}

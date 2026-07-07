@@ -99,6 +99,11 @@ signal party_map_changed(party_id: String, from_map_id: String, to_map_id: Strin
 ## for cross-autoload signal portability.
 signal map_view_mode_changed(from_mode: int, to_mode: int)
 
+## The session status bar's "Regions" toggle flipped. The 3D wilderness renderer
+## listens and shows/hides its translucent named-region colour overlay. [param enabled]
+## is the toggle's new pressed state. UI-only; no game state changes.
+signal region_overlay_toggled(enabled: bool)
+
 ## The party has moved into a dungeon room.
 signal room_entered(room_id: String)
 
@@ -1043,6 +1048,13 @@ signal notification_requested(data: Dictionary)
 ## Player requested to make camp from the status bar.
 signal camp_requested
 
+## The session status bar's effective occluding height changed (drag, height
+## state change, show/hide, or window resize). [param height_px] is the number
+## of pixels the bar currently covers at the bottom of the screen — 0 when the
+## bar is hidden. The world viewport frame listens here and shrinks its bottom
+## edge to match so the map viewport is never drawn behind the bar.
+signal bar_height_changed(height_px: float)
+
 
 # ---------------------------------------------------------------------------
 # Trained creature signals
@@ -1228,6 +1240,14 @@ signal army_supply_threatened(army_id: String, cause: String)
 ## status string for downstream display.
 signal army_supply_cut(army_id: String, cause: String)
 
+## An army finished a requisition (gdd-army-warfare.md §4.3; RAW L328). gp_yield is
+## the cp credited to the army stockpile; domain_id is the (first) domain requisitioned.
+signal army_requisition_completed(army_id: String, domain_id: String, gp_yield: int)
+
+## An army finished looting (§4.3; RAW L335-336). gp_yield is the cp credited; families_lost
+## is the peasant families destroyed (1 per 20 gp looted).
+signal army_loot_completed(army_id: String, domain_id: String, gp_yield: int, families_lost: int)
+
 ## Emitted by RecruitmentVagariesResolver.resolve() for the monthly recruitment
 ## roll per daw_vagaries.xml §vagaries_of_recruitment L24-185. Consumers:
 ## domain notification surface, unified log, and per-result handlers (Phase 7
@@ -1293,6 +1313,27 @@ signal vassal_tribute_paid(vassal_assignment_id: String, gp_paid: int, calendar_
 ## Emitted by RealmTitleResolver when a domain's title changes due to realm
 ## growth/shrinkage. Consumers: realm sub-tab title card, unified log.
 signal realm_title_changed(domain_id: String, old_title: String, new_title: String)
+
+
+# ---------------------------------------------------------------------------
+# NPC Ruler AI (gdd-ruler-ai.md §11). Declared at Phase 0 per the build
+# handoff; emitters land with the planner (Phase 2: ruler_action_taken;
+# Phase 3: LOD pair; Phase 4: ruler_strategy_reassessed).
+# ---------------------------------------------------------------------------
+
+## Emitted by RulerAI after an active-set NPC ruler executes its monthly
+## action deterministically. outcome = the structured handler result.
+## Consumers: retroactive narration (Seam A), unified log, observability.
+signal ruler_action_taken(ruler_npc_id: String, domain_id: String, action_id: String, outcome: Dictionary)
+
+## Emitted when a validated LLM strategy-reassessment suggestion is accepted
+## as a scorer situational modifier (Seam B; no-op under the mock provider).
+signal ruler_strategy_reassessed(ruler_npc_id: String, trigger: String, changes: Dictionary)
+
+## Emitted by RulerLodManager on active-set promotion/demotion (gdd-ruler-ai.md
+## §8.2). Consumers: observability, save/load reconciliation.
+signal ruler_activated_for_lod(ruler_npc_id: String)
+signal ruler_deactivated_for_lod(ruler_npc_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -1372,6 +1413,24 @@ signal market_class_modifier_applied(settlement_id: String, delta: int, expires_
 
 ## Emitted when a new siege begins (either resolution mode).
 signal siege_started(siege_id: String, stronghold_id: String, besieging_army_id: String)
+
+## Phase F (gdd-army-warfare.md §4.10.5): an NPC-domain threat escalates. stage ∈
+## {fielded, battle_offered, battle_refused, siege_started}. For the unified log + threats UI.
+signal threat_escalated(threat_id: String, domain_id: String, stage: String)
+
+## Phase F (§4.10.3): a defeated field-battle army retreated into a friendly stronghold in the
+## battle hex — the victor MAY begin a siege. Emitted from the battle-aftermath path; a
+## SessionRunner-owned BattleRetreatSiegeRouter (which holds the live scheduler) decides.
+signal battle_loser_retreated_into_stronghold(victor_army_id: String, stronghold_id: String, defeated_army_id: String, battle_id: String)
+
+## Phase F (§4.10.3): a player army won a field battle whose loser retreated into a friendly
+## stronghold in the hex — the player may begin a siege (Besiege / Encamp / March-on).
+signal siege_decision_required(victor_army_id: String, stronghold_id: String, defeated_army_id: String)
+
+## Phase F (§4.10.3): the player resolved the post-victory siege-decision prompt.
+## choice ∈ {besiege, encamp, march_on}. Emitted by SessionRunner after routing the choice
+## (siege dispatch / encamp order); the unified log surfaces it.
+signal siege_decision_resolved(stronghold_id: String, choice: String)
 
 ## Emitted on every daily tick where a measurable state change occurred
 ## (shp damage, breach added, repair, blockade flip). UI listens to refresh

@@ -11,6 +11,9 @@ extends VBoxContainer
 const _SECTION_SPACING := 10
 
 var _army_id: String = ""
+## Read-only inspect mode (e.g. an enemy army opened from the wilderness map): the
+## action bar is replaced with an observation-only note so the player can't command it.
+var _read_only: bool = false
 
 var _hierarchy_box: VBoxContainer = null
 var _roster_box: VBoxContainer = null
@@ -27,8 +30,9 @@ func _ready() -> void:
 # Public API
 # ---------------------------------------------------------------------------
 
-func display(army_id: String) -> void:
+func display(army_id: String, read_only: bool = false) -> void:
 	_army_id = army_id
+	_read_only = read_only
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -135,6 +139,13 @@ func _render_actions() -> void:
 		child.queue_free()
 	var army: Dictionary = ArmyRepository.get_army(_army_id)
 	if army.is_empty():
+		return
+	# Read-only inspect (e.g. an enemy army on the map): no owner commands.
+	if _read_only:
+		var note := Label.new()
+		note.text = "(observation only — this army is not under your command)"
+		note.modulate = Color(0.7, 0.7, 0.7)
+		_action_bar.add_child(note)
 		return
 	var state: String = String(army.get("state", "assembling"))
 	match state:

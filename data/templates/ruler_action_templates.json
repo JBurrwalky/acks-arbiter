@@ -1,0 +1,17 @@
+{
+  "_comment": "Seam-A deterministic narration templates for NPC ruler actions (gdd-ruler-ai.md 9.1; fragment-bank convention per gdd-npc-personality.md 9.3). Keyed by planner action_id; {ruler} and {realm} are substituted by RulerActionNarrator. '_default' covers unknown ids.",
+  "action_phrases": {
+    "administer_domain": "{ruler} spends the month in the halls of {realm}, hearing petitions and setting affairs in order.",
+    "oversee_investment": "{ruler} directs coin and laborers toward the fields and workshops of {realm}.",
+    "issue_decree": "{ruler} proclaims a decree throughout {realm}.",
+    "raise_garrison": "{ruler} calls up soldiers to strengthen the garrison of {realm}.",
+    "repress_population": "{ruler} sends soldiers into the streets and villages of {realm} to cow the restless.",
+    "train_troops": "{ruler} drills the soldiery of {realm} on the practice fields.",
+    "manage_stronghold": "{ruler} sets masons and engineers to work upon the stronghold of {realm}.",
+    "defensive_resistance": "{ruler} marshals the defenders of {realm} against the invader.",
+    "call_to_arms": "{ruler} sends riders to summon the vassals of {realm} to war.",
+    "hold": "{ruler} bides, husbanding the strength of {realm}.",
+    "withstand_siege": "{ruler} looks to the walls as {realm} endures the siege.",
+    "_default": "{ruler} attends to the affairs of {realm}."
+  }
+}

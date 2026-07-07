@@ -1,0 +1,361 @@
+{
+  "kit_id": "saonu",
+  "tier": "culture",
+  "inherits": [
+    "east_asian",
+    "north_american"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_54",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "east_asian (sinitic) backbone + north_american (plains) overlay (cross-family blend, Sinitic-leaning)",
+  "synthesis_sources": [
+    "BASE_09",
+    "BASE_11"
+  ],
+  "homeland": "Longmani",
+  "blend": {
+    "backbone": "east_asian (sinitic / Chinese register: the Huangdi over wang and the five peerages, the Celestial-Mandate court and Confucian bureaucracy, monosyllabic (C)(G)V(C) morphemes with -n/-ng codas, surname-first dithematic-free names, -di/-jun/-wang celestial titles)",
+    "overlay": "north_american (plains horse-nomads, Comanche-leaning: the buffalo-grass and the open sky, the warrior-societies and chiefs'-council, the puuku-horse and kutsu-bison, descriptive deed-names, the vision-quest puha)",
+    "lean": "Sinitic-heavy - a dragon-court mandarinate enthroned over the horse-clans of the great plains: the silk-banner Celestial Mandate rules from its walled cheng, the eagle-feather horse-chiefs and their grass-and-herd bands serve and ride beneath, their plain/beast/mountain/material words enduring under the Mandarin tongue."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_09 Jinxia (Sinitic / Chinese) x BASE_11 Numina (Plains horse-nomads). CIV/CLAN DECIDED by inheritance: Chinese base = Civilized, Plains base = Clanhold, and any Civ parent -> Civ, so Longmani is Civilized (feudal). Concept: the dragon-court and the great-plains sky - a Sinitic Celestial-Mandate realm whose mandarins and walled cities have absorbed the horse-clans of the open grass; the silk banner flies over the eagle-feather, the mandarin commands beside the horse-chief, the Confucian bureaucracy taxes the buffalo-bands. Backbone = Sinitic (Chinese: the ruling Huangdi/wang court, the five peerages, the scribal mandarinate, the celestial titles); overlay/substrate = Plains (the horse-and-bison clans, the warrior-societies, the open-sky vision-religion, the grass/mountain/beast/material words). Common-word lexicon is a SINGLE fused tongue (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Sinitic reflexes PRIMARY, Plains variants SECONDARY), never real Chinese/Plains gods. NO approved foreign rank-term applies to this pairing - ruler/domain DISPLAY titles are English; the fused conlang ladder lives in ruler_native/domain_native for NPC dialogue. UPDATE 2026-06-28: all human cultures allow Lawful/Neutral/Chaotic; deities via the per-family morph method (Sinitic primary, Plains secondary).",
+  "phonology": {
+    "palette": "Sinitic backbone - monosyllabic morphemes, syllable (C)(G)V(C) with only -n/-ng codas, tones (unmarked), initials incl. zh/ch/sh/x/q/j, NO consonant clusters, surname(1) + given(1-2), celestial titles -di/-jun/-wang - meeting a Plains overlay: Comanche roots (paa water, toya mountain, soni grass, puuku horse, kutsu bison, taabe sun), the barred-u vowel, glottal stops, CV(C) deed-names. Per the CSV: harsh texture with tonal contours - the sharp Sinitic affricates and tonal monosyllables carry Plains roots that have been clipped to fit; grammar shifts toward an SOV polysynthetic isolating frame, the Plains compounding-stems strung onto the isolating Sinitic court-register. Theophoric on the Sinitic celestial reflexes (Tuli-, Aolan-) with Plains vision-name variants (Torawi-, Olanta-).",
+    "phonotactics": "(C)(G)V(C) monosyllables, -n/-ng codas only, no clusters (Sinitic dominant); Plains roots compressed to one or two Sinitic-legal syllables, barred-u -> -u/-o, glottal stops and final -bi/-pu/-tu/-kahni endings dropped; tonal contour-stress with a Plains descriptive compounding pull; surname-first court names over toya-/paa-/soni- Plains feature-stems under -cheng/-shan/-jiang toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "east-asian (sinitic) phonology dominant",
+      "sound_changes": [
+        "Plains exotic phonemes -> Sinitic inventory: barred-u (u) > -u/-o, glottal-stop > 0, doubled vowels (aa/uu) > single",
+        "Plains polysyllabic class-endings drop: final -bi/-pu/-bo/-tu/-kahni > 0; roots clip to one or two (C)(G)V(C) syllables with -n/-ng codas only",
+        "Sinitic tonal monosyllabic shape on all words; no consonant clusters; Sinitic affricates (zh/ch/sh/x/q/j) permitted; Plains stems that end in a vowel may take a Sinitic -n",
+        "retain the Sinitic -di/-jun/-wang court-suffixes and a few signature Plains roots (toya, soni, puku, kutsu, taabe) so both ancestries stay audible"
+      ],
+      "source_tilt": "plain/beast/mountain/material/staple words from Plains roots (the grass-and-herd substrate works the land and rides the horse): toya(mountain), soni(grass-plain), puku(horse), kutsu(bison), sari(hide), tunap(drymeat); rule/kin/court/land/water/abstract words from Sinitic roots (the ruling Mandarin register): jia(house), cheng(city), jiang(river), da(great), sheng(sacred); every root then filtered to one Sinitic-shaped phonology",
+      "portmanteaus": [
+        "city cheng+wai-nuki>chengwai",
+        "fort zhai+tuhuya-kahni>zhaikan",
+        "temple_town miao+tunawa>miaonawa",
+        "citadel chengbao+tekwuni-kahni>chengkuni",
+        "son zi+tua>zitua",
+        "daughter nu+petu>nupetu",
+        "sacred sheng+puha>shengpuha",
+        "horse ma+puuku>mapuku"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Plains plain/beast/mountain/material/staple-roots + Sinitic rule/kin/court/land-roots, all clipped to one Sinitic-shaped tonal monosyllabic phonology; portmanteaus mark the blended institutions and bloodline (the dragon-court married to the horse-clan).",
+    "feature_words": {
+      "river": "jiang",
+      "stream": "xi",
+      "lake": "hu",
+      "sea": "hai",
+      "bay": "wan",
+      "cape": "jiao",
+      "isle": "dao",
+      "mountain": "tuya",
+      "hill": "tuyan",
+      "ridge": "gang",
+      "forest": "lin",
+      "wood": "hupi",
+      "plain": "soni",
+      "marsh": "ze",
+      "ford": "du",
+      "pass": "guan",
+      "vale": "tuka",
+      "coast": "an",
+      "neck": "tahu",
+      "narrows": "xia",
+      "waste": "makon",
+      "road": "chanku",
+      "way": "lu",
+      "track": "ota"
+    },
+    "settlement_words": {
+      "hamlet": "cun",
+      "village": "nuki",
+      "town": "zhen",
+      "city": "chengwai",
+      "fort": "zhaikan",
+      "port": "matou",
+      "market": "shi",
+      "temple_town": "miaonawa",
+      "citadel": "chengkuni"
+    },
+    "kinship": {
+      "son": "zitua",
+      "daughter": "nupetu",
+      "house": "jia",
+      "kin": "zu",
+      "ancestor": "zuzong"
+    },
+    "adjectives": {
+      "great": "da",
+      "little": "xiao",
+      "old": "kuchu",
+      "new": "xin",
+      "black": "tuhu",
+      "white": "tosa",
+      "red": "eka",
+      "golden": "jin",
+      "iron": "tie",
+      "high": "wai",
+      "far": "mana",
+      "sacred": "shengpuha",
+      "fair": "mei"
+    },
+    "resources": {
+      "salt": "yan",
+      "iron": "tie",
+      "bronze": "tong",
+      "silver": "yin",
+      "gold": "jin",
+      "jade": "yu",
+      "silk": "si",
+      "grain": "mi",
+      "horse": "mapuku",
+      "bison": "kutsu",
+      "hide": "sari",
+      "drymeat": "tunap",
+      "feather": "wuya",
+      "tea": "cha"
+    },
+    "directional": {
+      "upper": "shang",
+      "lower": "xia",
+      "north": "bei",
+      "south": "nan",
+      "east": "dong",
+      "west": "xi",
+      "inner": "nei",
+      "outer": "wai"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-cheng (walled city; Sinitic)",
+      "-zhou (province; Sinitic)",
+      "-guan (pass; Sinitic)",
+      "Tuya- (mountain; Plains)",
+      "Soni- (grass-plain; Plains)",
+      "-nuki (camp/place; Plains)"
+    ],
+    "patronymic_form": "the Sinitic ruling court keeps a clan-surname (xing) first + given name, with generation-names in the zu lineage; the Plains horse-clans keep the band/division name (e.g. Kwahada) and the earned deed- or vision-name; the throne fuses both - a xing-surnamed mandarin-house that also claims a horse-band's deed-name.",
+    "gendered_endings": {
+      "male": "auspicious martial/virtue meanings (Sinitic); deed-names, -tu / -kwa (Plains)",
+      "female": "flower/jade/virtue meanings (Sinitic); deed-names, -pi / -tsi (Plains)"
+    },
+    "diminutive_form": "Xiao- (little; Sinitic) / -tsi (Plains)",
+    "compounding_rule": "Sinitic quality/feature + type ([quality]-cheng, Bei-guan) layered over Plains [quality|animal] + feature stems (Eka-tuya red-mountain, Kutsu-soni bison-grassland): the capital Longmani (Dragon-of-the-grass / dragon-people), Jin-cheng (golden-city), Tuya-nuki (the mountain-camp)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Sinitic Celestial-Mandate court over the Plains horse-clans: the Huangdi over wang and the five peerages at the crown, the mandarin-governors over the cheng-cities, the warrior-society horse-chiefs and band-paraibo sworn beneath; the Confucian bureaucracy and the open-sky puha-seers serve the throne)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Nan-tan",
+        "domain_native": "Nan-nuki"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Dudu-wap",
+        "domain_native": "Dudu-soni"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Bo-paraibo",
+        "domain_native": "Boguo"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Hou-akita",
+        "domain_native": "Houguo"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Gong-paraibo",
+        "domain_native": "Gongguo"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Wang-naika",
+        "domain_native": "Wangguo"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Huang-Tabe-di",
+        "domain_native": "Diguo"
+      }
+    },
+    "_tiers_note": "Sinitic court ladder, ascending, with the Plains horse-clan chief co-titles fused beneath. Nan-tan (the baron-nan crossed with the Apache nantan band-chief) barony; Dudu-wap (the frontier dudu military-commandant crossed with the Comanche tekwuniwap war chief) march; Bo-paraibo (count-bo as band peace-chief) county; Hou-akita (marquis-hou over the akicita warrior-societies) duchy; Gong-paraibo (duke-gong as great-chief over several bands) principality; Wang-naika (the wang-king crossed with the Tabe-Naika head-chief) kingdom over a Wangguo; Huang-Tabe-di (the Huangdi crossed with the Pia-Tabe-Naika grand head-chief) empire over the Diguo, holding the Mandate of Heaven (Tianming). The conquered horse-clans keep their paraibo (peace-chief) and puhakatu (medicine-seer) beneath the dragon-court. Rank titles fuse the real Chinese and Plains registers (allowed).",
+    "heir": "Taizi-tua (the crown prince; the throne's son and heir)",
+    "honorifics": {
+      "lord": "Daren / Paraibo",
+      "lady": "Furen / Wa'ipu",
+      "champion": "Wushi (Sinitic warrior) / Tuibitsi-puha (Plains honored brave)",
+      "your_grace": "Dianxia",
+      "elder": "Kuchu-zu (the eldest; Sinitic gu-zu over Plains kuhtsu)"
+    },
+    "vassalage": {
+      "liege": "Jun (sovereign) / Pia-Paraibo",
+      "vassal": "Chen (subject) / Tuibitsi (sworn brave)",
+      "fealty": "Mengyue (sworn covenant) / Puha-tekwa (the sworn word)",
+      "tribute": "Gongfu (Sinitic) / Naraboo (Plains gift-due)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH. No approved foreign term applies to this pairing, so English display titles are used throughout; the *_native fused conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Huang-Tabe-di": "Nuhuang-Tabe-wa'ipu",
+      "Wang-naika": "Nuwang-naika",
+      "Gong-paraibo": "Nugong-paraibo",
+      "Hou-akita": "Nuhou-akita",
+      "Bo-paraibo": "Nubo-paraibo",
+      "Dudu-wap": "Nudu-wap",
+      "Nan-tan": "Nunan-tan"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    }
+  },
+  "people_name_convention": {
+    "order": "the Sinitic ruling court carry a clan-surname (xing) first + given name (+ courtesy-name zi); the Plains horse-clans carry a band/division name + an earned deed/vision-name; order given the court-register surname-first.",
+    "surname_source": [
+      "clan surname (xing, monosyllabic; Sinitic)",
+      "band/division (Plains, e.g. Kwahada)",
+      "courtesy-name (zi) for the learned",
+      "earned deed/vision-name (Plains)"
+    ],
+    "dual_register": "the Sinitic mandarin-court keep xing + ming + a courtesy-name (zi) and sobriquet (hao); the Plains horse-clans keep a band-name + an earned deed- or vision-name (animal + quality), rendered in the usual way.",
+    "theophoric": "Sinitic devotional invoking the celestial reflexes' virtues rather than the god-name directly (Tian-en, heaven's grace; a temple-name honoring Tuli-di); Plains vision-sign names under the powers (a war-vision under Maraksa, the morphed Maraxus).",
+    "diminutive": "Xiao- (little; Sinitic) / -tsi (Plains)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Sinitic celestial reflexes PRIMARY (family_east_asian.json theonym_sets.sinitic), Plains variants SECONDARY (family_north_american.json theonym_sets.plains), never real Chinese/Plains gods. A Celestial Bureaucracy under the Mandate of Heaven married to the open-sky vision-religion: the One (Aiteng / Plains Ateruna) presides as Highest Heaven; the Lawful powers are the celestial officials (-di emperors, -jun lords) AND the sky-and-earth powers met on the high plain; the Neutral honor the ancestral zu and the band-dead through Confucian rite and the vision-quest (puha) alike.",
+    "the_one": "Aiteng (< Aeternus; the Highest Heaven, source of the Mandate; Plains Ateruna, the Great-Above - served not petitioned)",
+    "sample_deity_renames": {
+      "Tulrius": "Tuli-di (Sinitic, the Sun-Justice Emperor; Plains Torawi the Sun)",
+      "Gaiandus": "Gaidun-di (Sinitic, the Earth Emperor, lord of mountains; Plains Kayanta the enduring earth)",
+      "Orlandus": "Aolan-jun (Sinitic, the Iron-Oath War Lord; Plains Olanta of the bound oath)",
+      "Numeno": "Numeng-jun (Sinitic, the Sage Lord of the winds; Plains Nimawi the sky-wisdom)",
+      "Realta": "Lianta-mu (Sinitic, the Mother of Mercy; Plains Reawina the life-giver)"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Aiteng the Highest Heaven, Tuli-di the just sun, Aolan-jun of the sworn war, Lianta-mu the merciful (Plains Torawi, Olanta, Reawina honored at the high plain) - and names the Chaotic powers mo (demon-marshals) or the war-fire raiders, warded; the Mandate's law and the medicine-bond bind alike",
+      "Neutral": "the ancestral zu (the deified court-dead and band-dead) and the local earth-and-grain powers and animal-spirits; the great powers invoked at the Miao-temple and the vision-bluff situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon - Maluo the war-fire (Plains Maraksa), the raider-marshals - and names the Lawful powers and Aiteng/Ateruna as the cold sky-tyrants and the throne's chains, to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as mo (Sinitic demon-marshals) or the demonized sky-tyrants (Plains), keep their morphs + an epithet: Maraxus -> Maluo the War-Fire Marshal (Plains Maraksa the Raider); Vacidus -> Wuci the Devourer (Plains Vachita the Empty-Maw); Lusanto -> Lusan the Coin-Serpent (Plains Lusanta the Greed-Worm).",
+    "clergy_ladder": {
+      "1": "Daoshi-tu (acolyte) / Puhakatu-tua (medicine-novice)",
+      "3": "Daoshi (priest) / Puhakatu (medicine-man)",
+      "5": "Fashi (ritual-master) / Pia-puhakatu (great medicine-man)",
+      "7": "Gaogong (high priest) / Numunu-puhakatu (the band's high seer)",
+      "9": "Tianshi (celestial master) / Naika-puhakatu (the council's great seer)"
+    },
+    "religious_orders_pattern": "the Miao (temple) of [power] in the cheng-cities: 'the Miao of Tuli-di'; the ancestral Ci (clan-shrine) for the zu; on the open plain, the medicine-cairn or vision-bluff of [power]: 'the Medicine-Bluff of Maraksa'.",
+    "saints_pattern": "deified heroes and worthy officials enrolled in the celestial register, AND the great horse-chiefs and vision-seers who became sky- and animal-spirits; honored at the Ci (ancestral shrine) and Miao, and at the burial-scaffold and medicine-cairn.",
+    "holy_symbol_motifs": {
+      "Tuli-di": "a red sun-disc above the scales and seal of office, ringed by an eagle-feather circle",
+      "Gaidun-di": "a green mountain over the grain-altar and the open grass",
+      "Aolan-jun": "an iron blade crossed with the silk war-banner over a horse-clan lance"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-junk and war-junk of the great rivers, and the famed war-horses of the plains: 'the Jade Dragon', 'the Heaven-Mandate', 'Storm-Runner' (a famed horse), 'the Grass-Eater'",
+    "military_units": "the [general] Ying (camp/army) and the [color] Banner of the court, the warrior-societies of the clans: 'the Tiger Ying', 'the Azure Banner', 'the Dog-Soldiers', 'the Eagle-Feather society'",
+    "taverns": "'The [Adjective] [Noun]': 'The Jade Cup', 'The Dragon and Lance', 'The Plum-Blossom Inn'",
+    "dungeons_ruins": "fallen warlord cheng and tomb-mounds, and old burial-scaffolds and spirit-haunted buttes: 'the Ruined Cheng of [warlord]', 'the Tomb of [name]', 'the Ghost-Butte of [chief]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Yunlong",
+      "Zhiyuan",
+      "Jianjun",
+      "Mingyuan",
+      "Shenglong",
+      "Baoshan",
+      "Tianyou",
+      "Ruihu",
+      "Tuya-Long",
+      "Eka-Wushi",
+      "Kutsu-Ming",
+      "Soni-Jun",
+      "Puku-Hu",
+      "Tabe-Yong",
+      "Mapuku-Zhi",
+      "Olan-Bo"
+    ],
+    "personal_f": [
+      "Lihua",
+      "Yurong",
+      "Meixiang",
+      "Fenghua",
+      "Yuyan",
+      "Caiyun",
+      "Lanying",
+      "Qingzhao",
+      "Tosa-Hua",
+      "Eka-Mei",
+      "Soni-Lan",
+      "Reawi-Yun",
+      "Tabe-Pei",
+      "Lianta-Mei",
+      "Pia-Rong",
+      "Wuya-Cui"
+    ],
+    "clan_houses": [
+      "the Long-zu (the dragon-court ruling house)",
+      "Li (a mandarin xing)",
+      "Wang (a mandarin xing)",
+      "Zhao (a mandarin xing)",
+      "Ma (the horse-xing court-house)",
+      "Kwahada-zu (the Antelope horse-band)",
+      "Penateka-zu (the Honey-Eater band)",
+      "Kotsoteka-zu (the Bison-Eater band)",
+      "Nokoni-zu (the Wanderer band)",
+      "the Tabe-zu (the sun-chief lineage)",
+      "the Eka-zu (the Red-Lance society-house)",
+      "the Hu-zu (the Tiger court-house)"
+    ],
+    "epithets_cognomina": [
+      "the Tiger (Hu)",
+      "the Dragon-of-the-Grass",
+      "Cloud-rider",
+      "the Loyal (Zhong)",
+      "Eagle-Feather",
+      "the Far-Rider",
+      "Jade-Lance",
+      "Sound-of-the-Sun"
+    ],
+    "flagship_settlements": [
+      "Longmani (the chief seat - the dragon-court of the grass)",
+      "Jincheng (the golden walled city)",
+      "Tuya-cheng (the mountain city)",
+      "Soni-zhou (the grass-plain province)",
+      "Mapuku-nuki (the great horse-camp)",
+      "Tuli-miao (the sun-temple town)"
+    ]
+  }
+}

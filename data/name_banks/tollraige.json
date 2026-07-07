@@ -1,0 +1,451 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Cland Connlann",
+      "the Cland Branach",
+      "the Fine Cathal",
+      "the O-Niallan",
+      "Ch'ib'al Balam",
+      "Ch'ib'al K'uk'",
+      "Ch'ib'al Kan",
+      "Ch'ib'al Mo'",
+      "the Cland Fergusan",
+      "Ch'ib'al Tz'ikin",
+      "Ch'ib'al Yax",
+      "the Fine Domnall",
+      "Macconnlann",
+      "Maccu-toran",
+      "Macbranach",
+      "Macmael-orlann",
+      "Macdomnall",
+      "Macniallan",
+      "Macconchobar",
+      "Macgilla-toran",
+      "Macfergusan",
+      "Maccathal",
+      "Macaj-balam",
+      "Macaj-k'uk'"
+    ],
+    "epithet": [
+      "the Hound",
+      "Jaguar-coat",
+      "the Red",
+      "of the Cenote",
+      "the Cattle-lord",
+      "Pyramid-crowned",
+      "the Far-raider",
+      "the Sun-faced",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Golden",
+      "the Iron"
+    ],
+    "feature": [
+      "Alainnacalche",
+      "Amuighagha",
+      "Ardbeach",
+      "Banbeagha",
+      "Beagbeil",
+      "Bobhitis",
+      "Creumhacacnabh",
+      "Cucaib",
+      "Deargcail",
+      "Deisceartcax",
+      "Dubhchacan",
+      "Fadachaltun",
+      "Iarannchea",
+      "Iarthargom",
+      "Iochtarhalabh",
+      "Istighiochagh",
+      "Iximol",
+      "Milbalchnabh",
+      "Morninn",
+      "Nemchuilpachnabh",
+      "Nuapeiten",
+      "Oirthearpuch",
+      "Orgasacbhe",
+      "Sacmascabhtsonad",
+      "Seanxocbhil",
+      "Tabhacalche",
+      "Tacinagha",
+      "Tuaisceartbeach",
+      "Uachtarbeagha",
+      "Yaxtunbeil"
+    ],
+    "military_unit": [
+      "s war-host and the warrior-societies:",
+      ","
+    ],
+    "personal_female": [
+      "Brigan",
+      "Niamhin",
+      "Realtan-nat",
+      "Etan",
+      "Mor-rin",
+      "Deirdin",
+      "Gilla-Realtan",
+      "Findan",
+      "Ix-K'uk'",
+      "Ix-Sak-Nik",
+      "Ix-Chan",
+      "Ix-Bolon",
+      "Ix-Nik",
+      "Ix-Muwan",
+      "Cu-Torin",
+      "Branin",
+      "Niallin",
+      "Gilla-Torin",
+      "Fergusin",
+      "Aj-Muwin",
+      "Aj-Kin",
+      "Gaian",
+      "Gaianin",
+      "Numan",
+      "Numanin",
+      "Orlann",
+      "Orlannin",
+      "Realtan",
+      "Realtanin",
+      "Toran",
+      "Toranin"
+    ],
+    "personal_male": [
+      "Connlann",
+      "Cu-Toran",
+      "Branach",
+      "Mael-Orlann",
+      "Domnall",
+      "Niallan",
+      "Conchobar",
+      "Gilla-Toran",
+      "Fergusan",
+      "Cathal",
+      "Aj-Balam",
+      "Aj-K'uk'",
+      "Aj-Took'",
+      "Aj-Chak-Ek'",
+      "Aj-Muwan",
+      "Aj-Tz'ikin",
+      "Aj-Kan",
+      "Aj-Bolon",
+      "Niamhan",
+      "Realtan-an",
+      "Mor-ran",
+      "Deirdan",
+      "Gaian",
+      "Gaianan",
+      "Numan",
+      "Numanan",
+      "Orlann",
+      "Orlannan",
+      "Realtan",
+      "Realtanan",
+      "Toran",
+      "Toranan"
+    ],
+    "settlement": [
+      "Xochidon",
+      "Noh-Cathair",
+      "Dun-derg",
+      "Chak-Ha'",
+      "Toran-Witz",
+      "Rath-mor-Yaaxtun",
+      "Alainnbeagha",
+      "Amuighcach",
+      "Ardcathcach",
+      "Banciuic",
+      "Beagcuanho",
+      "Bodunbha",
+      "Creumhamol",
+      "Cucnemnach",
+      "Deargnochach",
+      "Deisceartotach",
+      "Dubhpachnabh",
+      "Fadarathbha",
+      "Iarannbeagha",
+      "Iartharcach",
+      "Iochtarcathcach",
+      "Istighciuic",
+      "Iximcuanho",
+      "Milbalchdunbha",
+      "Mormol",
+      "Nemchuilnemnach",
+      "Nuanochach",
+      "Oirthearotach",
+      "Orgapachnabh",
+      "Sacmascabhrathbha",
+      "Seanbeagha",
+      "Tabhcach",
+      "Tacincathcach",
+      "Tuaisceartciuic",
+      "Uachtarcuanho",
+      "Yaxtundunbha",
+      "Alainnmol",
+      "Amuighnemnach",
+      "Ardnochach",
+      "Banotach"
+    ],
+    "ship": [
+      "the Jade Hound",
+      "Pride of the Abha",
+      "the Quetzal Prow"
+    ],
+    "tavern": [
+      "-court:",
+      ",",
+      "The Alainn Bo",
+      "The Ard Creumha",
+      "The Ban Cuc",
+      "The Beag Iarann",
+      "The Dearg Ixim",
+      "The Dubh Milbalch",
+      "The Fada Sacmascabh",
+      "The Iarann Tabh",
+      "The Mor Tacin",
+      "The Nemchuil Yaxtun"
+    ]
+  },
+  "culture_id": "tollraige",
+  "family": [
+    "celtic",
+    "mesoamerican"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_tollraige.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "tollraige",
+  "lexicon": {
+    "adjectives": {
+      "black": "dubh",
+      "fair": "alainn",
+      "far": "fada",
+      "golden": "orga",
+      "great": "mor",
+      "high": "ard",
+      "iron": "iarann",
+      "little": "beag",
+      "new": "nua",
+      "old": "sean",
+      "red": "dearg",
+      "sacred": "nemchuil",
+      "white": "ban"
+    },
+    "directional": {
+      "east": "oirthear",
+      "inner": "istigh",
+      "lower": "iochtar",
+      "north": "tuaisceart",
+      "outer": "amuigh",
+      "south": "deisceart",
+      "upper": "uachtar",
+      "west": "iarthar"
+    },
+    "feature_words": {
+      "bay": "caib",
+      "cape": "ninn",
+      "cenote": "tsonad",
+      "coast": "pachnabh",
+      "ford": "beagha",
+      "forest": "cax",
+      "hill": "mol",
+      "isle": "peiten",
+      "lake": "nabh",
+      "marsh": "acalche",
+      "mountain": "bhitis",
+      "narrows": "halabh",
+      "neck": "cail",
+      "pass": "beach",
+      "plain": "chacan",
+      "ridge": "puch",
+      "river": "agha",
+      "road": "sacbhe",
+      "sea": "cacnabh",
+      "stream": "iochagh",
+      "track": "xocbhil",
+      "vale": "gom",
+      "waste": "chaltun",
+      "way": "beil",
+      "wood": "chea"
+    },
+    "resources": {
+      "bronze": "creumha",
+      "cattle": "bo",
+      "feather": "cuc",
+      "gold": "tacin",
+      "grain": "ixim",
+      "iron": "iarann",
+      "jade": "yaxtun",
+      "mead": "milbalch",
+      "salt": "tabh",
+      "silver": "sacmascabh"
+    },
+    "settlement_words": {
+      "citadel": "rathbha",
+      "city": "cathcach",
+      "fort": "dunbha",
+      "hamlet": "otach",
+      "market": "ciuic",
+      "port": "cuanho",
+      "temple_town": "nemnach",
+      "town": "nochach",
+      "village": "cach"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Goidelic compound ([quality|feature](stem) + element: Dun-derg red-fort, Ard-mor great-height) layered over Maya place-compounds (-kah/-witz/-ha', Noh-, Chak-/Ek-): the capital Xochidon (the flower-fort, Xochi- + dun/don), Noh-Cathair (the great pyramid-city), the clans seated on the carved witz; Dun-/Rath- for the steadings.",
+    "gendered_endings": {
+      "female": [
+        "in",
+        "nat"
+      ],
+      "male": [
+        "an",
+        "ach"
+      ]
+    },
+    "patronymic_form": "the Goidelic ruling clans keep the Mac- (son of) / O-Ua (descendant of) patronymic and the fine/cland kin-name; the Maya populace keep the ch'ib'al (lineage) with aj- (he of) / ix- (she of) and the calendar-day name; the throne fuses both - a ri who also carries a ch'ib'al house-style. Renowned warriors take an earned deed- or animal-name (the Hound, the Jaguar).",
+    "toponymic_suffixes": [
+      "Dun-",
+      "Rath-",
+      "Baile-",
+      "Ard-",
+      "kah",
+      "witz",
+      "ha'",
+      "Noh-"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "vine-choked pyramids and fallen Goidelic raths: 'the lost Witz of [ajaw]', 'the Sunken Cenote of [name]', 'the Howe of the [cland]'",
+    "military_units": "the ri's war-host (the slua) and the warrior-societies: 'the Slua of Xochidon', 'the Hound-band of Orlann', 'the Jaguar Holkan'",
+    "ships": "river-canoes and coastal war-galleys: 'the Jade Hound', 'Pride of the Abha', 'the Quetzal Prow'",
+    "taverns": "'The [Adjective] [Noun]' and the balche'-court: 'The Bronze Cauldron', 'The Hound and Stela', 'the Cacao House'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic.json theonym_set.forms), Mayan variants SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real Celtic/Maya gods (no Lugh, Brigid, Dagda; no Itzamna, Kukulkan, Chaac, Kinich Ahau). Shared pantheon, two registers. Xochidon allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Goidelic nemed (sacred grove) and the Maya witz (pyramid) are both altars; the Long-Count calendar and the bardic-druidic lore bind the ri to the powers.",
+    "clergy_ladder": {
+      "1": "Gilla-nemed (grove-servant) / Ah-miatz (novice-scribe)",
+      "3": "Drui (druid-priest) / Ah-k'in (sun-priest, day-keeper)",
+      "5": "Ard-drui (high druid) / Ah-k'uhun (god-keeper priest)",
+      "7": "Uasal-drui (noble druid) / Nakom-k'in (sacrificer-priest)",
+      "9": "Primh-drui (chief druid) / Ah-k'in Mai (high priest)"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as demons under Lawful or Neutral worship, keep their morphs + an epithet: Maraxus -> Maragan the War-Brand (Maya Marakab the City-Burner); Vacidus -> Faicid the Unmaker (Maya Wakix the Devourer); Lusanto -> Losand the Hoard-Worm (Maya Lusankaan the Feathered Serpent). Under Chaotic worship the One and the Lawful powers are the enemy-gods (Eternan the Tyrant-Sky, Toran the Cold-Sun).",
+    "holy_symbol_motifs": {
+      "Gaian": "the cattle-field beneath the green pyramid",
+      "Orlann": "an iron sword crossed with the jaguar-pelt",
+      "Toran": "a sun-disc over the bardic-knotwork and the bloodletting-stela"
+    },
+    "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or the K'uh-nah (Maya god-house) atop the witz (pyramid) of [power]: 'the Nemed of Toran', 'the K'uh-nah of Tulax'.",
+    "saints_pattern": "the deified ri and clan-champions (the sinsear, honored at the howe and the carved pillar-stone) and the deified k'uhul ajaw ancestors (the uchben, honored at the pyramid-tomb and the glyph-stela).",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaian (Maya Kayanab) - the enduring earth, the maize-ground",
+      "Numeno": "Numan (Maya Numench) - air, lightning, sky-wisdom",
+      "Orlandus": "Orlann (Maya Orlanab) - iron, oath, war",
+      "Realta": "Realtan (Maya Ix Rialtaj) - the mother, mercy",
+      "Tulrius": "Toran (Maya Tulax) - the sun and justice"
+    },
+    "the_one": "Eternan (Goidelic; Maya Aj Ternaj) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "venerates the Chaotic powers of the canon, chief among them Maragan the war-fire (Maya Marakab the City-Burner) and the feathered hoard-serpent Losand (Maya Lusankaan); the One (Eternan) and the Lawful powers are reviled as the tyrant-gods to be defied; the war-frenzy of the cattle-raid and the offered heart atop the witz are kindred rites",
+      "Lawful": "venerates the Lawful powers - Eternan the One foremost, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers demons to be warded; the bardic law-lore and the Long-Count rite bind alike",
+      "Neutral": "the ancestral war-dead (the sinsear of the ruling clans, the deified ri honored at the howe) and the city-powers of the k'uhul-kah and the uchben of the ch'ib'al, the powers of grove, peak and pyramid invoked situationally; the great powers petitioned at the nemed and the witz as need demands"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Goidelic clanhold ladder, ascending, with the Maya substrate co-titles beneath. Flaith (noble-lord) barony over a Flaithes; Flaith-criche (border-lord) march over a Crich (border); Toisech (clan-chief) county; Tigerna (lord of a domain) duchy; Ri-tuaithe (king of a tuath) principality over a Tuath (petty kingdom); Ruiri (over-king) kingdom over a Ruirecht; Ard-ri (high king) empire over the Ard-rige (high-kingship). The conquered cities keep their Maya ajaw (lord) and sajal (governor) and the ah-k'in (sun-priest) beneath the Goidelic crown. The brithem (judge) and the fili/ollam (poet-sage) stand outside the ladder, as do the Maya glyph-scribes. Rank titles fuse the real Goidelic and Maya registers (allowed).",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Ard-ri": "Ard-rigan",
+      "Flaith": "Banfhlaith",
+      "Flaith-criche": "Banfhlaith-criche",
+      "Ri-tuaithe": "Rigan-tuaithe",
+      "Ruiri": "Ruirigan",
+      "Tigerna": "Bantigerna",
+      "Toisech": "Bantoisech"
+    },
+    "government": "feudal (a Goidelic war-aristocracy over the Maya temple-cities: the ard-ri and his flaith-kin at the crown, the ri-tuaithe over the k'uhul-kah cities, the cu-retainers (hound-champions) sworn to the war-host; the ah-k'in priesthood and the glyph-scribes of the ch'ib'al serve beneath)",
+    "heir": "Tanaiste (the chosen heir; the second after the ri)",
+    "honorifics": {
+      "champion": "Cu (the Hound; Goidelic champion) / Holkan (Maya warrior)",
+      "elder": "Sinsear (the elder) / Chilam",
+      "lady": "Bantigerna / Ix-Ajaw",
+      "lord": "Tigerna / Ajaw",
+      "your_grace": "A thigerna"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Flaithes",
+        "ruler": "Baron",
+        "ruler_native": "Flaith"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Toisecht",
+        "ruler": "Count",
+        "ruler_native": "Toisech"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Tigernas",
+        "ruler": "Duke",
+        "ruler_native": "Tigerna"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Ard-rige",
+        "ruler": "Emperor",
+        "ruler_native": "Ard-ri"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Ruirecht",
+        "ruler": "King",
+        "ruler_native": "Ruiri"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Crich",
+        "ruler": "Marquis",
+        "ruler_native": "Flaith-criche"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Tuath",
+        "ruler": "Prince",
+        "ruler_native": "Ri-tuaithe"
+      }
+    },
+    "vassalage": {
+      "fealty": "Mionn (the oath) / Patan-t'an (Maya oath of service)",
+      "liege": "Tigerna",
+      "tribute": "Cain (Goidelic render) / Patan (Maya tribute)",
+      "vassal": "Cele (client) / Yajaw (Maya under-lord)"
+    }
+  }
+}

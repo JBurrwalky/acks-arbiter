@@ -20,6 +20,7 @@ func run_all_tests() -> void:
 	test_stronghold_formula()       # pure unit test of the stronghold↔territory formula
 	test_coastal_seat_placement()   # pure unit test of coast-aware town placement
 	test_dungeon_level_bell()       # pure statistical test of the dungeon-level bell sampler
+	test_model_e_up_tribute()       # hand-built unit test of war-vassal crown up-tribute (Model E)
 	var cid := _generate(424242)  # generated, NOT yet locked
 	if not cid.is_empty():
 		# Order matters: guard runs while unlocked; then we lock and materialize.
@@ -41,6 +42,7 @@ func run_all_tests() -> void:
 		test_beastman_ruler_direct(cid)         # exercises the monster-ruler path directly
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
+		test_frontier_growth(cid)               # asserts the rolling-frontier growth (M2 rolling)
 	if not has_failures():
 		print("SettingMaterializationTests: all tests passed (%d checks)" % test_count())
 
@@ -223,13 +225,16 @@ func test_political_layer_materialized(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NULL AND tribute_out_owed != 0", [cid]) == 0,
 		"sovereign domains owe no tribute")
 
-	# War-vassal crowns owe realm-scaled up-tribute to their overlord even though their
-	# personal families are 0 (Model E: leaves carry the population). They are the only
-	# families=0 domains with a liege AND tribute>0 — interior ladder nodes owe 0.
-	var warvassals_with_pop := _scalar("SELECT COUNT(*) AS n FROM setting_polities sp WHERE sp.campaign_id = ? AND sp.liege_id != '' AND sp.liege_id != '0' AND (SELECT COALESCE(SUM(population_band),0) FROM setting_hexes WHERE campaign_id = sp.campaign_id AND owner_polity_id = sp.id) > 0", [cid])
-	if warvassals_with_pop > 0:
-		check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND peasant_families = 0 AND tribute_out_owed > 0", [cid]) > 0,
-			"war-vassal crowns owe realm-scaled up-tribute (families=0, tribute>0)")
+	# Model E: a laddered war-vassal CROWN (a conquered realm's seat) carries 0 personal
+	# families — its realm population lives in leaf domains — yet owes realm-scaled
+	# up-tribute to its overlord, while INTERIOR ladder nodes owe 0. Whether a
+	# conquered-realm crown arises at all is WORLD-DEPENDENT (some seeds produce a flat
+	# tree of leaf vassals with no families=0 crown), so we verify the INVARIANT rather
+	# than require the structure to exist for this seed: every families=0 laddered
+	# domain owes a NON-NEGATIVE tribute (interior nodes 0, crowns >0). The up-tribute
+	# mechanism itself is covered by the "at least one vassal owes tribute" check above.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND peasant_families = 0 AND tribute_out_owed < 0", [cid]) == 0,
+		"no families=0 laddered crown owes negative tribute (Model-E up-tribute is non-negative)")
 
 	# Population CONSERVED (gdd §15.3 / contract §6b): leaf domains tile every populated
 	# owned hex; interior nodes + laddered crowns hold 0 personal families; in-window
@@ -358,6 +363,115 @@ func test_dungeon_level_bell() -> void:
 	check(fc[0] > 2400 and fc[1] > 2400 and fc[2] > 2400, "weighted pick is proportional (flat ≈ uniform)")
 
 
+## Model-E war-vassal up-tribute — a DEDICATED, deterministic regression guard for
+## SettingMaterializer._set_war_vassal_tribute (Pass 5). This does NOT depend on a
+## generated world producing the structure (the integration check at
+## test_political_layer_materialized only verifies the non-negative INVARIANT, because
+## whether seed 424242 yields a families=0 laddered war-vassal crown is world-dependent).
+## Here we BUILD the structure by hand and drive the materializer's own tribute code on it:
+##
+##   Overlord realm (sovereign)
+##     └─ Conquered realm  — war-vassalized to the overlord; its CROWN carries 0 personal
+##        │                   families (Model E: the realm population lives in leaf sub-vassals)
+##        ├─ Interior March node (families=0, same realm)   ← must owe 0
+##        │    └─ Leaf Barony (families>0)                   ← the population-bearing leaf
+##        └─ Sub-vassal realm — war-vassalized to the conquered realm (its own population)
+##
+## Asserts the conquered crown owes a POSITIVE, REALM-scaled up-tribute (scaled to own +
+## transitive war-vassal families, NOT own families alone, NOT a per-title leaf rate), the
+## sub-vassal crown owes its own realm-scaled tribute, the sovereign overlord owes nothing,
+## and interior ladder nodes owe 0. Fully hand-built — no RNG, no seed — so it is identical
+## across runs.
+func test_model_e_up_tribute() -> void:
+	var m := SettingMaterializer.new()
+	var db = CampaignRepository.db
+	var cid := CampaignRepository.create_campaign("Model-E up-tribute", "Testaria")
+	check(cid != "", "fixture campaign created")
+	if cid == "":
+		return
+
+	# Realm populations live in setting_hexes owned by each polity (this is what
+	# _polity_peasant_families — and thus the realm-family total — reads). Crowns hold 0
+	# personal families; the population is the polity's owned-hex population_band.
+	const OVER_FAM := 200
+	const CONQ_FAM := 6000
+	const SUB_FAM := 500
+	for h in [[0, 0, OVER_FAM, "pol_over"], [1, 0, CONQ_FAM, "pol_conq"], [2, 0, SUB_FAM, "pol_sub"]]:
+		db.query_with_bindings(
+			"INSERT INTO setting_hexes (campaign_id, q, r, population_band, owner_polity_id, territory_class) VALUES (?, ?, ?, ?, ?, 'civilized')",
+			[cid, h[0], h[1], h[2], h[3]])
+
+	# Polity dicts — only the keys _create_crown_domain / _set_war_vassal_tribute read.
+	var p_over := {"id": "pol_over", "liege_id": "", "civ_or_clan_state": "civ", "title": "Duchy", "culture_id": "testers", "capital_q": 0, "capital_r": 0, "ruler_class": "fighter", "name": "Overlord Duchy", "alignment": "neutral"}
+	var p_conq := {"id": "pol_conq", "liege_id": "pol_over", "civ_or_clan_state": "civ", "title": "County", "culture_id": "testers", "capital_q": 1, "capital_r": 0, "ruler_class": "fighter", "name": "Conquered County", "alignment": "neutral"}
+	var p_sub := {"id": "pol_sub", "liege_id": "pol_conq", "civ_or_clan_state": "civ", "title": "Barony", "culture_id": "testers", "capital_q": 2, "capital_r": 0, "ruler_class": "fighter", "name": "Sub Barony", "alignment": "neutral"}
+	var ordered := [p_over, p_conq, p_sub]  # sovereign-first, as _topo_order_polities produces
+	var by_id := {"pol_over": p_over, "pol_conq": p_conq, "pol_sub": p_sub}
+
+	# Build crowns in topo order, threading crown_by_pid so each war-vassal crown lieges to
+	# its overlord crown — exactly as materialize() Pass 1 does. has_ladder=true ⇒ crown
+	# families=0 (the conquered/sub crowns); the sovereign overlord keeps its own families.
+	var crown_by_pid := {}
+	var crown_over := m._create_crown_domain(cid, p_over, crown_by_pid, false)
+	crown_by_pid["pol_over"] = crown_over
+	var crown_conq := m._create_crown_domain(cid, p_conq, crown_by_pid, true)
+	crown_by_pid["pol_conq"] = crown_conq
+	var crown_sub := m._create_crown_domain(cid, p_sub, crown_by_pid, true)
+	crown_by_pid["pol_sub"] = crown_sub
+	check(crown_over != "" and crown_conq != "" and crown_sub != "", "three crown domains created")
+
+	# The conquered crown is a laddered war-vassal crown: 0 personal families, lieged up.
+	check(_scalar("SELECT peasant_families AS n FROM domains WHERE id = ?", [crown_conq]) == 0,
+		"conquered crown carries 0 personal families (Model E)")
+	check(_scalar_str("SELECT liege_domain_id AS v FROM domains WHERE id = ?", [crown_conq]) == crown_over,
+		"conquered crown lieges to the overlord crown (laddered: liege_domain_id set)")
+
+	# Interior March node (families=0) + a population-bearing leaf Barony beneath it — the
+	# conquered realm's own internal ladder. Rulers stay abstract (owner NULL).
+	var interior := CampaignRepository.create_domain({"campaign_id": cid, "name": "Interior March", "domain_style": "civilized", "territory_type": "civilized", "establishment_method": "generated"})
+	db.query_with_bindings("UPDATE domains SET peasant_families = 0, liege_domain_id = ?, realm_title = 'Marquis' WHERE id = ?", [crown_conq, interior])
+	var leaf := CampaignRepository.create_domain({"campaign_id": cid, "name": "Leaf Barony", "domain_style": "civilized", "territory_type": "civilized", "establishment_method": "generated"})
+	db.query_with_bindings("UPDATE domains SET peasant_families = ?, liege_domain_id = ?, realm_title = 'Baron' WHERE id = ?", [OVER_FAM, interior, leaf])
+
+	# DRIVE the actual Model-E up-tribute pass (no Pass 4 here — interior/leaf tribute stays
+	# at the create_domain default of 0, so any non-zero on the interior would be a Pass-5 leak).
+	m._set_war_vassal_tribute(cid, ordered, by_id, crown_by_pid)
+
+	# Expected up-tribute = bankers_round(18 × realm_families^0.6 × 100) cp, realm-scaled.
+	var realm_conq := CONQ_FAM + SUB_FAM   # own + transitive war-vassal families
+	var expected_conq := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(realm_conq)) * 100.0)
+	var own_only_conq := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(CONQ_FAM)) * 100.0)
+	var expected_sub := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(SUB_FAM)) * 100.0)
+
+	# The conquered crown owes the positive, realm-scaled up-tribute.
+	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [crown_conq]) == expected_conq,
+		"conquered war-vassal crown owes realm-scaled up-tribute (%d cp)" % expected_conq)
+	check(expected_conq > 0, "Model-E up-tribute is strictly positive")
+	# It is scaled to the REALM total (own + transitive sub-vassal), not own families alone.
+	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [crown_conq]) > own_only_conq,
+		"up-tribute scales to the realm total (own+transitive %d), not own families alone (%d)" % [expected_conq, own_only_conq])
+	# The sub-vassal crown (war-vassal of the conquered realm) owes its OWN realm-scaled tribute.
+	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [crown_sub]) == expected_sub and expected_sub > 0,
+		"sub-vassal crown owes its own realm-scaled up-tribute (%d cp)" % expected_sub)
+	# The sovereign overlord owes nothing (no overlord → skipped by Pass 5).
+	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [crown_over]) == 0,
+		"sovereign overlord crown owes no up-tribute")
+	# Interior ladder node (families=0, same realm) owes 0 — Pass 5 only touches crowns.
+	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [interior]) == 0,
+		"interior ladder node (families=0) owes 0 after up-tribute pass (crown-only)")
+
+	# And the per-title abstract resolver (materialize() Pass 4) agrees: the families=0
+	# interior node owes 0, while the population-bearing leaf DOES owe per-title tribute.
+	db.query_with_bindings("SELECT * FROM domains WHERE id = ?", [interior])
+	var interior_row: Dictionary = db.query_result[0]
+	check(AbstractTributeResolver.compute_tribute_owed(interior_row) == 0,
+		"interior ladder node owes 0 by the abstract resolver (families=0)")
+	db.query_with_bindings("SELECT * FROM domains WHERE id = ?", [leaf])
+	var leaf_row: Dictionary = db.query_result[0]
+	check(AbstractTributeResolver.compute_tribute_owed(leaf_row) > 0,
+		"the population-bearing leaf owes per-title tribute (the realm population pays piecemeal)")
+
+
 func test_region_map_materialized(cid: String) -> void:
 	var rid := str(_mat_result.get("region_map_id", ""))
 	check(rid != "", "region_map_id returned")
@@ -404,11 +518,14 @@ func test_region_map_materialized(cid: String) -> void:
 	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ? AND (elevation NOT IN ('flat','hills','mountains') OR biome NOT IN ('clear','woods','jungle','swamp','desert') OR civilization NOT IN ('civilized','borderlands','wilderness'))", [rid]) == 0,
 		"all region terrain values valid")
 
-	# Natural variation: children inherit (inheritance dominates) but are NOT all
-	# identical to their parent (the variation passes ran).
+	# Natural variation: 6-mile children carry the continuous field's REAL sub-hex
+	# terrain — neither all identical to the 24-mile parent (the field varies) nor
+	# all different (a parent's character still broadly carries). The legacy
+	# "inheritance dominates" deviation-budget is retired by continuous-geography
+	# (gdd-continuous-geography.md §5.6 / hex-subdivision §6).
 	var v := _region_variation(rid, wid)
 	check(int(v["differ"]) > 0, "some children vary from their parent (%d differ)" % int(v["differ"]))
-	check(int(v["same"]) > int(v["differ"]), "inheritance dominates (same %d > differ %d)" % [int(v["same"]), int(v["differ"])])
+	check(int(v["same"]) > 0, "children still partly match the parent character (%d same)" % int(v["same"]))
 
 	# M2b-2: domains whose 24-mile seat is in the window are located on the play map,
 	# and their realms are promoted to 'tracked'.
@@ -439,7 +556,11 @@ func test_settlements_materialized(cid: String) -> void:
 	var nc := int(_mat_result.get("county_settlement_count", 0))
 	check(placed + nc == _count("settlement_entrances", "map_id", rid),
 		"settlement_count + M4-2 County settlements match settlement_entrances on the region map")
-	check(placed > 0, "≥1 settlement placed in the start region (%d)" % placed)
+	# A tiny/short world can materialize with NO urban settlement — only the realm-head /
+	# County seats (the all-Class-VI case the test_start_position note below anticipates).
+	# The region still always has ≥1 settlement (urban OR seat); the urban-specific checks
+	# further down are gated on urban settlements having actually emerged.
+	check(placed + nc > 0, "≥1 settlement (urban or County seat) in the start region (%d+%d)" % [placed, nc])
 	# M4-2 settlements attach to County+ realm-head seats, NEVER to Marquis/Baron sub-fiefs
 	# (those are hamlets/watchtowers — no market). And no settlement is below Class VI.
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se JOIN domains d ON se.parent_domain_id = d.id WHERE se.map_id = ? AND d.establishment_method = 'materialized_subfief'", [rid]) == 0,
@@ -461,14 +582,21 @@ func test_settlements_materialized(cid: String) -> void:
 		"settlement parent_domain_id resolves to a domain")
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND parent_domain_id IS NOT NULL", [cid]) > 0,
 		"≥1 settlement wired to its parent domain")
-	# Name + market_class faithfully copied from setting_settlements.
-	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND EXISTS (SELECT 1 FROM setting_settlements ss WHERE ss.campaign_id = se.campaign_id AND ss.name = se.name AND ss.market_class = se.market_class)", [cid]) > 0,
-		"settlement name + market_class copied from setting_settlements")
+	# Name + market_class faithfully copied from setting_settlements — only meaningful when
+	# urban settlements emerged (an all-seat world has no setting_settlements to copy from).
+	if placed > 0:
+		check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances se WHERE se.campaign_id = ? AND EXISTS (SELECT 1 FROM setting_settlements ss WHERE ss.campaign_id = se.campaign_id AND ss.name = se.name AND ss.market_class = se.market_class)", [cid]) > 0,
+			"settlement name + market_class copied from setting_settlements")
 	# history_context present + well-formed (principle 3 provenance).
 	check(_scalar("SELECT COUNT(*) AS n FROM settlement_entrances WHERE campaign_id = ? AND (history_context = '' OR history_context IS NULL)", [cid]) == 0,
 		"every settlement has a history_context")
+	# M2b urban settlements carry full provenance; M4-2 County seats carry an empty {} (they
+	# are seated from the political layer, not a setting_settlement). Sample an entrance that
+	# HAS provenance, so this checks a real urban settlement — and is simply skipped in an
+	# all-seat world. (Also de-flakes the old LIMIT 1, which could land on a {} County seat
+	# even when urban settlements existed.)
 	CampaignRepository.db.query_with_bindings(
-		"SELECT history_context FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? LIMIT 1", [cid, rid])
+		"SELECT history_context FROM settlement_entrances WHERE campaign_id = ? AND map_id = ? AND history_context != '' AND history_context != '{}' LIMIT 1", [cid, rid])
 	if not CampaignRepository.db.query_result.is_empty():
 		var hc = JSON.parse_string(str(CampaignRepository.db.query_result[0].get("history_context", "{}")))
 		check(hc is Dictionary, "history_context parses as a JSON object")
@@ -913,6 +1041,66 @@ func test_start_position(cid: String) -> void:
 		check(int(sp2.get("hex_q", -999)) == chosen_hex.x and int(sp2.get("hex_r", -999)) == chosen_hex.y,
 			"start_position honors the chosen start city's entrance (%d,%d)" % [chosen_hex.x, chosen_hex.y])
 		db.query_with_bindings("UPDATE campaigns SET start_settlement_id = '' WHERE id = ?", [cid])
+
+
+## M2 rolling frontier (gdd-region-zoom-in.md §6): the play map grows by appending the next
+## parent strip's children, recomputing the river/cliff EDGE layer with the PINNED cliff
+## threshold, and stops at the world edge. Runs LAST (it mutates the region map).
+func test_frontier_growth(cid: String) -> void:
+	var rid := str(_mat_result.get("region_map_id", ""))
+	if rid == "":
+		check(false, "no region map for the frontier-growth test")
+		return
+	var db = CampaignRepository.db
+	db.query_with_bindings("SELECT cliff_threshold, parent_hex_footprint FROM hex_maps WHERE id = ?", [rid])
+	var mrow: Dictionary = db.query_result[0]
+	# The adaptive cliff threshold is PINNED at first build so growth can reuse it.
+	check(mrow.get("cliff_threshold") != null, "cliff threshold pinned on the region map at first build")
+	var pinned: float = float(mrow["cliff_threshold"]) if mrow.get("cliff_threshold") != null else -1.0
+	var footprint0 := HexMapData.footprint_from_json_string(str(mrow.get("parent_hex_footprint", "[]")))
+	var cells_before := _count("hex_cells", "map_id", rid)
+
+	# Find a growable direction. The 'small' world is 15x12 parents vs the 10x8 window, so the
+	# play map does NOT cover the whole world — at least one side has room to grow.
+	var zoom := RegionZoomIn.new()
+	var grew_dir := Vector2i.ZERO
+	var grew_res: Dictionary = {}
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var res: Dictionary = zoom.grow_frontier(cid, rid, d)
+		check(bool(res.get("ok", false)), "grow_frontier ok for dir %s (errors: %s)" % [str(d), str(res.get("errors", []))])
+		if bool(res.get("grew", false)):
+			grew_dir = d
+			grew_res = res
+			break
+	check(grew_dir != Vector2i.ZERO, "at least one direction grew (small world is larger than the window)")
+	if grew_dir == Vector2i.ZERO:
+		return
+
+	var np := int(grew_res.get("new_parents", 0))
+	var nc := int(grew_res.get("new_children", 0))
+	check(np > 0, "growth added >=1 parent (%d)" % np)
+	check(nc == np * 16, "new children == new parents x 16 (%d vs %d)" % [nc, np])
+	check(_count("hex_cells", "map_id", rid) == cells_before + nc, "region hex_cells grew by the new children")
+	var footprint1: Array = grew_res.get("footprint", [])
+	check(footprint1.size() == footprint0.size() + np, "footprint gained exactly the new parents")
+	# The new strip's children are real, appended rows (a coord beyond the old footprint bound).
+	check(_scalar("SELECT COUNT(*) AS n FROM hex_cells WHERE map_id = ?", [rid]) == cells_before + nc,
+		"appended hexes are persisted on the same region map")
+
+	# Growth reused the PINNED threshold (no adaptive drift as the map enlarged).
+	db.query_with_bindings("SELECT cliff_threshold FROM hex_maps WHERE id = ?", [rid])
+	check(absf(float(db.query_result[0]["cliff_threshold"]) - pinned) < 0.0000001,
+		"growth reused the pinned cliff threshold (no drift)")
+
+	# Marching the same direction eventually hits the world edge and stops (grew=false, ok=true).
+	var last: Dictionary = grew_res
+	var guard := 0
+	while bool(last.get("grew", false)) and guard < 40:
+		last = zoom.grow_frontier(cid, rid, grew_dir)
+		check(bool(last.get("ok", false)), "grow ok while marching to the world edge")
+		guard += 1
+	check(not bool(last.get("grew", false)), "growth stops cleanly at the world edge (grew=false)")
+	check(guard < 40, "world-edge stop reached within the guard (no runaway growth)")
 
 
 func _scalar_str(sql: String, binds: Array) -> String:

@@ -1,10 +1,11 @@
 # GDD: Dungeon Layout Generation
 
 **Authority:** PROJECT-DESIGNED — the layout algorithm is not derived from any ACKS sourcebook. ACKS dungeon stocking procedures (room contents, monsters, traps, treasure) are defined in the XML rules reference library and applied AFTER layout generation.
-**Status:** Draft
+**Status:** Draft — multi-level sections superseded 2026-07-06: §9.1 step 4 (same-position stair alignment), §9.3 (constrained stair anchors), and §14's "multi-level spatial coherence" decision are replaced by the contiguous-volume model in [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md). The per-band rooms-first planner (§4-§8, §10) is unchanged and remains authoritative for within-band layout.
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (dungeon stocking tables, dungeon type/flavor table, special features — applied after layout, not during)
+**Depends on project GDDs:** [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md) (vertical plan, story bands, stairwell/atrium reservations, composition — owns everything vertical as of 2026-07-06)
 **Modifiable by Claude Code:** Yes — suggest improvements freely. The algorithm, parameters, and room templates are all engineering decisions.
-**Last updated:** 2026-04-16
+**Last updated:** 2026-07-06
 
 ---
 
@@ -458,6 +459,8 @@ The canonical door material vocabulary includes `curtain_cloth` and `curtain_lea
 
 ## 9. Stairs and Vertical Connections
 
+> **SUPERSEDED IN PART (2026-07-06).** Vertical connections are now owned by [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md): stairs are real stepped geometry (straight runs, switchback stairwells, spiral shafts, ramps) reserved by the whole-dungeon vertical plan *before* any band is laid out, and carved during vertical composition. What survives from this section: the **connection counts** (§9.1 steps 2-3, consumed as vertical-plan inputs) and the **entrance rules** (§9.2). §9.1 step 4 (same-grid-position stair pairing) and all of §9.3 (constrained stair anchors) are dead — there is no same-cell teleport pairing in a contiguous volume, and reservations replace anchors.
+
 ### 9.1 Placement
 
 For multi-level dungeons:
@@ -467,7 +470,7 @@ For multi-level dungeons:
    - 1 stair up (to previous level or to the surface on level 1)
    - 1 stair down (to next level, if applicable)
 3. Optional additional stairs for large dungeons (1 per 15-20 rooms)
-4. Stairs on adjacent levels must spatially align (the "down" stair on level 2 corresponds to the "up" stair on level 3 at the same grid position)
+4. ~~Stairs on adjacent levels must spatially align (the "down" stair on level 2 corresponds to the "up" stair on level 3 at the same grid position)~~ **Superseded 2026-07-06:** a stairwell is a single geometric object spanning both bands (entry and exit landings horizontally offset by the run length) per `gdd-dungeon-contiguous-3d.md` §6.
 
 ### 9.2 Dungeon Entrance
 
@@ -476,7 +479,9 @@ The entrance to the dungeon (connection to the overworld map) is placed as a spe
 - Connected to the corridor network
 - The first room/area the party encounters
 
-### 9.3 Constrained Stair Placement (added 2026-05-27)
+### 9.3 Constrained Stair Placement (added 2026-05-27) — SUPERSEDED 2026-07-06
+
+> **Superseded by `gdd-dungeon-contiguous-3d.md` §8.** The vertical plan computes ALL stairwell and atrium footprints before any band lays out, and passes them to the per-band planner as pre-placed reservation rooms (circulation rooms participate in the MST like any room — the §9.3.2 antechamber idea generalized). `required_stair_positions` and StairAnchor are removed from the layout API along with the sequential radiate-outward generation order that required them. The text below is retained for historical context only.
 
 When the layout generator is called as part of a multi-level dungeon pipeline (e.g., from [`gdd-dungeon-generator-v1.md`](gdd-dungeon-generator-v1.md) §8.1), the caller may pass an optional `required_stair_positions` parameter that anchors specific stair cells to exact grid coordinates. This is the **preferred** interface for multi-level pipelines because it guarantees stair alignment between adjacent floors on the first generation attempt, without post-hoc carving or scooting.
 
@@ -592,6 +597,8 @@ The verification pass is on by default in debug builds and off in release builds
 ---
 
 ## 11. Output Data Structure
+
+> **Schema deltas (2026-07-06, approved).** Under the contiguous-volume rework (`gdd-dungeon-contiguous-3d.md` §9): RoomData gains `band`, `kind` ("chamber" | "circulation"), `height_levels` (default 2), `level_offset` (reserved free-form hook, always 0), and `zones: Array[RoomZone]` — stocking result fields move from rooms to zones. `StairData` is **replaced by `StairwellData`** (a geometric run spanning two bands; no `connects_to_level` teleport semantics). The per-level `DungeonLayout` array as a *persisted/runtime* shape is replaced by one composed `VoxelMapData` + dungeon metadata; the structure below remains valid as the per-band planning representation.
 
 The generator outputs a `DungeonLayout` that matches the project's dungeon data model:
 
@@ -747,9 +754,7 @@ The geometric output types (`DungeonLayout`, `DungeonCellData`, `DungeonRoomData
 
 - **Cavern generation: DECIDED.** Natural cavern types (Natural caverns, Giant burrow, Underground river, Giant insect hive) use cellular automata smoothing after initial room placement to produce organic shapes. The procedure: place rooms normally, then run 3-5 iterations of cellular automata (a cell becomes open if 4+ of its 8 neighbors are open, becomes wall if fewer than 4 are open) on the room interior cells only (not corridors). This erodes sharp corners and produces cave-like irregular boundaries while preserving corridor connectivity.
 - **Room purpose assignment: DECIDED.** The generator assigns an **original purpose** to each room based on dungeon type (e.g., an Abandoned Mine has bunk rooms, ore storage, tool sheds, shaft heads, foreman's office). The stocking procedure then assigns a **current purpose** based on what the stocking tables placed there (if the room got a monster + treasure, and the monster's lair is the adjacent room, the room's current purpose becomes "treasure hoard" even though its original purpose was "miners' bunkroom"). Both purposes are stored: `room.original_purpose` feeds the LLM's physical description (bunks still line the walls), while `room.current_purpose` feeds the LLM's narrative of what's happening now (but the bunks are shoved aside and the space is piled with stolen goods). Original purpose is generated per dungeon type from a purpose table (see §6.3).
-- **Multi-level spatial coherence: DECIDED.** Two modes based on dungeon type:
-  - **Subterranean dungeons** (mines, caverns, catacombs, sewers, etc.): Levels are generated independently. They do NOT constrain each other in size or shape. The only requirement is that stair positions match across levels — a stair-down on level 2 at grid position (15, 22) must correspond to a stair-up on level 3 at position (15, 22). Each level can have a completely different layout, grid size, and room arrangement.
-  - **Above-ground structures** (Tower, Ruined manor, Crumbling castle, Cliff city): Levels should roughly match spatially. The generator uses the first (ground) level's footprint as a constraint for upper levels — upper levels must fit within the ground level's bounding box (with some variance: ±10-20% per dimension, and upper levels of towers should get progressively smaller). Stair positions must match. Interior walls do NOT need to align between floors.
+- **Multi-level spatial coherence: RE-DECIDED 2026-07-06** (original decision superseded by [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md) §5). All bands of a dungeon share one grid footprint and one coordinate origin and are composed into a single contiguous voxel volume — deeper stories are physically below shallower ones. "Stair positions must match" is replaced by real stairwell geometry spanning adjacent bands. What survives of the original decision: subterranean bands still lay out their *room arrangements* independently (subject to shared reservations), and above-ground structures keep the footprint constraint — upper bands fit within the ground band's bounding box (±10-20% variance, towers shrink progressively), interior walls need not align between floors.
 - **Corridor width: DECIDED.** The default corridor width is **10'** (2 cells wide), which is the ACKS norm. The generator must carve 2-wide corridors instead of the donjon default of 1-wide. Supported widths: 5' (1 cell, tight/cramped), 10' (2 cells, standard), 15' (3 cells, wide), 20' (4 cells, grand hall corridors). Most corridors should be 10' or 20'. The theme table's `corridor_width` field is updated to reflect this — see §5.2 revised. Implementation: the tunnel algorithm carves a 2-cell-wide path by default. When the theme specifies "narrow," it drops to 1-cell. For "wide," it carves 3 cells. For "mixed," each corridor segment randomly selects between 10' and 20' with occasional 5' tight spots.
 
 ---
@@ -761,4 +766,5 @@ The geometric output types (`DungeonLayout`, `DungeonCellData`, `DungeonRoomData
 - **2026-03-25:** Grid system unified with project-wide diamond grid (per `gdd-combat-map-generation.md` §3). Replaced edge-based wall model with cell-based walls — walls are impassable cells, doors are cells with state. Eliminated edge-model conversion step (§10); generator's native cell output IS the final wall model. Updated CellData to include elevation, door_state, door_detected fields. Updated file organization (edge_converter.gd → cell_finalizer.gd).
 - **2026-04-14:** Added `door_material` (string) and `is_evil` (bool) fields to DoorData schema (§11). Required by `gdd-dungeon-map-ui.md` for Bash Door mechanics and evil door auto-close scheduler events.
 - **2026-05-27:** Re-flavored Wizard's Dungeon in §5.2 as the universal generic-fallback type (drops the `construct/arcane/aberration/fiend` flavor tags). Added §5.3 note that Wizard's Dungeon does NOT use tag-filtered encounter table construction — it uses the raw Random Monsters by Level table directly. Added §8.3 "Door Material and Tier-Scaled Portcullis Override" specifying the per-door material roll: default `wood_standard`, with a 5%-per-tier chance of metal (iron/stone 50/50) and a separate 5%-per-tier chance of portcullis override. Both edits driven by `gdd-dungeon-generator-v1.md` V1 requirements.
+- **2026-07-06:** Contiguous-volume supersession pass (companion edit to [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md), per Jedidiah's approval). §9 banner added; §9.1 step 4 struck; §9.3 marked superseded (reservations replace anchors; `required_stair_positions` removed from the API); §11 schema-delta banner (RoomData band/kind/height_levels/level_offset/zones; StairData → StairwellData; composed single-volume output); §14 multi-level coherence decision re-decided for the shared-grid contiguous model. Within-band planner (§4-§8, §10) untouched.
 - **2026-05-27 (rev 2):** Algorithm rewrite. §4 / §6.1 / §7 / §8.1 / §9.3.2 / §10 / §13 rewritten for a **rooms-first** pipeline (geometric room placement → MST connection graph → A*/L-shape corridor routing → rasterization) replacing the previous bitmask-grid maze-fill approach. The new algorithm matches ACKS published dungeon style more closely: supports adjacent rooms sharing walls (`Sakkara` rooms 7-8, 12-13, 22-23), produces L-bend corridor geometry by construction, and avoids the negative-space-is-maze model that constrained room compositions. §11 DungeonLayout output schema is unchanged; rasterization (§10.1) replaces the previous bitmask→CellData conversion. New §4.2 "Internal Representation" describes the typed geometric plan that planning steps 2-7 manipulate. §6 collision check now allows adjacent rooms with shared walls. §7 introduces the MST-plus-loops connection graph (§7.2) and the L-shape-first corridor router (§7.3). §7.3 / §7.4 dead-end removal is removed (corridors connect rooms by construction; no dead-end formation). §13.4 file organization updated.

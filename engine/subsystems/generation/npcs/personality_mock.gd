@@ -180,6 +180,17 @@ static func _context_line(context: Dictionary) -> String:
 	return "Context: " + "; ".join(parts)
 
 
+## Public bank accessor: the motivation flavor sentence for a motivation tag
+## ("" when the bank has none). Lets other deterministic narrators (e.g.
+## RulerActionNarrator, gdd-ruler-ai.md §9.1) key off the SAME §9.3 fragment
+## banks without duplicating the loader.
+static func motivation_phrase(tag: String) -> String:
+	if tag.is_empty():
+		return ""
+	var banks: Dictionary = _load().get("motivation_phrases", {})
+	return String(banks.get(tag, ""))
+
+
 static func _load() -> Dictionary:
 	if _loaded:
 		return _templates

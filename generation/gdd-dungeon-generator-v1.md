@@ -1,7 +1,7 @@
 # GDD: Random Dungeon Generator — V1
 
 **Authority:** PROJECT-DESIGNED — orchestration pipeline tying the existing layout generator to RAW ACKS stocking rules. ACKS Constraints (the d100 dungeon stocking table, monster level tables, treasure types, in-lair logic) are sacred and applied verbatim, with **one explicitly documented deviation** noted in §2 (lair non-coalescing, see §11.7).
-**Status:** Draft v1.1 — incorporates Jedidiah's open-question resolutions: door material rules grown into layout GDD §8.3, lair non-coalescing as intentional RAW deviation, Trap/Unique rooms encoded with deferred-content fallbacks, constraint-aware stair placement, runtime data encoded from XML at build time.
+**Status:** Draft v1.2 — v1.1 incorporated Jedidiah's open-question resolutions (door material rules in layout GDD §8.3, lair non-coalescing as intentional RAW deviation, Trap/Unique encode-and-fallback, constraint-aware stair placement, build-time XML encoding). **2026-07-06: multi-floor orchestration superseded in part by [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md)** — stair anchoring/radiate-outward order replaced by a vertical plan + composed single volume; navigability BFS moves to the real 3D movement graph; stocking iterates zones instead of rooms (identical for single-zone rooms). Supersession banners mark the affected sections; the ACKS Constraints in §2 and all stocking/treasure/key-lever logic are unchanged.
 **Depends on ACKS rules:** `rules/acore-setting-construction-rules.xml:573-789` (dungeon construction pipeline, stocking table, monster placement rules, treasure assignment rules); `rules/acore-monster-stocking-rules.xml:22-138` (dungeon wandering monster procedure, dungeon wandering monster level table, random monsters by level table, wandering monster table guidelines, NPC parties procedure); `rules/acore_treasure_and_magic_items_rules.xml:1-200+` (treasure types A–R, generation procedure, accumulation categories, gem and jewelry sub-tables).
 **Depends on project GDDs:** [`gdd-dungeon-layout.md`](gdd-dungeon-layout.md) (produces the floor plan that this generator stocks; defines the DungeonLayout / RoomData / DoorData / StairData schema and the diamond-grid cell-based wall model; §8.3 provides the door material distribution this generator consumes; §5.2 re-flavor of Wizard's Dungeon as universal fallback applied as companion edit alongside this draft); [`gdd-dungeon-map-ui.md`](gdd-dungeon-map-ui.md) (defines the runtime door / lever / key interaction grammar — Bash Door, Unlock with matching key, Force Portcullis, Use Lever — that this generator must produce solvable content for); [`gdd-realtime-scheduler.md`](gdd-realtime-scheduler.md) (evil-door auto-close events; entity-context model that the dungeon is consumed by).
 **Modifiable by Claude Code:** Yes — all engineering decisions (validation algorithms, key/lever placement heuristics, retry counts, treasure ledger format, runtime data encoding format) are open. The ACKS Constraints in §2 and the user-specified V1 behaviors in §3 are not.
@@ -56,7 +56,7 @@ These are not from ACKS — they are V1 design choices Jedidiah established for 
 6. **Treasure resolved end-to-end:** every treasure type drawn during stocking is rolled out into specific coins, gems, jewelry, and magic items at generation time. No deferred-resolution tags. Magic item placeholders are emitted only when the magic item catalog itself has a gap (§13.4).
 7. **Key/lever placement is cross-floor:** for any locked indestructible door or portcullis, the key (or wired lever) must land in a room reachable from the dungeon entrance **without crossing the door it opens**, regardless of which floor that room is on. See §10.
 8. **Lair coalescing is OFF (RAW deviation, §2).** Each rolled monster group is its own independent lair. Future faction system uses these as competing/allied same-race factions.
-9. **Stair placement is constraint-aware, not retry-and-scoot.** The layout generator must accept stair anchor points (the position of the prior floor's stair-down) and produce a layout that places a stair-up at that exact position on the first attempt. If the layout generator does not yet support this API, V1 uses a post-hoc cell-carving guarantee (§8.1) until the layout GDD §9 grows the anchor-point parameter. **Robustness over retries.**
+9. ~~**Stair placement is constraint-aware, not retry-and-scoot.** The layout generator must accept stair anchor points (the position of the prior floor's stair-down) and produce a layout that places a stair-up at that exact position on the first attempt.~~ **Superseded 2026-07-06:** stair *anchors* are gone entirely — the vertical plan reserves whole stairwell footprints (real stepped geometry spanning both bands) before any band lays out, per `gdd-dungeon-contiguous-3d.md` §6/§8. The underlying principle — robustness by construction over retries — carries forward unchanged.
 10. **Door material distribution from layout GDD §8.3.** V1 consumes the door material rule defined as a companion edit to the layout GDD: default `wood_standard`, with a 5%-per-tier chance of metal (iron or stone, 50/50) and a separate 5%-per-tier chance of portcullis override. See §10.1.
 11. **Rules XML is never read at runtime.** All ACKS tables consumed by the generator are encoded at build time into `data/dungeon_generator/*.json`, with a build-time extraction script and a diff-test that fails CI if the encoded data drifts from the XML. See §12.
 12. **Wizard's Dungeon as universal fallback** until V2 adds more types: this means the V1 generator IS the generator for every dungeon on the campaign map at first playable build, and downstream systems (POI generator, region zoom-in pipeline, save/load) must treat the Wizard's Dungeon as the canonical default.
@@ -106,6 +106,9 @@ DungeonLayout (V1 additions):
                                   # NOTE (§15): vestigial once overstocking+patrols+respawn lands.
 
 RoomData (V1 additions; the existing `contents: null` is replaced):
+  # 2026-07-06: these stocking-result fields MOVE to RoomZone per
+  # gdd-dungeon-contiguous-3d.md §9 (schema approved). A single-zone room's
+  # sole zone carries them; RoomData keeps a current_purpose rollup for the LLM.
   contents_kind: string           # "empty" | "monster" | "monster_lair"
                                   #   | "trap_placeholder"    (V2 trap GDD plugs in here)
                                   #   | "unique_placeholder"  (V2 unique system plugs in here)
@@ -132,6 +135,7 @@ DoorData (V1 additions):
 MonsterGroup:
   group_id: string
   room_id: int                    # The room this group occupies (each group is its OWN lair; no coalescing)
+  zone_index: int                 # ADDED 2026-07-06: which zone of the room (0 for single-zone rooms)
   floor_index: int
   monster_name: string            # ACKS catalog name, e.g., "Goblin"
   monster_xp_each: int            # From catalog (copied at generation time per §12.3 — no runtime catalog reads)
@@ -166,6 +170,7 @@ KeyItem:
   opens_door_floor: int           # Floor index of the door
   placed_in: string               # "monster_group_inventory" | "treasure_hoard" | "loose_in_room"
   placed_in_room_id: int
+  placed_in_zone_index: int       # ADDED 2026-07-06: zone within the room (0 for single-zone rooms)
   placed_on_floor: int
 ```
 
@@ -174,6 +179,8 @@ All of the above persist to SQLite via the dungeon repository. Tables: `dungeon_
 ---
 
 ## 5. Pipeline Overview
+
+> **SUPERSEDED IN PART (2026-07-06).** The multi-floor choreography below (step 3's per-floor loop with `required_stair_positions`, entrance-first radiate-outward order) is replaced by the staged pipeline in [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md) §8: vertical plan → per-band layout (any order, reservations pre-placed) → vertical composition → keys/levers → stocking → acceptance. Steps 1-2 (input validation, tier derivation) and the *logic* of steps 4-9 (key/lever fixpoint, per-unit d100 stocking, treasure resolution, acceptance) survive intact — with "floor" → "band" and "room" → "zone" substitutions per that GDD's §5/§11. The text below is retained as the authoritative specification of those surviving steps.
 
 ```
 1. VALIDATE INPUT
@@ -299,7 +306,9 @@ The companion edit adding §8.3 "Door Material Distribution" to `gdd-dungeon-lay
 
 V1 delegates entirely to the layout generator from `gdd-dungeon-layout.md`. There is no V1-specific layout algorithm. V1 passes the request through and receives back the DungeonLayout cells/rooms/doors/stairs per layout GDD §11.
 
-### 8.1 Constraint-aware stair placement
+### 8.1 Constraint-aware stair placement — SUPERSEDED 2026-07-06
+
+> **Superseded by `gdd-dungeon-contiguous-3d.md` §8.** There are no stair anchors, no same-(col,row) pairing, and no sequential floor generation order anymore. The vertical plan reserves stairwell footprints (as circulation rooms spanning both bands, with horizontally offset entry/exit landings) before any band's layout runs; the composition stage carves the stepped geometry. The post-hoc carving safety net below is retired with it — floor-integrity and stair-geometry acceptance checks (`gdd-dungeon-contiguous-3d.md` §10.2) replace it, and the whole-dungeon re-seed ladder (§9.2 below) remains the outer safety net. Retained for historical context:
 
 Per user direction #9, robustness is preferred over post-hoc retries. The layout generator is called with an explicit `required_stair_positions` parameter:
 
@@ -328,6 +337,8 @@ For each subsequent floor (radiating outward from the entrance floor in BFS orde
 ---
 
 ## 9. Navigability Validation
+
+> **Graph substrate updated 2026-07-06.** Both passes now run on the real 3D movement graph of the composed volume (support rule + ±1-level steps via stair/ramp/spiral features + door passability) per `gdd-dungeon-contiguous-3d.md` §10 — per-floor BFS with stair-teleport edges is gone. The two-pass structure, the fixed-point key/lever model, all acceptance criteria (restated over zones), and the three-level retry/re-seed recovery ladder below are unchanged.
 
 Two passes, both BFS.
 
@@ -429,6 +440,8 @@ The build log entry for V1 should track how many trapped doors are emitted per d
 ---
 
 ## 11. Room Stocking
+
+> **Stocking unit updated 2026-07-06: rooms → zones.** Per [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md) §11, the d100 loop iterates the **zones** of chamber-kind rooms (a zone = a room's walkable region on one band; single-zone rooms behave byte-for-byte as before). Each zone stocks at **its own band's tier**. `kind: "circulation"` rooms (stairwells) are excluded exactly as stair/lever rooms are below. This is the RAW-faithful reading of "roll once for each room on each dungeon level" (`rules/acore-setting-construction-rules.xml:621-642`) — a multi-story room is stocked on each dungeon level where it presents walkable space. Every procedure in this section applies per zone; the text below retains "room" wording for the common single-zone case.
 
 Stocking happens per floor, AFTER layout and key/lever placement.
 
@@ -631,7 +644,7 @@ These run automatically at the end of generation. A failed hard test aborts gene
 ### 14.1 Hard tests (must pass)
 
 1. **Layout reachability** (per-floor): BFS from each floor's stair / entrance cells, doors-treated-as-passable, reaches every room cell.
-2. **Stair alignment** (cross-floor): every stair-down on floor *i* has a matching stair-up on floor *i+1* at the same grid position. The constraint-aware placement (§8.1) ensures this on the first attempt; post-hoc carving is the safety net.
+2. ~~**Stair alignment** (cross-floor): every stair-down on floor *i* has a matching stair-up on floor *i+1* at the same grid position.~~ **Replaced 2026-07-06** by the stair-geometry and floor-integrity checks of `gdd-dungeon-contiguous-3d.md` §10.2: every StairwellData run walks cleanly bottom→top and top→bottom under the movement rules, and no undeclared floor openings exist.
 3. **Global solvability** (cross-floor): the §9.2 algorithm reaches every stair on every floor and every locked door has its key in the reached region and every portcullis has its lever OR is forceable.
 4. **Every locked door** has either a placed key OR has been downgraded to wood (§10.4).
 5. **Every portcullis** has either a placed lever OR has been downgraded.
@@ -707,3 +720,4 @@ Listed here so future planning sessions have a single place to look for "what V1
 - **2026-05-27 (rev 1):** Initial draft. V1 orchestration pipeline tying gdd-dungeon-layout.md to RAW ACKS stocking. Wizard's Dungeon as universal fallback. Tier formula per Jedidiah's spec. Cross-floor key/lever placement. Full treasure resolution. Trap/Unique → Empty conversion with 30%/15% treasure rates preserved.
 - **2026-05-27 (rev 2):** Incorporates Jedidiah's open-question resolutions. Layout GDD companion edits applied (§5.2 re-flavor, §8.3 door material rule). Lair coalescing turned OFF as intentional RAW deviation with faction-system rationale. Trap and Unique stocking results now use encode-and-fallback (trap_placeholder + Locked+Secret door; unique_placeholder + monster re-roll); trapped doors encoded as `type = "trapped"` with Locked behavior fallback. Stair placement is constraint-aware with post-hoc carving safety net (no more retry-and-scoot). Runtime data encoding section added: rules XML extracted at build time to `data/dungeon_generator/*.json`. DoorData augmented with `is_secret: bool` overlay flag. Wandering monster table flagged as a long-term stopgap to be replaced by overstocking + patrols + respawn.
 - **2026-05-27 (rev 3):** Three open questions resolved with companion edits. Layout GDD §9.3 "Constrained Stair Placement" added — V1 §8.1 now uses the constraint-aware path as the primary; post-hoc carving demoted to catastrophic-failure safety net. Layout GDD §11 DoorData schema gained the `is_secret: bool` overlay flag; §8.1 type table updated so "Secret" rolls produce `underlying_type + is_secret=true`; §8.3 secret-skip check updated accordingly. Coding conventions §7.4 "Runtime Data Extracted from Sacred Rules XML" added as a documented project rule (with `_source` field requirement, idempotent extraction script discipline, mandatory CI diff test, and RAW PATCH lock-in pattern); V1 §12.5 references the new convention.
+- **2026-07-06 (v1.2):** Contiguous-volume supersession pass (companion edit to [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md), schema approved by Jedidiah). §3 decision #9 and §8.1 superseded (vertical-plan reservations replace stair anchors; no sequential floor order); §5 banner scoping what survives; §9 moved to the real 3D movement graph; §11 stocking iterates zones at their band tier (RAW-faithful per-level reading); §4.2 stocking fields relocated RoomData → RoomZone, `MonsterGroup.zone_index` + `KeyItem.placed_in_zone_index` added; §14.1.2 stair-alignment test replaced by stair-geometry + floor-integrity checks. ACKS Constraints (§2), tier derivation (§6), key/lever logic (§10), treasure (§13) untouched.

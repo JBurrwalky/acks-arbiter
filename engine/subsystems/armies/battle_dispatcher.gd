@@ -29,6 +29,29 @@ const MODE_SILENT := "silent"
 const MODE_INTERACTIVE := "interactive"
 
 
+# ---------------------------------------------------------------------------
+# Collision listener (handoff-army-warfare-seams.md §3 deliverable 1)
+# ---------------------------------------------------------------------------
+
+## Attach the EventBus.armies_collided handler so march-time hostile collisions
+## (emitted by ArmyCollisionDetector.detect_at_hex inside ArmyMarcher's travel-leg
+## handler) route into dispatch_collision. Called at session activation
+## (SessionRunner.load_session); idempotent. armies_collided carries no calendar_day,
+## so the handler sources it from Timekeeping.
+static func register_collision_listener() -> void:
+	if not EventBus.armies_collided.is_connected(_on_armies_collided):
+		EventBus.armies_collided.connect(_on_armies_collided)
+
+
+static func unregister_collision_listener() -> void:
+	if EventBus.armies_collided.is_connected(_on_armies_collided):
+		EventBus.armies_collided.disconnect(_on_armies_collided)
+
+
+static func _on_armies_collided(army_a_id: String, army_b_id: String, hex_q: int, hex_r: int) -> void:
+	dispatch_collision(army_a_id, army_b_id, hex_q, hex_r, Timekeeping.get_calendar_day())
+
+
 static func dispatch_collision(
 	army_a_id: String,
 	army_b_id: String,
@@ -41,6 +64,15 @@ static func dispatch_collision(
 	var army_b: Dictionary = ArmyRepository.get_army(army_b_id)
 	if army_a.is_empty() or army_b.is_empty():
 		return {"battle_id": "", "mode": "", "outcome": "", "error": "missing_army"}
+
+	# Re-entrancy guard: an army already in an active battle must not be pulled into a second
+	# one. This matters for the Phase-C resistance seam — ExtractionResistanceRouter materialises
+	# a defender at the extraction hex and dispatches it, then ArmyMarcher's own post-arrival
+	# collision scan re-scans that hex; without this guard an ONGOING (interactive) resistance
+	# battle would spawn a duplicate. (Silent battles resolve before the re-scan and the loser
+	# retreats/disbands, so the pair is already gone — this specifically covers the async case.)
+	if String(army_a.get("state", "")) == "battling" or String(army_b.get("state", "")) == "battling":
+		return {"battle_id": "", "mode": "", "outcome": "", "error": "already_battling"}
 
 	# Determine attacker / defender per the strategic-stance + arrival rules
 	# (gdd-army-warfare.md §4.7). v1 simplification: the army NOT currently

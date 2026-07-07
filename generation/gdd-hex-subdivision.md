@@ -237,6 +237,8 @@ The aggregation rule is intentionally lossy. Reversing it to recover the child d
 
 ## 6. Inheritance Rule (Parent → Child)
 
+> **⚠ SUPERSEDED 2026-06-24 (approved by Jedidiah) — pending implementation.** The stochastic deviation-budget inheritance below (§6.3–§6.6: parent tags + ≤10%/≤25%/≤5% deviation budgets + coherence smoothing + the coastline open question) is being **replaced by field-sampling** per [`gdd-continuous-geography.md`](gdd-continuous-geography.md): geography is generated as a continuous, non-hexagonal field, and a 6-mile child's tags are read by `tag_for_footprint` over that child's footprint of the *same* field — so sub-hex variation is *real*, not invented under a budget, and cross-scale consistency is structural rather than enforced. The text below remains the as-built record until the continuous-geography refactor lands; do not extend it. The aggregation rule (§5) and the schema (§3) are unaffected.
+
 Used when authorship flows down: procedural 24-mile parent → procedurally generated 6-mile inset at zoom-in time. This section specifies the complete terrain inheritance algorithm. Three concerns that touch other systems — settlement/POI re-keying, coastline geometry re-authoring for coastal parents, and overlay child-scale detail expansion — are owned by [`gdd-poi-generation.md`](gdd-poi-generation.md), a future water-geometry sub-pass, and [`gdd-region-zoom-in.md`](gdd-region-zoom-in.md) respectively. This GDD specifies the *terrain tag* inheritance; those three concerns consume the resulting tags but produce their own outputs on top.
 
 ### 6.1 Principles

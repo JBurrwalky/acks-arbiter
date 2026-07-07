@@ -1,0 +1,359 @@
+{
+  "kit_id": "sophtaru",
+  "tier": "culture",
+  "inherits": [
+    "near_eastern",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_23",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "near_eastern (akkadian) backbone + classical (hellenic) substrate (cross-family fusion, Mesopotamian-leaning)",
+  "synthesis_sources": [
+    "BASE_03",
+    "BASE_07"
+  ],
+  "homeland": "Hellashur",
+  "blend": {
+    "backbone": "near_eastern (akkadian: the alu/bit river-cities, the sangu temple-priesthood, construct-chain toponyms, emphatic gutturals q/kh/sh/', -u/-tu/-um endings, SOV agglutinative grammar, penultimate stress)",
+    "substrate": "classical (hellenic: the polis and agora, the strategos and the phalanx, sea and learned/civic vocabulary, -os/-on endings, aspirates th/ph/kh)",
+    "lean": "Mesopotamian-heavy - a Hellenistic dynasty (a Seleucid house) seated on the Akkadian temple-cities of the Two Rivers: Greek learning, the polis, and the gymnasion grafted onto the ziggurat and the law-stele. The Akkadian temple-city and its scribal-priesthood remain the backbone; the Greek register supplies sea, civic, learned, and material words."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_03 Shinarur (Mesopotamian) x BASE_07 (Hellenic/Classical). CIV/CLAN DECIDED by inheritance: both parents are Civilized (feudal), so Hellashur is Civilized (feudal). Concept: Hellenistic Mesopotamia - a Seleucid Babylon. A Greek conqueror-dynasty took the river-valley temple-cities of the Two Rivers and ruled them in Hellenistic fashion, founding poleis beside the ziggurats, but the Akkadian temple-city endured beneath and supplied the deeper register. Backbone/lean = Akkadian (the alu-cities, the bit-ili temples, the construct-chain toponyms, the scribal-priestly populace, the rule/kin/temple/land vocabulary); substrate = Hellenic (the polis and agora, the strategos, the phalanx, the sea, the learned and material words). Common-word lexicon and rank titles use the real Akkadian and Greek registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (Akkadian reflexes primary, Hellenic variants secondary), never real gods. The approved foreign term 'Archon' (Greek polis-magistrate) is the English display ruler at the county tier (see approved_foreign_terms_used); all other display titles are English, with the Akkadian conlang forms in ruler_native/domain_native for NPC dialogue. All human cultures allow Lawful/Neutral/Chaotic.",
+  "phonology": {
+    "palette": "Akkadian backbone - emphatic and guttural consonants (q, kh, h, ', sh, ts), triconsonantal roots, a/i/u vowels, -u/-tu/-um endings, penultimate stress, mimation, construct chains - meeting a Hellenic substrate: vowel-rich (a e i o u), aspirates th/ph/kh, sibilant s, liquids l/r, -os/-on/-e endings, moderate onset clusters (st, tr, pr, kl, sp). Per the CSV: complex consonants over deep vowels, the Akkadian emphatics dominant with the Greek aspirates and clusters retained as a learned overlay; grammar is SOV with agglutinative verb aspects (the Akkadian backbone), the Greek roots fitted to Akkadian stems. Theophoric on the Akkadian construct reflexes (Tullaru-, Urlandu-) with Hellenic morph variants (Tulrio-, Orlandro-) for the learned register.",
+    "phonotactics": "CVC; Akkadian construct-chains and mimation -um meeting Greek clusters (st, pr, kl, ph, th); penultimate stress; the Greek -os/-on endings adapted toward Akkadian -u or dropped to a consonant-final root; -polis surviving as a learned suffix beside the Bit-/Dur-/Kar- construct toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "near-eastern (akkadian) phonology dominant",
+      "sound_changes": [
+        "Greek nominal endings adapt to Akkadian: -os>-u (potamos>potamu-class), -on>-u or >0, -e>-u; very short or vowel-final Greek roots take Akkadian -u/-um; case-vowel and mimation pattern of Akkadian imposed",
+        "Greek aspirates and clusters retained as a learned overlay (th, ph, kh, st, pr, kl) but fitted to Akkadian syllable shape; Greek pitch-accent replaced by Akkadian penultimate stress",
+        "Akkadian emphatics/gutturals (q, kh, h, ', sh, ts) and triconsonantal roots dominate; Akkadian construct chains (Bit-, Dur-, Kar-) and -tu/-um inflection are the productive morphology",
+        "retain the Akkadian sh/q/kh and the Greek th/ph; deep a/i/u vowels favored over Greek o where they collide; signature phonemes of both ancestries kept audible"
+      ],
+      "source_tilt": "sea/civic/learned/material/trade words from Hellenic roots (the polis, agora, thalassa, marble, the learned overlay), each filtered to Akkadian shape; rule/kin/temple/land/staple words from Akkadian roots (the construct-city, the bit-ili, the alluvial field, the scribal backbone); every root then run through the one Akkadian-dominant sound-law so the seam is invisible",
+      "portmanteaus": [
+        "city alu+polis>alpolu",
+        "fort dimtu+phrourion>dimphru",
+        "temple bit-ili+hieron>bitieru",
+        "citadel ekallu+akropolis>ekalakru",
+        "market mahiru+agora>mahagaru",
+        "sea tamtu+thalassa>tamthalu",
+        "harbor kar+limen>karlimu",
+        "son mar+huios>marhuiu"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Akkadian rule/kin/temple/land-roots + Hellenic sea/civic/learned/material-roots, all run through one Akkadian-dominant sound-law (Greek -os/-on endings adapted to -u/penultimate stress, aspirates and clusters retained as a learned overlay); portmanteaus mark the blended institutions and bloodline. No slashes - one word per concept.",
+    "feature_words": {
+      "river": "naru",
+      "stream": "atappu",
+      "lake": "agammu",
+      "sea": "tamthalu",
+      "bay": "kolpu",
+      "cape": "akru",
+      "isle": "nesu",
+      "mountain": "shadu",
+      "hill": "lophu",
+      "ridge": "bamtu",
+      "forest": "qishtu",
+      "wood": "drymu",
+      "plain": "ugaru",
+      "marsh": "apparu",
+      "ford": "nebiru",
+      "pass": "kleisu",
+      "vale": "napu",
+      "march": "massaru",
+      "coast": "ahu",
+      "neck": "isthmu",
+      "narrows": "stenu",
+      "waste": "eremu",
+      "road": "harranu",
+      "way": "hodu",
+      "track": "padanu"
+    },
+    "settlement_words": {
+      "hamlet": "kapru",
+      "village": "demu",
+      "town": "alu",
+      "city": "alpolu",
+      "fort": "dimphru",
+      "port": "karlimu",
+      "market": "mahagaru",
+      "temple_town": "bitieru",
+      "citadel": "ekalakru"
+    },
+    "kinship": {
+      "son": "marhuiu",
+      "daughter": "maratis",
+      "house": "bitoiku",
+      "kin": "kimtu",
+      "ancestor": "abulu"
+    },
+    "adjectives": {
+      "great": "rabu",
+      "little": "sehru",
+      "old": "palaiu",
+      "new": "neshu",
+      "black": "salmu",
+      "white": "leuku",
+      "red": "samu",
+      "golden": "hurasu",
+      "iron": "parzillu",
+      "high": "shaqu",
+      "far": "ruqu",
+      "sacred": "hieru",
+      "fair": "damqu"
+    },
+    "resources": {
+      "salt": "tabtu",
+      "iron": "parzillu",
+      "bronze": "siparru",
+      "silver": "argyru",
+      "gold": "hurasu",
+      "wine": "oinu",
+      "oil": "elaiu",
+      "grain": "she'u",
+      "marble": "marmaru",
+      "lapis": "uqnu",
+      "purple_dye": "porphyru"
+    },
+    "directional": {
+      "upper": "elu",
+      "lower": "shaplu",
+      "north": "iltanu",
+      "south": "shutu",
+      "east": "shadu",
+      "west": "amurru",
+      "inner": "qerbu",
+      "outer": "kamu"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "Bit- (house-of; Akkadian construct)",
+      "Dur- (fort; Akkadian)",
+      "Kar- (port; Akkadian)",
+      "Til- (mound)",
+      "-polu (Hellenic polis, adapted)",
+      "-eia (Hellenic, learned-foundation suffix)"
+    ],
+    "patronymic_form": "the Akkadian backbone keeps the 'mar-' (son of) patronymic and theophoric constructs; the Greek dynastic stock carry a -ides/-id- patronymic and a polis-demonym of origin; the throne fuses both - a basileus-house that also carries a Bit- house-name and a mar- lineage.",
+    "gendered_endings": {
+      "male": "-u / -um (Akkadian); -os / -es (Hellenic, learned)",
+      "female": "-tu / -at (Akkadian); -e / -is (Hellenic, learned)"
+    },
+    "diminutive_form": "-anu (Akkadian) / -isku (Hellenic -iskos, adapted)",
+    "compounding_rule": "Akkadian construct-chains (Bit-[god], Dur-[ruler], Kar-[god]) layered over Greek learned-compounds with linking -o- adapted to a consonant-final or -u root (Neapolu, Megapolu): the capital Hellashur (Hellas-of-Ashur), Dur-Seleku (fort of the ruling house), Alpolu-Tullaru (the polis-city of Tullaru)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Hellenistic dynasty over the Akkadian temple-cities: the basileus and his diadochoi-kin at the crown, the Greek strategoi and the Akkadian shaknu-governors over the alu-cities and the poleis, the gymnasion and the agora beside the ziggurat and the bit-ili; the sangu-priesthood and the scribal shatammu serve beneath. Polis/republican forms are aesthetic flavor, not modeled.)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hazannu",
+        "domain_native": "Hazannutu"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Massaru",
+        "domain_native": "Massarutu"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Shaknu",
+        "domain_native": "Shaknutu"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Turtanu",
+        "domain_native": "Turtanutu"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Rubu",
+        "domain_native": "Rubutu"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Sharru",
+        "domain_native": "Sharrutu"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Shar-kishshati",
+        "domain_native": "Kishshatu"
+      }
+    },
+    "_tiers_note": "Akkadian ladder, ascending, dominant; the Greek civic register stands beside it as the polis-administration. Hazannu (mayor) barony; Massaru (warden) march; Shaknu (appointed governor) county - shown in English as 'Archon', the approved Greek polis-magistrate term, the visible mark of the Hellenistic graft; Turtanu (commander-in-chief) duchy; Rubu (prince) principality; Sharru (king) kingdom over a Sharrutu; Shar-kishshati (king of the totality; Akk) empire over the Kishshatu. The Greek strategos (general-governor) and the polis-archon serve as co-titles beneath the Akkadian crown; the sangu (priest) and scribal shatammu stand outside the ladder. Rank titles fuse the real Akkadian and Greek registers (allowed).",
+    "heir": "Mar-Sharri (son of the king; the crown prince; the Greek register names him Diadochos)",
+    "honorifics": {
+      "lord": "Belu / Kyriu",
+      "lady": "Beltu / Kyria",
+      "champion": "Redu (Akkadian soldier) / Hippeu (Hellenic knight, adapted)",
+      "your_grace": "Beli (my lord)",
+      "elder": "Shibu (the eldest)"
+    },
+    "vassalage": {
+      "liege": "Belu",
+      "vassal": "Ardu (servant) / Symmachu (Hellenic ally, adapted)",
+      "fealty": "Ade (Akkadian oath) / Horku (Hellenic oath, adapted)",
+      "tribute": "Biltu (Akkadian) / Phoru (Hellenic, adapted)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here 'Archon' at the county tier). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Shar-kishshati": "Sharrat-kishshati",
+      "Sharru": "Sharratu",
+      "Rubu": "Rubatu",
+      "Turtanu": "Turtanutu",
+      "Shaknu": "Shaknatu",
+      "Massaru": "Massartu",
+      "Hazannu": "Hazannatu"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Akkadian backbone stock carry a theophoric given name + mar- patronymic; the Greek dynastic stock carry a personal name + -ides patronymic + polis-demonym; order given-first.",
+    "surname_source": [
+      "mar- patronymic (Akkadian)",
+      "Bit- house (Akkadian)",
+      "Hellenic -ides patronymic",
+      "polis/deme demonym (Hellenic)",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Akkadian city-folk keep theophoric names (X-iddina, Warad-X) on the morphed canon-stems; the Greek dynastic and learned class keep Hellenic names (Tulrio-, -ides, polis-demonyms); the throne carries both - a basileus with a Bit- house-name.",
+    "theophoric": "Akkadian devotional constructs on the morphed canon-stems: Warad-Tullaru (servant of Tullaru), Tullaru-iddina (Tullaru-gave-me); Hellenic devotional on the morph variants: Tulrio-, Orlandro-.",
+    "diminutive": "-anu (Akkadian) / -isku (Hellenic -iskos, adapted)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru, Urlandu, Gayandu, Numunu, Rialtu, Itarnu), Hellenic morph variants SECONDARY (family_classical / achillean: Tulrios, Orlandros, Numenos), never real Mesopotamian or Greek gods. All three alignments: the Akkadian law-stele tradition meets the Greek civic cult of the polis.",
+    "the_one": "Itarnu (Akkadian; Hellenic Aiternos) - the great distant Ancient One, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Tullaru (Hellenic Tulrios) - the sun and judgment",
+      "Orlandus": "Urlandu (Hellenic Orlandros) - iron, oath, war",
+      "Gaiandus": "Gayandu (Hellenic Gaiandros) - the enduring earth",
+      "Numeno": "Numunu (Hellenic Numenos) - sky and scribe-wisdom",
+      "Realta": "Rialtu (Hellenic Realtia) - the mother, mercy"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers lemnu (evil ones) or daimones, warded; the law-stele and the polis-oath bind alike",
+      "Neutral": "the deified law-givers and city-founders (the heroes inscribed on the stele and honored at the heroon) and the city-spirits of the bit-ili; the great powers invoked at the temple and the temenos situationally",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Itarnu - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as lemnu (Akkadian evil) or daimones (Hellenic), keep their morphs + an epithet: Maraxus -> Marakshu the City-Burner (Hellenic Maraxos the Tyrant-Flame); Vacidus -> Bakidu-lemnu the Unmaking; Lusanto -> Lusantu the Hoard-Worm.",
+    "clergy_ladder": {
+      "1": "Eribbiti (temple-enterer) / Neokoru",
+      "3": "Sangu (priest) / Hiereu",
+      "5": "Shangu Rabu (high priest) / Archiereu",
+      "7": "Urigallu (chief priest) / Hierophant",
+      "9": "Shatammu (temple-primate) / Megas Hierophant"
+    },
+    "religious_orders_pattern": "the Bit-ili (Akkadian god-house) or Temenos (Hellenic sacred-precinct) of [power]: 'the Bit-ili of Tullaru', 'the Temenos of Tulrios'.",
+    "saints_pattern": "the deified law-givers of the cities and the Heros [name] (deified founder), inscribed on the stele and honored at the ziggurat and the heroon.",
+    "holy_symbol_motifs": {
+      "Tullaru": "winged sun-disc over a law-stele, ringed by an olive-branch",
+      "Urlandu": "an iron spear crossed with the city-standard and an oath-ring",
+      "Gayandu": "the alluvial field beneath the ziggurat"
+    }
+  },
+  "banks_patterns": {
+    "ships": "river-barges and sea-galleys: 'Pride of the Naru', 'the Bronze Nesu', 'Boat of Tullaru', 'Nike of Hellashur'",
+    "military_units": "the Sharru's standard and the Greek phalanx: 'the Standard of Urlandu', 'the Bronze Phalanx', 'the Lion-Gate Lochos'",
+    "taverns": "'The [Adjective] [Noun]': 'The Lapis Kylix', 'The Bronze Stele', 'The Olive and Ziggurat'",
+    "dungeons_ruins": "buried ziggurats and fallen poleis: 'the Ziggurat of Dur-[name]', 'the Sunken Ekallu', 'the Labyrinth of Heros [name]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Tullaru-iddina",
+      "Warad-Urlandu",
+      "Numunu-nasir",
+      "Iddin-Tullaru",
+      "Urlandu-bani",
+      "Argantu-zer",
+      "Gayandu-iddina",
+      "Naram-Urlandu",
+      "Seleku-iddina",
+      "Antiku-bani",
+      "Tulrios-mar",
+      "Orlandros-zer",
+      "Demetru-nasir",
+      "Stratu-Tullaru",
+      "Lysandru-bani",
+      "Nikandru-mar"
+    ],
+    "personal_f": [
+      "Tullaru-belit",
+      "Amat-Urlandu",
+      "Rialtu-um",
+      "Numunu-tabni",
+      "Belit-Tullaru",
+      "Argantu-amat",
+      "Rialtu-rishat",
+      "Stratonike-tu",
+      "Demetria-um",
+      "Realtia-belit",
+      "Eirene-tu",
+      "Kallisto-amat"
+    ],
+    "clan_houses": [
+      "Bit-Tullaru",
+      "Bit-Urlandu",
+      "Bit-Numunu",
+      "Bit-Argantu",
+      "Bit-Gayandu",
+      "Bit-Rialtu",
+      "the Selekides (ruling house)",
+      "the Antikides",
+      "the Demetrides",
+      "the Lysandrides",
+      "Bit-Seleku",
+      "Bit-Stratu"
+    ],
+    "epithets_cognomina": [
+      "the Lawgiver",
+      "Lion-of-the-Gate",
+      "the Stele-writer",
+      "of the Two Rivers",
+      "Soter (the Saviour)",
+      "City-founder",
+      "the Far-marcher",
+      "Megas (the Great)"
+    ],
+    "flagship_settlements": [
+      "Hellashur (the chief seat - Hellas-of-Ashur)",
+      "Dur-Seleku (the ruling-house fort)",
+      "Kar-Tullaru (Tullaru's-port)",
+      "Bit-Tullaru (the great temple-city)",
+      "Alpolu-Numunu (the polis-city of Numunu, the learned seat)",
+      "Til-Labiru (the old mound)"
+    ]
+  }
+}

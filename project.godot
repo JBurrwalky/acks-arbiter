@@ -11,6 +11,8 @@ config_version=5
 [acks]
 
 rendering/dungeon_asset_mode="asset_kit"
+rendering/wilderness_hex_mode="heightmap_3d"
+rendering/reveal_all_fog=true
 
 [animation]
 

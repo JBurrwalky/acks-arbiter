@@ -1,0 +1,459 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Hildingen",
+      "the Gundingen",
+      "the Hrodingen",
+      "the Theudingen",
+      "the Wolfingen",
+      "the Adalingen",
+      "Kurokawa-ke",
+      "Akiyama-ke",
+      "Iwakura-ke",
+      "Takemori-ke",
+      "Hoshino-ke",
+      "Shirakawa-ke",
+      "Iehus Hildirih",
+      "Iehus Gundahari",
+      "Iehus Hrodland",
+      "Iehus Theudirih",
+      "Iehus Sigiramn",
+      "Iehus Adalo",
+      "Iehus Liutprant",
+      "Iehus Wolfhari",
+      "Iehus Dulro-hari",
+      "Iehus Erlant-ric",
+      "Iehus Toramaru",
+      "Iehus Takebimaru"
+    ],
+    "dungeon_ruin": [
+      "the Howe of the Hildingen"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "of the Fire-isle",
+      "the Oath-keeper",
+      "the Loyal",
+      "Blade-saint",
+      "the Tiger",
+      "the Far-marcher",
+      "the Pine",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Akaganaranwuost",
+      "Altdoge",
+      "Chahdoweg",
+      "Dezzgaw",
+      "Fagarhamb",
+      "Ferrohayes",
+      "Ginsilbjamberg",
+      "Guldinkoh",
+      "Hisuwkomich",
+      "Hohkub",
+      "Imheilmarcha",
+      "Isarnmichstraz",
+      "Kingoldmisach",
+      "Kinumor",
+      "Komnagar",
+      "Luzzilnoan",
+      "Mihhilnumb",
+      "Nidarohk",
+      "Niuwon",
+      "Nordsezt",
+      "Obarshimb",
+      "Ostand",
+      "Rotumb",
+      "Shiosalzur",
+      "Sotutwadarfurt",
+      "Sundaranwuost",
+      "Swarzdoge",
+      "Uchindoweg",
+      "Umrosgaw",
+      "Westhamb"
+    ],
+    "military_unit": [
+      "s hari and the clan sonae :",
+      ","
+    ],
+    "personal_female": [
+      "Hildigund",
+      "Swanahild",
+      "Adalinda",
+      "Hrodgund",
+      "Gerlinda",
+      "Theudelind",
+      "Hanae",
+      "Sakurako",
+      "Kohime",
+      "Aoi no Kaede",
+      "Iwakura no Mitsuko",
+      "Tsukino",
+      "Sigia",
+      "Adala",
+      "Toraa",
+      "Takebia",
+      "Dulro",
+      "Dulroa",
+      "Erlant",
+      "Erlanta",
+      "Giando",
+      "Giandoa",
+      "Numino",
+      "Numinoa",
+      "Rialda",
+      "Rialdaa"
+    ],
+    "personal_male": [
+      "Hildirih",
+      "Gundahari",
+      "Hrodland",
+      "Theudirih",
+      "Sigiramn",
+      "Adalo",
+      "Liutprant",
+      "Wolfhari",
+      "Dulro-hari",
+      "Erlant-ric",
+      "Kurokawa no Takeshi",
+      "Akiyama no Yoshihiro",
+      "Takemori no Kagehisa",
+      "Iwakura no Munenori",
+      "Hoshino no Hayato",
+      "Shirakawa no Saburo",
+      "Toramaru",
+      "Takebimaru",
+      "Adalindo",
+      "Gerlindo",
+      "Theudeo",
+      "Hanao",
+      "Koo",
+      "Dulro",
+      "Dulroo",
+      "Erlant",
+      "Erlanto",
+      "Giando",
+      "Giandoo",
+      "Numino",
+      "Numinoo",
+      "Rialda",
+      "Rialdao"
+    ],
+    "settlement": [
+      "Hinogard",
+      "Hilde-shiro",
+      "Isarn-burg",
+      "Kuro-yama",
+      "Terashi-jinja",
+      "Hrod-minato",
+      "Akaganhamb",
+      "Altichmerchat",
+      "Chahjinharug",
+      "Dezzmach",
+      "Fagarminat",
+      "Ferromiyaburg",
+      "Ginsilbmurb",
+      "Guldinohk",
+      "Hisuwsad",
+      "Hohshirhoburg",
+      "Imheiltoriburg",
+      "Isarnwadarfurt",
+      "Kingoldhamb",
+      "Kinichmerchat",
+      "Komjinharug",
+      "Luzzilmach",
+      "Mihhilminat",
+      "Nidarmiyaburg",
+      "Niuwimurb",
+      "Nordohk",
+      "Obarsad",
+      "Ostshirhoburg",
+      "Rotoriburg",
+      "Shiosalzwadarfurt",
+      "Sotuthamb",
+      "Sundichmerchat",
+      "Swarzjinharug",
+      "Uchinmach",
+      "Umrosminat",
+      "Westmiyaburg",
+      "Wizmurb",
+      "Akaganohk",
+      "Altsad",
+      "Chahshirhoburg"
+    ],
+    "ship": [
+      "the Wave-Cutter",
+      "the Iron Boar",
+      "Hagane-maru",
+      "Boat of Dulro"
+    ],
+    "tavern": [
+      "The Floating Plum",
+      "The Boar and Blade",
+      "The Iron Teahouse",
+      "The Alt Akagan",
+      "The Fagar Chah",
+      "The Ferro Dezz",
+      "The Guldin Ginsilb",
+      "The Hoh Hisuw",
+      "The Imheil Kingold",
+      "The Isarn Kinu",
+      "The Luzzil Kom",
+      "The Mihhil Shiosalz"
+    ]
+  },
+  "culture_id": "jamats",
+  "family": [
+    "germanic",
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_jamats.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "jamats",
+  "lexicon": {
+    "adjectives": {
+      "black": "swarz",
+      "fair": "fagar",
+      "far": "ferro",
+      "golden": "guldin",
+      "great": "mihhil",
+      "high": "hoh",
+      "iron": "isarn",
+      "little": "luzzil",
+      "new": "niuwi",
+      "old": "alt",
+      "red": "rot",
+      "sacred": "imheil",
+      "white": "wiz"
+    },
+    "directional": {
+      "east": "ost",
+      "inner": "uchin",
+      "lower": "nidar",
+      "north": "nord",
+      "outer": "sotut",
+      "south": "sund",
+      "upper": "obar",
+      "west": "west"
+    },
+    "feature_words": {
+      "bay": "ur",
+      "cape": "misach",
+      "coast": "hamb",
+      "ford": "wadarfurt",
+      "forest": "mor",
+      "hill": "ohk",
+      "isle": "shimb",
+      "lake": "koh",
+      "march": "marcha",
+      "marsh": "numb",
+      "mountain": "jamberg",
+      "narrows": "sezt",
+      "neck": "kub",
+      "pass": "doge",
+      "plain": "noan",
+      "ridge": "on",
+      "river": "gaw",
+      "road": "michstraz",
+      "sea": "umb",
+      "stream": "nagar",
+      "track": "komich",
+      "vale": "tand",
+      "waste": "aranwuost",
+      "way": "doweg",
+      "wood": "hayes"
+    },
+    "resources": {
+      "bronze": "akagan",
+      "gold": "kingold",
+      "horse": "umros",
+      "iron": "dezz",
+      "jade": "hisuw",
+      "rice": "kom",
+      "salt": "shiosalz",
+      "silk": "kinu",
+      "silver": "ginsilb",
+      "tea": "chah"
+    },
+    "settlement_words": {
+      "citadel": "shirhoburg",
+      "city": "miyaburg",
+      "fort": "toriburg",
+      "hamlet": "sad",
+      "market": "ichmerchat",
+      "port": "minat",
+      "temple_town": "jinharug",
+      "town": "mach",
+      "village": "murb"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Frankish dithematic ([quality|feature](stem) + element: Isarn-burg, iron-fort; Hrod-heim, glory-home) layered over Japonic feature-compounds with rendaku ([quality]+type: Kuro-yama black-mountain, Aka-shiro red-castle -> rendaku -gawa): the capital Hino-gard (the fire-island stronghold), Hilde-shiro (the war-castle of the Hilde-line).",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "lind",
+        "e",
+        "hime"
+      ],
+      "male": [
+        "o",
+        "ich",
+        "ramn",
+        "suke",
+        "maru"
+      ]
+    },
+    "patronymic_form": "the Frankish ruling house keeps a dithematic lineage-name and -ingen (descendant of); the Japonic island-clans keep the uji / -shi clan-name borne first with the -no- linking (X no Y) and the house-suffix -ke; the throne fuses both - a herizogo of a Frankish dithematic line who also holds a Japonic clan-seat.",
+    "toponymic_suffixes": [
+      "yama",
+      "gawa",
+      "shiro / -jo",
+      "machi",
+      "no",
+      "burg",
+      "heim / -haim"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen burgs, abandoned shiro and haunted jinja: 'the Burg of [name]', 'the ruined Shiro of [clan]', 'the Howe of the Hildingen'",
+    "military_units": "the Kuning's hari (war-host) and the clan sonae (battle-formation): 'the Hari of Hinogard', 'the Crimson Sonae', 'the Iron-helms', 'the Tiger Gun'",
+    "ships": "war-keels and atakebune named in Frankish kennings and Japonic blade-names: 'the Wave-Cutter', 'the Iron Boar', 'Hagane-maru', 'Boat of Dulro'",
+    "taverns": "'The [Adjective] [Noun]': 'The Floating Plum', 'The Boar and Blade', 'The Iron Teahouse'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Frankish reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column: the High German shift th>d, d>t), Japonic variants SECONDARY and treated exactly as Yamataian treats them: wholly NATIVE kami (family_east_asian theonym_sets.japonic), NOT borrowed from the Sinitic forms and never real Shinto kami. ALIGNMENT IS PROVISIONAL (Lawful/Neutral): the Frankish feudal oath-order and the samurai bushido way both read Lawful (the sworn lord-vassal bond, the disciplined warrior-code, the kami of sun and blade and ancestors), but an older island layer reads Neutral (the wild kami, the mountain-oni, the local hearth- and grove-spirits). Both treatments given below pending Jedidiah's alignment decision (see gdd-culture-emergence-and-territory.md open questions).",
+    "clergy_ladder": {
+      "1": "Burg-scalc (shrine-servant, novice) / Miko",
+      "3": "Priast (priest) / Kannushi",
+      "5": "Heilag-priast (holy seer-priest) / Negi",
+      "7": "Ubar-priast (high priest) / Guji",
+      "9": "Altisto-priast (eldest priest of the realm) / Saishu"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as ungiwiht (Frankish monsters/devils) or as fierce kami and oni (Japonic), keep their morphs + an epithet: Maraxus -> Marach the War-Brand (Jp. Takebi-no-kami the War-Flame); Vacidus -> Wachid the Unmaker (Jp. Utsuro-no-kami the Devouring Void); Lusanto -> Lusando the Hoard-Worm (Jp. Kogane-Orochi the gold hoard-serpent).",
+    "holy_symbol_motifs": {
+      "Dulro": "a sun-disc over a crossed sword (the kami-face: a rising sun-disc above a mirror and blade)",
+      "Erlant": "an iron sword crossed with a spear (the kami-face: a bare blade before a torii)",
+      "Giando": "the green island-hill beneath the standing stones and the sacred mountain"
+    },
+    "religious_orders_pattern": "the Harug (Frankish grove-temple) or Jinja (Japonic shrine) of [power]: 'the Harug of Dulro', 'the Jinja of Terashi-no-kami', within its torii and sacred grove.",
+    "saints_pattern": "the deified war-dead of the ruling house (honored at the howe and the grove) and the great ancestors and fallen heroes enshrined as kami (the eirei) at the clan jinja; 'the kami [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Giando (Jp. Iwane-no-kami) - the enduring earth, the rock-root mountain",
+      "Numeno": "Numino (Jp. Amatsukaze-no-kami) - air, lightning, sky-wisdom",
+      "Orlandus": "Erlant (Jp. Hagane-no-kami) - iron, the blade-oath, war",
+      "Realta": "Rialda (Jp. Megumi-hime) - the mother, mercy, healing",
+      "Tulrius": "Dulro (Jp. Terashi-no-kami) - the sun, the just brightness, right-rule"
+    },
+    "the_one": "Aiterno (Frankish < *Aiternaz; Japonic Takami-no-kami) - the distant Ancient One, the High-Heaven One above the lesser powers, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterno - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Aiterno foremost, Dulro the just-bright, Erlant of the sworn war, Rialda the merciful, Giando the steadfast earth (and their kami faces: Terashi-no-kami, Hagane-no-kami) - and names the Chaotic powers warded and unworshipped (the Frankish ungiwiht/devils, the wild oni); the sworn lord-vassal oath and the bushido way are the social ideal",
+      "Neutral": "ancestral and local - the deified war-dead of the ruling house and the senzo (forebears) of the clans, the hearth- and grove-spirits and the island kami of mountain, shrine and field; the great powers invoked at the grove-temple and the jinja situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Frankish (OHG) feudal ladder, ascending, with the Japonic clan co-titles beneath. Truhtin (sworn lord; *druhtinaz, the lord-of-the-war-band) barony over a Truhti; Marcha-grafo (march-count) march; Grafo (count) county over a Grafscaf; Herizogo (war-leader, duke; *harja-tugon) duchy over a Herizogtuom; Furisto (the first, prince) principality; Kuning (king) kingdom over a Kuningrihhi; Keisar (emperor < Caesar) empire over the Keisarrihhi. The conquered island-clans keep their Daimyo (great-house lord, sworn as the duke's vassals), Shugo (province-governor) and Jito (estate-lord) beneath the Frankish crown; the bushi (samurai) are the sworn retainers, the kannushi (shrine-priest) stands outside the ladder. Rank titles fuse the real Old High German (Frankish) and Japanese registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Daimyo (duchy)",
+      "Shogun (kingdom)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Daimyo": "Duchess",
+      "Emperor": "Empress",
+      "Marquis": "Marquise",
+      "Prince": "Princess",
+      "Shogun": "Queen"
+    },
+    "female_forms_native": {
+      "Furisto": "Furstin",
+      "Grafo": "Gravin",
+      "Herizogo": "Herizogin",
+      "Keisar": "Keisarin",
+      "Kuning": "Kuningin",
+      "Marcha-grafo": "Marcha-gravin",
+      "Truhtin": "Truhtina"
+    },
+    "government": "feudal (a Frankish war-aristocracy over the Japanese island-clans: the kuning and his herizogo-dukes at the crown, the grafo-counts over the provinces, the truhtin-lords and their sworn vassals; the daimyo-houses and their bushi retainers serve beneath as the sworn warriors of the realm, the kannushi shrine-priesthood and the village-folk beneath them)",
+    "heir": "Kuning-barn (the king's child; the heir) / Yotsugi (the designated heir, Japonic)",
+    "honorifics": {
+      "champion": "Wigant (Frankish warrior) / Bushi (samurai)",
+      "elder": "Altisto (the eldest)",
+      "lady": "Frouwa / Hime",
+      "lord": "Truhtin / Tono",
+      "your_grace": "Truhtin min"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Truhti",
+        "ruler": "Baron",
+        "ruler_native": "Truhtin"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Grafscaf",
+        "ruler": "Count",
+        "ruler_native": "Grafo"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Herizogtuom",
+        "ruler": "Daimyo",
+        "ruler_native": "Herizogo"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Keisarrihhi",
+        "ruler": "Emperor",
+        "ruler_native": "Keisar"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Kuningrihhi",
+        "ruler": "Shogun",
+        "ruler_native": "Kuning"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Marcha",
+        "ruler": "Marquis",
+        "ruler_native": "Marcha-grafo"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Furstuom",
+        "ruler": "Prince",
+        "ruler_native": "Furisto"
+      }
+    },
+    "vassalage": {
+      "fealty": "Treuwa (troth) / Chugi (loyal fealty)",
+      "liege": "Truhtin / Shujun",
+      "tribute": "Gelt (Frankish) / Nengu (Japonic)",
+      "vassal": "Scalc (servant-man) / Kerai (retainer)"
+    }
+  }
+}

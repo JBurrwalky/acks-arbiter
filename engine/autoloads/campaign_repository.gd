@@ -436,6 +436,7 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_overlays WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_cliff_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM voxel_map_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
 	# Domain sub-tables
 	db.query_with_bindings("DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
@@ -1399,12 +1400,13 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			_: fog_str = "hidden"
 		if not db.query_with_bindings("""
 			INSERT OR REPLACE INTO hex_cells
-				(map_id, q, r, elevation, biome, water, civilization,
-				 has_city, original_biome, fog_state)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				(map_id, q, r, elevation, elevation_raw, biome, biome_subtype,
+				 water, civilization, has_city, original_biome, fog_state)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			map_data.id, coord.x, coord.y,
-			terrain.elevation, terrain.biome, terrain.water, terrain.civilization,
+			terrain.elevation, terrain.elevation_raw, terrain.biome, terrain.biome_subtype,
+			terrain.water, terrain.civilization,
 			1 if terrain.has_city else 0, terrain.original_biome, fog_str
 		]):
 			push_error("CampaignRepository.save_hex_map: cell insert failed at q=%d r=%d" % [coord.x, coord.y])
@@ -1450,6 +1452,31 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			db.query("ROLLBACK")
 			return false
 
+	# Replace cliff/canyon edges for this map (migration 176). Re-canonicalize
+	# defensively, mirroring the river-edge handling above.
+	db.query_with_bindings(
+		"DELETE FROM hex_cliff_edges WHERE map_id = ?", [map_data.id])
+	for cliff_data in map_data.cliff_edges:
+		if not (cliff_data is HexCliffEdgeData):
+			continue
+		var cc: HexCliffEdgeData = cliff_data
+		if not cc.is_canonical():
+			cc = HexCliffEdgeData.from_dict(cliff_data.to_dict())
+			cc.flip_to_canonical()
+		if not db.query_with_bindings("""
+			INSERT OR REPLACE INTO hex_cliff_edges
+				(map_id, hex_q, hex_r, edge, cliff_type, height_ft, high_side)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [
+			map_data.id,
+			cc.hex_q, cc.hex_r, cc.edge,
+			cc.cliff_type, cc.height_ft, cc.high_side,
+		]):
+			push_error("CampaignRepository.save_hex_map: cliff edge insert failed at q=%d r=%d edge=%d"
+				% [cc.hex_q, cc.hex_r, cc.edge])
+			db.query("ROLLBACK")
+			return false
+
 	db.query("COMMIT")
 	return true
 
@@ -1489,7 +1516,9 @@ func load_hex_map(map_id: String) -> HexMapData:
 		var coord := Vector2i(row["q"], row["r"])
 		map_data.hexes[coord] = HexTerrainData.from_dict({
 			"elevation":      row["elevation"],
+			"elevation_raw":  row.get("elevation_raw", 0.0),
 			"biome":          row["biome"],
+			"biome_subtype":  row.get("biome_subtype", ""),
 			"water":          row["water"],
 			"civilization":   row["civilization"],
 			"has_city":       row["has_city"] == 1,
@@ -1541,6 +1570,19 @@ func load_hex_map(map_id: String) -> HexMapData:
 		var neighbor_terrain: HexTerrainData = map_data.hexes.get(neighbor_coord)
 		if neighbor_terrain != null:
 			neighbor_terrain.has_river_cached = true
+	# Load cliff/canyon edges (migration 176 / gdd-cliffs-canyons.md §3).
+	db.query_with_bindings(
+		"SELECT * FROM hex_cliff_edges WHERE map_id = ?", [map_id])
+	for row in db.query_result:
+		var cliff_data := HexCliffEdgeData.new()
+		cliff_data.hex_q = int(row["hex_q"])
+		cliff_data.hex_r = int(row["hex_r"])
+		cliff_data.edge = int(row["edge"])
+		cliff_data.cliff_type = String(row["cliff_type"])
+		cliff_data.height_ft = int(row["height_ft"])
+		cliff_data.high_side = int(row["high_side"])
+		map_data.cliff_edges.append(cliff_data)
+
 	return map_data
 
 
@@ -5288,13 +5330,15 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"active_effects", "activity_state", "armies", "auto_pause_config", "campaign_clock",
 	"cargo_holds", "characters", "commissions", "construct_designs", "construct_instances",
 	"crafted_magic_items", "crossbreed_instances", "crossbreed_species", "domain_departure_log",
-	"domain_religion_conversion", "domain_threats", "domains", "draft_vehicles", "dungeon_entrances",
+	"domain_extraction_ledger", "domain_religion_conversion", "domain_threats", "domains",
+	"draft_vehicles", "dungeon_entrances",
 	"factions", "familiars", "field_battles", "followers", "guildhouses", "henchman_pools",
 	"hex_lair_state", "hex_maps", "hideouts", "laboratories", "lairs", "libraries", "location_caches",
 	"specialist_commissions",
 	"magic_research_projects", "market_class_modifiers", "merchant_pool", "monopoly_holdings",
 	"override_log", "parties", "pois", "pursuit_states", "realm_relations",
-	"realms", "reputation_entries", "restricted_cooldowns", "roads", "scheduled_events", "settlement_entrances",
+	"realms", "reputation_entries", "restricted_cooldowns", "roads", "ruler_ai_state",
+	"ruler_dispositions", "scheduled_events", "settlement_entrances",
 	"setting_domains", "setting_events", "setting_fallen_polities", "setting_hexes", "setting_parameters",
 	"setting_fortifications", "setting_narrative", "setting_poi_seeds", "setting_polities",
 	"setting_regions", "setting_replay_frames", "setting_replay_palette", "setting_river_edges",
@@ -5320,7 +5364,7 @@ const _SCOPE_VIA_PARTY := [
 const _SCOPE_VIA_DOMAIN := [
 	"active_adventuring_log", "domain_followers", "follower_arrivals", "ledger_entries", "domain_hexes",
 ]
-const _SCOPE_VIA_HEXMAP := ["hex_cells", "hex_overlays", "hex_river_edges"]
+const _SCOPE_VIA_HEXMAP := ["hex_cells", "hex_overlays", "hex_river_edges", "hex_cliff_edges"]
 const _SCOPE_VIA_ARMY := ["army_officers", "army_supply_state", "army_unit_assignments"]
 const _SCOPE_VIA_BATTLE := ["battle_log", "battle_unit_states"]
 const _SCOPE_VIA_SIEGE := ["siege_actions", "siege_artillery", "siege_mines"]
@@ -7885,7 +7929,7 @@ func primary_domain_id_for_character(character_id: String) -> String:
 	if character_id.is_empty():
 		return ""
 	if not db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at LIMIT 1",
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
 		[character_id]
 	):
 		return ""

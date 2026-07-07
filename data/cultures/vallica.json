@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "vallica",
+      "csv_id": "BASE_06",
+      "culture_class": "base",
+      "catalog_number": null,
+      "demonym": "Vallican",
+      "toponym": "Vallica",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ"
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.8
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.6,
+      "defense": 0.85,
+      "size_exponent_bias": -0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.25,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.7,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.95
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.4,
+        "mercantile": 0.25,
+        "religious": 0.2,
+        "arcane": 0.15
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_infantry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": 1.5,
+        "in_group_loyalty": 1.0,
+        "self_interest": 0.5,
+        "civility": 0.5,
+        "stress_reactivity": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.9,
+      "primitive": 0.1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "vallica",
+    "phonemic_palette": "Latinate: a e i o u; p t c(=k) b d g f s v l r m n; endings -us/-a/-um/-ius/-or; penultimate stress.",
+    "phenotype_notes": "Features of the Roman analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Latinate",
+      "language_family": "classical",
+      "script": "own_script"
+    },
+    "social_structure": "imperial_bureaucracy",
+    "values": {
+      "core_values": [
+        "law",
+        "duty",
+        "glory"
+      ],
+      "taboos": [
+        "breaking the law-code",
+        "shirking one's duty"
+      ],
+      "attitude_toward_outsiders": "cosmopolitan"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Roman register; deity-morphs in name_bank 'agrippan'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "mudbrick halls of the Agrippan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "law",
+        "war",
+        "trade"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Vallican (Roman) — the generic Roman base culture (BASE_06); civilized.",
+      "one_paragraph": "The Vallican are the generic Roman base culture (BASE_06) of the base/hybrid emergence model — a civilized people seeded directly by the simulation in grassland, forest. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Roman register (lexicon, titles, religion, and names) of its source member culture."
+    }
+  }
+}

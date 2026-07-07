@@ -63,6 +63,11 @@ var parent_hex_footprint: Array = []
 ## CampaignRepository.load_hex_map and by HexMapData.from_dict.
 var river_edges: Array = []
 
+## All cliff/canyon edges on this map (migration 176 / gdd-cliffs-canyons.md §3).
+## Each entry is a HexCliffEdgeData in canonical form. Impassable elevation
+## gradients; populated by CampaignRepository.load_hex_map.
+var cliff_edges: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Public methods

@@ -39,11 +39,25 @@ echo "  isolated APPDATA: $isolated_appdata"
 echo "  (live save data in your real %APPDATA% is never touched)"
 
 log="$project_root_unix/headless_test_run.log"
+# Godot can exit non-zero at shutdown from leaked RIDs ("N resources still in
+# use at exit"), NOT from any test assertion — the "TEST RESULTS: ..." line is
+# written to the log BEFORE that. Under `set -e` an unguarded non-zero exit
+# aborts the whole script (and, on a 2-run invocation, kills run 2 before it
+# starts — defeating the "report run 2" baseline discipline). So capture the
+# code as DATA and keep going, mirroring tools/run_tests.ps1. The real test
+# signal is the log summary below, not the process exit code.
+exit_code=0
 for i in $(seq 1 "$RUNS"); do
   echo "--- Run $i of $RUNS ---"
-  "$GODOT" --headless --path "$project_root_win" res://tests/test_runner.tscn -- --test > "$log" 2>&1
+  "$GODOT" --headless --path "$project_root_win" res://tests/test_runner.tscn -- --test > "$log" 2>&1 || exit_code=$?
+  echo "Run $i exit code: $exit_code (non-zero usually means leaked RIDs at shutdown, not a test failure; see log)"
 done
 
 echo "Done. Full log: $log"
 echo "Summary (last lines):"
-grep -E "TEST MODE|passed|failed|PASS|FAIL|TOTAL" "$log" | tail -n 12 | sed 's/^/  /'
+# `|| true` so a no-match grep (or the pipeline under pipefail) can't trip set -e.
+grep -E "TEST MODE|passed|failed|PASS|FAIL|TOTAL" "$log" | tail -n 12 | sed 's/^/  /' || true
+
+# Propagate the last run's exit code (parity with run_tests.ps1) — informational
+# only; the authoritative pass/fail is the summary above.
+exit "$exit_code"

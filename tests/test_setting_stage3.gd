@@ -25,6 +25,8 @@ func run_all_tests() -> void:
 	test_alignments_in_allowed_set()
 	test_demihuman_caps()
 	test_human_seed_cap_respected()
+	test_only_bases_seed_for_humans()
+	test_humans_avoid_undevelopable_homelands()
 	test_homeland_substrate_seeded()
 	test_homelands_seed_two_hexes()
 	test_beastmen_are_chaotic_clanholds()
@@ -49,8 +51,7 @@ func _build_seed_ctx(map_size: String, seed_value: int) -> Dictionary:
 	var params := SettingParameters.new()
 	params.map_size = map_size
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": seed_value, "params": params}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)  # continuous-geography: complete Layers 1-2 in one pass
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
 	return ctx
@@ -139,6 +140,42 @@ func test_human_seed_cap_respected() -> void:
 	check(humans >= 1, "no human cultures seeded on a medium map")
 
 
+## gdd-culture-emergence-and-territory.md §3.1: the human seed pool is restricted
+## to the 11 BASE cultures — no member kit and no (never-seeded) hybrid is placed.
+func test_only_bases_seed_for_humans() -> void:
+	var humans := 0
+	for p in _non_beastman_polities():
+		var rec: Dictionary = _catalog.get(str(p.culture_id), {})
+		if CultureCatalogLoader.tier(rec) != "human":
+			continue
+		humans += 1
+		check(CultureCatalogLoader.culture_class(rec) == "base",
+			"non-base human culture '%s' was seeded (culture_class=%s)"
+				% [p.culture_id, CultureCatalogLoader.culture_class(rec)])
+	check(humans >= 1, "no human base cultures seeded on a medium map")
+
+
+## handoff §1.3 / §4.2: humans must NOT seed on Wilderness-capped or hard-excluded
+## terrain (dense forest, jungle, desert, swamp, tundra, glacial/volcanic mountains).
+## The stricter seed_biomes confine them to developable clear/forest/taiga.
+func test_humans_avoid_undevelopable_homelands() -> void:
+	for p in _non_beastman_polities():
+		var rec: Dictionary = _catalog.get(str(p.culture_id), {})
+		if CultureCatalogLoader.tier(rec) != "human":
+			continue
+		var key := Vector2i(int(p.capital_q), int(p.capital_r))
+		var hex: Dictionary = _hexes_by_qr.get(key, {})
+		if hex.is_empty():
+			continue
+		var biome := str(hex.biome)
+		var subtype := str(hex.biome_subtype)
+		check(biome != "jungle" and biome != "desert" and biome != "swamp",
+			"human homeland %s on undevelopable biome '%s'" % [p.culture_id, biome])
+		check(subtype != "forest_dense" and subtype != "clear_tundra"
+				and subtype != "mountains_glacial" and subtype != "mountains_volcanic",
+			"human homeland %s on capped subtype '%s'" % [p.culture_id, subtype])
+
+
 func test_homeland_substrate_seeded() -> void:
 	for p in _non_beastman_polities():
 		var key := Vector2i(int(p.capital_q), int(p.capital_r))
@@ -187,8 +224,7 @@ func test_beastmen_are_chaotic_clanholds() -> void:
 	params.map_size = "medium"
 	params.wilderness_beastman_density = 4.0
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 42, "params": params}
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)  # continuous-geography: complete Layers 1-2 in one pass
 	RegionPainter.run_phase1(ctx)
 	CultureSeeder.run(ctx)
 	var grid: Dictionary = ctx["hex_grid"]

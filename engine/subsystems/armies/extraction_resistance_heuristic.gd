@@ -23,18 +23,30 @@ extends RefCounted
 ## loyalty -2 (or -4 if outside the trade range of the ruler's largest urban
 ## settlement) per §non_henchman_vassals L392-397.
 ##
+## Ruler-AI Phase 3 (gdd-ruler-ai.md §7.3): the flat 50% rule is generalized
+## to a DISPOSITION-MODULATED threshold via
+## RulerCrisisResponder.resistance_threshold — martial rulers resist from
+## weaker positions, aggressive postures lower the bar, cautious/diplomatic
+## raise it, defending one's own stronghold emboldens. WITHOUT a disposition
+## (default opts) the threshold is EXACTLY the 0.50 placeholder — the
+## regression anchor. The federation + loyalty machinery below is unchanged.
+##
 ## Public API:
-##   evaluate(domain_id, attacker_army_id, calendar_day, dice) -> Dictionary
+##   evaluate(domain_id, attacker_army_id, calendar_day, dice, opts) -> Dictionary
 ##     `dice` follows the HenchmanLoyaltyResolver convention: a node-like
 ##     object with a `roll(count, sides) -> int` method (typically a test
 ##     FakeDice or a runtime DiceSystem-like service). Pass null to use
 ##     pseudo-random.
+##     `opts` (all optional):
+##       disposition: StrategicDisposition|null   # §7.3 modulation
+##       defending_own_stronghold: bool           # +0.10 to the ratio
 ##     Returns:
 ##     {
 ##       will_resist: bool,
 ##       attacker_br: float,
 ##       defender_br: float,            # personal garrison + mustered vassal forces
-##       threshold_br: float,            # 0.5 × attacker_br
+##       threshold_ratio: float,         # the §7.3 ratio actually used
+##       threshold_br: float,            # threshold_ratio × attacker_br
 ##       resistance_force: Dict,
 ##       vassals_responding: Array,      # [{vassal_assignment_id, br, outcome}]
 ##       vassals_refusing: Array,        # [{vassal_assignment_id, br, outcome}]
@@ -42,30 +54,36 @@ extends RefCounted
 ##       calendar_day: int,
 ##     }
 
-const RESISTANCE_THRESHOLD_FRACTION := 0.5  # 50% per O-A-9
+## The RAW-placeholder anchor (O-A-9 / gdd-army-warfare.md §4.3.3); kept as
+## the no-disposition default inside RulerCrisisResponder.resistance_threshold.
+const RESISTANCE_THRESHOLD_FRACTION := 0.5
 
 
 static func evaluate(
 	domain_id: String,
 	attacker_army_id: String,
 	calendar_day: int,
-	dice = null
+	dice = null,
+	opts: Dictionary = {}
 ) -> Dictionary:
 	var attacker_br: float = _compute_army_br(attacker_army_id)
 	var personal_br: float = _compute_local_garrison_br(domain_id)
 	var federation: Dictionary = _federate_vassal_forces(domain_id, calendar_day, dice)
 	var vassal_br: float = float(federation.get("br_total", 0.0))
 	var defender_br: float = personal_br + vassal_br
-	var threshold_br: float = attacker_br * RESISTANCE_THRESHOLD_FRACTION
+	var disposition: StrategicDisposition = opts.get("disposition", null)
+	var threshold_ratio: float = RulerCrisisResponder.resistance_threshold(
+		disposition, bool(opts.get("defending_own_stronghold", false)))
+	var threshold_br: float = attacker_br * threshold_ratio
 	var will_resist: bool = defender_br >= threshold_br and defender_br > 0.0
 	var reason: String = ""
 	if not will_resist:
 		if defender_br <= 0.0:
 			reason = "no_local_garrison"
 		else:
-			reason = "garrison_below_50pct_threshold"
+			reason = "garrison_below_threshold"
 	else:
-		reason = "garrison_meets_50pct_threshold"
+		reason = "garrison_meets_threshold"
 
 	return {
 		"will_resist": will_resist,
@@ -73,6 +91,7 @@ static func evaluate(
 		"personal_br": personal_br,
 		"vassal_br": vassal_br,
 		"attacker_br": attacker_br,
+		"threshold_ratio": threshold_ratio,
 		"threshold_br": threshold_br,
 		"resistance_force": _describe_resistance_force(domain_id),
 		"vassals_responding": federation.get("responding", []),

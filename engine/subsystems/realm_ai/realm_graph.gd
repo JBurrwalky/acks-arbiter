@@ -111,7 +111,7 @@ static func apex_for_character(character_id: String) -> String:
 	# all share the same apex if they're in the same realm. v1 picks the
 	# first by created_at and uses its apex.)
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at LIMIT 1
+		SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1
 	""", [character_id]):
 		return ""
 	if CampaignRepository.db.query_result.is_empty():

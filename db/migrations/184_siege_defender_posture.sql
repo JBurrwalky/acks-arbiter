@@ -1,0 +1,17 @@
+-- Migration 184: sieges.defender_posture — Phase D withstand_siege minimal defender posture.
+--
+-- gdd-ruler-ai.md §5.3 + docs/handoff-army-warfare-seams.md §6 (Phase D). A ruler who chooses
+-- the withstand_siege action commits the garrison to hold the stronghold from inside (no
+-- sortie). This is the minimal defender-posture concept the sieges table lacked.
+--
+-- 'undecided' (the default) preserves ALL pre-Phase-D behavior: the siege resolver reads this
+-- column ONLY in the voluntary 'sally' branch (siege_resolver.apply_method), where a 'hold_fast'
+-- defender is not permitted to sortie. Every other siege mechanic (blockade / reduction /
+-- assault progression) is unchanged. Defender conduct here is a PROJECT-DESIGNED posture
+-- (daw_sieges.xml does not forbid sorties — the "hold, no sortie" commitment is a project
+-- design decision per the handoff's "minimal per Jedidiah's decision").
+--
+-- No CHECK constraint (SQLite ALTER ADD COLUMN keeps it simple); values are code-validated:
+--   'undecided'  — default; no posture chosen (pre-Phase-D behavior)
+--   'hold_fast'  — withstand_siege: garrison defends from inside, no sortie
+ALTER TABLE sieges ADD COLUMN defender_posture TEXT NOT NULL DEFAULT 'undecided';

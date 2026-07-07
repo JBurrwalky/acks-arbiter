@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "wendaki",
+      "csv_id": "BASE_11",
+      "culture_class": "base",
+      "catalog_number": null,
+      "demonym": "Wendaki",
+      "toponym": "Wendaki",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "clan"
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.4
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "savanna"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.5,
+      "size_exponent_bias": 0.15
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.5,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.5,
+      "collapse_proneness": 0.5,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.1
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.6,
+        "mercantile": 0.15,
+        "religious": 0.15,
+        "arcane": 0.1
+      },
+      "preferred_troop_types": [
+        "horse_archers",
+        "light_cavalry",
+        "light_infantry"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "societal_orthodoxy": -1.0,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0,
+        "mysticism": 0.5,
+        "self_interest": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0,
+      "primitive": 1
+    }
+  },
+  "flavor": {
+    "name_bank_key": "wendaki",
+    "phonemic_palette": "Plains, Comanche-leaning: roots paa (water), toya (mountain), huupi (tree), soni (grass), taabe (sun), mua (moon), puuku (horse), numu (people); the barred-u vowel (written u); endings -pu/-bo/-tu; Apache nantan; pan-Plains akicita. Descriptive deed-names in the usual rendering.",
+    "phenotype_notes": "Features of the Plains-nomad analog (setting-lore §5.3).",
+    "language": {
+      "language_name": "Plains",
+      "language_family": "north_american",
+      "script": "own_script"
+    },
+    "social_structure": "clan_confederation",
+    "values": {
+      "core_values": [
+        "freedom",
+        "glory",
+        "strength"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "cowardice in battle"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "tolerated",
+      "divine": "respected",
+      "notes": "Plains-nomad register; deity-morphs in name_bank 'numinan'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "rugged",
+      "signature_feature": "mudbrick halls of the Numinan"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "nature",
+        "storms"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Wendaki (Amerindian) — the generic Amerindian base culture (BASE_11); clanhold.",
+      "one_paragraph": "The Wendaki are the generic Amerindian base culture (BASE_11) of the base/hybrid emergence model — a clanhold people seeded directly by the simulation in grassland, savanna. Hybrids emerge where bases meet; this base is never itself a hybrid. It carries the Amerindian register (lexicon, titles, religion, and names) of its source member culture."
+    }
+  }
+}

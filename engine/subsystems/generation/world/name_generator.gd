@@ -113,7 +113,7 @@ func _build_indices(polities: Array, ruins: Array, events: Array,
 	_fallback_culture = _argmax_str(counts)
 	if _fallback_culture.is_empty():
 		var inst := CultureCatalogLoader.ids_by_tier("human")
-		_fallback_culture = str(inst[0]) if inst.size() > 0 else "agrippan"
+		_fallback_culture = str(inst[0]) if inst.size() > 0 else "albawyn"
 
 
 # --- settlements (§4) -------------------------------------------------------

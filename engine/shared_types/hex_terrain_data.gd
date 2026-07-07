@@ -106,6 +106,12 @@ const SUBTYPE_PROFILES := {
 # ---------------------------------------------------------------------------
 
 var elevation: String = ELEVATION_FLAT
+## Continuous 0-1 height from the generator (GeoField area-mean). The `elevation`
+## tag is the categorical band; this is the raw magnitude the 3D renderer, region
+## painting (plateau/basin), and the Get Hex Info panel read. Persisted in
+## hex_cells.elevation_raw — must round-trip through save/load (it did not before
+## 2026-06-26, which reset every cell to 0.0 after a save).
+var elevation_raw: float = 0.0
 var biome: String = BIOME_CLEAR
 var biome_subtype: String = SUBTYPE_NONE
 var water: String = WATER_NONE
@@ -328,6 +334,7 @@ func creature_type_tilt() -> Dictionary:
 static func from_dict(data: Dictionary) -> HexTerrainData:
 	var t := HexTerrainData.new()
 	t.elevation = data.get("elevation", ELEVATION_FLAT)
+	t.elevation_raw = float(data.get("elevation_raw", 0.0))
 	t.biome = data.get("biome", BIOME_CLEAR)
 	t.biome_subtype = data.get("biome_subtype", SUBTYPE_NONE)
 	t.water = data.get("water", WATER_NONE)

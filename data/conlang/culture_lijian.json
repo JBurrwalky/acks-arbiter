@@ -1,0 +1,368 @@
+{
+  "kit_id": "lijian",
+  "tier": "culture",
+  "inherits": [
+    "classical",
+    "east_asian"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_43",
+  "catalog_number": null,
+  "_numbering_note": "(was the v1 Serican; csv_id authoritative)",
+  "sub_palette": "latinate (classical) backbone + sinitic (east_asian) substrate (cross-family deep fusion, Roman-leaning)",
+  "synthesis_sources": [
+    "BASE_06",
+    "BASE_09"
+  ],
+  "homeland": "Serica",
+  "blend": {
+    "backbone": "classical (latinate / Roman register: the -us/-a/-or endings, penultimate stress, c=k, the legion-road-codex civic order, the gens-binomial name; the law-and-Mandate imperial register)",
+    "overlay": "east_asian (sinitic: the walled cheng-cities and the silk-road, the celestial bureaucracy and the magistracy, the monosyllabic river/silk/material roots, the surname-first lineage, -di/-jun/-wang celestial titles)",
+    "lean": "Roman-heavy - a Latinate law-and-Mandate empire of legions, roads and the codex grown around a Sinitic substrate of walled silk-cities and a celestial magistracy: the Roman civic-legal register rules, the Sinitic bureaucracy and silk-trade endure and serve within."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_06 Agrippan (Roman/Latinate) x BASE_09 Jinxian (Sinitic). CIV/CLAN DECIDED by inheritance: both parents Civilized, and any Civ parent -> Civ, so Serica is Civilized (feudal). Concept: a single emergent civilization - the silk-land Serica, a great law-giving empire that weds the Roman legion, road and codex to the Chinese walled-city, bureaucracy and Mandate of Heaven. Backbone = Latinate/Roman (the imperial law-and-Mandate register, the legions, the gens-binomial, the -us/-a endings); overlay/substrate = Sinitic (the walled cheng-cities, the silk-road, the celestial magistracy, the monosyllabic river/silk/material roots). Not backbone+overlay slash-glossing: the lexicon is a single FUSED tongue derived by sound-law (see phonology.fusion_rules), and titles and deity-names are genuinely fused forms (Latin -us/-a/-or + Sinitic monosyllabic roots). Common-word lexicon and rank titles fuse the real Latin/Chinese registers (allowed, catalog 5.3); DEITY names are fused morphs of the Agrippan canon (Latin reflexes primary, Sinitic variants secondary), never real Roman/Chinese gods. Ruler/domain DISPLAY titles are English (or an approved foreign term - empire shows 'Imperator'); the conlang titles are moved to ruler_native/domain_native for NPC dialogue. [REWORKED 2026-06-28 to base/hybrid model: csv_id HYB_43; all-three alignment; English display titles + native; deep-fusion lexicon + fusion_rules.]",
+  "phonology": {
+    "palette": "Latinate (Roman) backbone - vowel-rich a e i o u, liquids l/r, sibilant s, stops p t c(=k) b d g, f/v, the -us/-a/-um/-or office-endings, penultimate stress, onset clusters st/tr/pr/cl/sp, geminates ll/ss/tt - meeting a Sinitic substrate: tight monosyllabic roots, no clusters, initials incl. zh/ch/sh/x/q/j, finals only -n/-ng, -di/-jun/-wang celestial titles. Per the fusion: Latin syllable-shape and stress dominate; Sinitic roots are wrapped to one Latinate skin, keeping a few signature Sinitic finals (-an/-eng/-ong) and sibilants. Theophoric on the Latin reflexes (Tulin-, Orlan-) with Sinitic celestial variants (Tuli-di, Orla-jun).",
+    "phonotactics": "CV / CVC; Latin clusters (st, tr, pr, cl, sp) and vowel-final endings meeting Sinitic tight monosyllables (no Sinitic clusters); Sinitic finals -n/-ng tolerated; fused endings -us/-a/-or wrapped onto a Sinitic root, or a Sinitic monosyllable closing a Latin stem; penultimate stress throughout.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "classical (latinate) phonology dominant",
+      "sound_changes": [
+        "Sinitic exotic initials -> Latinate inventory where harsh: zh>j, q>c, x>s before back vowels (x kept before front), retroflex sh>s (a few signature sh/zh kept on silk/river roots); no tone marking",
+        "Sinitic roots take a Latin office/quality ending where they stand alone: bare monosyllable + -us/-a/-or/-um (river *jiang -> flu- stem + -jiang fused; salt yan -> sal- + -yan); roots stay open or close on -n/-ng",
+        "Latin penultimate stress and syllable-shape imposed on every word; Latin clusters (st, tr, pr, cl, sp) permitted, Sinitic clusters forbidden (none exist)",
+        "retain Latin -us/-a/-um/-or and the Sinitic finals -an/-eng/-ong/-iao; very short Latin roots may close on a Sinitic monosyllable instead of a vowel"
+      ],
+      "source_tilt": "river/water, silk/trade-goods, bureaucratic/civic-office and raw-material/staple words drawn from SINITIC roots (the substrate works the silk-land, the rivers and the magistracy: jiang, si, cha, yu, shi); rule/sovereignty, kin-line, law/oath, land/territory, quality and war words drawn from LATIN roots (the ruling civic-legal register: rex, gens, lex, ager, magnus, ferrum); each chosen root then filtered through the one Latinate phonology so the split is invisible at the surface - it all sounds like one tongue.",
+      "portmanteaus": [
+        "river fluvius+jiang>flujiang",
+        "silk sericum+si>serisi",
+        "market forum+shi>forshi",
+        "city urbs+cheng>urbcheng",
+        "temple-town templum+miao>templmiao",
+        "fort castra+zhai>castzhai",
+        "son filius+zi>filzi",
+        "house domus+jia>domjia",
+        "sacred sacer+sheng>sacrsheng"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Sinitic river/silk/material/bureaucratic roots + Latin rule/kin/law/land/quality roots, all run through one Latinate-shaped sound-law (penultimate stress, -us/-a/-or wraps, Sinitic finals tolerated); portmanteaus mark the blended silk-and-Mandate institutions and the imperial bloodline. No slash-pairs - one word per concept.",
+    "feature_words": {
+      "river": "flujiang",
+      "stream": "rivxi",
+      "lake": "lachu",
+      "sea": "marhai",
+      "bay": "sinwan",
+      "cape": "promjiao",
+      "isle": "insdao",
+      "mountain": "monshan",
+      "hill": "colling",
+      "ridge": "jugang",
+      "forest": "silvlin",
+      "wood": "mulign",
+      "plain": "campyuan",
+      "marsh": "palze",
+      "ford": "vadudu",
+      "pass": "portguan",
+      "vale": "vallgu",
+      "coast": "oraan",
+      "neck": "coljing",
+      "narrows": "fauxia",
+      "waste": "vasthuang",
+      "road": "vialu",
+      "way": "iterlu",
+      "track": "semitu"
+    },
+    "settlement_words": {
+      "hamlet": "vicun",
+      "village": "pagzhuang",
+      "town": "oppzhen",
+      "city": "urbcheng",
+      "fort": "castzhai",
+      "port": "portmatou",
+      "market": "forshi",
+      "temple_town": "templmiao",
+      "citadel": "arxcheng"
+    },
+    "kinship": {
+      "son": "filzi",
+      "daughter": "filnu",
+      "house": "domjia",
+      "kin": "genszu",
+      "ancestor": "avzong"
+    },
+    "adjectives": {
+      "great": "magda",
+      "little": "parvxiao",
+      "old": "vetgu",
+      "new": "novxin",
+      "black": "atrhei",
+      "white": "albai",
+      "red": "rubchi",
+      "golden": "aurjin",
+      "iron": "fertie",
+      "high": "altgao",
+      "far": "longyao",
+      "sacred": "sacrsheng",
+      "fair": "belmei"
+    },
+    "resources": {
+      "salt": "salyan",
+      "iron": "fertie",
+      "bronze": "aestong",
+      "silver": "argyin",
+      "gold": "aurjin",
+      "silk": "serisi",
+      "jade": "yu",
+      "grain": "frumi",
+      "tea": "cha",
+      "horse": "equma"
+    },
+    "directional": {
+      "upper": "supshang",
+      "lower": "infxia",
+      "north": "borbei",
+      "south": "ausnan",
+      "east": "ordong",
+      "west": "ocxi",
+      "inner": "intnei",
+      "outer": "extwai"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-cheng (walled city)",
+      "-um / -ia (Latin)",
+      "-zhou (province)",
+      "-guan (pass)",
+      "Via- (road)",
+      "Seri- (silk-)"
+    ],
+    "patronymic_form": "the gens-xing (a fused clan-surname, family-first) + a given praenomen-ming; a courtesy-name for officials; generation-names within the lineage.",
+    "gendered_endings": {
+      "male": "-us / monosyllable",
+      "female": "-a / -ina"
+    },
+    "diminutive_form": "Xiao- / -ulus",
+    "compounding_rule": "[surname-xing] + [given]; toponyms quality + type: Aur-cheng (golden-city), Via-Serica (the silk-road), Mon-shan (the mountain)."
+  },
+  "title_ladder": {
+    "government": "feudal (a law-and-Mandate empire: the Imperator (native Imperdi) holds the Mandate over the peerage and a vast literate magistracy; the legions and the codex sustain the order)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Castelnan",
+        "domain_native": "Castelnanum"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Limitudu",
+        "domain_native": "Limitduqu"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Combo",
+        "domain_native": "Comboguo"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Duxou",
+        "domain_native": "Duxouum"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Princong",
+        "domain_native": "Princongguo"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Rexwang",
+        "domain_native": "Rexwangguo"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Imperdi",
+        "domain_native": "Imperdium"
+      }
+    },
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "_tiers_note": "DISPLAY ruler/domain titles are English, except the empire tier which shows the approved foreign term 'Imperator' (the commonly-known Roman imperial title). The *_native forms are the fused Latin-Sinitic conlang titles for NPC dialogue: Castelnan (castellan-baron, castellanus+nan); Limitudu (march-commander, limitanus+dudu); Combo (count, comes+bo); Duxou (duke-marquis, dux+hou); Princong (prince-duke, princeps+gong); Rexwang (king, rex+wang); Imperdi (emperor holding the Mandate, imperator+huangdi) over the Imperdium. The legions (legio) and the celestial magistracy serve the throne. (Rank titles fuse the real Latin/Chinese register, allowed.)",
+    "heir": "Taizi-Princeps (the crown prince / heir)",
+    "honorifics": {
+      "lord": "Domdaren",
+      "lady": "Domfuren",
+      "knight": "Equeswushi (cavalier)",
+      "your_grace": "Dianxia",
+      "your_majesty": "Bixia / Imperdi"
+    },
+    "vassalage": {
+      "liege": "Domjun (sovereign)",
+      "vassal": "Chenardu (subject-minister)",
+      "fealty": "Sacrmengyue (the sworn covenant)",
+      "tribute": "Tribgongfu"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler' - here the empire tier shows 'Imperator'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Imperdi": "Imperdina (Nuhuang)",
+      "Rexwang": "Reginwang",
+      "Princong": "Princonga",
+      "Duxou": "Duxoua",
+      "Combo": "Comba",
+      "Limitudu": "Limitudua",
+      "Castelnan": "Castelnana"
+    },
+    "female_forms_display": {
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Prince": "Princess",
+      "Duke": "Duchess",
+      "Count": "Countess",
+      "Marquis": "Marquise",
+      "Baron": "Baroness"
+    }
+  },
+  "people_name_convention": {
+    "order": "the gens-xing surname first, then a given praenomen-ming; a courtesy-name (zi) for adults; the magistracy and legions add an office-title.",
+    "surname_source": [
+      "gens-xing (fused clan-surname)",
+      "courtesy-name (zi)",
+      "office/legion title",
+      "studio/sobriquet (hao)"
+    ],
+    "dual_register": "the magistracy and learned take a courtesy-name and sobriquet; commoners surname + given.",
+    "theophoric": "names invoke virtue and the celestial powers' epithets; e.g. Tian-en (heaven's grace), a temple-name honoring Tulin-di.",
+    "diminutive": "Xiao- / -ulus"
+  },
+  "religion": {
+    "_note": "Deity-names are fused morphs of the Agrippan canon (Latin reflexes primary, Sinitic variants secondary), never real Roman/Chinese gods. All-three alignment: Serica's stance follows its CURRENT alignment (see worship_by_alignment). A Celestial Bureaucracy under the Mandate of Heaven, fused with the Roman law-cult: the One (Aiterneng) is Highest Heaven and source of the Mandate; the Lawful powers the celestial magistracy that gave the law; the templ-miao temple and the law-curia keep the rite.",
+    "the_one": "Aiterneng (< Aeternus; fused Latin Aeternus / Sinitic Aiteng) - Highest Heaven, the source of the Mandate and the law; revered above all when Lawful, served-not-petitioned when Neutral",
+    "sample_deity_renames": {
+      "Tulrius": "Tulin (Sinitic Tuli-di) - sun and judgment, lord of the law-stele; Lawful power",
+      "Orlandus": "Orlanus (Sinitic Orla-jun) - the iron-oath, war; Lawful power",
+      "Numeno": "Numengus (Sinitic Numeng-jun) - the scribe-wisdom, keeper of the codex; Lawful power",
+      "Realta": "Relianta (Sinitic Lianta-mu) - the mother of mercy; Neutral-honored"
+    },
+    "worship_by_alignment": {
+      "Lawful": "revere the One (Aiterneng) and the Lawful powers (Tulin, Orlanus, Numengus, Gaidunus), demonize the Chaotic demon-marshals (Maraluo, Wucidus, Lusanus)",
+      "Neutral": "all powers ambivalent; foreground the deified ancestors (the ancestral hall and the Divi) and the local earth-and-grain powers",
+      "Chaotic": "venerate the Chaotic demon-marshals of the canon (Maraluo, Wucidus, Lusanus) and name the Lawful powers - and Aiterneng, the One - as the tyrant-throne of Heaven to be defied"
+    },
+    "demon_epithet_pattern": "the Chaotic powers are the demon-marshals outside the celestial order, each with an epithet: Maraxus -> Maraluo the War-Fire Marshal; Vacidus -> Wucidus the Devourer; Lusanto -> Lusanus the Coin-Serpent.",
+    "clergy_ladder": {
+      "1": "Cultor-tu (acolyte)",
+      "3": "Sacerdshi (priest)",
+      "5": "Flamfashi (ritual-master)",
+      "7": "Pontgaogong (high priest)",
+      "9": "Pontfex Tianshi (celestial master / pontifex maximus)"
+    },
+    "religious_orders_pattern": "the Templ-miao (temple) of [power]: 'the Templ-miao of Tulin'; the law-curia keeps its codex-stele.",
+    "saints_pattern": "deified law-givers and worthy officials enrolled in the celestial register; 'Divus [name]' / 'the Lord [name]', honored at the ancestral hall and the miao.",
+    "holy_symbol_motifs": {
+      "Tulin": "a winged sun-disc above the law-stele and the scales",
+      "Numengus": "stylus and codex above the seal of office",
+      "Aiterneng": "the Mandate-eye above the dragon-and-eagle"
+    }
+  },
+  "banks_patterns": {
+    "ships": "grand-canal junks and war-galleys: 'the Aquila', 'the Jade Dragon', 'the Mandate of Heaven'",
+    "military_units": "the Legio of [number/god] / the [color] Banner: 'the Legio of Orlanus', 'the Azure Banner'",
+    "taverns": "'The [Adjective] [Noun]': 'The Silver Cup', 'The Plum-and-Laurel'",
+    "dungeons_ruins": "buried law-cities and tomb-mounds along the silk-road: 'the Tomb of [name]', 'the Ruined Cheng of [warlord]'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Marcellin",
+      "Tulinus",
+      "Aulus-Cheng",
+      "Gaidunus",
+      "Lucan-Wei",
+      "Septimus-Li",
+      "Numengus",
+      "Decius-Chang",
+      "Orlanus",
+      "Publius-Gong",
+      "Han-Marcus",
+      "Tiberin-Wu",
+      "Sericus",
+      "Quintin-Bo",
+      "Augustin-Liang",
+      "Vespian-Hou",
+      "Cassius-Zhao",
+      "Marius-Tan",
+      "Aurelin-Chen",
+      "Lucius-Wang"
+    ],
+    "personal_f": [
+      "Aurelia-Mei",
+      "Livia-Hua",
+      "Claudin-Lan",
+      "Relianta",
+      "Cornelia-Yu",
+      "Valeria-Jin",
+      "Marcella-Lin",
+      "Septima-Yan",
+      "Octavia-Cui",
+      "Junia-Hong",
+      "Aelia-Ruo",
+      "Tullia-Mei",
+      "Drusilla-Wan",
+      "Flavia-Qing",
+      "Liang-Aurelia",
+      "Hua-Claudia",
+      "Sabina-Yue",
+      "Plautia-Zhi",
+      "Antonia-Cai",
+      "Lucilla-Su"
+    ],
+    "clan_houses": [
+      "Gens Aurelia-Li",
+      "Gens Valeria-Wang",
+      "Gens Cornelia-Zhang",
+      "Gens Marcia-Chen",
+      "Gens Sericana",
+      "Gens Cassia-Zhao",
+      "Gens Flavia-Huang",
+      "Gens Tullia-Liang",
+      "Gens Julia-Wu",
+      "Gens Claudia-Sun",
+      "Gens Pompeia-Lin",
+      "Gens Fabia-Gao"
+    ],
+    "epithets_cognomina": [
+      "the Lawful (Iustus)",
+      "Jade-blade",
+      "the Stele-writer",
+      "Iron-handed",
+      "Cloud-rider",
+      "the Far-marcher (silk-road)",
+      "Golden-seal",
+      "the Wise (Zhi)"
+    ],
+    "flagship_settlements": [
+      "Serica (the imperial capital)",
+      "Aur-cheng (the golden city)",
+      "Via-Serica (the great silk-road)",
+      "Mon-shan-guan (the mountain-pass fortress)",
+      "Templ-miao Tulin (the sun-temple seat)",
+      "Bei-castzhai (the north-fort)"
+    ]
+  }
+}

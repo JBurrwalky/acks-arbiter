@@ -1,0 +1,364 @@
+{
+  "kit_id": "nikungs",
+  "tier": "culture",
+  "inherits": [
+    "germanic",
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6",
+  "csv_id": "HYB_06",
+  "catalog_number": null,
+  "_numbering_note": "catalog_number pending the base/hybrid renumbering (see gdd-culture-emergence-and-territory.md); csv_id is the authoritative key for now.",
+  "sub_palette": "germanic (norse) backbone + classical (hellenic) overlay (cross-family blend, Germanic-leaning)",
+  "synthesis_sources": [
+    "BASE_01",
+    "BASE_07"
+  ],
+  "homeland": "Miklagardr",
+  "blend": {
+    "backbone": "germanic (norse register: konungr/jarl, dithematic -r/-son names, ai>ei and i/u-umlaut, w- lost before round vowels, the axe-bearing hird and the sea-keel)",
+    "overlay": "classical (hellenic: the polis and the agora, the archon/basileus civic register, pitch-accent learning, -os/-on/-polis toponyms, the philosophers and the fleets)",
+    "lean": "Germanic-heavy - a Norse warrior-elite (the axe-bearers of Miklagardr, the Varangian Guard enthroned) ruling over the Hellenic city-civilization: the sea-raiding hird holds the crown and the guard, the learned poleis and their fleets endure and serve beneath."
+  },
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "NEW cross-family hybrid under the base/hybrid model. BASE_01 Thiodmark (Germanic) x BASE_07 (Hellenic/Classical). CIV/CLAN DECIDED by inheritance: Germanic base = Clanhold, Greek/Classical base = Civilized, and any Civ parent -> Civ, so Hellmark is Civilized (feudal). Concept: a Norse warrior-elite - the axe-bearers of Miklagardr, the Varangian Guard enthroned - that came as sea-raiders and mercenary guard to the Hellenic poleis and made themselves kings over the city-civilization (a Norse-Byzantine fusion: northern jarls over the philosophers' city-states and their fleets). Backbone = Germanic (NORSE: the ruling war-elite and the hird, the konungr/jarl register, dithematic -r/-son names); overlay/substrate = Classical (HELLENIC: the polis and the agora, the archon/basileus civic register, the learned populace, the fleets, -os/-on/-polis toponyms). Common-word lexicon and rank titles use the real Old Norse and Greek registers (allowed, catalog 5.3); DEITY names are morphs of the Agrippan canon from both parents (NORSE reflexes primary, Hellenic variants secondary), never real Norse/Greek gods. The Norse reflexes come from family_germanic theonym_ancestors (the norse column); the Hellenic morphs follow achillean's deity-morph register. PROVISIONAL: alignment (Neutral/Lawful) is a per-hybrid design choice pending the alignment pass - the Norse war-oath and hird-loyalty meet the Hellenic civic law and the basileus' settled order; the older raider layer reads Neutral, the enthroned guard-and-polis order reads Lawful. Register choice: this Germanic-base hybrid uses the NORSE reflexes (Miklagardr = the Great City), per the Varangian-Guard rationale - flag for Jedidiah if a uniform Germanic register is wanted instead. [UPDATE 2026-06-27: all human cultures allow Lawful/Neutral/Chaotic (per-hybrid alignment restriction removed). Ruler/domain DISPLAY titles are now English (or an approved foreign term); conlang titles moved to ruler_native/domain_native for NPC dialogue. Deities unchanged: canonical Agrippan pantheon via the per-family morph method.]",
+  "phonology": {
+    "palette": "Germanic (Norse) backbone - heavy root-initial stress, sharp stops p/t/k b/d/g, retained th/dh, the nominative -r, ai>ei and au>ey, i- and u-umlaut, w- lost before round vowels (Wod- > Od-), dithematic compounding and -son/-dottir - meeting a Hellenic overlay: vowel-rich a e i o u with long e/o, aspirates th/ph/kh, sibilant s, the civic -os/-on/-eus/-e endings and -polis. Per the CSV: a pitch accent merged with stress accent (the Hellenic pitch settling under the heavy Norse root-stress); grammar is SVO with strong/weak verbs carrying complex aspects (the Germanic verb-system over the Greek aspectual frame). Theophoric on the Norse reflexes (Thulr-, Orlund-) with Hellenic variants (Tulrio-, Orlandro-).",
+    "phonotactics": "CVC; Norse clusters (st, sk, sp, br, kn, hl, hr) and the nominative -r meeting Hellenic onset-clusters (kt, pt, ps, th, ph, kh) and the open vowel-final -os/-on; heavy initial stress with a Hellenic penultimate pull; dithematic Norse names over -polis / -os / -eia civic toponyms.",
+    "transparent_ratio": 0.4,
+    "fusion_rules": {
+      "lean": "germanic (norse) phonology dominant",
+      "sound_changes": [
+        "Hellenic civic endings drop into the Norse nominative: final -os/-on/-e/-a>0, the root takes the Norse -r (potamos>potamr, oros>orr, asty>astr); very short roots also take -r",
+        "Hellenic aspirates and exotic onsets collapse into the Norse inventory: ph>f (lophos>lofr), kh>k (chrysos>krysr, rhachis>rakr), rh>r (rhoos>royr); th retained (shared by both)",
+        "Norse root-initial stress on all words; the Hellenic pitch-accent settles under the heavy Norse stress (pitch>stress); Norse clusters (st, sk, sp, br, kn, hl, hr) permitted",
+        "Norse-sourced roots keep their native shape: the -r nominative, i- and u-umlaut, ai>ei and au>ey, w- lost before round vowels; retain Norse dh and the Hellenic s",
+        "Hellenic ou/oi diphthongs reshape to Norse ey/oy (kleisoura>kleysr, huios>hui-); -ion endings>-inn (pedion>pedinn, elaion>elainn)"
+      ],
+      "source_tilt": "sea/land/civic/material/staple words from Hellenic roots (the substrate poleis hold the coast, the polis, the marble and the vine: potamos>potamr, thalassa>thalassr, polis>pol, marmaros>marmr, sitos>sitr); kin-line/quality/abstract/rule/war words from Norse roots (the ruling hird: mikill, svartr, jarn, hross, forfadr); every chosen root then run through the one Norse-shaped sound-law so the split is inaudible at the surface",
+      "portmanteaus": [
+        "city polis+mikill>miklipol",
+        "fort phrourion+virki>frurki",
+        "temple hieron+hof>hierof",
+        "citadel akropolis+kastali>akrokast",
+        "son huios+sonr>huisonr",
+        "daughter thygater+dottir>thydottir",
+        "house oikos+hus>oikhus",
+        "sacred hieros+heilagr>heilros"
+      ]
+    }
+  },
+  "lexicon": {
+    "_note": "Single fused tongue derived via phonology.fusion_rules (gdd-hybrid-conlang-fusion.md): Hellenic sea/land/civic/material roots + Norse kin/quality/rule/war roots, all run through one Norse-shaped sound-law (the -r nominative, dropped -os/-on, pitch>stress); portmanteaus mark the blended institutions and bloodline of the Varangian poleis.",
+    "feature_words": {
+      "river": "potamr",
+      "stream": "royr",
+      "lake": "limnr",
+      "sea": "thalassr",
+      "bay": "kolpr",
+      "cape": "akr",
+      "isle": "nesr",
+      "mountain": "orr",
+      "hill": "lofr",
+      "ridge": "rakr",
+      "forest": "hylr",
+      "wood": "drymr",
+      "plain": "pedinn",
+      "marsh": "helr",
+      "ford": "porr",
+      "pass": "kleysr",
+      "vale": "napr",
+      "coast": "aktr",
+      "neck": "isthmr",
+      "narrows": "stenr",
+      "waste": "eremr",
+      "road": "hodr",
+      "way": "vegr",
+      "track": "atrapr"
+    },
+    "settlement_words": {
+      "hamlet": "komr",
+      "village": "demr",
+      "town": "astr",
+      "city": "miklipol",
+      "fort": "frurki",
+      "port": "limr",
+      "market": "agorr",
+      "temple_town": "hierof",
+      "citadel": "akrokast"
+    },
+    "kinship": {
+      "son": "huisonr",
+      "daughter": "thydottir",
+      "house": "oikhus",
+      "kin": "genaett",
+      "ancestor": "forfadr"
+    },
+    "adjectives": {
+      "great": "mikill",
+      "little": "litill",
+      "old": "gamall",
+      "new": "nyr",
+      "black": "svartr",
+      "white": "hvitr",
+      "red": "raudr",
+      "golden": "gullinn",
+      "iron": "jarn",
+      "high": "har",
+      "far": "fjarr",
+      "sacred": "heilros",
+      "fair": "fagr"
+    },
+    "resources": {
+      "salt": "halr",
+      "iron": "jarn",
+      "silver": "argyr",
+      "gold": "krysr",
+      "amber": "rafr",
+      "wine": "oinr",
+      "oil": "elainn",
+      "grain": "sitr",
+      "marble": "marmr",
+      "horse": "hross"
+    },
+    "directional": {
+      "upper": "efri",
+      "lower": "nedri",
+      "north": "nordr",
+      "south": "sudr",
+      "east": "austr",
+      "west": "vestr",
+      "inner": "innri",
+      "outer": "ytri"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-polis (city; Hellenic)",
+      "-os / -on (Hellenic place)",
+      "-eia / -ia (Hellenic)",
+      "-borg (Norse fortified town / -burg)",
+      "-stadr (Norse stead)",
+      "-vik (Norse bay-settlement)",
+      "-ey (Norse isle)"
+    ],
+    "patronymic_form": "the Norse ruling stock carry the -son / -dottir patronymic and a dithematic lineage-name (the -ungr / -ingar line of the jarl-house); the Hellenic populace keep the -ides / -ades patronymic and the polis/deme demonym of origin; the throne fuses both - a konungr who also bears a basileus-title and a polis-seat.",
+    "gendered_endings": {
+      "male": "-r / -son / -ungr (Norse ruling); -os / -es / -eus (Hellenic)",
+      "female": "-a / -unn / -dottir (Norse); -e / -a / -is (Hellenic)"
+    },
+    "diminutive_form": "-i / -lingr (Norse) / -ion / -iskos (Hellenic)",
+    "compounding_rule": "Norse dithematic ([quality|animal|resource](stem) + element: Jarn-borg, iron-fort; Svart-vidr, black-wood) layered over Hellenic civic compounds (feature/quality + -polis / linking -o-: Neapolis, Melanoros): the capital Miklagardr (the Great City), Jarnborg (the iron-fort), Thulrs-polis (Thulr's-city)."
+  },
+  "title_ladder": {
+    "government": "feudal (a Norse war-elite over the Hellenic poleis: the konungr-basileus and his jarl-kin at the crown, the hersar and eparchs over the city-provinces, the axe-bearing hird sworn to the throne; the archons and the strategoi of the fleets, the agora and the philosophers' schools serve beneath)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Hersir",
+        "domain_native": "Hersa-rad"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Markgreifi",
+        "domain_native": "Mork"
+      },
+      "county": {
+        "ruler": "Archon",
+        "domain": "County",
+        "ruler_native": "Eparkr",
+        "domain_native": "Eparkia"
+      },
+      "duchy": {
+        "ruler": "Jarl",
+        "domain": "Duchy",
+        "ruler_native": "Hertogi",
+        "domain_native": "Hertogadaemi"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Jarl",
+        "domain_native": "Jarlsriki"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Konungr-Basileus",
+        "domain_native": "Konungsriki"
+      },
+      "empire": {
+        "ruler": "Emperor",
+        "domain": "Empire",
+        "ruler_native": "Stori Basileus",
+        "domain_native": "Megalriki"
+      }
+    },
+    "_tiers_note": "Norse ladder, ascending, with the Hellenic substrate co-titles beneath. Hersir (war-chief / sworn lord) barony over a Hersa-rad; Markgreifi (march-count) march over a Mork; Eparkr (Norse-borne form of the Greek eparch / provincial governor) county over an Eparkia; Hertogi (war-leader; *harja-tugon) duchy over a Hertogadaemi; Jarl (the great earl-prince) principality over a Jarlsriki; Konungr-Basileus (the king, fusing the Norse konungr and the Greek basileus) kingdom over a Konungsriki; Stori Basileus (the Great Basileus, king-of-kings; ON storr + Gk basileus) empire over the Megalriki (the 'great realm'). The conquered poleis keep their Hellenic archon (city-magistrate) and strategos (general / fleet-commander) beneath the Norse crown. The godi (priest) and the Hellenic hierophant stand outside the ladder. Rank titles fuse the real Old Norse and Greek registers (allowed).",
+    "heir": "Konungs-barn (the king's child; the heir; the Hellenic Diadochos for the polis-line)",
+    "honorifics": {
+      "lord": "Drottinn / Kyrios",
+      "lady": "Frua / Kyria",
+      "champion": "Kappi (Norse champion) / Hippeus (Hellenic knight)",
+      "your_grace": "Drottinn minn / Megistos",
+      "elder": "Ellri (the eldest) / Geron"
+    },
+    "vassalage": {
+      "liege": "Drottinn / Hegemon",
+      "vassal": "Thegn (sworn man) / Symmachos (Hellenic ally)",
+      "fealty": "Eidr (oath) / Horkos (Hellenic oath)",
+      "tribute": "Skattr (Norse tribute) / Phoros (Hellenic tribute)"
+    },
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Stori Basileus": "Stora Basilissa",
+      "Konungr-Basileus": "Drottning-Basilissa",
+      "Jarl": "Jarla",
+      "Hertogi": "Hertogynja",
+      "Eparkr": "Eparkissa",
+      "Markgreifi": "Markgreifynja",
+      "Hersir": "Hersa"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Archon": "Archontissa",
+      "Jarl": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Emperor": "Empress"
+    },
+    "approved_foreign_terms_used": [
+      "Archon (county)",
+      "Jarl (duchy)"
+    ]
+  },
+  "people_name_convention": {
+    "order": "the Norse ruling stock carry a dithematic name + -son / -dottir patronymic and a jarl-house lineage; the Hellenic populace carry a personal name + -ides patronymic + polis/deme demonym; order given-first.",
+    "surname_source": [
+      "Norse -son / -dottir patronymic",
+      "jarl-house lineage (-ungr / -ingar)",
+      "Hellenic -ides patronymic",
+      "polis/deme of origin (Hellenic locational)",
+      "deed/animal byname"
+    ],
+    "dual_register": "the Norse war-elite keep Old Norse dithematic names (Thor-, Sig-, Har-, -steinn, -ulfr, -arr, with -son/-dottir); the Hellenic city-folk keep Greek names (the -on/-os/-eus stems with -ides patronymics and deme demonyms).",
+    "theophoric": "Norse devotional on the morphed god-reflexes (Thulrs-arr, Orlund-steinn); Hellenic devotional on the morphed stems (Tulrio-, Orlandro-, Numeno-): Tulriodoros (gift of Tulrios), Orlandrokles.",
+    "diminutive": "-i / -lingr (Norse) / -ion / -iskos (Hellenic)"
+  },
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - NORSE Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the norse column), Hellenic variants SECONDARY (the Hellenic deity-morphs in achillean's register), never real Norse/Greek gods. Alignment PROVISIONAL (Neutral/Lawful): the Norse war-oath and hird-loyalty meet the Hellenic civic law and the basileus' settled order.",
+    "the_one": "Eitnir (Norse; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
+    "sample_deity_renames": {
+      "Tulrius": "Thulr (Hell. Tulrios) - the sun, fire, and justice",
+      "Orlandus": "Orlund (Hell. Orlandros) - iron, oath, war",
+      "Gaiandus": "Geyandr (Hell. Gaiandros) - the enduring earth, cold, endurance",
+      "Numeno": "Nymir (Hell. Numenos) - air, lightning, sky-wisdom",
+      "Realta": "Rjalta (Hell. Realtia) - the mother, mercy, healing"
+    },
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers - Eitnir, Thulr the just, Orlund of the sworn war, Rjalta the merciful - and names the Chaotic powers fjandr (fiends) / daimones, warded and unworshipped; the hird-oath and the basileus' civic law bind alike, the enthroned guard and the ordered polis the social ideal",
+      "Neutral": "the ancestral war-dead (the disir and the deified jarls of the ruling house) and the city-heroes of the poleis (the heroon-dead); the great powers invoked at the hof-grove and the polis-temple situationally rather than worshipped wholesale",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Eitnir - as the tyrant-gods to be defied."
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as fjandr (Norse fiends) or -daimon (Hellenic demon), keep their morphs + an epithet: Maraxus -> Marhr the War-Brand (Hell. Maraxos the Tyrant-Flame); Vacidus -> Vakr the Unmaker (Hell. Vakidos-daimon); Lusanto -> Lusandr the Hoard-Worm (Hell. Lusandos the Drowner-of-Gold).",
+    "clergy_ladder": {
+      "1": "Hof-thegn (temple-servant) / Neokoros",
+      "3": "Godi (priest)",
+      "5": "Hof-godi (temple-priest) / Hiereus",
+      "7": "Allsherjar-godi (high priest) / Archiereus",
+      "9": "Ellri-godi (eldest priest) / Megas Hierophant"
+    },
+    "religious_orders_pattern": "the Hof (Norse grove-temple) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Hof of Thulr', 'the Temenos of Tulrios'.",
+    "saints_pattern": "the disir and the deified jarls (the war-dead of the ruling house, honored at the haugr / barrow) and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
+    "holy_symbol_motifs": {
+      "Thulr": "a sun-wheel over a crossed axe and scales",
+      "Orlund": "an iron axe crossed with an oath-ring",
+      "Geyandr": "the standing stones above the olive-terrace"
+    }
+  },
+  "banks_patterns": {
+    "ships": "the war-keel and the long-ship, named in Norse kennings and Hellenic virtue-names: 'the Wave-Stallion', 'Raven of Miklagardr', 'the Nike', 'Pride of the Thalassa'",
+    "military_units": "the Konungr's hird (the axe-bearing guard / Varangian-band) and the polis levies: 'the Hird of Miklagardr', 'the Axe-bearers', 'the Bronze Phalanx of the poleis'",
+    "taverns": "'The [Adjective] [Noun]': 'The Amber Kylix', 'The Axe and Olive', 'The Golden Drekar'",
+    "dungeons_ruins": "sunken poleis and fallen Norse borgs: 'the Akropolis of [name]', 'the Sunken Hof', 'the Haugr of the Jarls', 'the broken Jarlsborg'"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Sigurdr",
+      "Haraldr",
+      "Thorsteinn",
+      "Bjornulfr",
+      "Ragnarr",
+      "Eysteinn",
+      "Gunnarr",
+      "Hroarr",
+      "Olafr",
+      "Steinarr",
+      "Theron",
+      "Kallias",
+      "Lysandros",
+      "Ariston",
+      "Demetrios",
+      "Nikandros",
+      "Eumenes",
+      "Stratos"
+    ],
+    "personal_f": [
+      "Gudrun",
+      "Ragnhildr",
+      "Sigrunn",
+      "Thorunn",
+      "Astrid",
+      "Ingunn",
+      "Hervor",
+      "Theodora",
+      "Kallisto",
+      "Stratonike",
+      "Eirene",
+      "Lysandra",
+      "Daphne",
+      "Arete"
+    ],
+    "clan_houses": [
+      "the Sigurdungar (ruling jarl-house)",
+      "the Haraldungar",
+      "the Bjornungar",
+      "the Ragnarungar",
+      "the Steinarungar",
+      "the Theronides (Hellenic gens)",
+      "the Kalliades",
+      "the Lysandrides",
+      "the Aristides",
+      "the Eumenides",
+      "the Hroarungar",
+      "the Demetriades"
+    ],
+    "epithets_cognomina": [
+      "the Iron-handed",
+      "Axe-of-Miklagardr",
+      "the Sea-king (saekonungr)",
+      "ho Megas (the Great)",
+      "the Oath-keeper (eidvardr)",
+      "City-warden",
+      "the Far-sailed",
+      "Storm-voiced"
+    ],
+    "flagship_settlements": [
+      "Miklagardr (the chief seat - the Great City)",
+      "Jarnborg (the iron-fort)",
+      "Thulrs-polis (Thulr's-city)",
+      "Neapolis (the new polis of the substrate)",
+      "Sigurdsvik (the ruling-house bay-port)",
+      "Akropolis-haugr (the citadel over the old barrow)"
+    ]
+  }
+}

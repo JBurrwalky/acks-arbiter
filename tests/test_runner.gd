@@ -10,6 +10,38 @@ extends Node
 
 @onready var _terrain_tests = $HexTerrainDataTests
 @onready var _controller_tests = $HexMapControllerTests
+@onready var _climb_resolver_tests = $ClimbResolverTests
+@onready var _territory_cap_tests = $TerritoryCapTests
+@onready var _overseas_tests = $OverseasTests
+@onready var _hybridization_tests = $HybridizationTests
+# 2026-07-01 — Ruler AI Phase 0 (StrategicDisposition builder + persistence)
+@onready var _strategic_disposition_tests = $StrategicDispositionTests
+# 2026-07-01 — Ruler AI Phase 1 (action catalog + manage_stronghold/raise_garrison)
+@onready var _ruler_action_catalog_tests = $RulerActionCatalogTests
+# 2026-07-01 — Ruler AI Phase 2 (scorer + monthly batch + backdrop auto-stabilize)
+@onready var _ruler_ai_monthly_tests = $RulerAiMonthlyTests
+# 2026-07-02 — issue_decree gp/cp units regression coverage
+@onready var _issue_decree_handler_tests = $IssueDecreeHandlerTests
+# 2026-07-02 — Ruler AI Phase 3 (crisis responder + §7.3 resistance + LOD)
+@onready var _ruler_crisis_lod_tests = $RulerCrisisLodTests
+# 2026-07-02 - Ruler AI Phase 4 (narrator seams + ruler_ai_state persistence)
+@onready var _ruler_narration_state_tests = $RulerNarrationStateTests
+# 2026-07-04 - Army-warfare Phase E (on-map army token layer)
+@onready var _army_map_presence_tests = $ArmyMapPresenceTests
+# 2026-07-04 - Army-warfare Phase A (battle/siege routing backbone)
+@onready var _battle_routing_tests = $BattleRoutingTests
+# 2026-07-04 - Army-warfare Phase B (RAW extraction resolver + encamped legs)
+@onready var _extraction_resolver_tests = $ExtractionResolverTests
+# 2026-07-04 - Army-warfare Phase C (extraction-resistance seam: decision + battle + gate)
+@onready var _extraction_resistance_router_tests = $ExtractionResistanceRouterTests
+# 2026-07-04 - Army-warfare Phase D (call_to_arms + withstand_siege dispatch)
+@onready var _ruler_dispatch_phase_d_tests = $RulerDispatchPhaseDTests
+# 2026-07-04 - Army-warfare Phase F (NPC siege initiation: threat escalation + retreat→besiege)
+@onready var _phase_f_npc_siege_tests = $PhaseFNpcSiegeTests
+# 2026-07-04 - Army-warfare-seams arc capstone (ruler-AI §12 integration scenario)
+@onready var _ruler_ai_capstone_tests = $RulerAiCapstoneTests
+# 2026-07-04 - Threat→army forward flow + militia-death reverse flow (limited-resource cap)
+@onready var _militia_casualty_persistence_tests = $MilitiaCasualtyPersistenceTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -534,6 +566,13 @@ extends Node
 @onready var _animal_sustenance_resolver_tests = $AnimalSustenanceResolverTests
 @onready var _setting_stage0_tests = $SettingStage0Tests
 @onready var _setting_stage1_tests = $SettingStage1Tests
+@onready var _geo_field_layer1_tests = $GeoFieldLayer1Tests
+@onready var _geo_field_layer2_tests = $GeoFieldLayer2Tests
+@onready var _geo_field_layer3_tests = $GeoFieldLayer3Tests
+@onready var _geo_field_integration_tests = $GeoFieldIntegrationTests
+@onready var _geo_river_mapper_tests = $GeoRiverMapperTests
+@onready var _region_field_mat_tests = $RegionFieldMaterializationTests
+@onready var _volcanism_tests = $VolcanismTests
 @onready var _setting_stage2_tests = $SettingStage2Tests
 @onready var _setting_stage3_tests = $SettingStage3Tests
 @onready var _setting_generation_data_freshness_tests = $SettingGenerationDataFreshnessTests
@@ -591,7 +630,7 @@ func run() -> void:
 	var passed := 0
 	var failed := 0
 
-	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests,
+	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _overseas_tests, _hybridization_tests, _strategic_disposition_tests, _ruler_action_catalog_tests, _ruler_ai_monthly_tests, _issue_decree_handler_tests, _ruler_crisis_lod_tests, _ruler_narration_state_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests, _hp_roll_panel_tests,
@@ -1110,6 +1149,20 @@ func run() -> void:
 			_setting_stage0_tests,
 			# 2026-06-12 — Setting generation Stage 1 (Layers 1-2: geography + climate)
 			_setting_stage1_tests,
+			# 2026-06-24 — Continuous-geography Layer-1 (base raster + hydrology)
+			_geo_field_layer1_tests,
+			# 2026-06-24 — Continuous-geography Layer-2 (climate + per-cell biome)
+			_geo_field_layer2_tests,
+			# 2026-06-24 — Continuous-geography Layer-3 (tag_for_footprint normalization)
+			_geo_field_layer3_tests,
+			# 2026-06-24 — Continuous-geography flag-gated pipeline integration
+			_geo_field_integration_tests,
+			# 2026-06-24 — Continuous-geography rivers (corner-graph drainage → hex edges)
+			_geo_river_mapper_tests,
+			# 2026-06-25 — Continuous-geography 6-mile materialization (field-sampled terrain)
+			_region_field_mat_tests,
+			# 2026-06-25 — Volcanism (24-mile range/peak stamp + 6-mile vent placement)
+			_volcanism_tests,
 			# 2026-06-12 — Setting generation Stage 2 (region painting Phase 1)
 			_setting_stage2_tests,
 			# 2026-06-12 — Setting generation Stage 3 (Layer 3 culture seeding)
@@ -1162,7 +1215,23 @@ func run() -> void:
 			# 2026-06-24 — Region labels on the 6-mile play map (RegionLabelRenderer math)
 			_region_label_renderer_tests,
 			# 2026-06-24 — Continent/sea/ocean labels on the 24-mile World Map tab
-			_political_map_view_labels_tests]:
+			_political_map_view_labels_tests,
+			# 2026-07-04 — Army-warfare Phase E (ArmyMapPresence token model)
+			_army_map_presence_tests,
+			# 2026-07-04 — Army-warfare Phase A (battle/siege routing backbone)
+			_battle_routing_tests,
+			# 2026-07-04 — Army-warfare Phase B (RAW extraction resolver + encamped legs)
+			_extraction_resolver_tests,
+			# 2026-07-04 — Army-warfare Phase C (extraction-resistance seam)
+			_extraction_resistance_router_tests,
+			# 2026-07-04 — Army-warfare Phase D (call_to_arms + withstand_siege dispatch)
+			_ruler_dispatch_phase_d_tests,
+			# 2026-07-04 — Army-warfare Phase F (NPC siege initiation)
+			_phase_f_npc_siege_tests,
+			# 2026-07-04 — Army-warfare-seams arc capstone (ruler-AI §12 integration)
+			_ruler_ai_capstone_tests,
+			# 2026-07-04 — Threat→army forward flow + militia-death reverse flow
+			_militia_casualty_persistence_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

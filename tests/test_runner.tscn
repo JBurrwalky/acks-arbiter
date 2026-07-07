@@ -484,6 +484,31 @@
 [ext_resource type="Script" path="res://tests/test_hex_info_assembler.gd" id="468_hex_info_assembler_tests"]
 [ext_resource type="Script" path="res://tests/test_region_label_renderer.gd" id="469_region_label_renderer_tests"]
 [ext_resource type="Script" path="res://tests/test_political_map_view_labels.gd" id="470_political_map_view_labels_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_field_layer1.gd" id="471_geo_field_layer1_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_field_layer2.gd" id="472_geo_field_layer2_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_field_layer3.gd" id="473_geo_field_layer3_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_field_integration.gd" id="474_geo_field_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_geo_river_mapper.gd" id="475_geo_river_mapper_tests"]
+[ext_resource type="Script" path="res://tests/test_region_field_materialization.gd" id="476_region_field_mat_tests"]
+[ext_resource type="Script" path="res://tests/test_volcanism.gd" id="477_volcanism_tests"]
+[ext_resource type="Script" path="res://tests/test_climb_resolver.gd" id="478_climb_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_territory_cap.gd" id="479_territory_cap_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_overseas.gd" id="480_overseas_tests"]
+[ext_resource type="Script" path="res://tests/test_setting_hybridization.gd" id="481_hybridization_tests"]
+[ext_resource type="Script" path="res://tests/test_strategic_disposition.gd" id="482_strategic_disposition_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_action_catalog.gd" id="483_ruler_action_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_ai_monthly.gd" id="484_ruler_ai_monthly_tests"]
+[ext_resource type="Script" path="res://tests/test_issue_decree_handler.gd" id="485_issue_decree_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_crisis_lod.gd" id="486_ruler_crisis_lod_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_narration_state.gd" id="487_ruler_narration_state_tests"]
+[ext_resource type="Script" path="res://tests/test_army_map_presence.gd" id="488_army_map_presence_tests"]
+[ext_resource type="Script" path="res://tests/test_battle_routing.gd" id="489_battle_routing_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resolver.gd" id="490_extraction_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resistance_router.gd" id="491_extraction_resistance_router_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_dispatch_phase_d.gd" id="492_ruler_dispatch_phase_d_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_f_npc_siege.gd" id="493_phase_f_npc_siege_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_ai_capstone.gd" id="494_ruler_ai_capstone_tests"]
+[ext_resource type="Script" path="res://tests/test_militia_casualty_persistence.gd" id="495_militia_casualty_persistence_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1936,3 +1961,78 @@ script = ExtResource("469_region_label_renderer_tests")
 
 [node name="PoliticalMapViewLabelsTests" type="Node" parent="."]
 script = ExtResource("470_political_map_view_labels_tests")
+
+[node name="GeoFieldLayer1Tests" type="Node" parent="."]
+script = ExtResource("471_geo_field_layer1_tests")
+
+[node name="GeoFieldLayer2Tests" type="Node" parent="."]
+script = ExtResource("472_geo_field_layer2_tests")
+
+[node name="GeoFieldLayer3Tests" type="Node" parent="."]
+script = ExtResource("473_geo_field_layer3_tests")
+
+[node name="GeoFieldIntegrationTests" type="Node" parent="."]
+script = ExtResource("474_geo_field_integration_tests")
+
+[node name="GeoRiverMapperTests" type="Node" parent="."]
+script = ExtResource("475_geo_river_mapper_tests")
+
+[node name="RegionFieldMaterializationTests" type="Node" parent="."]
+script = ExtResource("476_region_field_mat_tests")
+
+[node name="VolcanismTests" type="Node" parent="."]
+script = ExtResource("477_volcanism_tests")
+
+[node name="ClimbResolverTests" type="Node" parent="."]
+script = ExtResource("478_climb_resolver_tests")
+
+[node name="TerritoryCapTests" type="Node" parent="."]
+script = ExtResource("479_territory_cap_tests")
+
+[node name="OverseasTests" type="Node" parent="."]
+script = ExtResource("480_overseas_tests")
+
+[node name="HybridizationTests" type="Node" parent="."]
+script = ExtResource("481_hybridization_tests")
+
+[node name="StrategicDispositionTests" type="Node" parent="."]
+script = ExtResource("482_strategic_disposition_tests")
+
+[node name="RulerActionCatalogTests" type="Node" parent="."]
+script = ExtResource("483_ruler_action_catalog_tests")
+
+[node name="RulerAiMonthlyTests" type="Node" parent="."]
+script = ExtResource("484_ruler_ai_monthly_tests")
+
+[node name="IssueDecreeHandlerTests" type="Node" parent="."]
+script = ExtResource("485_issue_decree_handler_tests")
+
+[node name="RulerCrisisLodTests" type="Node" parent="."]
+script = ExtResource("486_ruler_crisis_lod_tests")
+
+[node name="RulerNarrationStateTests" type="Node" parent="."]
+script = ExtResource("487_ruler_narration_state_tests")
+
+[node name="ArmyMapPresenceTests" type="Node" parent="."]
+script = ExtResource("488_army_map_presence_tests")
+
+[node name="BattleRoutingTests" type="Node" parent="."]
+script = ExtResource("489_battle_routing_tests")
+
+[node name="ExtractionResolverTests" type="Node" parent="."]
+script = ExtResource("490_extraction_resolver_tests")
+
+[node name="ExtractionResistanceRouterTests" type="Node" parent="."]
+script = ExtResource("491_extraction_resistance_router_tests")
+
+[node name="RulerDispatchPhaseDTests" type="Node" parent="."]
+script = ExtResource("492_ruler_dispatch_phase_d_tests")
+
+[node name="PhaseFNpcSiegeTests" type="Node" parent="."]
+script = ExtResource("493_phase_f_npc_siege_tests")
+
+[node name="RulerAiCapstoneTests" type="Node" parent="."]
+script = ExtResource("494_ruler_ai_capstone_tests")
+
+[node name="MilitiaCasualtyPersistenceTests" type="Node" parent="."]
+script = ExtResource("495_militia_casualty_persistence_tests")

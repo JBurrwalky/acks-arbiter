@@ -123,28 +123,25 @@ static func resolve_retreat(army_id: String, calendar_day: int) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func _find_friendly_stronghold_at(map_id: String, hex_q: int, hex_r: int, owner_id: String) -> Dictionary:
-	## v1: query `strongholds` for a row at (map_id, hex_q, hex_r) owned by
-	## owner_id. The strongholds table is from Phase 1 — schema may not
-	## have hex_q/hex_r columns yet. v1 placeholder: return empty unless we
-	## can find a match by domain ownership and hex.
+	## Query `strongholds` for a completed, non-destroyed row co-located at
+	## (map_id, hex_q, hex_r) owned by owner_id. The strongholds table carries hex coordinates
+	## (location_map_id / location_hex_q / location_hex_r, indexed by idx_strongholds_hex), so the
+	## defeated army can retreat INTO its own stronghold and the victor may then besiege
+	## (daw_axioms_pitching_battle.xml:564-571). Phase F (2026-07-04) replaced the pre-Phase-9
+	## placeholder that always returned {}.
 	if map_id.is_empty() or owner_id.is_empty():
 		return {}
-	# Try strongholds by owner_character_id at the hex (Phase 1 schema may
-	# vary; this is a best-effort lookup until Phase 9 stabilizes the table).
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT s.* FROM strongholds s
-		WHERE s.owner_character_id = ?
+		SELECT * FROM strongholds
+		WHERE owner_character_id = ? AND location_map_id = ?
+		  AND location_hex_q = ? AND location_hex_r = ?
+		  AND status != 'destroyed'
 		LIMIT 1
-	""", [owner_id]):
+	""", [owner_id, map_id, hex_q, hex_r]):
 		return {}
 	if CampaignRepository.db.query_result.is_empty():
 		return {}
-	# v1 limitation: until strongholds carries hex coords, we return empty
-	# (treating "no co-located stronghold found" as the safe default).
-	# Phase 9 will refine this lookup.
-	var _ignored := hex_q
-	var _ignored2 := hex_r
-	return {}
+	return CampaignRepository.db.query_result[0].duplicate()
 
 
 static func _direction_toward_supply_base(map_id: String, from_q: int, from_r: int, base_id: String) -> Array:
@@ -185,9 +182,11 @@ static func _stronghold_hex(stronghold_id: String) -> Array:
 	var owner_id: String = String(CampaignRepository.db.query_result[0].get("owner_character_id", ""))
 	if owner_id.is_empty():
 		return []
-	# Find the owner's domain.
+	# Find the owner's domain (deterministic first row — same ordering contract
+	# as the activity handlers' _resolve_domain_for_ruler).
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1", [owner_id]):
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
+		[owner_id]):
 		return []
 	if CampaignRepository.db.query_result.is_empty():
 		return []

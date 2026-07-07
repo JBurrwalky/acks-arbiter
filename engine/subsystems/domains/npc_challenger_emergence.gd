@@ -93,7 +93,9 @@ static func process_monthly_tick(
 		summary["action"] = "accumulated"
 		return summary
 	# Challenger emerges.
-	var ruler_id: String = String(domain_data.get("owner_character_id", ""))
+	# owner_character_id is a nullable column; String() throws on a null Variant.
+	var owner_v: Variant = domain_data.get("owner_character_id")
+	var ruler_id: String = "" if owner_v == null else str(owner_v)
 	var ruler_level: int = _get_ruler_level(ruler_id)
 	var challenger_level: int = maxi(1, ruler_level - 2)
 	var challenger_character_id: String = _create_challenger_character(
@@ -226,14 +228,11 @@ static func _ensure_loaded() -> void:
 ## subsystems can consume it. The challenger character (created at emergence)
 ## becomes the army's political_owner_id + command_character_id.
 ##
-## v1 retainer estimate: the challenger leads a force of ~level × 20 troops
-## (representing the contested-NPC's followers per RAW §emergence); BR is
-## handled by the standard troop_units pipeline. Seed troop counts via the
-## army's name; actual troop_units rows are NOT created in v1 (the field-battle
-## resolver fall-throughs handle empty armies as token-strength).
-##
-## ★ Phase 9C polish: wire ArmyComposer to seed actual troop_units rows for
-## the challenger's force based on level + class.
+## Force (2026-07-04): the challenger LEADS the domain's bandits — RAW L627-630 says it "emerges
+## from the bandits", and RAW gives no retinue-size formula, so (Jedidiah's call) it fields the
+## same morale-scaled band a bandit swarm would (Rebellious 1/family, Defiant 1/2, Turbulent 1/5).
+## ThreatForceComposer.field_bandit_force creates the real troop_units (this replaced the earlier
+## unit-less stub that only put the count in the army name and left a BR-0 phantom).
 ##
 ## Returns army_id, or "" if already materialized / on failure.
 static func materialize_challenger_as_army(threat_id: String) -> String:
@@ -278,6 +277,11 @@ static func materialize_challenger_as_army(threat_id: String) -> String:
 	})
 	if army_id.is_empty():
 		return ""
+	# Field the challenger's force: it LEADS the domain's bandits (RAW L627-630 "emerges from the
+	# bandits"; Jedidiah 2026-07-04). ThreatForceComposer sizes the band from the domain's active
+	# bandit_swarm / morale tier and creates real troop_units (was a Phase-9B unit-less stub).
+	var force: int = ThreatForceComposer.bandit_force_for_domain(String(threat.get("domain_id", "")))
+	ThreatForceComposer.field_bandit_force(army_id, campaign_id, String(challenger_id), force, calendar_day)
 	DomainThreatRepository.update(threat_id, {
 		"linked_army_id": army_id,
 	})

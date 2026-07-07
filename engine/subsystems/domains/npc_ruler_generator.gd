@@ -127,8 +127,7 @@ func generate_for_domain(domain_id: String, campaign_id: String) -> String:
 	# NPC personality (gdd-npc-personality.md §4): a full profile for a politically
 	# meaningful ruler. Role "ruler" biases Motivation toward power. Written before
 	# the row is created so it persists in one shot via to_dict(). Seeded off the
-	# domain id for reproducibility. (The StrategicDisposition ruler-AI handoff in
-	# §8 is a deferred subsystem, not produced here.)
+	# domain id for reproducibility.
 	# culture_id from the domain row (migration 160; '' until the setting→runtime
 	# handoff populates it, in which case the cultural axis biases activate).
 	NpcPersonalityGenerator.new().attach_to_character(character, {
@@ -158,6 +157,12 @@ func generate_for_domain(domain_id: String, campaign_id: String) -> String:
 	if not CampaignRepository.reassign_domain_owner(domain_id, new_id):
 		push_error("NpcRulerGenerator.generate_for_domain: reassign_domain_owner failed for domain=%s character=%s" % [domain_id, new_id])
 		return new_id
+
+	# StrategicDisposition (gdd-ruler-ai.md §4 Phase 0): derive + persist the
+	# strategic layer from the personality just written. Non-fatal — the ruler
+	# stands even if the disposition write fails (backfill can rebuild it).
+	if StrategicDispositionBuilder.build_and_persist_for_character(new_id) == null:
+		push_warning("NpcRulerGenerator.generate_for_domain: disposition build failed for character=%s" % new_id)
 
 	return new_id
 
@@ -199,6 +204,11 @@ func stock_rulers_and_tribute(campaign_id: String) -> Dictionary:
 			summary["errors"].append("ruler generation failed for %s" % ruler_domain_id)
 		else:
 			summary["rulers_created"] = int(summary["rulers_created"]) + 1
+
+	# Step 1b: one-shot StrategicDisposition backfill (gdd-ruler-ai.md §4).
+	# generate_for_domain writes dispositions for NEW rulers; this catches
+	# rulers that predate migration 181 (e.g. fixture campaigns). Idempotent.
+	summary["dispositions_backfilled"] = StrategicDispositionBuilder.backfill_campaign(campaign_id)
 
 	# Step 2: re-read rows (owner_character_id has changed for ruled domains)
 	# and write tribute_out_owed for every domain.

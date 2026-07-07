@@ -169,7 +169,12 @@ func test_koppen_classification_unit() -> void:
 	check(ClimateGenerator._classify_koppen(-10.0, 0.5, 0.5) == "ET", "polar wet should be ET")
 	check(ClimateGenerator._classify_koppen(25.0, 0.1, 0.5) == "BWh", "hot arid should be BWh")
 	check(ClimateGenerator._classify_koppen(10.0, 0.1, 0.5) == "BWk", "cold arid should be BWk")
-	check(ClimateGenerator._classify_koppen(25.0, 0.25, 0.5) == "BSh", "hot semiarid should be BSh")
+	# Temperature-dependent aridity: arid_t(25)≈0.315, steppe band [0.315,0.465). So a
+	# hot region is BW (desert) up to higher precip than a cold one — 0.25 is now hot
+	# desert (BWh), and BSh needs precip inside the (warmer, higher) steppe band.
+	check(ClimateGenerator._classify_koppen(25.0, 0.25, 0.5) == "BWh", "hot dry (0.25) is now BWh")
+	check(ClimateGenerator._classify_koppen(25.0, 0.40, 0.5) == "BSh", "hot semiarid (0.40) should be BSh")
+	check(ClimateGenerator._classify_koppen(10.0, 0.25, 0.5) != "BWh", "same precip at mild temp is NOT hot desert")
 	check(ClimateGenerator._classify_koppen(25.0, 0.8, 0.3) == "Af", "tropical wet should be Af")
 	check(ClimateGenerator._classify_koppen(25.0, 0.5, 0.7) == "Am", "tropical seasonal should be Am")
 	check(ClimateGenerator._classify_koppen(25.0, 0.5, 0.3) == "Aw", "tropical savanna should be Aw")
@@ -193,7 +198,8 @@ func test_biome_mapping_unit() -> void:
 	check(hex["biome"] == "woods", "montane jungle should become woods (terrain-system §7.2)")
 	hex = _fake_hex("flat", 0.19)
 	ClimateGenerator._assign_biome(hex, "BSk", 9)
-	check(hex["biome"] == "desert", "driest steppe should shade into desert")
+	check(hex["biome"] == "clear" and hex["biome_subtype"] == "clear_grassland",
+		"BSk steppe maps to grassland (the flat-threshold desert fringe is retired)")
 	hex = _fake_hex("mountains", 0.1)
 	ClimateGenerator._assign_biome(hex, "EF", 9)
 	check(hex["biome"] == "desert" and hex["biome_subtype"] == "mountains_glacial",
@@ -247,16 +253,16 @@ func test_land_value_table_unit() -> void:
 
 func test_large_map_performance() -> void:
 	# Measure Layers 1-2 in ISOLATION (the full generate() now also runs culture
-	# seeding + the 160-tick history sim, which have their own budgets). This is
-	# Stage 1's exit criterion: heightmap + hydrology + climate on a Large map.
+	# seeding + the 160-tick history sim, which have their own budgets). Stage 1's
+	# exit criterion: the continuous-geography field engine (raster + hydrology +
+	# climate + biome + corner-graph rivers) on a Large map in one pass.
 	var params := SettingParameters.new()
 	params.map_size = "large"
 	var ctx := {"campaign_id": "_inmem_", "campaign_seed": 7, "params": params}
 	var start := Time.get_ticks_msec()
-	HeightmapGenerator.run(ctx)
-	ClimateGenerator.run(ctx)
+	GeoFieldToGrid.run(ctx)
 	var elapsed := Time.get_ticks_msec() - start
-	check(elapsed < 5000, "Layers 1-2 on Large took %d ms (budget: well under 5s)" % elapsed)
+	check(elapsed < 12000, "Layers 1-2 on Large took %d ms (budget 12s)" % elapsed)
 	check(ctx["hex_grid"].size() == 40 * 30, "large map should have 1200 hexes")
 
 

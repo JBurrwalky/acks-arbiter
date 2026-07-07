@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "nikitu",
+      "catalog_number": 44,
+      "demonym": "Nikitu",
+      "toponym": "Thracia",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "synthesis_sources": [
+        2,
+        15
+      ],
+      "culture_class": "hybrid",
+      "csv_id": "HYB_49",
+      "culture_synthesis_parents": [
+        "ellinike",
+        "wendaki"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.5
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "scrubland"
+      ],
+      "coastal_start": "N"
+    },
+    "expansion": {
+      "aggression": 0.8,
+      "defense": 0.75,
+      "size_exponent_bias": 0.05
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.6,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.1
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.1
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.55,
+      "collapse_proneness": 0.55,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.55
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.4,
+        "mercantile": 0.2,
+        "religious": 0.2,
+        "arcane": 0.2
+      },
+      "preferred_troop_types": [
+        "heavy_infantry",
+        "light_cavalry",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "epistemic_curiosity": 1.0,
+        "in_group_loyalty": 1.0,
+        "stress_reactivity": 1.0,
+        "expressiveness": 0.5,
+        "affective_compassion": -0.5
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.7,
+      "primitive": 0.3
+    }
+  },
+  "flavor": {
+    "name_bank_key": "nikitu",
+    "phonemic_palette": "Fused Hellenic-Plains: Greek aspirates th/ph/kh and -os/-on/-es meet Plains open vowels and -wi/-ta; consonants p t k s sh h m n w y r l, glottal stop; fused endings -ios/-wios/-os on open Plains roots.",
+    "phenotype_notes": "Synthesis of Greek + Plains-nomad per setting-lore §5.3 (blend the listed features; exclude the inverse).",
+    "language": {
+      "language_name": "Hellenic-Plains Deep Fusion",
+      "language_family": "classical, north_american",
+      "script": "own_script"
+    },
+    "social_structure": "egalitarian",
+    "values": {
+      "core_values": [
+        "freedom",
+        "glory",
+        "knowledge"
+      ],
+      "taboos": [
+        "submitting to a tyrant",
+        "cowardice in battle"
+      ],
+      "attitude_toward_outsiders": "wary"
+    },
+    "magic_attitude": {
+      "arcane": "respected",
+      "divine": "respected",
+      "notes": "Greek + Plains-nomad register; deity-morphs in name_bank 'nikitu'."
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "austere",
+      "signature_feature": "mudbrick halls of the Nikitu"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore §4.2): Lawful venerates the 12 Lawful powers and names the 13 as demons; Chaotic venerates the 13 and names the 12 as tyrant-gods; Neutral venerates this culture's ancestral saints, invoking the great gods only situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "nature",
+        "knowledge"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Nikitu — wary egalitarian of the grassland; freedom, glory.",
+      "one_paragraph": "The Nikitu (Greek + Plains-nomad) are a expansionist egalitarian people seeded in grassland, scrubland. They prize freedom, glory, knowledge, lean toward the military sphere, and field heavy_infantry, light_cavalry, archers. Outsiders are met as wary; their patrons touch war, nature, knowledge."
+    }
+  }
+}

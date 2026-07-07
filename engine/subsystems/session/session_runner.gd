@@ -91,6 +91,31 @@ var _commission_pipeline: CommissionPipeline = null
 ## continue across travel/dungeon/settlement state transitions; the registry
 ## entries survive any state change.
 var _siege_handlers: SiegeHandlers = null
+# Army-warfare Phase A (handoff-army-warfare-seams.md §3): the army travel-leg handler
+# (so scheduled marches resolve + hostile arrivals fire armies_collided), the
+# collision→battle listener, and the field-battle modal panel are all session-scoped.
+# The pause bookkeeping avoids clobbering a manual pause when a battle concludes.
+const FieldBattlePanelScene := preload("res://scenes/ui/battle/field_battle_panel.tscn")
+# Phase F (§4.10.3): post-victory siege-decision modal for a PLAYER army whose defeated foe
+# retreated into a stronghold. Auto-pauses the scheduler (handoff from the battle pause) and
+# offers Besiege / Encamp / March-on.
+const SiegeDecisionPanelScene := preload("res://scenes/ui/battle/siege_decision_panel.tscn")
+var _army_marcher: ArmyMarcher = null
+# Army-warfare Phase B: encamped requisition_leg / loot_leg handlers (RAW extraction).
+var _extraction_scheduler: ExtractionScheduler = null
+var _field_battle_panel: CanvasLayer = null
+var _battle_pause_active: bool = false
+var _scheduler_paused_before_battle: bool = false
+var _paused_for_battle_id: String = ""
+# Phase F siege-decision pause (§4.10.3). A player-victor prompt fires DURING the battle aftermath,
+# just before battle_concluded — so this pause is a HANDOFF from the battle pause (see
+# _on_battle_concluded_for_scheduler) to keep the clock stopped continuously while the modal is up.
+var _siege_decision_panel: CanvasLayer = null
+var _siege_decision_active: bool = false
+var _scheduler_paused_before_siege_decision: bool = false
+var _siege_decision_stronghold_id: String = ""
+var _siege_decision_victor_id: String = ""
+var _siege_decision_defeated_id: String = ""
 ## Global ActivityCatalog + ActivityTimeCostExecutor + StrenuousAccountant
 ## (Domain Phase 3, 2026-05-07). Owns activity_complete and
 ## ongoing_session_complete handlers per gdd-realtime-scheduler.md §4.8.
@@ -158,6 +183,7 @@ var _spell_slot_reset_handler: SpellSlotResetHandler = null
 
 var _hex_controller: HexMapController
 var _hex_renderer: Node
+var _world_viewport: Node
 var _nav_stack: NavigationStack
 var _scene_container: Node
 var _scene_transition: Node
@@ -170,7 +196,18 @@ var _scene_transition: Node
 func _ready() -> void:
 	# Resolve sibling references
 	_hex_controller = get_parent().get_node("HexMapController")
-	_hex_renderer = get_parent().get_node("HexMap")
+	# HexMap lives inside the WorldViewport SubViewport (so the map renders only
+	# in the area above the session status bar). Resolve it recursively so the
+	# lookup survives that reparenting and any future scene-graph moves.
+	# Flag-gated 3D swap (gdd-wilderness-hex-3d.md §13): when wilderness_hex_mode is
+	# "heightmap_3d", replace the 2D HexMap with the 3D heightmap renderer under the
+	# same SubViewport (own_world_3d so its Camera3D renders). Default flat_2d is a no-op.
+	_maybe_swap_wilderness_3d()
+	_hex_renderer = get_parent().find_child("HexMap", true, false)
+	# The SubViewportContainer frame wrapping the wilderness map. States hide the
+	# whole frame when leaving the wilderness so it doesn't draw a cleared
+	# rectangle over 3D world content (e.g. the dungeon map).
+	_world_viewport = get_parent().find_child("WorldViewport", true, false)
 	_nav_stack = get_parent().get_node("NavigationStack")
 	_scene_container = get_parent().get_node("SceneContainer")
 	_scene_transition = get_parent().get_node("SceneTransition")
@@ -363,6 +400,18 @@ func _ready() -> void:
 	# to the current running stretch. Handlers no-op when no campaign is loaded.
 	EventBus.scheduler_paused.connect(_on_scheduler_paused_for_flush)
 	Timekeeping.day_changed.connect(_on_day_changed_for_flush)
+	# Army-warfare Phase A (handoff §3): the field-battle modal pauses the scheduler while
+	# a player-involved battle is open (dispatch only EMITS battle_pause_for_player — the
+	# pause itself was never wired). Owned here (the loop owner) so the panel stays UI-only.
+	# battle_started / siege_started drive the immediate Regional-LOD conflict-hook sync so
+	# an opposing full-tier ruler promotes the instant a player-involved fight begins.
+	EventBus.battle_pause_for_player.connect(_on_battle_pause_for_scheduler)
+	EventBus.battle_concluded.connect(_on_battle_concluded_for_scheduler)
+	EventBus.battle_started.connect(_on_conflict_started_for_lod)
+	EventBus.siege_started.connect(_on_conflict_started_for_lod)
+	# Phase F (§4.10.3): a player army won and the loser holed up in a stronghold — open the
+	# Besiege/Encamp/March-on modal and auto-pause. Owned here so the panel stays UI-only.
+	EventBus.siege_decision_required.connect(_on_siege_decision_required)
 
 	# Register all states
 	_register_states()
@@ -527,6 +576,35 @@ func get_hex_map_controller() -> HexMapController:
 func get_hex_map_renderer() -> Node:
 	return _hex_renderer
 
+
+## Flag-gated wilderness 3D renderer swap (gdd-wilderness-hex-3d.md §13.2). When
+## acks/rendering/wilderness_hex_mode == "heightmap_3d", replace the 2D HexMap
+## under the WorldSubViewport with the 3D heightmap scene (root renamed "HexMap"
+## so find_child resolves it) and enable own_world_3d so its Camera3D renders.
+## Default "flat_2d" leaves the shipped 2D path untouched.
+func _maybe_swap_wilderness_3d() -> void:
+	if str(ProjectSettings.get_setting("acks/rendering/wilderness_hex_mode", "flat_2d")) != "heightmap_3d":
+		return
+	var sub: Node = get_parent().find_child("WorldSubViewport", true, false)
+	if sub == null or not (sub is SubViewport):
+		push_warning("wilderness 3D: WorldSubViewport not found; staying 2D.")
+		return
+	var old: Node = sub.find_child("HexMap", false, false)
+	if old != null:
+		old.name = "HexMap2D_disabled"
+		old.queue_free()
+	(sub as SubViewport).own_world_3d = true
+	var scene_3d: Node = load("res://scenes/maps/hex_map_3d.tscn").instantiate()
+	scene_3d.name = "HexMap"
+	sub.add_child(scene_3d)
+
+
+## The SubViewportContainer frame that wraps the wilderness map (anchored above
+## the status bar). Hide it when leaving the wilderness so it doesn't draw over
+## 3D world content. May be null in tests / scenes without the frame.
+func get_world_viewport() -> Node:
+	return _world_viewport
+
 func get_campaign_id() -> String:
 	return _campaign_id
 
@@ -604,6 +682,10 @@ func get_wilderness_handlers() -> WildernessHandlers:
 
 func get_scheduler_loop() -> SchedulerLoop:
 	return _scheduler_loop
+
+## Army-warfare Phase B: the encamped requisition_leg / loot_leg activity launcher.
+func get_extraction_scheduler() -> ExtractionScheduler:
+	return _extraction_scheduler
 
 
 ## Activity Time-Cost Executor (Domain Phase 3). UI launchers (Decrees & Remote
@@ -773,6 +855,59 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_siege_handlers = SiegeHandlers.new(self)
 	_siege_handlers.register(_handler_registry)
 
+	# 7d-3. Army-warfare Phase A (handoff §3). Register the army travel-leg handler so
+	#       scheduled marches actually resolve (and hostile arrivals fire armies_collided
+	#       via ArmyCollisionDetector), then attach the collision→battle listener. Without
+	#       the marcher registered, army_travel_leg events park unhandled and no army ever
+	#       completes a march or collides.
+	if _army_marcher != null:
+		_army_marcher.unregister(_handler_registry)
+		_army_marcher = null
+	_army_marcher = ArmyMarcher.new()
+	_army_marcher.register(_handler_registry)
+	BattleDispatcher.register_collision_listener()
+	# Phase F (§4.10.3): route a post-battle retreat-into-stronghold to the victor's siege choice.
+	# The router holds a scheduler provider so a dispatched siege gets the live EventScheduler for
+	# its ticks (the battle aftermath itself carries no scheduler).
+	BattleRetreatSiegeRouter.register_listener(get_scheduler)
+	# Demobilise a spent one-off resistance levy after its INTERACTIVE battle concludes (the silent
+	# path tears the levy down inline; the player-involved path cannot await the outcome in-hook).
+	ExtractionResistanceRouter.register_battle_conclusion_listener()
+
+	# 7d-3b. Army-warfare Phase B (handoff §4): the encamped requisition_leg / loot_leg
+	#        activity handlers. Without registration these events would park unhandled
+	#        (same lesson as the Phase-A ArmyMarcher fix).
+	if _extraction_scheduler != null:
+		_extraction_scheduler.unregister(_handler_registry)
+		_extraction_scheduler = null
+	_extraction_scheduler = ExtractionScheduler.new()
+	_extraction_scheduler.register(_handler_registry)
+	# Phase C: clear the static per-day extraction-resistance episode cache on every session load
+	# so a decision cached under one campaign can never bleed into another (the key is not
+	# campaign-scoped; a fresh session starts with a clean slate).
+	ExtractionResistanceRouter.reset_episode_cache()
+
+	# 7d-4. Field-battle modal panel (gdd-army-warfare.md §7.4). A CanvasLayer overlay that
+	#       self-opens on battle_pause_for_player and self-closes on battle_concluded; the
+	#       scheduler pause/resume is owned by SessionRunner (see _ready). Instantiated once
+	#       as a sibling of SessionRunner under Main, like the entity outliner.
+	if _field_battle_panel == null:
+		_field_battle_panel = FieldBattlePanelScene.instantiate()
+		_field_battle_panel.name = "FieldBattlePanel"
+		get_parent().add_child(_field_battle_panel)
+	_field_battle_panel.visible = false
+
+	# 7d-5. Phase F (§4.10.3) post-victory siege-decision modal. A CanvasLayer overlay opened by
+	#       _on_siege_decision_required; SessionRunner owns the scheduler pause + the choice routing
+	#       (the panel is UI-only). Instantiated once as a sibling of SessionRunner, like the panel above.
+	if _siege_decision_panel == null:
+		_siege_decision_panel = SiegeDecisionPanelScene.instantiate()
+		_siege_decision_panel.name = "SiegeDecisionPanel"
+		get_parent().add_child(_siege_decision_panel)
+	_siege_decision_panel.visible = false
+	_siege_decision_active = false
+	_siege_decision_stronghold_id = ""
+
 	# Phase 9C polish 2026-05-09: reconcile disease cure ticks on session load.
 	# When a campaign is loaded mid-disease, troop_units rows have is_diseased=1
 	# but the disease_cure_weekly_tick events live only in-memory on the
@@ -787,6 +922,14 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# choke points existed) leaves a live siege with no tick chain — it would
 	# stall forever. Idempotent per siege via get_events_for_owner.
 	SiegeResolver.reconcile_ticks_on_session_load(_scheduler, campaign_id)
+
+	# Ruler AI Phase 4 (2026-07-02): drop the in-memory LOD sync cache on
+	# session load. The next RulerLodManager.sync hydrates its prior set from
+	# the PERSISTED ruler_ai_state tiers, so a restored snapshot (including an
+	# in-process load of an older save) diffs against the restored DB rather
+	# than a stale in-memory set (gdd-ruler-ai.md 8.2 save/load
+	# reconciliation).
+	RulerLodManager.clear_cache()
 
 	# 7e. Register activity executor + strenuous accountant (Domain Phase 3,
 	#     2026-05-07). Owns "activity_complete" and "ongoing_session_complete"
@@ -982,6 +1125,107 @@ func _on_scheduler_paused_for_flush(_reason: String) -> void:
 
 func _on_day_changed_for_flush(_day: int, _month: int, _year: int) -> void:
 	flush_clock_and_queue()
+
+
+# ---------------------------------------------------------------------------
+# Army-warfare Phase A (handoff §3): battle scheduler pause + LOD conflict hook
+# ---------------------------------------------------------------------------
+
+## Pause the scheduler while a player-involved field battle is open (gdd-army-warfare.md
+## §7.4). Capture the pre-battle pause state on the FIRST pause (battle_pause_for_player
+## re-fires per phase decision) so conclusion restores it rather than clobbering a
+## manual pause. §19.1: pause goes through SchedulerLoop.pause(reason), never a spoofed
+## EventBus emit. Silent NPC-vs-NPC battles never emit this signal, so this is player-only.
+func _on_battle_pause_for_scheduler(battle_id: String, _decision_point: String) -> void:
+	if _scheduler_loop == null:
+		return
+	if not _battle_pause_active:
+		_battle_pause_active = true
+		_paused_for_battle_id = battle_id
+		_scheduler_paused_before_battle = _scheduler_loop.is_paused()
+	if not _scheduler_loop.is_paused():
+		_scheduler_loop.pause("field_battle")
+
+
+func _on_battle_concluded_for_scheduler(battle_id: String, _outcome: String) -> void:
+	# ONLY the battle that owns the pause may resume it. A silent NPC-vs-NPC battle can
+	# conclude synchronously (from the same collision-detector loop that opened a player
+	# battle) — resuming on its battle_concluded would advance the clock out from under the
+	# still-open player panel and never re-pause. Match the id before touching the loop.
+	if not _battle_pause_active or battle_id != _paused_for_battle_id:
+		return
+	_battle_pause_active = false
+	_paused_for_battle_id = ""
+	# Phase F (§4.10.3): a player-victor siege-decision modal opens DURING this battle's aftermath
+	# (siege_decision_required fires just BEFORE battle_concluded), so it may already hold the pause.
+	# Defer the resume to the decision — resuming here would run the clock under the open modal.
+	if _siege_decision_active:
+		return
+	# Resume only if the player wasn't already paused before the battle opened.
+	if _scheduler_loop != null and not _scheduler_paused_before_battle \
+			and _scheduler_loop.is_paused():
+		_scheduler_loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+# ---------------------------------------------------------------------------
+# Army-warfare Phase F (§4.10.3): post-victory siege-decision modal (player victor)
+# ---------------------------------------------------------------------------
+
+## Open the Besiege / Encamp / March-on modal and pause the scheduler. Fires for a PLAYER victor
+## whose defeated foe retreated into a stronghold (BattleRetreatSiegeRouter never auto-besieges for
+## a player). This runs inside the battle aftermath while the interactive battle pause is still
+## active, so we inherit that battle's pre-pause state and take over the pause; battle_concluded
+## then defers its resume to _on_siege_decision_made. The panel is UI-only — it emits `decided`.
+func _on_siege_decision_required(victor_army_id: String, stronghold_id: String, defeated_army_id: String) -> void:
+	if _scheduler_loop == null or _siege_decision_panel == null:
+		return
+	_siege_decision_active = true
+	_siege_decision_victor_id = victor_army_id
+	_siege_decision_stronghold_id = stronghold_id
+	_siege_decision_defeated_id = defeated_army_id
+	# Inherit the still-active battle pause's pre-state; else capture the live state defensively.
+	_scheduler_paused_before_siege_decision = _scheduler_paused_before_battle if _battle_pause_active \
+			else _scheduler_loop.is_paused()
+	if not _scheduler_loop.is_paused():
+		_scheduler_loop.pause("siege_decision")
+	if not _siege_decision_panel.decided.is_connected(_on_siege_decision_made):
+		_siege_decision_panel.decided.connect(_on_siege_decision_made, CONNECT_ONE_SHOT)
+	_siege_decision_panel.open_for_decision(victor_army_id, stronghold_id, defeated_army_id)
+
+
+## Route the player's choice to the dispatcher and release the siege-decision pause. Besiege starts
+## a real siege (player-involvement routing centralised in SiegeDispatcher); encamp / march-on hold
+## the army encamped. Resume only if the player wasn't already paused before the battle opened.
+func _on_siege_decision_made(choice: String) -> void:
+	if not _siege_decision_active:
+		return
+	var stronghold_id: String = _siege_decision_stronghold_id
+	BattleRetreatSiegeRouter.resolve_player_decision(
+		choice, _siege_decision_victor_id, stronghold_id, _siege_decision_defeated_id,
+		Timekeeping.get_calendar_day(), get_scheduler())
+	if EventBus.has_signal("siege_decision_resolved"):
+		EventBus.emit_signal("siege_decision_resolved", stronghold_id, choice)
+	_siege_decision_active = false
+	_siege_decision_stronghold_id = ""
+	_siege_decision_victor_id = ""
+	_siege_decision_defeated_id = ""
+	if _scheduler_loop != null and not _scheduler_paused_before_siege_decision \
+			and _scheduler_loop.is_paused():
+		_scheduler_loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+## Immediate Regional-LOD conflict-hook sync (gdd-ruler-ai.md §8.2 / handoff §3.3): when a
+## player-involved battle or siege is created, promote the opposing full-tier NPC ruler into
+## the active set at once (not just at month-end). Connected to battle_started / siege_started
+## (both drop their args). ConflictParticipants scopes to player-involved conflicts, so an
+## NPC-vs-NPC battle_started is a harmless no-op; RulerLodManager's full-tier gate drops any
+## named-tier opponent. sync's scheduler is used only for demotion (has_method-guarded).
+func _on_conflict_started_for_lod() -> void:
+	if _campaign_id.is_empty():
+		return
+	RulerLodManager.sync(_campaign_id, _scheduler,
+		ConflictParticipants.active_ruler_ids(_campaign_id),
+		Timekeeping.get_calendar_day())
 
 
 ## Loads [param party_id]'s full PartyData (roster, shared inventory, trained
@@ -1382,6 +1626,28 @@ func end_session() -> void:
 	if _siege_handlers != null:
 		_siege_handlers.unregister(_handler_registry)
 		_siege_handlers = null
+	# Army-warfare Phase A: detach the collision→battle listener + travel-leg handler.
+	BattleDispatcher.unregister_collision_listener()
+	# Phase F: detach the post-battle retreat→siege router.
+	BattleRetreatSiegeRouter.unregister_listener()
+	# Detach the spent-levy demobilisation listener.
+	ExtractionResistanceRouter.unregister_battle_conclusion_listener()
+	if _army_marcher != null:
+		_army_marcher.unregister(_handler_registry)
+		_army_marcher = null
+	if _extraction_scheduler != null:
+		_extraction_scheduler.unregister(_handler_registry)
+		_extraction_scheduler = null
+	_battle_pause_active = false
+	_paused_for_battle_id = ""
+	# Phase F (§4.10.3): drop any pending siege-decision so a stale prompt can't carry across sessions.
+	if _siege_decision_panel != null and _siege_decision_panel.decided.is_connected(_on_siege_decision_made):
+		_siege_decision_panel.decided.disconnect(_on_siege_decision_made)
+	_siege_decision_active = false
+	_scheduler_paused_before_siege_decision = false
+	_siege_decision_stronghold_id = ""
+	_siege_decision_victor_id = ""
+	_siege_decision_defeated_id = ""
 	if _activity_executor != null:
 		_activity_executor.unregister(_handler_registry)
 		_activity_executor = null
@@ -1397,6 +1663,10 @@ func end_session() -> void:
 		_entity_outliner.visible = false
 	if _party_selector_tabs != null:
 		_party_selector_tabs.visible = false
+	if _field_battle_panel != null:
+		_field_battle_panel.visible = false
+	if _siege_decision_panel != null:
+		_siege_decision_panel.visible = false
 	# Pause BEFORE clearing the scheduler: pause() triggers the
 	# flush-clock-and-queue choke point, which must see the real queue (or
 	# no-op if already paused) — pausing after clear() would persist an empty

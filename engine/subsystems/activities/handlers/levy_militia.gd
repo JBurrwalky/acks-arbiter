@@ -39,19 +39,31 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var peasants: int = int(domain.get("peasant_families", 0))
 	@warning_ignore("integer_division")
 	var max_militia: int = (peasants / 10) * 2
-	var requested: int = int(_parse_params(state).get("count", max_militia))
-	var count: int = mini(maxi(0, requested), max_militia)
+	# Militia are a LIMITED resource (RAW daw_armies_recruitment.xml:428 — 2 per 10 families is a
+	# STANDING cap, not a per-levy allowance). Subtract militia already under arms so repeated
+	# levies can't stack past the cap; combat losses (which the casualty resolver decrements + the
+	# militia-death population loss makes permanent) free the slot only up to the shrunken cap.
+	var existing_militia: int = _current_active_militia(domain_id)
+	var available: int = maxi(0, max_militia - existing_militia)
+	var requested: int = int(_parse_params(state).get("count", available))
+	var count: int = mini(maxi(0, requested), available)
 	if count <= 0:
-		return {"summary": "levy_militia: insufficient peasants for militia levy"}
+		var reason: String = "militia already at the 2-per-10-families cap" if existing_militia >= max_militia \
+			else "insufficient peasants for militia levy"
+		return {"summary": "levy_militia: %s" % reason,
+			"blocked_reason": "militia_cap_reached" if existing_militia >= max_militia else "insufficient_peasants"}
 
 	var character: Dictionary = CampaignRepository.get_character(character_id)
 	var calendar_day: int = _calendar_day()
 	var ids: Array = _spawn_militia_units(character, domain_id, count, calendar_day)
 
+	# category MUST be one of the ledger CHECK enum (revenue/expense/tribute_in/
+	# tribute_out/investment/other) — 'other' is the record-only bucket (cp_amount 0;
+	# a militia levy is a record, not a cp transaction). subcategory carries the tag.
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": calendar_day,
-		"category": "garrison",
+		"category": "other",
 		"subcategory": "militia_levy",
 		"cp_amount": 0,
 		"description": "Levied %d militia (untrained, %d unit(s))" % [count, ids.size()],
@@ -102,6 +114,20 @@ static func _spawn_militia_units(character: Dictionary, domain_id: String,
 	return ids
 
 
+## Total militia troops (SUM of counts, not units) currently under arms for the domain — the
+## standing militia to subtract from the 2-per-10-families cap. Only status='active' militia count;
+## battle-departed (dead) ones have already freed their slot (and cost the domain a family).
+static func _current_active_militia(domain_id: String) -> int:
+	if domain_id.is_empty():
+		return 0
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT COALESCE(SUM(count), 0) AS n FROM troop_units
+		WHERE assigned_domain_id = ? AND source_type = 'militia' AND status = 'active'
+	""", [domain_id]) or CampaignRepository.db.query_result.is_empty():
+		return 0
+	return int(CampaignRepository.db.query_result[0].get("n", 0))
+
+
 static func _parse_params(state: Dictionary) -> Dictionary:
 	var raw: String = String(state.get("params_json", "{}"))
 	var parsed: Variant = JSON.parse_string(raw)
@@ -112,7 +138,7 @@ static func _resolve_domain_for_ruler(character_id: String) -> String:
 	if character_id.is_empty():
 		return ""
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1",
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
 		[character_id]
 	):
 		return ""

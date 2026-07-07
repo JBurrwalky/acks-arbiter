@@ -32,7 +32,7 @@ static func _resolve_domain_for_ruler(character_id: String) -> String:
 	if character_id.is_empty():
 		return ""
 	if not CampaignRepository.db.query_with_bindings(
-		"SELECT id FROM domains WHERE owner_character_id = ? LIMIT 1",
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY created_at, id LIMIT 1",
 		[character_id]
 	):
 		return ""

@@ -716,13 +716,38 @@ static func _resolve_post_battle_state(army_id: String, side: String, outcome: S
 		# line. v1: instant relocation; Phase 6A part 2's marcher will replace
 		# with a scheduled travel_leg event.
 		var retreat_result: Dictionary = RetreatResolver.resolve_retreat(army_id, calendar_day)
-		BattleRepository.append_log(_find_battle_for_army(army_id), "retreat_resolved",
+		var battle_id_lost: String = _find_battle_for_army(army_id)
+		BattleRepository.append_log(battle_id_lost, "retreat_resolved",
 			1, "aftermath", 0, side, retreat_result, calendar_day)
+		# Phase F (§4.10.3): if the loser retreated INTO a friendly stronghold in the battle hex,
+		# the victor MAY begin a siege. Emit for the SessionRunner-owned BattleRetreatSiegeRouter
+		# (which holds the live scheduler and routes player-prompt vs NPC-heuristic).
+		if bool(retreat_result.get("retreated_into_stronghold", false)):
+			_emit_retreat_into_stronghold(battle_id_lost, army_id,
+				String(retreat_result.get("stronghold_id", "")))
 	elif is_mutual_draw:
 		ArmyRepository.update_army(army_id, {"state": "withdrawing"})
 		var retreat_result_draw: Dictionary = RetreatResolver.resolve_retreat(army_id, calendar_day)
 		BattleRepository.append_log(_find_battle_for_army(army_id), "retreat_resolved",
 			1, "aftermath", 0, side, retreat_result_draw, calendar_day)
+
+
+## Phase F (§4.10.3): the defeated army (loser_army_id) retreated into stronghold_id. Resolve the
+## VICTOR (the other army in the battle) and emit for BattleRetreatSiegeRouter.
+static func _emit_retreat_into_stronghold(battle_id: String, loser_army_id: String, stronghold_id: String) -> void:
+	if stronghold_id.is_empty() or battle_id.is_empty():
+		return
+	var battle: Dictionary = BattleRepository.get_battle(battle_id)
+	if battle.is_empty():
+		return
+	var attacker: String = String(battle.get("attacker_army_id", ""))
+	var defender: String = String(battle.get("defender_army_id", ""))
+	var victor: String = attacker if loser_army_id == defender else defender
+	if victor.is_empty():
+		return
+	if EventBus.has_signal("battle_loser_retreated_into_stronghold"):
+		EventBus.emit_signal("battle_loser_retreated_into_stronghold",
+			victor, stronghold_id, loser_army_id, battle_id)
 
 
 # ---------------------------------------------------------------------------

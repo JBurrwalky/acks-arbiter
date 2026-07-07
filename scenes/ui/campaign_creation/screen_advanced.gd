@@ -92,10 +92,15 @@ func _build_physical(p: VBoxContainer) -> void:
 	_enum_row(p, "Mountains", [["low", "Low"], ["medium", "Medium"], ["high", "High"]],
 		func(): return _params.mountain_frequency, func(v): _params.mountain_frequency = v,
 		"Ruggedness of the land — share of land that is mountains / hills.\n" +
-		"Low  ≈ 4% mountains / 17% hills\n" +
-		"Medium ≈ 5% / 20%\n" +
-		"High ≈ 8% / 31%\n" +
-		"Higher settings also push more terrain above sea level.")
+		"Low  ≈ 12% mountains / 26% hills\n" +
+		"Medium ≈ 12% / 28%\n" +
+		"High ≈ 12% / 33%\n" +
+		"Higher settings push the hills/mountains split upward.")
+	_enum_row(p, "Mountain ranges", [["cordillera", "Cordillera"], ["alpine", "Alpine"]],
+		func(): return _params.mountain_range_style, func(v): _params.mountain_range_style = v,
+		"How the mountains organize into ranges.\n" +
+		"Cordillera — many distinct linear spines, ridge-and-valley\n" +
+		"Alpine — fewer, bolder ranges with broad lowlands between")
 	_enum_row(p, "Rivers", [["low", "Low"], ["medium", "Medium"], ["high", "High"]],
 		func(): return _params.river_density, func(v): _params.river_density = v,
 		"How many river systems form.\n" +

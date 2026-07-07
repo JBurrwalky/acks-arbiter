@@ -22,9 +22,15 @@ func run_all_tests() -> void:
 	test_armies_section_form_button_enabled_at_threshold()
 	test_army_detail_panel_renders_officer_hierarchy()
 	test_army_detail_panel_renders_unit_roster()
+	test_army_detail_panel_read_only_hides_actions()
 	test_marching_menu_for_encamped_army_includes_march()
 	test_marching_menu_for_marching_army_includes_encamp_only()
 	test_marching_menu_executes_march_action()
+	test_marching_menu_march_gated_by_adjacency()
+	test_marching_menu_extraction_eligibility()
+	test_marching_menu_extraction_dispatch()
+	test_marching_menu_marching_has_disband_and_encamp()
+	test_marching_menu_options_shape_has_cancel()
 	test_commander_departure_check_returns_active_armies()
 	test_commander_departure_check_excludes_disbanded()
 	if not has_failures():
@@ -153,6 +159,20 @@ func test_army_detail_panel_renders_unit_roster() -> void:
 	panel.queue_free()
 
 
+func test_army_detail_panel_read_only_hides_actions() -> void:
+	var army_id := _build_army_with_units(2)
+	var panel = ArmyDetailPanelScript.new()
+	add_child(panel)
+	panel.display(army_id, true)
+	# Read-only mode shows an observation-only note, never command buttons.
+	var has_button := false
+	for child in panel._action_bar.get_children():
+		if child is Button:
+			has_button = true
+	check(not has_button, "read-only detail panel shows no command buttons")
+	panel.queue_free()
+
+
 func test_marching_menu_for_encamped_army_includes_march() -> void:
 	var army_id := _build_army_with_units(3)
 	var items := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
@@ -183,6 +203,101 @@ func test_marching_menu_executes_march_action() -> void:
 		MarchingMenuScript.ACTION_MARCH, army_id, 6, 5, 0, scheduler
 	)
 	check(bool(result.get("success", false)), "execute_action march succeeded")
+
+
+func test_marching_menu_march_gated_by_adjacency() -> void:
+	var army_id := _build_army_with_units(2)
+	ArmyRepository.update_army(army_id, {"hex_q": 5, "hex_r": 5})
+	# Adjacent target (5,5)+(1,0) = (6,5): March enabled.
+	var adj := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
+	check(_item_enabled(adj, MarchingMenuScript.ACTION_MARCH), "March enabled for adjacent hex")
+	# Non-adjacent target (4 hexes away): March present but disabled with a tooltip.
+	var far := MarchingMenuScript.build_items_for_army(army_id, 9, 9)
+	check(_item_present(far, MarchingMenuScript.ACTION_MARCH), "March present for far hex")
+	check(not _item_enabled(far, MarchingMenuScript.ACTION_MARCH), "March disabled for non-adjacent hex")
+	check(not _item_tooltip(far, MarchingMenuScript.ACTION_MARCH).is_empty(),
+		"disabled March explains why")
+
+
+func test_marching_menu_extraction_eligibility() -> void:
+	# Phase B live: extraction is gated on real eligibility (friendly territory + cooldown
+	# + ceiling), not a flag. These test hexes are unclaimed, so Requisition is disabled
+	# (nothing to requisition) while Loot is always available.
+	var army_id := _build_army_with_units(2)
+	ArmyRepository.update_army(army_id, {"hex_q": 5, "hex_r": 5})
+	var items := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
+	check(not _item_enabled(items, MarchingMenuScript.ACTION_MARCH_REQUISITION),
+		"March+Requisition disabled in unclaimed territory")
+	check(_item_enabled(items, MarchingMenuScript.ACTION_MARCH_LOOT),
+		"March+Loot always available")
+	check(not _item_enabled(items, MarchingMenuScript.ACTION_REQUISITION_HERE),
+		"Requisition-here disabled in unclaimed territory")
+	check(_item_enabled(items, MarchingMenuScript.ACTION_LOOT_HERE),
+		"Loot-here always available")
+	check(not _item_tooltip(items, MarchingMenuScript.ACTION_MARCH_REQUISITION).is_empty(),
+		"disabled Requisition explains why")
+
+
+func test_marching_menu_extraction_dispatch() -> void:
+	var army_id := _build_army_with_units(2)
+	var scheduler := EventScheduler.new()
+	# March+Requisition now dispatches a travel leg (Phase B live).
+	var march := MarchingMenuScript.execute_action(
+		MarchingMenuScript.ACTION_MARCH_REQUISITION, army_id, 6, 5, 0, scheduler)
+	check(bool(march.get("success", false)), "March+Requisition dispatches a travel leg")
+	# Encamped Requisition-here needs the session's ExtractionScheduler (not passed here).
+	var here := MarchingMenuScript.execute_action(
+		MarchingMenuScript.ACTION_REQUISITION_HERE, army_id, 6, 5, 0, scheduler)
+	check(not bool(here.get("success", true)), "Requisition-here without an extraction scheduler is rejected")
+	check(String(here.get("error", "")) == "no_extraction_scheduler", "error is no_extraction_scheduler")
+
+
+func test_marching_menu_marching_has_disband_and_encamp() -> void:
+	var army_id := _build_army_with_units(2)
+	ArmyRepository.update_army(army_id, {"state": "marching"})
+	var items := MarchingMenuScript.build_items_for_army(army_id, 6, 5)
+	var actions: Array = []
+	for item in items:
+		actions.append(str(item.get("action", "")))
+	check(actions.has(MarchingMenuScript.ACTION_ENCAMP), "marching army can Encamp")
+	check(actions.has(MarchingMenuScript.ACTION_DISBAND), "marching army can Disband")
+	check(not actions.has(MarchingMenuScript.ACTION_MARCH), "marching army has no March")
+
+
+func test_marching_menu_options_shape_has_cancel() -> void:
+	var army_id := _build_army_with_units(2)
+	ArmyRepository.update_army(army_id, {"hex_q": 5, "hex_r": 5})
+	var options := MarchingMenuScript.build_menu_options(army_id, 6, 5)
+	check(options.size() >= 2, "menu options produced")
+	var last: Dictionary = options[options.size() - 1]
+	check(String((last.get("action_data", {}) as Dictionary).get("action_type", "")) == "cancel",
+		"last option is Cancel")
+	var first: Dictionary = options[0]
+	check(String((first.get("action_data", {}) as Dictionary).get("action_type", "")) == "army_order",
+		"army options use army_order action_type")
+	check(String(first.get("category", "")) == MarchingMenuScript.MENU_CATEGORY,
+		"army options carry the army category")
+
+
+func _item_present(items: Array, action: String) -> bool:
+	for item in items:
+		if str(item.get("action", "")) == action:
+			return true
+	return false
+
+
+func _item_enabled(items: Array, action: String) -> bool:
+	for item in items:
+		if str(item.get("action", "")) == action:
+			return bool(item.get("enabled", false))
+	return false
+
+
+func _item_tooltip(items: Array, action: String) -> String:
+	for item in items:
+		if str(item.get("action", "")) == action:
+			return str(item.get("tooltip", ""))
+	return ""
 
 
 func test_commander_departure_check_returns_active_armies() -> void:

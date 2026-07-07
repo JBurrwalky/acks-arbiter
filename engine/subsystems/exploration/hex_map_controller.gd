@@ -27,6 +27,10 @@ signal visibility_updated()
 signal party_moved(from_hex: Vector2i, to_hex: Vector2i)
 signal hex_terrain_updated(coord: Vector2i)
 signal hex_overlay_updated(coord: Vector2i)
+## The play map grew at its frontier — hexes (and reseamed river/cliff edges) were appended
+## to the SAME map mid-session (gdd-region-zoom-in.md §6). Renderer rebuilds without
+## re-centering or re-hiding fog.
+signal frontier_grown(map_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +159,21 @@ func get_map() -> HexMapData:
 	return _map_data
 
 
+## Replace the live map with a GROWN copy (more hexes + reseamed edges) after frontier
+## growth, WITHOUT re-hiding fog or re-centering (gdd-region-zoom-in.md §6). The current
+## fog + party position are carried forward, so explored land stays explored and the newly
+## appended hexes default to HIDDEN. Emits [signal frontier_grown] for the renderer.
+func adopt_grown_map(new_map_data: HexMapData) -> void:
+	if new_map_data == null:
+		return
+	if _map_data != null:
+		for coord in _map_data.fog.keys():
+			new_map_data.fog[coord] = _map_data.fog[coord]
+		new_map_data.party_hex = _map_data.party_hex
+	_map_data = new_map_data
+	frontier_grown.emit(_map_data.id)
+
+
 ## Updates a single terrain field on a hex in-memory and emits hex_terrain_updated.
 ## Called by OverrideManager after writing the change to the DB.
 func update_hex_terrain(coord: Vector2i, field: String, new_value) -> void:
@@ -188,7 +207,7 @@ func can_move_to(target: Vector2i) -> bool:
 		_map_data != null
 		and _map_data.is_valid_coord(target)
 		and is_adjacent(_map_data.party_hex, target)
-		and can_cross_river_edge(_map_data.party_hex, target)
+		and can_cross_edge(_map_data.party_hex, target)
 	)
 
 
@@ -215,6 +234,33 @@ func can_cross_river_edge(from_hex: Vector2i, to_hex: Vector2i) -> bool:
 			# passable even without an authored crossing.
 			return _edge_has_road(owner, edge_data.edge)
 	return true
+
+
+## Returns the cliff/canyon edge running along the shared boundary between two
+## adjacent hexes, or null if there is none (gdd-cliffs-canyons.md §4/§6). Cliff
+## edges are stored canonically (lex-lower hex owns the entry; no mirror entry),
+## so this checks the edge in both orientations — same scan as rivers. The
+## returned [HexCliffEdgeData] carries `height_ft` / `high_side`, which the climb
+## resolver (SHEER_SURFACE_CLIMB, §5) reads when a deliberate crossing is ordered.
+func cliff_edge_between(from_hex: Vector2i, to_hex: Vector2i) -> HexCliffEdgeData:
+	if _map_data == null:
+		return null
+	for edge_data in _map_data.cliff_edges:
+		var owner := Vector2i(edge_data.hex_q, edge_data.hex_r)
+		var neighbor: Vector2i = owner + HexCliffEdgeData.neighbor_offset(edge_data.edge)
+		if (owner == from_hex and neighbor == to_hex) \
+				or (owner == to_hex and neighbor == from_hex):
+			return edge_data
+	return null
+
+
+## Returns true if the party may cross the edge between two adjacent hexes by
+## NORMAL travel — i.e. the river gate allows it AND no cliff/canyon walls it off.
+## A cliff edge is impassable to routing in every case: the party routes around
+## it, and crossing one is only ever a deliberate climb action (§5/§6), never an
+## auto-pathed step. Pathfinding and single-step moves both gate on this.
+func can_cross_edge(from_hex: Vector2i, to_hex: Vector2i) -> bool:
+	return can_cross_river_edge(from_hex, to_hex) and cliff_edge_between(from_hex, to_hex) == null
 
 
 ## Returns true if a road runs across the edge `edge` of `owner_coord` — i.e.
@@ -287,10 +333,11 @@ func find_path(from_hex: Vector2i, to_hex: Vector2i) -> Array[Vector2i]:
 			# walk into — but is_hex_passable already approved the goal above.
 			if not is_hex_passable(n):
 				continue
-			# Rivers without a bridge/ford/ferry block the step between two
-			# adjacent hexes (no boats yet — GDD §3.6.5). Pathfinding routes
-			# around them, threading through declared crossings.
-			if not can_cross_river_edge(current, n):
+			# Rivers without a bridge/ford/ferry, and cliff/canyon edges, block
+			# the step between two adjacent hexes (no boats yet — GDD §3.6.5;
+			# cliffs are impassable to routing — gdd-cliffs-canyons.md §6).
+			# Pathfinding routes around them, threading through declared crossings.
+			if not can_cross_edge(current, n):
 				continue
 			var tentative: int = current_g + 1
 			if not g_score.has(n) or tentative < int(g_score[n]):
@@ -334,6 +381,28 @@ func move_party(target: Vector2i) -> bool:
 		return false
 
 	var from := _map_data.party_hex
+	_map_data.party_hex = target
+	_update_visibility(target)
+	party_moved.emit(from, target)
+	EventBus.hex_entered.emit("%d,%d" % [target.x, target.y])
+	return true
+
+
+## Moves the party ACROSS a cliff edge after a successful climb (SHEER_SURFACE_CLIMB,
+## gdd-cliffs-canyons.md §5/§6). Deliberately bypasses the `can_cross_edge` gate that
+## [method move_party] enforces — the climb gate (Mountaineering + gear) has already been
+## satisfied upstream — but still requires the two hexes to be adjacent, the target
+## passable, and a real cliff edge to exist between them, so this can't be used to skip the
+## crossing gate anywhere else. Emits the same movement signals as [method move_party].
+func climb_party_across(target: Vector2i) -> bool:
+	if _map_data == null:
+		return false
+	var from := _map_data.party_hex
+	if not (is_adjacent(from, target) and is_hex_passable(target) \
+			and cliff_edge_between(from, target) != null):
+		push_error("HexMapController.climb_party_across: %s is not a climbable cliff neighbour of %s"
+			% [str(target), str(from)])
+		return false
 	_map_data.party_hex = target
 	_update_visibility(target)
 	party_moved.emit(from, target)

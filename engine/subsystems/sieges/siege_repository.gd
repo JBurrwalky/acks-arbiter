@@ -41,7 +41,7 @@ const _SIEGE_UPDATE_FIELDS := [
 	"weeks_unsupplied", "starvation_penalty_stacks", "expected_end_calendar_day",
 	"concluded_calendar_day", "outcome", "payload_json", "defending_army_id",
 	"resolution_mode", "simplified_total_days", "simplified_site_modifier",
-	"unit_capacity",
+	"unit_capacity", "defender_posture",
 ]
 
 const _MINE_UPDATE_FIELDS := [

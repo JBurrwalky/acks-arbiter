@@ -76,6 +76,25 @@ static func build_menu(
 			"action_data": _action(base_data, "wilderness_move_here"),
 		})
 
+	# Climb Here: when a cliff/canyon edge walls off this neighbour, offer a
+	# deliberate climb across it (SHEER_SURFACE_CLIMB — gdd-cliffs-canyons.md §5/§6).
+	# Normal Move Here routes AROUND cliffs (or reports "No Route"); this is the only
+	# way to take the wall directly. cliff_edge_between only matches ADJACENT hexes, so
+	# this is naturally limited to a neighbour the party could actually scale to.
+	if controller != null and not is_current_hex and has_party:
+		var cliff: HexCliffEdgeData = controller.cliff_edge_between(current_hex, target_hex)
+		if cliff != null:
+			var kind: String = "canyon wall" if cliff.cliff_type == HexCliffEdgeData.CANYON else "cliff"
+			options.append({
+				"id": "climb_cliff",
+				"label": "Climb Here",
+				"enabled": target_passable,
+				"tooltip": ("Scale the %s (~%d ft) to this hex. Needs Mountaineering and climbing gear." \
+					% [kind, cliff.height_ft]) if target_passable else "This terrain is impassable.",
+				"category": "universal",
+				"action_data": _action(base_data, "wilderness_climb_cliff"),
+			})
+
 	# Activity options: on the current hex they fire in place. On a remote
 	# passable hex the dispatcher pathfinds first and queues the activity to
 	# fire on arrival. Either way, gating is "passable target + active party".

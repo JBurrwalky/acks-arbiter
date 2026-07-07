@@ -51,21 +51,25 @@ var _height: int
 var _ordered_keys: Array         # canonical (r,q) hex order, cached
 var _land_keys: Array            # land hexes only, canonical order (diffusion)
 var _river_barrier: Dictionary   # "q,r,e" -> true for river/major-river crossings
+var _river_incident: Dictionary  # Vector2i -> true for a hex incident to ANY river edge (§4.2 cradle)
+var _river_edge_any: Dictionary  # "q,r,e" -> true for ANY river edge, both widths (§5.2 natural border)
 var _diffusion_edges: Array = []  # precomputed canonical land-land edges {h, n, coef}
 var _ocean_id: Dictionary = {}        # ocean Vector2i -> connected-ocean id (sea-lane validity)
 var _coastal_oceans: Dictionary = {}  # coastal land Vector2i -> {ocean id: true} it borders
+var _sea_lane_neighbors: Dictionary = {}  # coastal Vector2i -> Array[Vector2i] coastal hexes within sea_lane_range sharing an ocean (§5.3 overseas)
 var _expand_jitter_by_hex: Dictionary = {}  # land Vector2i -> §7.2 expansion tie-break factor
 var _terrain_mult_cache: Dictionary = {}  # culture_id -> {Vector2i -> mult} (terrain is static)
 
 # Substrate parsed into memory for the tick loop (re-serialized at finalize).
 var _culture_w: Dictionary = {}  # Vector2i -> {culture_id: weight}
 var _alignment_w: Dictionary = {} # Vector2i -> {alignment: weight}
+var _merge_decisions: Dictionary = {}  # §4c base-pair key "a|b" -> "merge"/"displace", locked once per pair
 
 var _polities: Dictionary = {}   # id -> mutable polity dict (+ runtime hexes[])
 var _settlements: Array = []     # emerged settlement records
 var _settlement_index: Dictionary = {}  # "q,r,polity_id" -> record ref (O(1) emerge lookup)
 var _events: Array = []          # §11 event log
-var _replay_frames: Array = []   # {tick, owner_by_hex}
+var _replay_frames: Array = []   # {tick, owner_by_hex, culture_by_hex, territory_by_hex}
 var _next_settlement_seq: int = 1
 var _next_event_seq: int = 1
 
@@ -115,6 +119,7 @@ func run(ctx: Dictionary, constants: SimConstants = null) -> bool:
 	_n_ticks = _params.history_ticks()
 	_build_ordered_keys()
 	_precompute_ocean_components()   # §7.4d: sea lanes require a shared ocean body
+	_precompute_sea_lanes()          # §5.3: static coastal sea-lane adjacency for overseas expansion
 	_precompute_expand_jitter()      # §7.2: break the canonical-tie expansion strip bias
 	_build_river_barriers(ctx.get("river_edges", []))
 	_precompute_edge_damp()
@@ -181,7 +186,10 @@ func _tick(tick: int) -> void:
 		_phase_consolidation(tick) # 4e-b (significance floor: merge sub-floor fragments)
 		_phase_go_native(tick)    # 4e-c (conqueror adopts a large, more-developed subject)
 		_phase_substrate(tick)    # 4a
+		_phase_hybridization(tick) # 4c — border merge grows HYB(A,B) into base-vs-base seams
 		_phase_demography(tick)   # 4a
+		_phase_deforestation(tick) # 4a — graduated clearing past the §4 biome cap
+		_phase_reforestation(tick) # 4a — depopulated/elf regrowth (reverses clearing)
 		_phase_log(tick)          # 4g
 		return
 	# Profiling path (set `_profile = true`) — accumulates per-phase microseconds
@@ -198,7 +206,10 @@ func _tick(tick: int) -> void:
 	_phase_consolidation(tick); t = _mark("consolidation", t)
 	_phase_go_native(tick); t = _mark("go_native", t)
 	_phase_substrate(tick); t = _mark("substrate", t)
+	_phase_hybridization(tick); t = _mark("hybridize", t)
 	_phase_demography(tick); t = _mark("demography", t)
+	_phase_deforestation(tick); t = _mark("deforestation", t)
+	_phase_reforestation(tick); t = _mark("reforestation", t)
 	_phase_log(tick); t = _mark("log", t)
 
 
@@ -239,14 +250,25 @@ func _precompute_edge_damp() -> void:
 ## (width river / major_river). Keyed both owner-side and neighbor-side.
 func _build_river_barriers(river_edges: Array) -> void:
 	_river_barrier = {}
+	_river_incident = {}
+	_river_edge_any = {}
 	for row in river_edges:
+		var owner := Vector2i(int(row["hex_q"]), int(row["hex_r"]))
+		var e := int(row["edge"])
+		var neighbor: Vector2i = owner + _OFF[e]
+		# §4.2 cradle exception keys on incidence to ANY river edge (all widths are
+		# "major" enough at the 24-mile scale — handoff §5.2); only navigable rivers
+		# (river / major_river) act as diffusion barriers.
+		_river_incident[owner] = true
+		_river_incident[neighbor] = true
+		# §5.2 natural-border resistance damps PEACEFUL expansion across ANY river edge
+		# (both widths), keyed per directed edge so either bank sees the crossing.
+		_river_edge_any["%d,%d,%d" % [owner.x, owner.y, e]] = true
+		_river_edge_any["%d,%d,%d" % [neighbor.x, neighbor.y, (e + 3) % 6]] = true
 		var width_cat := str(row.get("width_category", ""))
 		if width_cat != "river" and width_cat != "major_river":
 			continue
-		var owner := Vector2i(int(row["hex_q"]), int(row["hex_r"]))
-		var e := int(row["edge"])
 		_river_barrier["%d,%d,%d" % [owner.x, owner.y, e]] = true
-		var neighbor: Vector2i = owner + _OFF[e]
 		_river_barrier["%d,%d,%d" % [neighbor.x, neighbor.y, (e + 3) % 6]] = true
 
 
@@ -333,6 +355,12 @@ func _diffuse_culture() -> void:
 		var w_n: Dictionary = _culture_w[n]
 		if w_h.is_empty() and w_n.is_empty():
 			continue
+		# Race separation: no cultural bleed between two POPULATED hexes of different
+		# races (human <-> elf/dwarf). Empty/unpopulated hexes are ungated so a race
+		# still diffuses into unclaimed land of its own kind.
+		if int(_grid[h]["population_band"]) > 0 and int(_grid[n]["population_band"]) > 0 \
+				and _dominant_race(h) != _dominant_race(n):
+			continue
 		_apply_pair_diffusion(deltas, h, n, w_h, w_n, edge["coef"])
 	for key in deltas:
 		var w: Dictionary = _culture_w[key]
@@ -402,6 +430,12 @@ func _assimilate_held_hexes(tick: int) -> void:
 			# threshold, which re-arms assimilation next tick.
 			if float(_culture_w.get(key, {}).get(culture_id, 0.0)) >= 0.999:
 				continue
+			# Race separation (Jedidiah 2026-07-01): a realm assimilates only SAME-RACE
+			# hexes. Ruling a different-race subject population (humans over an elf/dwarf
+			# province) leaves that substrate intact — demihumans are subjects, not
+			# culturally converted. Race changes only via razing/genocide + resettlement.
+			if _dominant_race(key) != _culture_race(culture_id):
+				continue
 			# §7.4b: a moderate-success revolt halts this sovereign's culture
 			# replacement on its hexes for a few ticks.
 			if has_blocks:
@@ -417,8 +451,251 @@ func _assimilate_held_hexes(tick: int) -> void:
 					* (1.0 - resist) * _params.cultural_assimilation, 0.0, 1.0)
 			if rate <= 0.0:
 				continue
-			_culture_w[key] = _lerp_toward(_culture_w[key], culture_id, rate)
+			# §4d conquest merge: on a held hex carrying a foreign BASE substrate, a
+			# gated (owner, subject) merge converts it toward HYB(A,B) instead of the
+			# owner — so conquered/contested zones become the hybrid (§6.4: clan x civ
+			# only when the owner/conqueror is the clan). Alignment still assimilates
+			# toward the realm's own alignment.
+			var culture_target := culture_id
+			if _is_human_base(culture_id):
+				var subj := _dominant_other_culture(_culture_w[key], culture_id)
+				if subj != "":
+					# Peer-hybrid vigor (Jedidiah 2026-07-01): once the hex's dominant
+					# non-owner culture is a hybrid OF THE OWNER'S OWN BASE — the realm's
+					# emergent fusion, grown here by a prior tick's merge — keep driving the
+					# hex toward THAT hybrid rather than reverting to the base. Otherwise the
+					# hybrid grows only until it overtakes the foreign base, then IS the
+					# subject; _conquest_merge_target(base, hybrid) returns "" (a hybrid is
+					# not a base) and assimilation drags the hex back to the owner base,
+					# reabsorbing every hybrid pocket before it reaches whole-realm scale
+					# (the observed "small pockets reabsorbed" failure). Letting the fusion
+					# run to completion is what lets Peer (and Conquest) hybrids relabel a
+					# realm at §4d finalize.
+					if _is_hybrid(subj) and _hybrid_has_parent(subj, culture_id) \
+							and _civ_or_clan_of(subj) == "civ":
+						# CIV hybrids only — the "Peer" vigor the design asks for. A CLAN
+						# hybrid (Confederated clan×clan, or a clan-classified Conquest
+						# hybrid) must NOT consolidate into a realm: clan cultures are
+						# clanholds (is_clanhold), which clamp their hexes to wilderness
+						# density and seat NO settlements (§5.3). Letting a clan hybrid take
+						# over a realm's held hexes therefore erases its urban centres — the
+						# start region can end up settlement-less (no start city). Clan
+						# hybrids stay substrate (their §4c/§4d role); only civ fusions grow
+						# to whole-realm scale.
+						culture_target = subj
+					else:
+						var hyb := _conquest_merge_target(culture_id, subj)
+						if hyb != "":
+							culture_target = hyb
+			_culture_w[key] = _lerp_toward(_culture_w[key], culture_target, rate)
 			_alignment_w[key] = _lerp_toward(_alignment_w[key], alignment, rate)
+
+
+# ---------------------------------------------------------------------------
+# 4c — Hybrid emergence (border merge; GDD §3.3 + §3.6 — substrate only)
+# ---------------------------------------------------------------------------
+
+## At each substrate SEAM — a land hex where two DISTINCT human BASE cultures each
+## hold >= hybrid_seam_threshold — a per-base-pair merge-vs-displace decision fires
+## once and LOCKS; a locked-merge pair grows the static hybrid HYB(A,B) into its
+## seam hexes at hybrid_merge_rate, at the expense of both parents (via
+## _lerp_toward). SUBSTRATE ONLY — no polity flips (adoption/persistence is §4d).
+## SCOPE (Jedidiah 2026-06-30): peaceful-border merges are SAME-CLASS only — civ x
+## civ (Peer) and clan x clan (Confederated); clan x civ (Conquest) emerges from
+## conquest in §4d. Runs after _phase_substrate so the tick's diffusion has already
+## mixed the border. Deterministic: canonical _land_keys order + a tick-independent
+## per-pair draw.
+func _phase_hybridization(_tick: int) -> void:
+	for key in _land_keys:
+		var w: Dictionary = _culture_w.get(key, {})
+		if w.size() < 2:
+			continue
+		var pair := _top_two_bases(w)
+		if pair.is_empty():
+			continue
+		var ca: String = pair[0]   # seam-dominant base
+		var cb: String = pair[1]
+		if float(w.get(cb, 0.0)) < _c.hybrid_seam_threshold:
+			continue
+		# Peaceful border merges are same-class only (Peer / Confederated); a
+		# clan x civ pair is a Conquest hybrid and emerges via §4d conquest instead.
+		if _civ_or_clan_of(ca) != _civ_or_clan_of(cb):
+			continue
+		var hyb := CultureCatalogLoader.hybrid_for_parents(ca, cb)
+		if hyb == "":
+			continue
+		var pkey := (ca + "|" + cb) if ca < cb else (cb + "|" + ca)
+		var decision = _merge_decisions.get(pkey)
+		if decision == null:
+			decision = _decide_merge(ca, cb, pkey)
+			_merge_decisions[pkey] = decision
+		if decision == "merge":
+			_culture_w[key] = _lerp_toward(w, hyb, _c.hybrid_merge_rate)
+
+
+## The top two DISTINCT human-base culture_ids in a hex's weights, dominant first;
+## [] if fewer than two human bases are present. Deterministic (weight desc, then
+## culture_id asc on ties — the ascending pre-sort makes the first-seen win).
+func _top_two_bases(w: Dictionary) -> Array:
+	var a := ""
+	var wa := -1.0
+	var b := ""
+	var wb := -1.0
+	var keys := w.keys()
+	keys.sort()
+	for cid in keys:
+		if not _is_human_base(str(cid)):
+			continue
+		var v := float(w[cid])
+		if v > wa:
+			b = a
+			wb = wa
+			a = str(cid)
+			wa = v
+		elif v > wb:
+			b = str(cid)
+			wb = v
+	if a == "" or b == "":
+		return []
+	return [a, b]
+
+
+func _is_human_base(cid: String) -> bool:
+	var inst: Dictionary = _culture_instances.get(cid, {})
+	return str(inst.get("culture_class", "")) == "base" \
+			and str(inst.get("race", "human")) == "human"
+
+
+func _civ_or_clan_of(cid: String) -> String:
+	return str(_culture_instances.get(cid, {}).get("civ_or_clan", "civ"))
+
+
+## Per-pair merge-vs-displace, locked once. PROVISIONAL drivers: a base probability
+## boosted when the two bases share a language family, resolved by one tick-
+## independent draw so the outcome is a stable property of (seed, pair). Parity /
+## alignment drivers (§3.3) are deferred to the §4e calibration pass.
+func _decide_merge(ca: String, cb: String, pkey: String) -> String:
+	var p := _c.hybrid_merge_base_p
+	if _shares_language_family(ca, cb):
+		p *= _c.hybrid_merge_family_bonus
+	var roll := WorldGenRng.stream(_campaign_seed, "hybridize_decide", 0, pkey).randf()
+	return "merge" if roll < p else "displace"
+
+
+## Do two cultures share any language family? Reads the instance language_family
+## (comma-separated on cross-family hybrids; a single family for bases).
+func _shares_language_family(ca: String, cb: String) -> bool:
+	var fa := _family_set(ca)
+	if fa.is_empty():
+		return false
+	for f in _family_set(cb):
+		if fa.has(f):
+			return true
+	return false
+
+
+func _family_set(cid: String) -> Dictionary:
+	var out := {}
+	var raw := str(_culture_instances.get(cid, {}).get("language_family", ""))
+	for part in raw.split(","):
+		var f := part.strip_edges().to_lower()
+		if f != "":
+			out[f] = true
+	return out
+
+
+## §4d CONQUEST merge target for a conqueror's held hex: the hybrid HYB(owner,
+## subject) to assimilate the hex toward instead of the owner, or "" (assimilate
+## toward the owner as usual). §6.4 gate: a clan x civ pair merges ONLY when the
+## owner (conqueror) is the clan; civ-over-clan and unknown pairs displace. Reuses
+## the §4c per-pair lock (_merge_decisions) — so a pair that border-merged in §4c
+## and one that conquest-merges here resolve to the SAME hybrid/decision.
+func _conquest_merge_target(owner_cid: String, subject_cid: String) -> String:
+	if not (_is_human_base(owner_cid) and _is_human_base(subject_cid)):
+		return ""
+	var hyb := CultureCatalogLoader.hybrid_for_parents(owner_cid, subject_cid)
+	if hyb == "":
+		return ""
+	# §6.4: a clan x civ Conquest hybrid forms ONLY clan-over-civ (owner = the clan).
+	var oc := _civ_or_clan_of(owner_cid)
+	if oc != _civ_or_clan_of(subject_cid) and oc != "clan":
+		return ""
+	var pkey := (owner_cid + "|" + subject_cid) if owner_cid < subject_cid \
+			else (subject_cid + "|" + owner_cid)
+	var decision = _merge_decisions.get(pkey)
+	if decision == null:
+		decision = _decide_merge(owner_cid, subject_cid, pkey)
+		_merge_decisions[pkey] = decision
+	return hyb if decision == "merge" else ""
+
+
+## The mass-weighted dominant culture across a polity's POPULATED hexes and its
+## share (0..1). mass(c) = Σ_hex culture_w[hex][c] × population_band. Deterministic
+## (single pass, lexical tie-break). {"cid": "", "share": 0.0} if no populated mass.
+func _dominant_populated_culture(pol: Dictionary) -> Dictionary:
+	var mass := {}
+	var total := 0.0
+	for key in pol["hexes"]:
+		var pop := float(_grid[key]["population_band"])
+		if pop <= 0.0:
+			continue
+		for c in _culture_w.get(key, {}):
+			var m := float(_culture_w[key][c]) * pop
+			mass[str(c)] = float(mass.get(str(c), 0.0)) + m
+			total += m
+	if total <= 0.0:
+		return {"cid": "", "share": 0.0}
+	var best := ""
+	var best_m := -1.0
+	var keys := mass.keys()
+	keys.sort()
+	for c in keys:
+		if float(mass[c]) > best_m:
+			best_m = float(mass[c])
+			best = str(c)
+	return {"cid": best, "share": best_m / total}
+
+
+## §4d FINALIZE relabel (Jedidiah 2026-06-30): the sim ran on base ids; a realm
+## whose POPULATED substrate is now dominantly a HYBRID (>= hybrid_adopt_min_share)
+## is relabeled to that hybrid for the present-day handoff — culture_id becomes the
+## hybrid and culture_synthesis_parents=[base_a, base_b] is recorded (persisted to
+## setting_polities). Base realms carry an empty parents list. Runs at finalize
+## (after the tick loop), so it never perturbs the sim dynamics. Sorted iteration.
+func _finalize_hybrid_identities() -> void:
+	var catalog := CultureCatalogLoader.load_all()
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"]:
+			continue
+		pol["culture_synthesis_parents"] = []
+		var owner_cid := str(pol["culture_id"])
+		# Case 1: the realm already IS a hybrid — it adopted its large, prestigious
+		# emergent hybrid culture via §7.4f go-native (the "reuse go-native" path,
+		# Jedidiah). Record its parent bases so the present-day handoff knows its
+		# provenance (go-native itself doesn't set culture_synthesis_parents).
+		if str(_culture_instances.get(owner_cid, {}).get("culture_class", "")) == "hybrid":
+			var op := CultureCatalogLoader.culture_synthesis_parents(catalog.get(owner_cid, {}))
+			if op.size() == 2:
+				pol["culture_synthesis_parents"] = [str(op[0]), str(op[1])]
+			continue
+		# Case 2: a base-owned realm whose POPULATED substrate has become dominantly a
+		# hybrid (>= hybrid_adopt_min_share) is relabeled to that hybrid at finalize.
+		var dom := _dominant_populated_culture(pol)
+		var cid := str(dom["cid"])
+		if cid == "" or cid == owner_cid:
+			continue
+		if str(_culture_instances.get(cid, {}).get("culture_class", "")) != "hybrid":
+			continue
+		if float(dom["share"]) < _c.hybrid_adopt_min_share:
+			continue
+		var parents := CultureCatalogLoader.culture_synthesis_parents(catalog.get(cid, {}))
+		if parents.size() != 2:
+			continue
+		pol["culture_id"] = cid
+		pol["culture_synthesis_parents"] = [str(parents[0]), str(parents[1])]
+		_emit_event(_n_ticks, "cultural_shift", [pid], [owner_cid, cid],
+				pol["hexes"], 0.6, "hybrid_emerged")
 
 
 # ---------------------------------------------------------------------------
@@ -466,17 +743,180 @@ func _grow_hex(key: Vector2i, fade: float) -> void:
 
 
 ## A held hex advances classification when it fills its current class
-## (RAW axioms:165-176; triggered at classification_advance_fraction of the cap).
+## (RAW axioms:165-176; triggered at classification_advance_fraction of the cap),
+## UNLESS the §4 biome/race territory cap forbids the target class (TerritoryCap).
+## The cap is read through the hex's dominant race; deforestation (§5.2, Phase 2b)
+## raises a forest hex's cap by transforming the biome.
 func _advance_classification(key: Vector2i) -> void:
 	var hex: Dictionary = _grid[key]
 	var pop := int(hex["population_band"])
 	var tc := str(hex["territory_class"])
-	if tc == "wilderness" \
+	var cap := _hex_territory_cap(key)
+	if tc == "wilderness" and TerritoryCap.allows(cap, "borderlands") \
 			and pop >= int(_c.classification_advance_fraction * _c.cap_wilderness):
 		hex["territory_class"] = "borderlands"
-	elif tc == "borderlands" \
+	elif tc == "borderlands" and TerritoryCap.allows(cap, "civilized") \
 			and pop >= int(_c.classification_advance_fraction * _c.cap_borderlands):
 		hex["territory_class"] = "civilized"
+
+
+## §4: the territory-class ceiling for a hex, read through its dominant culture's
+## race + biome/elevation, with the §4.2 desert cradle exception (river/coastal).
+func _hex_territory_cap(key: Vector2i) -> String:
+	var hex: Dictionary = _grid[key]
+	var roc: bool = _river_incident.has(key) or _coastal_oceans.has(key)
+	return TerritoryCap.effective_cap(str(hex["biome"]), str(hex["biome_subtype"]),
+			str(hex["elevation"]), _dominant_race(key), roc)
+
+
+## Race of a hex's dominant culture (default "human" when no instance / no weight).
+func _dominant_race(key: Vector2i) -> String:
+	var cid := _dominant_key(_culture_w.get(key, {}))
+	if cid == "":
+		return "human"
+	return str(_culture_instances.get(cid, {}).get("race", "human"))
+
+
+## A culture's race (from its instance; "human" default). Culture spread is
+## RACE-GATED — humans never adopt elf/dwarf culture (or vice versa); demihumans
+## are ruled as a distinct subject race, not culturally converted. Race changes
+## only via genocide + resettlement (razing), never gradual cultural flow.
+func _culture_race(cid: String) -> String:
+	return str(_culture_instances.get(cid, {}).get("race", "human"))
+
+
+func _is_hybrid(cid: String) -> bool:
+	return str(_culture_instances.get(cid, {}).get("culture_class", "")) == "hybrid"
+
+
+## Is `base_cid` one of hybrid `hyb`'s two parent bases? Reads the parents carried
+## on the culture instance (culture_seeder._jitter_instance) — no catalog lookup.
+func _hybrid_has_parent(hyb: String, base_cid: String) -> bool:
+	for p in _culture_instances.get(hyb, {}).get("culture_synthesis_parents", []):
+		if str(p) == base_cid:
+			return true
+	return false
+
+
+## The next classification up, or "" when already civilized.
+func _next_class(tc: String) -> String:
+	if tc == "wilderness":
+		return "borderlands"
+	if tc == "borderlands":
+		return "civilized"
+	return ""
+
+
+# ---------------------------------------------------------------------------
+# 4a — Graduated deforestation (§5.4): a forest/jungle hex being developed past
+# its §4 biome cap clears over time, stepping the biome down (dense forest →
+# forest → clear; jungle → clear) so it can eventually civilize. Human-driven
+# only (elves reforest — Phase 2c); clanholds/beastmen never clear. Deterministic
+# (no RNG): a per-tick counter against a fixed threshold. Runs AFTER demography so
+# this tick's growth is reflected, and a completed step raises the cap for next
+# tick's _advance_classification.
+# ---------------------------------------------------------------------------
+
+func _phase_deforestation(_tick: int) -> void:
+	for pid in _sorted_polity_ids():
+		var pol: Dictionary = _polities[pid]
+		if not pol["alive"] or pol.get("is_clanhold", false):
+			continue
+		for key in pol["hexes"]:
+			_accrue_clearing(key)
+
+
+## Accrue (or complete) one tick of clearing on a held forest/jungle hex that is
+## "full" for its current class but biome-capped below the next class.
+func _accrue_clearing(key: Vector2i) -> void:
+	var hex: Dictionary = _grid[key]
+	var biome := str(hex["biome"])
+	if not Deforestation.is_clearable(biome):
+		return
+	if _dominant_race(key) != "human":
+		return   # human-driven clearing only (§5.4); elves reforest (Phase 2c)
+	var tc := str(hex["territory_class"])
+	var next := _next_class(tc)
+	if next == "":
+		return   # already civilized — no clearing pressure
+	if int(hex["population_band"]) < int(_c.classification_advance_fraction * _c.cap_for(tc)):
+		return   # not yet full — no development pressure on the cap
+	if TerritoryCap.allows(_hex_territory_cap(key), next):
+		return   # biome already permits advancing; _advance_classification handles it
+	# Biome-blocked + full → develop the land: accrue clearing.
+	var threshold: int = _c.clear_ticks_jungle if biome == "jungle" else _c.clear_ticks_step
+	var prog := int(hex.get("clearing_progress", 0)) + _c.clear_rate_base
+	if prog < threshold:
+		hex["clearing_progress"] = prog
+		return
+	# Step complete: transform the biome (preserve original_biome) and reset.
+	var step := Deforestation.next_step(biome, str(hex["biome_subtype"]), str(hex["koppen"]))
+	if str(hex.get("original_biome", "")) == "":
+		hex["original_biome"] = biome
+	hex["biome"] = str(step["biome"])
+	hex["biome_subtype"] = str(step["subtype"])
+	hex["clearing_progress"] = 0
+
+
+# ---------------------------------------------------------------------------
+# 4a — Reforestation (§5.4): a depopulated was-forest hex regrows naturally, and an
+# elf-held hex is actively reforested. Reverses deforestation stepwise (clear →
+# forest/jungle → [elven] dense). Reuses clearing_progress as up-progress; only a
+# was-forest clear hex (original_biome set) regrows. Deterministic (no RNG). Runs
+# after deforestation; the two never touch the same hex in a tick (deforestation is
+# human pop>0; reforestation is pop==0 or elf-held).
+# ---------------------------------------------------------------------------
+
+func _phase_reforestation(_tick: int) -> void:
+	for key in _land_keys:
+		_reforest_hex(key)
+
+
+func _reforest_hex(key: Vector2i) -> void:
+	var hex: Dictionary = _grid[key]
+	var pop := int(hex["population_band"])
+	var elven := false
+	var r := 0
+	if pop == 0:
+		r = _c.reforest_rate_natural               # depopulated land regrows
+	elif _dominant_race(key) == "elf":
+		elven = true
+		r = _c.reforest_rate_elf                   # elf-held (sim-time uniform; +3-adjacency is runtime)
+	else:
+		return                                      # human/dwarf-held — no reforestation
+	if r <= 0:
+		return
+	var biome := str(hex["biome"])
+	var up := Deforestation.reforest_target(biome, str(hex["biome_subtype"]),
+			str(hex.get("original_biome", "")), str(hex["koppen"]), elven)
+	# No up-step (at climax / not a was-forest clear): reverse any in-progress clearing.
+	if up.is_empty():
+		if Deforestation.is_clearable(biome):
+			var p0 := int(hex.get("clearing_progress", 0))
+			if p0 > 0:
+				hex["clearing_progress"] = maxi(0, p0 - r)
+		return
+	# Natural needs a seed neighbor of the target biome; elves are exempt.
+	var need := str(up["needs_neighbor"])
+	if not elven and need != "" and not _has_neighbor_biome(key, need):
+		return
+	var threshold: int = _c.reforest_ticks_jungle if str(up["biome"]) == "jungle" else _c.clear_ticks_step
+	var prog := int(hex.get("clearing_progress", 0)) + r
+	if prog < threshold:
+		hex["clearing_progress"] = prog
+		return
+	hex["biome"] = str(up["biome"])
+	hex["biome_subtype"] = str(up["subtype"])
+	hex["clearing_progress"] = 0
+
+
+## True when any of the 6 neighbors of [param key] has biome [param biome].
+func _has_neighbor_biome(key: Vector2i, biome: String) -> bool:
+	for off in _OFF:
+		var n: Vector2i = key + off
+		if _grid.has(n) and str(_grid[n]["biome"]) == biome:
+			return true
+	return false
 
 
 func _update_tier(pol: Dictionary) -> void:
@@ -592,9 +1032,27 @@ func _expand_polity(pol: Dictionary, budget: int, tick: int) -> void:
 		if a["mult"] != b["mult"]:
 			return float(a["mult"]) > float(b["mult"])
 		return _canonical_less(a["hex"], b["hex"]))
+	# §5.1 boxed-in escape valve: if even the best frontier hex is unfavorable
+	# (the realm is hemmed by terrain its race can't develop), it expands at a
+	# reduced rate rather than pouring its whole budget into bad land — but never
+	# zero, so it is never hard-stuck.
+	var best_pref := 0.0
+	for entry in frontier:
+		best_pref = maxf(best_pref, float(entry["pref"]))
+	var budget_eff := budget
+	if best_pref < _c.expansion_boxed_in_threshold:
+		budget_eff = maxi(1, XPAwardCalculator.bankers_round(
+				float(budget) * _c.expansion_boxed_in_rate))
+	# §5.2 consolidate-before-expand: a realm hemmed by a natural border (no river-free,
+	# developable open frontier left) that has not yet filled its interior spends only a
+	# fraction of its budget — population grows internally (demography) and the realm spills
+	# across the river once saturated. PEACEFUL only; _phase_war is unaffected.
+	if _is_border_bounded(pol, frontier) and not _is_saturated(pol):
+		budget_eff = mini(budget_eff, maxi(1, XPAwardCalculator.bankers_round(
+				float(budget) * _c.consolidate_rate)))
 	var spent := 0
 	for entry in frontier:
-		if spent >= budget:
+		if spent >= budget_eff:
 			break
 		var key: Vector2i = entry["hex"]
 		var owner := str(_grid[key]["owner_polity_id"])
@@ -625,8 +1083,136 @@ func _compute_frontier(pol: Dictionary) -> Array:
 			if str(_grid[n]["owner_polity_id"]) == pid:
 				continue
 			seen[n] = true
-			out.append({"hex": n, "mult": _terrain_mult(pol, n) * _expand_jitter_by_hex.get(n, 1.0)})
+			# §5.1 cap-aware preference biases PEACEFUL expansion toward terrain the
+			# culture's race can develop (TerritoryCap), in the §4.6 order. `pref` is
+			# kept separately so _expand_polity can detect a boxed-in polity.
+			var pref := _expansion_preference(pol, n)
+			# §5.2 natural-border resistance: peaceful border pressure across a river is
+			# damped — a realm reaching a river prefers to push elsewhere rather than shove a
+			# neighbour across it, so mature borders settle onto rivers. Applied to CONTEST
+			# (enemy-owned) frontier only, NOT to claiming EMPTY land: on a finite-tick sim,
+			# damping empty-land settlement across rivers strands trans-river wilderness
+			# unclaimed and regresses the §17 coverage target. War (_phase_war) is exempt.
+			var is_settle := str(_grid[n]["owner_polity_id"]) == ""
+			var river_crossed := not _river_free_approach(pid, n)
+			var resist: float = 1.0
+			if river_crossed and not is_settle:
+				resist = _c.natural_border_resistance_river
+			var mult: float = _terrain_mult(pol, n) * float(_expand_jitter_by_hex.get(n, 1.0)) \
+					* pref * resist
+			out.append({
+				"hex": n, "mult": mult, "pref": pref,
+				"river_crossed": river_crossed,
+				"settle": is_settle,
+			})
+	# §5.3 overseas frontier: a POPULATED coastal hex can colonize EMPTY coastal hexes
+	# reachable by sea lane (≤ sea_lane_range, shared ocean — the same test contiguity uses,
+	# so the colony stays bridged until war breaks the link). Land-adjacent targets are
+	# already in `seen` from the loop above, so this only adds genuine over-water targets.
+	# Colonization of empty land only — no amphibious contest (that is war, _phase_war).
+	var overseas_dist := {}   # target Vector2i -> nearest owned-coastal hop distance
+	for key in pol["hexes"]:
+		if int(_grid[key]["population_band"]) <= 0 or not _sea_lane_neighbors.has(key):
+			continue
+		for tgt in _sea_lane_neighbors[key]:
+			if seen.has(tgt) or str(_grid[tgt]["owner_polity_id"]) != "":
+				continue
+			var d := _hex_distance(key, tgt)
+			if not overseas_dist.has(tgt) or d < int(overseas_dist[tgt]):
+				overseas_dist[tgt] = d
+	for tgt in overseas_dist:
+		seen[tgt] = true
+		var pref := _expansion_preference(pol, tgt)
+		var mult: float = _terrain_mult(pol, tgt) * float(_expand_jitter_by_hex.get(tgt, 1.0)) \
+				* pref * _sea_cross_factor(int(overseas_dist[tgt]))
+		out.append({
+			"hex": tgt, "mult": mult, "pref": pref,
+			"river_crossed": false, "settle": true, "overseas": true,
+		})
 	return out
+
+
+## §5.2: true when [param n] has at least one owned neighbour (of polity [param pid])
+## reachable WITHOUT crossing a river edge — the realm can settle it from its own bank.
+## False when every owned approach crosses a river (the hex is across a natural border).
+## Edge indices match _build_river_barriers (_river_edge_any keyed "q,r,e").
+func _river_free_approach(pid: String, n: Vector2i) -> bool:
+	for e in range(6):
+		var m: Vector2i = n + _OFF[e]
+		if not _grid.has(m) or str(_grid[m]["owner_polity_id"]) != pid:
+			continue
+		if not _river_edge_any.has("%d,%d,%d" % [n.x, n.y, e]):
+			return true
+	return false
+
+
+## §5.2 consolidate-before-expand trigger: the realm is bounded by a natural border with
+## no easy room left — it has NO river-free, developable open settle target, and it either
+## abuts a river-crossed frontier or sits on a coastline. (A realm merely enclosed by enemy
+## land is NOT "border-bounded" — that is a war situation, left to _phase_war.) PEACEFUL
+## settlement only.
+func _is_border_bounded(pol: Dictionary, frontier: Array) -> bool:
+	var touches_river_frontier := false
+	for entry in frontier:
+		if not entry["settle"]:
+			continue
+		if not entry["river_crossed"] and float(entry["pref"]) >= _c.expansion_boxed_in_threshold:
+			return false   # a river-free developable open hex remains: not yet bounded
+		if entry["river_crossed"]:
+			touches_river_frontier = true
+	if touches_river_frontier:
+		return true
+	for key in pol["hexes"]:
+		if _coastal_oceans.has(key):
+			return true
+	return false
+
+
+## §5.2 saturation: ≥ saturation_hex_fraction of the polity's POPULATED land hexes have
+## reached ≥ saturation_pop_fraction of their CURRENT-biome cap (cap_for(effective_cap) —
+## the present biome's ceiling, NOT the post-deforestation one). An unsaturated,
+## border-bounded realm consolidates instead of spilling across the border.
+func _is_saturated(pol: Dictionary) -> bool:
+	var total := 0
+	var filled := 0
+	for key in pol["hexes"]:
+		var pop := int(_grid[key]["population_band"])
+		if pop <= 0:
+			continue   # razed / unpopulated land can't grow; it doesn't count toward fill
+		total += 1
+		var cap := _c.cap_for(_hex_territory_cap(key))
+		if float(pop) >= _c.saturation_pop_fraction * float(cap):
+			filled += 1
+	if total == 0:
+		return true   # nothing populated to consolidate
+	return float(filled) >= _c.saturation_hex_fraction * float(total)
+
+
+## §5.1 / §4.6: the expanding culture's preference for settling [param key], in
+## (0, 1]. Combines the §4 territory cap its race could reach there (civilized >
+## borderlands > wilderness — a strong penalty on wilderness-capped land) with the
+## §4.6 biome→elevation rank; a §4.6 hard exclusion returns a tiny weight (nonzero,
+## so a boxed-in polity is never hard-stuck). PEACEFUL expansion only.
+func _expansion_preference(pol: Dictionary, key: Vector2i) -> float:
+	var race := str(_inst(pol).get("race", "human"))
+	var hex: Dictionary = _grid[key]
+	var biome := str(hex["biome"])
+	var subtype := str(hex["biome_subtype"])
+	var elevation := str(hex["elevation"])
+	if TerritoryCap.is_hard_excluded(race, biome, subtype, elevation):
+		return _c.expansion_pref_excluded
+	var roc: bool = _river_incident.has(key) or _coastal_oceans.has(key)
+	var cap := TerritoryCap.effective_cap(biome, subtype, elevation, race, roc)
+	return _cap_pref_weight(cap) * TerritoryCap.terrain_rank(race, biome, subtype, elevation)
+
+
+func _cap_pref_weight(cap: String) -> float:
+	match cap:
+		"civilized":
+			return _c.expansion_pref_civilized
+		"borderlands":
+			return _c.expansion_pref_borderlands
+	return _c.expansion_pref_wilderness
 
 
 func _settle_wilderness(pol: Dictionary, key: Vector2i) -> void:
@@ -1963,6 +2549,35 @@ func _shared_ocean(a: Vector2i, b: Vector2i) -> bool:
 	return false
 
 
+## §5.3: the static coastal sea-lane adjacency graph. For every coastal land hex, the
+## OTHER coastal land hexes within `sea_lane_range` that share an ocean body — the set of
+## overseas colonization targets a settlement there could reach. Ocean + coast never change,
+## so this is precomputed once. Neighbour lists are canonically sorted for determinism. It
+## reuses the SAME range/shared-ocean test as `_connected_components`, so any colony this
+## founds is, by construction, sea-bridged to its launch hex until war breaks the link.
+func _precompute_sea_lanes() -> void:
+	_sea_lane_neighbors = {}
+	var coastal: Array = _coastal_oceans.keys()
+	coastal.sort_custom(_canonical_less)
+	for c in coastal:
+		var neighbors: Array = []
+		for other in coastal:
+			if other == c:
+				continue
+			if _hex_distance(c, other) <= _c.sea_lane_range and _shared_ocean(c, other):
+				neighbors.append(other)
+		if not neighbors.is_empty():
+			_sea_lane_neighbors[c] = neighbors
+
+
+## §5.3 soft sea-crossing cost: the expansion-mult factor for an overseas target [param d]
+## sea-hexes from its nearest owned coastal launch hex (1..sea_lane_range). Near colonies
+## are preferred; overseas is generally dispreferred vs contiguous land. Within the hard
+## sea_lane_range cap (no colony is ever founded beyond it).
+func _sea_cross_factor(d: int) -> float:
+	return _c.sea_cross_base * pow(_c.sea_cross_decay, float(maxi(0, d - 1)))
+
+
 ## §7.2 expansion tie-break jitter. A small, deterministic, per-hex factor so equal-
 ## terrain frontier hexes don't all tie and fall to the canonical (northmost) sort —
 ## which made realms expand in straight vertical strips. ±5%, well under the 0.15 gap
@@ -2801,6 +3416,11 @@ func _phase_go_native(tick: int) -> void:
 		var s_cid := str(subject["cid"])
 		var share := float(subject["share"])
 		if s_cid == "" or share < _c.go_native_min_share:
+			continue
+		# Race separation (Jedidiah 2026-07-01): a realm never adopts a different-RACE
+		# culture — humans don't become elves/dwarves and vice versa (they live too
+		# differently). Go-native is within-race prestige adoption only.
+		if _culture_race(s_cid) != _culture_race(owner_cid):
 			continue
 		var gradient := _developed(s_cid) - _developed(owner_cid)
 		if gradient <= 0.0:
@@ -3779,28 +4399,48 @@ func _phase_log(_tick: int) -> void:
 # Replay frames (§15)
 # ---------------------------------------------------------------------------
 
+## A replay snapshot: ownership, dominant culture and territory class per hex, each
+## RLE-encoded over canonical hex order so the Political, Culture and Territory layers
+## all animate epoch by epoch (not just ownership).
 func _capture_replay_frame(tick: int) -> void:
-	_replay_frames.append({"tick": tick, "owner_by_hex": _rle_owners()})
+	_replay_frames.append({
+		"tick": tick,
+		"owner_by_hex": _rle_owners(),
+		"culture_by_hex": _rle_field(func(key: Vector2i) -> String:
+			return _dominant_key(_culture_w.get(key, {}))),
+		"territory_by_hex": _rle_field(func(key: Vector2i) -> String:
+			return str(_grid[key]["territory_class"])),
+	})
 
 
 ## RLE of owner_polity_id over canonical hex order: runs "polity:count" joined
 ## by ';'; '' = unowned.
 func _rle_owners() -> String:
+	return _rle_field(func(key: Vector2i) -> String:
+		return str(_grid[key]["owner_polity_id"]))
+
+
+## Generic RLE of a per-hex string field over canonical hex order (r ASC, q ASC —
+## the SettingRepository.list_hexes order the ReplayFrameDecoder reverses): runs of
+## "value:count" joined by ';'. '' = the field's "none" value. Values carry no ':'
+## (polity/culture ids and territory classes are colon-free), so the decoder splits
+## on the LAST colon.
+func _rle_field(value_of: Callable) -> String:
 	var runs: Array = []
 	var current := ""
 	var count := 0
 	var started := false
 	for key in _ordered_keys:
-		var owner := str(_grid[key]["owner_polity_id"])
+		var v := str(value_of.call(key))
 		if not started:
-			current = owner
+			current = v
 			count = 1
 			started = true
-		elif owner == current:
+		elif v == current:
 			count += 1
 		else:
 			runs.append("%s:%d" % [current, count])
-			current = owner
+			current = v
 			count = 1
 	if started:
 		runs.append("%s:%d" % [current, count])
@@ -3812,6 +4452,7 @@ func _rle_owners() -> String:
 # ---------------------------------------------------------------------------
 
 func _finalize(ctx: Dictionary) -> void:
+	_finalize_hybrid_identities()   # §4d — relabel realms whose people became a hybrid (before handoff/serialize)
 	_serialize_substrate()
 	_assign_present_day_handoff()   # 4g §12: ruler level/class + seeded morale
 	_score_event_significance()     # 4g §11.3: per-event significance
@@ -3878,6 +4519,8 @@ func _polity_rows() -> Array:
 			"morale_seed": str(pol.get("morale_seed", "[]")),
 			"internal_vassals": _internal_vassals_json(pol),
 			"name": str(pol.get("name", "")),
+			# §4d: [base_a, base_b] when this realm's people became a hybrid, else [].
+			"culture_synthesis_parents": JSON.stringify(pol.get("culture_synthesis_parents", [])),
 			# §5.3 rolled-race hint — carried IN-MEMORY to Layer 5 naming (which reads
 			# ctx["sim_polities"]); not a setting_polities column, so save ignores it.
 			"beastman_race": str(pol.get("beastman_race", "")),
@@ -4245,10 +4888,27 @@ func _significance_for(type: String, severity: float) -> float:
 func _build_palette() -> Array:
 	var rows: Array = []
 	var i := 0
+	var culture_seq := {}   # culture_id -> count assigned so far (per-culture ordinal)
 	for pid in _sorted_polity_ids():
-		rows.append({"polity_id": str(pid), "color": WorldPalette.hex_at(i)})
+		var cid := str(_polities[pid]["culture_id"])
+		var ord := int(culture_seq.get(cid, 0)) + 1
+		culture_seq[cid] = ord
+		rows.append({
+			"polity_id": str(pid),
+			"color": WorldPalette.hex_at(i),
+			"seed_label": "%s_%02d" % [_seed_culture_name(cid), ord],
+		})
 		i += 1
 	return rows
+
+
+## Human-facing form of a seed culture_id for the replay label ("vallican" ->
+## "Vallican"). Just capitalises the first letter — culture ids are already the
+## rules-based people-name, so the label reads as the culture at a glance.
+func _seed_culture_name(cid: String) -> String:
+	if cid == "":
+		return "Unclaimed"
+	return cid.substr(0, 1).to_upper() + cid.substr(1)
 
 
 # ---------------------------------------------------------------------------

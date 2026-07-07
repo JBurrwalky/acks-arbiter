@@ -21,7 +21,7 @@ const HEX_COLUMNS := [
 	"q", "r", "elevation_raw", "elevation", "water", "temperature",
 	"precipitation", "effective_latitude", "koppen", "biome", "biome_subtype",
 	"original_biome", "culture_weights", "alignment_weights", "population_band",
-	"territory_class", "owner_polity_id", "land_value",
+	"territory_class", "owner_polity_id", "land_value", "clearing_progress",
 ]
 const RIVER_EDGE_COLUMNS := [
 	"hex_q", "hex_r", "edge", "flow_clockwise", "width_category",
@@ -32,7 +32,7 @@ const POLITY_COLUMNS := [
 	"ruler_level", "ruler_quality", "capital_q", "capital_r", "liege_id",
 	"vassalized_by_war", "founded_tick", "fell_tick", "fade_onset_tick",
 	"civ_or_clan_state", "garrison_coverage", "morale_seed",
-	"internal_vassals", "name",
+	"internal_vassals", "name", "culture_synthesis_parents",
 ]
 const FALLEN_POLITY_COLUMNS := ["polity_id", "toponym_root", "hexes", "era_tick"]
 const SETTLEMENT_COLUMNS := [
@@ -59,8 +59,8 @@ const ROAD_COLUMNS := ["id", "hexes", "from_settlement_id", "to_settlement_id",
 # setting_fortifications removed (Jedidiah 2026-06-21): the runtime materializer's feudal
 # stronghold tree replaces the sim's redundant fort layer. The (now-unwritten) table is
 # left in place to avoid a destructive migration; its save/list helpers were removed.
-const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex"]
-const REPLAY_PALETTE_COLUMNS := ["polity_id", "color"]
+const REPLAY_FRAME_COLUMNS := ["tick", "owner_by_hex", "culture_by_hex", "territory_by_hex"]
+const REPLAY_PALETTE_COLUMNS := ["polity_id", "color", "seed_label"]
 const NARRATIVE_COLUMNS := ["id", "kind", "subject_id", "body", "is_fallback"]
 const DOMAIN_COLUMNS := ["id", "polity_id", "liege_domain_id", "tier_index", "title",
 	"ruler_class", "ruler_level", "ruler_name", "realm_name", "seat_q", "seat_r",

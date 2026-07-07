@@ -1,0 +1,22 @@
+-- Migration 186: armies.provenance — one-off vs standing muster tag for post-battle teardown.
+--
+-- docs/handoff-army-warfare-seams.md §5 + conventions §97. A resistance levy
+-- (ExtractionResistanceRouter._materialize_defender) exists solely to fight ONE
+-- extraction-resistance battle: it pulls garrison troop_units into a temporary army
+-- (assignment_kind 'garrison'->'on_campaign'; assigned_domain_id UNCHANGED) and must be
+-- dispersed back to garrison afterward (_demobilize_defender). SILENT NPC-vs-NPC battles
+-- resolve in-call so the levy is torn down synchronously; PLAYER-involved (interactive)
+-- battles resolve later via the field-battle panel, so the levy previously PERSISTED
+-- post-battle (garrison permanently stripped + a phantom army on the map). This column lets
+-- a battle_concluded listener identify and demobilise those spent levies.
+--
+-- 'standing' (the default) preserves ALL prior behavior: every existing army row and every
+-- army not created as a one-off muster reads 'standing' and is NEVER auto-torn-down.
+--
+-- No CHECK constraint (mirrors migration 184's ALTER ADD COLUMN style); values are
+-- code-validated against ArmyRepository.PROVENANCE_* :
+--   'standing'        — default; a normal army (mercenary host, garrison army, call army body)
+--   'resistance_levy' — a one-off extraction-resistance levy; demobilised on battle_concluded
+--   'call_to_arms'    — a lord's Call-to-Arms muster body; IDENTIFIED but NOT auto-demobilised
+--                       here (its teardown is revocation-driven, CallToArmsMuster.resolve_revocation)
+ALTER TABLE armies ADD COLUMN provenance TEXT NOT NULL DEFAULT 'standing';

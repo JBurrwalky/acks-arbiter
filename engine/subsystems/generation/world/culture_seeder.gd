@@ -103,6 +103,19 @@ static func run(ctx: Dictionary) -> bool:
 			instances[cid] = _jitter_instance(catalog[cid], campaign_seed)
 	ctx["culture_instances"] = instances
 
+	# Hybrid instances (gdd-culture-emergence-and-territory.md §3.6): the 55 first-
+	# order hybrids are seed-EXCLUDED as polities, but their instances must exist so
+	# a Phase-4 border merge can look one up by parent pair and the substrate /
+	# classification can read its race/tier/civ_or_clan when its weight grows. Built
+	# for every hybrid catalog record (deterministic — per-culture RNG stream); inert
+	# until a merge grows the hybrid's weight. Mutating the same dict ctx already
+	# holds (as the generic-beastman injection below does).
+	var hybrid_ids := catalog.keys()
+	hybrid_ids.sort()
+	for hcid in hybrid_ids:
+		if CultureCatalogLoader.culture_class(catalog[hcid]) == "hybrid" and not instances.has(hcid):
+			instances[hcid] = _jitter_instance(catalog[hcid], campaign_seed)
+
 	# Draw each seed's alignment.
 	for i in range(selected.size()):
 		selected[i]["alignment"] = _draw_alignment(
@@ -135,10 +148,20 @@ static func run(ctx: Dictionary) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Does [param hex] satisfy [param term] from a culture's seed_biomes?
-## Glacial/volcanic mountain subtypes relax to any mountains — the climate
-## generator only produces mountains_glacial, and the geological-feature pass
-## that would place volcanic peaks is not in v1 (terrain-system §7.1), so
-## gating dwarves on the exact subtype would lock them out of the map.
+##
+## SUBTYPE-RESOLVED (gdd-culture-emergence-and-territory.md §4.1): the woods and
+## clear terms key on biome_subtype, NOT just biome — plain forest (Borderlands),
+## taiga (Borderlands) and dense forest (Wilderness) are distinct seed terms, and
+## "grassland" excludes tundra/scrub/steppe (capped separately). This replaces the
+## old loose woods→{forest,dense,taiga} / clear→{any} collapse so the §4 caps and
+## stricter base seed_biomes have well-defined source states. clear_steppe and
+## clear_scrub are Phase-2 deforestation products (not painted at seed time), so
+## their arms match nothing on a fresh map but are kept for forward-compatibility.
+##
+## Glacial/volcanic mountain subtypes relax to any mountains: the volcanic stamp
+## (VolcanismPainter, the geological-feature pass) marks only ~20% of ranges, so
+## gating dwarves on the exact subtype would lock them out of most of the map —
+## the relaxation keeps "volcanic mountains" cultures placeable on any peak.
 static func _hex_matches_term(hex: Dictionary, term: String) -> bool:
 	if hex["water"] != "":
 		return false
@@ -146,12 +169,20 @@ static func _hex_matches_term(hex: Dictionary, term: String) -> bool:
 	var elevation: String = hex["elevation"]
 	var subtype: String = hex["biome_subtype"]
 	match term:
-		"forest", "dense forest", "taiga":
-			return biome == "woods"
-		"grassland", "scrubland", "plains":
-			return biome == "clear"
+		"forest":
+			return biome == "woods" and subtype == ""           # plain forest
+		"taiga":
+			return biome == "woods" and subtype == "forest_taiga"
+		"dense forest":
+			return biome == "woods" and subtype == "forest_dense"
+		"grassland", "plains":
+			return biome == "clear" and (subtype == "" or subtype == "clear_grassland")
 		"savanna":
 			return biome == "clear" and subtype == "clear_savanna"
+		"steppe":
+			return biome == "clear" and subtype == "clear_steppe"
+		"scrub", "scrubland":
+			return biome == "clear" and subtype == "clear_scrub"
 		"tundra":
 			return biome == "clear" and subtype == "clear_tundra"
 		"tundra hills":
@@ -248,21 +279,30 @@ static func _select_cultures(catalog: Dictionary, match_counts: Dictionary,
 
 	var human_target: int = mini(params.human_seed_points,
 			int(_HUMAN_SEED_CAP.get(params.map_size, 7)))
-	var human_pool := _candidate_pool(catalog, match_counts, "human")
+	# Base/hybrid model (gdd-culture-emergence §3.1): only the 11 human BASE cultures
+	# are ever seeded — hybrids emerge at runtime and old member kits are dormant.
+	var human_pool := _candidate_pool(catalog, match_counts, "human", true)
 	seeds.append_array(_greedy_coverage_select(
 			catalog, human_pool, match_counts, human_target, rng))
 	return seeds
 
 
+## Selectable culture ids of tier [param t] with enough matching wilderness. When
+## [param bases_only] (humans, §3.1), restricts to culture_class=="base" so member
+## and (never-seeded) hybrid records are excluded.
 static func _candidate_pool(catalog: Dictionary, match_counts: Dictionary,
-		t: String) -> Array:
+		t: String, bases_only: bool = false) -> Array:
 	var pool: Array = []
 	var ids := catalog.keys()
 	ids.sort()
 	for cid in ids:
-		if CultureCatalogLoader.tier(catalog[cid]) == t \
-				and int(match_counts.get(cid, 0)) >= MIN_HOMELAND_HEXES:
-			pool.append(cid)
+		if CultureCatalogLoader.tier(catalog[cid]) != t:
+			continue
+		if int(match_counts.get(cid, 0)) < MIN_HOMELAND_HEXES:
+			continue
+		if bases_only and CultureCatalogLoader.culture_class(catalog[cid]) != "base":
+			continue
+		pool.append(cid)
 	return pool
 
 
@@ -359,6 +399,14 @@ static func _jitter_instance(record: Dictionary, campaign_seed: int) -> Dictiona
 		"tier": CultureCatalogLoader.tier(record),
 		"race": CultureCatalogLoader.race(record),
 		"civ_or_clan": str(CultureCatalogLoader.identity(record).get("civ_or_clan", "civ")),
+		# §4c hybrid emergence: culture_class identifies BASE cultures (only base x
+		# base seams merge), language_family drives the shared-family merge bonus.
+		"culture_class": CultureCatalogLoader.culture_class(record),
+		# Parent bases of a hybrid instance ([] for bases) — lets the sim recognize a
+		# realm's OWN emergent fusion (a hybrid of its base) without a catalog lookup on
+		# the per-tick assimilation path (see _assimilate_held_hexes sticky-hybrid guard).
+		"culture_synthesis_parents": CultureCatalogLoader.culture_synthesis_parents(record),
+		"language_family": str(record.get("flavor", {}).get("language", {}).get("language_family", "")),
 		"toponym": CultureCatalogLoader.toponym(record),
 		# §7.4f "prestige": civilization level (class_kit_weights.developed) that
 		# drives go-native — a conqueror adopts a large, more-developed subject.
@@ -611,6 +659,7 @@ static func _make_polity(pid: String, cid: String, alignment: String,
 		"morale_seed": "[]",
 		"internal_vassals": "[]",
 		"name": "",
+		"culture_synthesis_parents": "[]",   # §4d: seed polities are base cultures (never hybrids)
 	}
 
 
@@ -862,4 +911,5 @@ static func _make_beastman_polity(pid: String, cid: String, capital: Vector2i,
 		"morale_seed": "[]",
 		"internal_vassals": "[]",
 		"name": "",
+		"culture_synthesis_parents": "[]",   # §4d: seed polities are base cultures (never hybrids)
 	}

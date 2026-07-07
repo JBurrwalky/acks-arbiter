@@ -310,9 +310,11 @@ func _render_decree() -> void:
 		_liturgy_spin.value = 1
 		_tithe_spin.value = 1
 		return
-	_tax_spin.value = float(int(_domain_data.get("tax_rate_cp_per_family", 2)))
-	_liturgy_spin.value = float(int(_domain_data.get("liturgy_rate_cp_per_family", 1)))
-	_tithe_spin.value = float(int(_domain_data.get("tithe_rate_cp_per_family", 1)))
+	# Spinboxes display gp/family; the backing columns are cp/family — convert
+	# on the way in (and back out in _on_decree_issue_pressed).
+	_tax_spin.value = float(int(_domain_data.get("tax_rate_cp_per_family", 200)) / 100)
+	_liturgy_spin.value = float(int(_domain_data.get("liturgy_rate_cp_per_family", 100)) / 100)
+	_tithe_spin.value = float(int(_domain_data.get("tithe_rate_cp_per_family", 100)) / 100)
 
 
 # ---------------------------------------------------------------------------
@@ -347,9 +349,9 @@ func _on_decree_issue_pressed() -> void:
 	if _domain_id.is_empty():
 		return
 	var fields := {
-		"tax_rate_cp_per_family": int(_tax_spin.value),
-		"liturgy_rate_cp_per_family": int(_liturgy_spin.value),
-		"tithe_rate_cp_per_family": int(_tithe_spin.value),
+		"tax_rate_cp_per_family": int(_tax_spin.value) * 100,
+		"liturgy_rate_cp_per_family": int(_liturgy_spin.value) * 100,
+		"tithe_rate_cp_per_family": int(_tithe_spin.value) * 100,
 	}
 	if CampaignRepository.update_domain_settings(_domain_id, fields):
 		EventBus.domain_decree_issued.emit(_domain_id, "tax_rate", {"new": fields["tax_rate_cp_per_family"]})

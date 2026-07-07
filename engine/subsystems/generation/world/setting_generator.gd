@@ -90,16 +90,18 @@ func _run_layer(layer_id: String, ctx: Dictionary) -> bool:
 # --- Layers (stubs replaced stage by stage) ---------------------------------
 
 func _run_geography(ctx: Dictionary) -> bool:
-	# Layer 1 (setting-gen §4): heightmap, continental shaping, elevation
-	# curve, ocean, hydrology. Fills ctx.hex_grid / ctx.river_edges.
-	return HeightmapGenerator.run(ctx)
+	# Layers 1-2 (setting-gen §4-5): the continuous-geography field-first engine
+	# (gdd-continuous-geography.md) produces the COMPLETE Layers 1-2 hex grid —
+	# elevation + hydrology + climate + biomes — in one pass; fills ctx.hex_grid /
+	# ctx.river_edges. The legacy hex-native HeightmapGenerator path was retired
+	# 2026-06-25; continuous-geography is the only world-gen.
+	return GeoFieldToGrid.run(ctx)
 
 
 func _run_climate(ctx: Dictionary) -> bool:
-	# Layer 2 (setting-gen §5): temperature, precipitation, Köppen, biomes,
-	# swamps, land values — then the hex rows are complete enough to persist.
-	if not ClimateGenerator.run(ctx):
-		return false
+	# Layer 2 (setting-gen §5): the field-first engine already filled temperature /
+	# precipitation / Köppen / biome / swamp / land-value in _run_geography — just
+	# persist the completed hex rows + river edges.
 	return _persist_terrain(ctx)
 
 
@@ -134,6 +136,10 @@ func _run_culture_seeding(ctx: Dictionary) -> bool:
 	# alignment, jitter, wilderness homeland seeding, baseline beastmen.
 	var campaign_id: String = ctx["campaign_id"]
 	var region_rows := RegionPainter.run_phase1(ctx)
+	# Geological-feature pass (follow-on to region painting): mark whole mountain
+	# ranges / lone peaks volcanic on the 24-mile substrate. The 6-mile zoom reads
+	# the stamp and randomizes which children are active vents.
+	VolcanismPainter.paint(ctx)
 	if not SettingRepository.save_regions(campaign_id, region_rows):
 		return false
 	if not CultureSeeder.run(ctx):

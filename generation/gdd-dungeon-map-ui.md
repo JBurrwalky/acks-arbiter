@@ -1,7 +1,7 @@
 # GDD: Dungeon Map UI & Interaction System
 
 **Document type:** Game Design Document (project-designed, modifiable)
-**Status:** Draft v2 — Architecture refresh (2026-04-30)
+**Status:** Draft v2.1 — Architecture refresh (2026-04-30); contiguous-dungeon alignment 2026-07-06 (§4.2.2 internal stairs become plain movement, minimap stairwell glyphs, `stair_target_*` deprecation) per [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md)
 **Authority:** Subordinate to `gdd-ui-architecture.md`. Authoritative on dungeon-context interaction patterns (selection, context menus, action options, queued orders, idle behaviors, multi-level UX). NOT authoritative on the spatial substrate (voxel grid), the event scheduler, the management notebook, the unified log, or party-formation surfaces — those are owned by their respective GDDs and consumed here.
 **Depends on:**
 - `gdd-voxel-tactical-architecture.md` v1.1 — 5' cube voxel grid, `Vector3i` coordinates, 3D Chebyshev adjacency, multi-level camera/occlusion (focus level, Level Strip Widget, dither/dim/hide), fog-of-war model
@@ -170,15 +170,16 @@ Built by `_build_door_options`, `_build_stair_options`, `_build_trap_options`, `
 
 **Evil doors (`is_evil = true`).** Per ACKS, evil doors auto-close every turn (60-round tick) unless they are wedged open, held by a character, bashed/destroyed, or magically held. They open freely for monsters unless spiked shut, held firm, or magically closed. The scheduler emits an `evil_door_close` event on each turn boundary (per `gdd-realtime-scheduler.md`) for every open evil door not in one of the held-open states. Wedge Open is the player's primary defense; consuming a wedge consumable per evil door visited becomes a real resource cost.
 
-#### 4.2.2 Stairs and transitions
+#### 4.2.2 Stairs and transitions (revised 2026-07-06 — contiguous dungeons)
 
-`VoxelCell.feature` for stair cells encodes a direction suffix per voxel arch §10.1: `stairs_up_<DIR>` rises one level in DIR; `stairs_down_<DIR>` descends one level in DIR. Internal stairs vs. dungeon-exit transitions are distinguished by `VoxelMapData.is_transition_cell(pos)`.
+`VoxelCell.feature` for stair cells encodes a direction suffix per voxel arch §10.1: `stairs_up_<DIR>` rises one level in DIR; `stairs_down_<DIR>` descends one level in DIR; `stairs_spiral` shafts permit ±1 level within the column (voxel arch §10.5). Internal stairs vs. dungeon-exit transitions are distinguished by `VoxelMapData.is_transition_cell(pos)`.
+
+**Internal stairs are plain movement.** Under [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md), stairs are carved geometry in one contiguous volume — `MovementResolver.path_bfs_3d` already walks ±1-level stair/ramp/spiral steps, so **Move Here** covers all intra-dungeon vertical travel. The former **Ascend** / **Descend** teleport options and `DungeonMapController.get_stair_target(pos)` are removed (deprecated per that GDD §13). Hovering a stair cell shows a tooltip from its owning `StairwellData` ("Stairs down to Level 3").
 
 | Cell feature | Option | Behavior |
 |---|---|---|
-| `stairs_up_*`, internal | **Ascend** | Selected entity moves to the stair cell; on arrival, transitions to the destination cell on the level above per `DungeonMapController.get_stair_target(pos)` (explicit pairing or direction-suffix inference). |
-| `stairs_down_*` | **Descend** | Same, descending. |
-| `stairs_up_*` AND transition cell | **Exit Dungeon** | Queues the entity for exit. Confirmed exit returns the party to the overworld at the dungeon's hex. |
+| `stairs_up_*` / `stairs_down_*` / `stairs_spiral` / `ramp_*`, internal | *(No special option — Move Here)* | Ordinary pathing; the route ascends/descends through the stairwell geometry. |
+| `stairs_up_*` AND transition cell | **Exit Dungeon** | Queues the entity for exit. Confirmed exit returns the party to the overworld at the dungeon's hex. (The surface connection is the one remaining scene transition, per `gdd-dungeon-contiguous-3d.md` §6.6.) |
 | Non-stair transition cell (cave entrance, etc.) | **Exit Dungeon** | Same as above. |
 | Stair feature where entity is already exited or queued for exit | *(No option)* | — |
 
@@ -553,6 +554,8 @@ The minimap shows currently-visible cells on the focus level only — a top-down
 
 **Minimap interaction.** Click jumps the main camera to that location (automapped or currently-visible cells only). Enemies are not shown on the minimap.
 
+**Stairwell glyphs (added 2026-07-06).** Stair cells on the focus level render a stair glyph; hover shows the owning `StairwellData` label ("Stairs down to Level 3", "Spiral stair up"), giving the player vertical-navigation cues without a multi-level minimap. Per `gdd-dungeon-contiguous-3d.md` §9.3.
+
 ---
 
 ## 12. Cross-surface integration
@@ -598,8 +601,8 @@ Current implementation status, derived from `engine/subsystems/exploration/*` an
 - `DungeonHUD` CanvasLayer with TooltipPanel + ContextMenuLayer.
 - Door tooling rules (axe / iron spikes / wooden stakes / hammers / mallet / crowbar) per §4.2.1.
 - Pick Lock per-character per-lock failure memory in `DungeonSessionState`.
-- Stair direction-suffix inference (`stairs_up_<DIR>` / `stairs_down_<DIR>`) and explicit `stair_target_*` overrides.
-- Transition cell distinction (`is_transition_cell`) for Exit Dungeon vs. Ascend.
+- Stair direction-suffix inference (`stairs_up_<DIR>` / `stairs_down_<DIR>`) and explicit `stair_target_*` overrides. **[Deprecated 2026-07-06: `stair_target_*` and `get_stair_target` are removed under `gdd-dungeon-contiguous-3d.md` §13 — internal stairs become plain movement per §4.2.2.]**
+- Transition cell distinction (`is_transition_cell`) for Exit Dungeon vs. internal stair movement.
 
 ### 13.2 Stubbed or unwired
 
@@ -731,6 +734,7 @@ These are the canonical implementations. New work integrates with them rather th
 
 ## 18. Revision history
 
+- **v2.1, 2026-07-06 — Contiguous-dungeon alignment** (companion edit to [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md)). §4.2.2 revised: Ascend/Descend teleport options and `get_stair_target` removed; internal stairs (including new `stairs_spiral`) are plain Move Here pathing; Exit Dungeon unchanged. §11.4 minimap gains stairwell glyphs/labels from `StairwellData`. §13.1 `stair_target_*` line marked deprecated. Fog sections needed no change — §2/§8 already document the light+LOS room-agnostic model Jedidiah ratified 2026-07-06.
 - **v2, 2026-04-30 — Architecture refresh.** Substantial rewrite to align with the management-notebook architecture, voxel-tactical migration, Unified Log v2, and the settled claim-based occupancy model.
   - **Cut:** Standalone Unit Info Panel (§5.1 v1 — now SessionStatusBar + Character tab); Group Options Panel marching-order section (now Party tab Formation sub-tab); Marching Order Behavior section (same); standalone Notification Log (now Unified Log v2); standalone Loot Panel and Trade dual-pane modal (now Inventory tab).
   - **Updated:** Spatial model from 2D (`Vector2i`) to 3D (`Vector3i`) throughout; adjacency to 3D Chebyshev ≤ 1; cell occupancy to claim-based per scheduler §6.4; door tooling to match code (axe required for bash, iron-spikes/wooden-stakes + hammer for spike/wedge, crowbar interaction with remove); bash duration to house-rule 1 turn for all wooden doors per `_bash_door_turns()`; pick-lock to per-character per-lock failure memory; open-locks classes to thief-only per `CLASSES_WITH_OPEN_LOCKS`.

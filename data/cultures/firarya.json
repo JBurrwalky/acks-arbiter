@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "mechanical": {
+    "identity": {
+      "culture_id": "firarya",
+      "demonym": "Firarya",
+      "toponym": "Dunfarnah",
+      "tier": "human",
+      "race": "human",
+      "civ_or_clan": "civ",
+      "culture_class": "hybrid",
+      "csv_id": "HYB_12",
+      "culture_synthesis_parents": [
+        "albawyn",
+        "aryastan"
+      ]
+    },
+    "alignment": {
+      "allowed": [
+        "Lawful",
+        "Neutral",
+        "Chaotic"
+      ],
+      "rigidity": 0.6
+    },
+    "terrain": {
+      "seed_biomes": [
+        "grassland",
+        "forest",
+        "taiga"
+      ],
+      "coastal_start": "E"
+    },
+    "expansion": {
+      "aggression": 0.7,
+      "defense": 0.7,
+      "size_exponent_bias": 0.1
+    },
+    "conquest": {
+      "base_subjugation_vs_genocide": 0.45,
+      "modifiers": [
+        {
+          "when": "target_opposite_alignment",
+          "adjust": 0.2
+        },
+        {
+          "when": "target_same_alignment",
+          "adjust": -0.15
+        }
+      ]
+    },
+    "lifecycle": {
+      "peak_strength": 0.8,
+      "collapse_proneness": 0.4,
+      "end_state": "enduring"
+    },
+    "infrastructure": {
+      "road_propensity": 0.49
+    },
+    "rulership": {
+      "sphere_weights": {
+        "military": 0.503,
+        "religious": 0.197,
+        "mercantile": 0.154,
+        "arcane": 0.146
+      },
+      "preferred_troop_types": [
+        "light_infantry",
+        "chariots",
+        "berserkers",
+        "archers"
+      ]
+    },
+    "npc": {
+      "personality_weight_biases": {
+        "civility": 1.0,
+        "expressiveness": 1.0,
+        "in_group_loyalty": 1.0,
+        "self_interest": 1.0,
+        "societal_orthodoxy": 1.0
+      }
+    },
+    "class_kit_weights": {
+      "developed": 0.36,
+      "primitive": 0.64
+    }
+  },
+  "flavor": {
+    "name_bank_key": "firarya",
+    "phonemic_palette": "celtic (Insular / Goidelic register: ri/ruiri/ard-ri, tuath, dun/rath forts, Mac-/O- patronymics, initial consonant mutation, broad-slender consonants, root-initial stress - the horse-clans of the saddle and the cattle-raid) / near_eastern (old_persian / axsatran: the -pura cities and dida-citadels, the satrapal Xshacapavan/Marzapana office-register, the paridaida garden-courts, the poet-king populace, vowel-rich Indo-Iranian phonology flowing into poetic meter, the genitive '-ahya')",
+    "language": {
+      "language_name": "celtic",
+      "language_family": "celtic, near_eastern",
+      "script": "own_script"
+    },
+    "social_structure": "martial_aristocracy",
+    "values": {
+      "core_values": [
+        "conquest",
+        "honor",
+        "valor"
+      ],
+      "taboos": [
+        "dishonoring the synthesis",
+        "betraying kin or oath"
+      ],
+      "attitude_toward_outsiders": "domineering"
+    },
+    "magic_attitude": {
+      "arcane": "practical",
+      "divine": "respected"
+    },
+    "architecture_style": {
+      "primary_material": "mudbrick",
+      "aesthetic": "monumental",
+      "signature_feature": "monumental halls of the Firarya"
+    },
+    "religion_hooks": {
+      "alignment_lens": "Resolved per the culture's chosen alignment (setting-lore): Lawful venerates the Lawful powers and names the Chaotic as demons; Chaotic the reverse; Neutral honors ancestral and local powers, invoking the great powers situationally.",
+      "local_saint_slots": 4,
+      "patron_powers": [
+        "war",
+        "law"
+      ]
+    },
+    "flavor_text": {
+      "one_line": "Firarya — domineering martial aristocracy of the synthesis; conquest, honor, valor.",
+      "one_paragraph": "The Firarya are a vigorous martial aristocracy people, a first-order synthesis of Albawyn and Aryastan [Conquest Aristocracy (albawyn over aryastan)]. They prize conquest, honor, valor, lean toward the military sphere, and field light_infantry, chariots, berserkers. Outsiders are met as domineering; their patrons touch war."
+    },
+    "_generated": "archetype blend of albawyn x aryastan [Conquest Aristocracy (albawyn over aryastan)] via tools/generate_hybrid_kits.py (Phase 4b); flavor is TEMPLATED from the mechanical fields + the conlang blend — refine narratively as desired."
+  }
+}

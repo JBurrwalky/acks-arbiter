@@ -1,12 +1,12 @@
 # GDD: Wilderness Hex 3D Renderer
 
 **Document type:** Game Design Document (project-designed, modifiable)
-**Authority:** PROJECT-DESIGNED — rendering architecture, procedural terrain synthesis, and asset integration. Subordinate to `acks_arbiter_design_brief_v11.md`. **The brief currently specifies the hex map as a 2D presentation layer (§5.1, §6.1); shipping this renderer requires Jedidiah to amend that contract** — see §15.
-**Status:** Draft v0.2 — design only, no code; adversarially reviewed (every citation verified against the repo, Godot 4.6 techniques stress-tested, corrections applied to §3/§5/§6/§9/§10/§11). Pending (a) architectural approval of the 2D→3D change and (b) the scale-strategy ruling in §4.
+**Authority:** PROJECT-DESIGNED — rendering architecture, procedural terrain synthesis, and asset integration. Subordinate to `acks_arbiter_design_brief_v11.md`. **The brief was amended 2026-06-24 (Jedidiah) to permit a flag-gated 2D/3D hex presentation (§5.1 table + §6.1)** — the 2D→3D change is approved.
+**Status:** Draft v0.4 — **renderer now BUILT** (`scenes/maps/hex_map_renderer_3d.gd`, `RAW_FIELD` height path, splat shader with in-fragment hex grid, scatter, settlement/farm/watchtower models). **Visual-pass addendum 2026-06-29 (§17):** with the renderer in hand, §17 sets the layer's **cel art register** — resolving the §12.3 open "does cel read outdoors" question — and specifies **mountain ruggedness + volcanic lava/caldera relief**, refining §7.3 (cel floor tiles replace the photoreal sets), §8.1 (hex-local emissive lava), and §5.3 (corner-pinned ridged displacement). **Reassessed 2026-06-24:** the two systems this was tabled on are now landed — setting→runtime **materialization (M0–M4)** produces a playable 6-mile map, and the **region-scale system** (24-mile view-only world-map tab + "Enter Region" + Strategic/Regional toggle) works — so the "24-mile stays 2D / 3D = 6-mile" recommendation in §4 is **realized**. The remaining gap is *continuous 6-mile height* (today `region_zoom_in.gd` flat-copies the parent's 24-mile `elevation_raw` → 16-hex plateaus). The new [`gdd-continuous-geography.md`](gdd-continuous-geography.md) refactor closes that gap and makes this renderer's `RAW_FIELD` height path the default (§4). Pending: (a) architectural approval of the 2D→3D change; (b) the continuous-geography refactor (its own GDD).
 **Depends on ACKS rules:** None new. This is a rendering layer over an existing, already-RAW-grounded terrain data model; the RAW citations live in [`gdd-terrain-system.md`](gdd-terrain-system.md). This GDD introduces no new ACKS interpretation (see §2).
-**Depends on project GDDs:** [`gdd-terrain-system.md`](gdd-terrain-system.md) (the terrain tag taxonomy, elevation thresholds, and the §10 *2D* visual model this GDD supersedes for the 3D path); [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) (the unbuilt 6-mile-from-24-mile derivation — the only source of *generated* 6-mile elevation; §4); [`gdd-dungeon-asset-integration-plan.md`](gdd-dungeon-asset-integration-plan.md) (the asset-kit + Blender→glTF pipeline this mirrors; that plan explicitly defers wilderness scenery to "a future wilderness/hex visual-pass GDD" — **this is that GDD**); [`gdd-character-creation-pipeline.md`](gdd-character-creation-pipeline.md) (the headless Blender bake/export recipe reused for tree assets); [`gdd-region-painting.md`](gdd-region-painting.md) (LOD label overlays that ride on top of the map).
+**Depends on project GDDs:** [`gdd-continuous-geography.md`](gdd-continuous-geography.md) (**the world-gen refactor that produces the continuous field this renderer consumes via `RAW_FIELD`** — the proper height source; §4); [`gdd-terrain-system.md`](gdd-terrain-system.md) (the terrain tag taxonomy, elevation thresholds, and the §10 *2D* visual model this GDD supersedes for the 3D path); [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) + [`gdd-region-zoom-in.md`](gdd-region-zoom-in.md) (the 6-mile-from-24-mile derivation — now BUILT as `region_zoom_in.gd`, but flat-copies `elevation_raw`; the continuous-geography refactor replaces its stochastic deviation-budget model with field-sampling); [`gdd-setting-runtime-materialization.md`](gdd-setting-runtime-materialization.md) (M0–M4 — the now-landed handoff that makes the 6-mile map the play surface); [`gdd-dungeon-asset-integration-plan.md`](gdd-dungeon-asset-integration-plan.md) (the asset-kit + Blender→glTF pipeline this mirrors; that plan explicitly defers wilderness scenery to "a future wilderness/hex visual-pass GDD" — **this is that GDD**); [`gdd-character-creation-pipeline.md`](gdd-character-creation-pipeline.md) (the headless Blender bake/export recipe reused for tree assets); [`gdd-region-painting.md`](gdd-region-painting.md) (LOD label overlays that ride on top of the map).
 **Modifiable by Claude Code:** Yes within constraints. The mesh algorithm, shaders, asset mappings, and pipeline are engineering decisions. The **2D→3D architectural change (§3)** and the **scale strategy (§4)** are project-direction and need Jedidiah's sign-off before build.
-**Last updated:** 2026-06-16
+**Last updated:** 2026-06-29
 
 ---
 
@@ -52,7 +52,7 @@ The 2D/3D split is clean because the existing stack already separates logic from
 - `scenes/maps/hex_map_landmark_icons.gd` (Node2D) → `Sprite3D`/`Label3D` markers in the 3D renderer.
 
 **The interaction contract that MUST be preserved verbatim** (the state machine depends on it — `wilderness_explore_state.gd:28-44`):
-- Signals the 3D renderer must re-emit identically: `party_token_clicked(party_id: String, coord: Vector2i)`, `hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)`, `dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)`, `settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)`.
+- Signals the 3D renderer must re-emit identically (now **five** — `hex_clicked` was added since v0.2): `hex_clicked(coord: Vector2i)`, `party_token_clicked(party_id: String, coord: Vector2i)`, `hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)`, `dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)`, `settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)` (`hex_map_renderer.gd:153-157`).
 - Methods: `setup(controller: HexMapController)`, `center_on_hex(coord: Vector2i)`, plus `visible` / `process_mode` honored as today.
 - It connects to the controller's `map_loaded`, `visibility_updated`, `party_moved`, `hex_terrain_updated`, `hex_overlay_updated` signals.
 
@@ -80,22 +80,22 @@ The dungeon is voxels (discrete cubes); the wilderness is a continuous heightmap
 
 ---
 
-## 4. The scale-consistency problem (decision required)
+## 4. Scale strategy — largely resolved (2026-06-24)
 
-This is the hard part and a **project-direction decision**, flagged in §15.
+The v0.2 "scale-consistency problem" assumed the materialization + region-scale systems were unbuilt. **They have since landed**, and they implement exactly the split this section recommended. What remains is a *data-quality* gap (height is coarse, not absent), which the [`gdd-continuous-geography.md`](gdd-continuous-geography.md) refactor closes at the source.
 
-### 4.1 The actual data situation (verified)
+### 4.1 The actual data situation (re-verified 2026-06-24)
 
-- The world generator produces **only a 24-mile campaign map.** `heightmap_generator.gd:17` `const HEX_MILES := 24.0`; map dimensions are 15×12 … 60×45 hexes (`setting_parameters.gd`).
-- **Continuous height (`elevation_raw`, 0.0–1.0) exists only at 24-mile resolution**, persisted in `setting_hexes.elevation_raw` keyed `(campaign_id, q, r)` (`schema.sql:3586-3623`; `heightmap_generator.gd:64`).
-- **Playable maps today are hand-authored 6-mile fixtures** (`data/test_hex_map.json` `"scale":"regional_6mi"`), and they carry only the **categorical** `elevation` tag — `hex_cells` has no `elevation_raw` column (`schema.sql:657-683`).
-- 6-mile maps relate to the 24-mile parent via migration-119 linkage (`parent_map_id`, `parent_anchor`, `parent_hex_footprint`), and are meant to be **derived by zoom-in subdivision** per [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) §6 (inherit-and-perturb: each child starts from the parent's value, ≤10% of children deviate ±1 band). **That subdivision pipeline is not built.** Setting→runtime materialization is also not built.
+- The world generator still produces **one 24-mile field**: `heightmap_generator.gd:17` `HEX_MILES := 24.0`, one noise sample per 24-mile hex center; continuous `elevation_raw` (0–1) persisted to `setting_hexes.elevation_raw` (`schema.sql:3586`).
+- **Materialization (M0–M4) is LANDED** ([`gdd-setting-runtime-materialization.md`](gdd-setting-runtime-materialization.md); MCP-verified playable). It produces a `regional_6mi` play map (~40×32 hexes) by procedural zoom-in: `region_zoom_in.gd` expands each 24-mile parent into 16 six-mile children.
+- **6-mile children now DO carry `elevation_raw`** (`region_zoom_in.gd:135` writes the column) — **but** `_children_for_parent` flat-copies the *parent's* 24-mile value to all 16 children (`:212, :307`; edge children borrow a neighbor's parent value). So the "continuous height" is **stair-stepped at 24-mile resolution**: a 3D renderer reading it gets 16-hex-wide flat plateaus with cliffs at parent boundaries — categorical inheritance + coherent-noise variation handles the *tags*, not a true finer surface. This is the [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) §6.6 "inherit flat, let the renderer synthesize later" MVP.
+- The **region-scale system is LANDED**: a 24-mile **view-only** "World Map" Notebook tab with Biome/Elevation/Territory/Culture layer toggles (`scenes/ui/notebook/tab_pages/world_map_tab_page.gd`), an "Enter Region" button + Strategic/Regional view toggle (`session_status_bar.gd`), migration-119 cross-scale linkage. Party plays on the 6-mile map; 24-mile is strategic-only.
 
-**Net:** there is **no continuous height at 6-mile resolution anywhere today.** A 3D renderer that wants smooth relief at the playable (6-mile) scale cannot simply read a field — it must either wait on the subdivision pipeline or generate height itself.
+**Net:** the recommended split (24-mile 2D, 3D = 6-mile) is **already the shipped architecture.** The only thing missing for a *smooth* 3D surface is sub-24-mile continuous height — which is precisely what the continuous-geography refactor provides (§4.4).
 
 ### 4.2 Three options
 
-1. **Block on the subdivision pipeline.** Build [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) §6 to write per-child `elevation_raw`, then render from it. *Rejected for V1:* couples this renderer to a large unbuilt system and to the (also unbuilt) setting→runtime materialization; nothing renders until both land.
+1. **Read a real continuous field (NOW THE CHOSEN PATH).** In v0.2 this meant "block on the unbuilt subdivision pipeline" and was rejected. As of 2026-06-24 materialization + region-zoom are built, and the project direction is to make the *source* continuous via [`gdd-continuous-geography.md`](gdd-continuous-geography.md): generate geography as a continuous (non-hex) field, then sample it at 6-mile (and any) resolution. The renderer then reads a genuine sub-hex surface (`RAW_FIELD`), not a flat-copied plateau. This is option #1's spirit delivered at the source rather than blocked behind a stochastic subdivision.
 2. **Renderer-owned procedural height synthesis (RECOMMENDED).** The renderer synthesizes a continuous, deterministic height field at load time from whatever it has:
    - **If** the map's parent 24-mile `setting_hexes.elevation_raw` is reachable (via migration-119 linkage), use it as a **low-frequency guide** — sample/interpolate the parent value across the child footprint so the 6-mile terrain trends with the continent.
    - **Else** (hand-authored fixtures, no parent height), derive a base height per hex from the **categorical tag** (`flat`/`hills`/`mountains` → base bands) and let seeded noise (§5) supply the relief.
@@ -106,8 +106,13 @@ This is the hard part and a **project-direction decision**, flagged in §15.
 
 The original concern — *consistent texturing between 24-mile and 6-mile* — only bites if **both** scales are 3D heightmaps that must look like continuous zoom levels of the same surface. By rendering the 24-mile map as a 2D strategic overlay (biome color + relief hint + political tint, per `gdd-terrain-system.md:506-526`) and only the 6-mile map as 3D terrain, the scales are deliberately *different views*, not *zoom levels of one mesh*. Within the 3D 6-mile map, continuity is automatic because it's one mesh built from one (synthesized) field (§5–6). **Recommendation:** adopt #2 + #3 for V1. Reserve full multi-scale 3D (consuming subdivision-derived `elevation_raw`) for a later version once [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) is built — at which point option #2's "use parent guide" hook becomes "use the real derived field," with no renderer rewrite.
 
-### 4.4 Forward-compatibility hook
-The synthesis function takes an optional `height_source` argument: `RAW_FIELD` (read `elevation_raw` directly — used when subdivision exists), `PARENT_GUIDE` (interpolate the 24-mile parent), or `TAG_ONLY` (categorical bands). V1 ships `PARENT_GUIDE`/`TAG_ONLY`; the day subdivision lands, flipping to `RAW_FIELD` is a one-line change. This keeps the renderer honest about where its height came from.
+### 4.4 Height source — `RAW_FIELD` is the target, synthesis is the interim
+The height function takes a `height_source`:
+- **`RAW_FIELD` (target default):** call [`gdd-continuous-geography.md`](gdd-continuous-geography.md)'s `field_sampler.sample(x, y)` for true sub-hex height at the rendered point. Available once that refactor lands. This is the proper end state — the renderer stops *synthesizing* and renders the real simulated surface.
+- **`PARENT_GUIDE` (interim):** interpolate today's 24-mile `elevation_raw` across the child footprint (smooths the flat-copied plateaus into something renderable before the refactor lands).
+- **`TAG_ONLY` (fallback):** categorical bands + seeded noise, for hand-authored fixtures with no field.
+
+The renderer ships against `PARENT_GUIDE`/`TAG_ONLY` if it's built before the continuous-geography refactor; flipping to `RAW_FIELD` is a one-line change. **Recommended sequencing: land the continuous-geography refactor first** (it benefits world-gen, the 2D maps, and materialization regardless of the 3D renderer), then build this renderer straight onto `RAW_FIELD`.
 
 ---
 
@@ -336,9 +341,9 @@ New `WildernessAssetRegistry` (mirror `dungeon_asset_registry.gd`): exported dic
 New `ProjectSettings` key **`acks/rendering/wilderness_hex_mode`**, values `"flat_2d"` (default) | `"heightmap_3d"`, read by a reader mirroring `dungeon_map_renderer_3d.gd:685-686`. Default preserves shipped behavior; flipping the flag swaps renderers. This mirrors the established `acks/rendering/dungeon_asset_mode` pattern exactly.
 
 ### 13.2 Swap mechanics
-Today `Main.tscn` instances the 2D `HexMap` as a sibling of `HexMapController`, and `SessionRunner.get_hex_map_renderer()` returns it (`session_runner.gd:170-176, 524-528`). Options:
-- **A (recommended):** both renderer scenes present in `Main.tscn`; `SessionRunner` returns whichever the flag selects (and the other stays hidden / not in tree). `get_hex_map_renderer()` returns the active one. `SessionLoadState` calls `setup(controller)` on it once (guard `if renderer._controller == null`, `session_load_state.gd:74-79`). `WildernessExploreState` toggles `visible`/`process_mode` and connects the four signals (`wilderness_explore_state.gd:28-44`) — unchanged, because the 3D renderer honors the same API (§3.1).
-- This keeps the state machine, `SettlementExploreState`, and every consumer untouched.
+**Updated 2026-06-24 — the host changed.** The wilderness `HexMap` no longer sits at the `Main.tscn` root; it was reparented under a **bar-tracking SubViewport** so the map renders only above the resizable status bar (coding_conventions §84): the tree is now `Main/WorldViewport (SubViewportContainer, world_viewport_frame.gd, stretch=true)/WorldSubViewport/HexMap`. `SessionRunner` resolves it via `find_child("HexMap", true, false)` and exposes `get_world_viewport()` (`session_runner.gd:177-181`); `WildernessExploreState` toggles `WorldViewport.visible` alongside the renderer. The dungeon uses the *same* pattern with its own frame built at runtime (`dungeon_explore_state.gd:160-171`, `own_world_3d=true`).
+- **A (recommended):** the 3D renderer scene mounts under the **same `WorldSubViewport`** (it inherits bar-tracking + the SubViewport's `own_world_3d` for its Camera3D — mirror the dungeon frame's `own_world_3d=true`). `SessionRunner.get_hex_map_renderer()` returns whichever renderer the flag (§13.1) selected; the other stays out of the tree. `SessionLoadState` calls `setup(controller)` once (guard `if renderer._controller == null`, `session_load_state.gd:74-79`); `WildernessExploreState` toggles visibility + connects the five signals (`wilderness_explore_state.gd:28-44`) — unchanged, because the 3D renderer honors the same API (§3.1).
+- This keeps the state machine, `SettlementExploreState`, and every consumer untouched. The SubViewport already solves "the status bar occludes the map," which the 3D renderer inherits for free.
 
 ### 13.3 Coordinate convention note
 The dungeon uses `Vector3i` entity positions (`coding_conventions.md:1881`); the wilderness gameplay seam stays `Vector2i(q,r)`. The 3D renderer is the *only* place that knows about Y/world space, converting `(q,r) ↔ Vector3` internally. Document this boundary so the convention's `Vector3i`-everywhere note isn't misread as requiring a wilderness-data change.
@@ -347,11 +352,8 @@ The dungeon uses `Vector3i` entity positions (`coding_conventions.md:1881`); the
 
 ## 14. Data model and migrations
 
-### 14.1 Height source plumbing
-V1 (synthesis, §4.2 #2) needs **no schema change** if the renderer reads the parent 24-mile `setting_hexes.elevation_raw` directly (keyed `(campaign_id, q, r)`, same axial as `hex_cells`) via migration-119 linkage, or falls back to the categorical tag. Two future options, both deferred:
-- **Optional migration 163** (next free number — latest is `162_setting_events_razing.sql`): add `elevation_raw REAL` to `hex_cells` and carry it through `CampaignRepository.save_hex_map` (currently drops it, `campaign_repository.gd:1347`) so the renderer reads one table. Pursue only if the parent-join proves awkward or for perf.
-- **Consume subdivision output:** when [`gdd-hex-subdivision.md`](gdd-hex-subdivision.md) §6 writes per-child `elevation_raw`, switch `height_source` to `RAW_FIELD` (§4.4).
-Migrations are sequential, integer-prefixed, non-destructive, append-only; update `db/schema.sql` after (`coding_conventions.md:760-776`).
+### 14.1 Height source plumbing — mostly already done
+**Updated 2026-06-24.** `hex_cells.elevation_raw` **now exists and is populated** for 6-mile maps — `region_zoom_in.gd:135` writes it (flat-copied from the parent, §4.1). So the interim renderer can read `hex_cells.elevation_raw` directly today (no schema change, no parent-join), it's just coarse. The earlier "migration 163" prediction is moot — the migration counter is now at **175** (`db/migrations/175_campaigns_start_settlement.sql`); any future column lands at the next free number at build time. The real work is upstream: `gdd-continuous-geography.md` changes what value gets written into `elevation_raw` (a true field-sample instead of a parent copy) and adds the field representation it samples from — see that GDD's data-model section. Migrations remain sequential, integer-prefixed, non-destructive, append-only; update `db/schema.sql` after (`coding_conventions.md:760-776`).
 
 ### 14.2 No new gameplay state
 The renderer persists nothing. Scatter, noise, and mesh are regenerated deterministically on load (§5.4). **Save/load guarantee:** because height and scatter are seeded from a stable per-campaign seed, reloading the same map yields byte-identical terrain — so a mid-exploration save/reload shows the same world, and tuning noise/scatter parameters does not break save compatibility (nothing terrain-visual is in the save). Fog/terrain/river *gameplay* state remain owned by the existing tables. Rough cost: height synthesis is O(hexes), scatter O(density × hexes); a 60×45 map with moderate scatter should synthesize in well under ~100 ms at load — confirm in the W-7 performance pass (§16).
@@ -360,15 +362,15 @@ The renderer persists nothing. Scatter, noise, and mesh are regenerated determin
 
 ## 15. Open Questions / Architectural Concerns
 
-- **[APPROVAL GATE] Design-brief amendment (BLOCKER):** the brief locks the hex map as a 2D presentation layer (§5.1 table, §6.1, `acks_arbiter_design_brief_v11.md:143-156, 181-183`). Per `CLAUDE.md`/brief §3.2, changing a cross-system presentation contract needs Jedidiah's explicit approval. This GDD proposes a **flag-gated parallel renderer** (2D stays the default), which is the least-invasive form, but the brief text should be updated to "2D strategic / 3D tactical (flag-gated)" before build. **Decision needed.**
-- **[DECISION] Scale strategy (§4):** recommend #2 (renderer-owned synthesis) + #3 (24-mile stays 2D, 3D is the 6-mile+ scale). Confirm this split, vs. blocking on the subdivision pipeline for full multi-scale 3D. This is the single biggest design fork.
-- **[DEPENDENCY] `gdd-hex-subdivision.md` is unbuilt:** 6-mile generated height depends on it; V1 sidesteps via synthesis. If subdivision is prioritized first, V1 can consume `RAW_FIELD` directly (§4.4) — but that delays any 3D.
+- **[DONE 2026-06-24] Design-brief amendment:** Jedidiah approved; the brief §5.1 table + §6.1 now document the flag-gated 2D/3D hex presentation (`acks/rendering/wilderness_hex_mode`). The 2D→3D change is unblocked.
+- **[RESOLVED 2026-06-24] Scale strategy (§4):** the "24-mile 2D / 3D = 6-mile" split is now the **shipped architecture** (materialization M0–M4 + region-scale system landed; 24-mile World Map tab live). No longer an open fork.
+- **[DEPENDENCY → SEQUENCING] Continuous-geography refactor first.** The 6-mile-derivation pipeline is BUILT (`region_zoom_in.gd`) but flat-copies height. Recommended order: land [`gdd-continuous-geography.md`](gdd-continuous-geography.md) (continuous field → `RAW_FIELD`) **before** this renderer, so the 3D map renders a true surface from day one and the renderer never needs the `PARENT_GUIDE` interim. That refactor pays off independently (better 2D maps, watershed, climate), so it's the right next build regardless of when the 3D renderer follows.
 - **[OVERLAP] `gdd-terrain-system.md` §10:** that GDD owns the *2D* visual model (elevation overlays, river arrows). This GDD supersedes it **only for the 3D path**; §10 still governs the 2D renderer. Recommend a one-line cross-reference added to §10 pointing here, rather than moving content.
 - **[ASSET GAPS] §12.4:** swamp texture, water shader, reeds, jungle canopy tree, settlement/road representation. Confirm fill-vs-substitute for V1 (recommended substitutes noted inline).
 - **[DECISION] Landmarks/settlements in 3D:** billboard icons (port existing) vs. structure meshes (no assets). Recommend billboard icons for V1.
 - **[DONE] 2D `ZOOM_MIN` fix (§11.2):** LANDED 2026-06-16 — fit-to-screen minimum zoom in `hex_map_renderer.gd`; parse-clean + clean real-engine boot. (Sub-1.0 zoom-out is only *observable* on a large map, which isn't playable until the setting-gen→game-day handoff lands.)
 - **[POLISH] Climate-driven tinting (§7.4)** and **water waves/foam (§8.4)** are V2 polish; V1 ships flat-but-correct versions.
-- **[VERIFY, build-time] Outdoor cel look (§12.3):** the dungeon's cel/matte environment is unproven on rolling sunlit terrain — a W-2/W-4 screenshot gate, not an owner decision; may need a separate outdoor environment.
+- **[DIRECTION SET 2026-06-29 → §17] Outdoor cel look (§12.3):** the wilderness layer's cel register is now specified in §17 — dual-register per [`gdd-art-direction.md`](gdd-art-direction.md) §4/§7 with a deliberate, documented deviation (a soft 2-band cartographic hillshade on the *terrain*), and cel-generated floor tiles replacing the photoreal §7.3 sets. Whether it reads on sunlit rolling terrain is still a screenshot gate, but the *direction* is no longer open. The art GDD's §9 layer table should gain a "3D Wilderness (exterior)" row pointing here.
 - **[BUILD DETAIL] Seed source (§5.4):** wire height/scatter RNG to the stable per-campaign seed via an explicit mixing function (not built-in `hash()`); confirm the campaign-seed accessor at build time.
 - **[RESOLVED in v0.2 review]** Picking now raycasts the collision surface (not the flat plane — parallax, §3.2/§11); the hex grid is single-pass (not `next_pass`, §10); cross-chunk normals use analytic/apron computation (§5.2/§6.1); MultiMesh scatter sets `custom_aabb` + shadow LOD (§9). No outstanding *technical* blockers — the gates below are design/asset decisions.
 - **None blocking on ACKS rules.** This GDD adds no RAW interpretation (§2); if a rendering choice seems to need one, it belongs in `gdd-terrain-system.md`.
@@ -387,3 +389,104 @@ The renderer persists nothing. Scatter, noise, and mesh are regenerated determin
 8. **W-7:** climate tinting, polish, performance pass (§7.4, §8.4, §6.3).
 
 Each phase is independently testable and leaves the 2D renderer as a working fallback.
+
+---
+
+## 17. Cel art register and mountain/volcanic relief (2026-06-29 — post-build visual pass)
+
+The renderer is built and the basic look is in (continuous height, biome splat, in-fragment hex grid, scatter, settlement/farm/watchtower models). This section sets the layer's **visual register** — resolving the §12.3 open question of whether the cel treatment reads outdoors — and specifies the **mountain-ruggedness** and **volcanic lava/caldera** detail. It **refines** existing sections rather than replacing them: §7.3 (the floor textures change source/register), §8.1 (lava becomes hex-local), §5.3 (mountain displacement gets finer + corner-pinned). Everything here is **render-only**: the edge/tag DATA model (§2) and the hex grid (drawn in the fragment from world-XZ, §10) are untouched *by construction* — the same property the riverbed carve (§8.3) already relies on.
+
+This work is the wilderness layer's application of [`gdd-art-direction.md`](gdd-art-direction.md) — §4 dual-register, §7 environment shader, §9.1 cartographic anchor — with one deliberate deviation (§17.1.1) that should be reflected back into that GDD's §9 layer table.
+
+### 17.1 Register — dual-register applied to the wilderness layer
+
+Per [`gdd-art-direction.md`](gdd-art-direction.md) §4, treatment is assigned by *attention*, not by object: figures (which move / the camera focuses on) get the full cel treatment; scene context gets the flat-painted environment treatment. Mapped to what the wilderness renderer draws:
+
+| Element | Register ([art §4](gdd-art-direction.md)) | Treatment |
+|---|---|---|
+| **Terrain (GeoField mesh)** | Environment — **but a soft 2-band hillshade** (deviation, §17.1.1) | Cel floor tiles (§17.2); slope-shaded by a soft 2-band ramp; atmospheric wash. No outline. |
+| **Hex grid** | Cartographic linework | Umber-black `#0d0a08` (art §5.3/§9.1.2); already in the splat fragment (§10). |
+| **Scatter (trees/bushes/rocks)** | Environment, **no outline** (art §4 vegetation) | `cel_environment` material, palette-coordinated. |
+| **Settlements / watchtowers / dungeon markers** | **Mid-ground → thin outline** (art §7.3) | `cel_environment` + a thin `cel_outline` variant — gives the locators presence without competing with figures. |
+| **Rivers / water** | Environment | Illustrated banding (banded color + drawn flow strokes, art §9.1 water) — V2 polish; the current animated shader is the interim. |
+| **Party avatar / creature tokens** | **Figure → full cel + outline** (art §6) | `cel_figure` three-step ramp + `cel_outline`. The avatar should pop; it's the one figure on the map. |
+| **Whole scene** | — | Per-time-of-day **atmospheric wash** (art §7.5): twilight-wilderness purple, daylight cool-blue — a global uniform, small blend (5–15%). |
+
+#### 17.1.1 The terrain hillshade — a documented deviation from art §4
+
+[`gdd-art-direction.md`](gdd-art-direction.md) §3.4/§7.2 say environments get **no toon ramp** (flat-painted), to keep figures the focus. The wilderness terrain takes a soft **2-band cel hillshade** instead — a deliberate, layer-specific exception, for three reasons:
+
+1. **The map is character-sparse.** §4's "keep the eye on the figures" rationale barely applies when the usual scene is one party token. There is nothing for a ramped surface to steal focus from.
+2. **Tiling floor textures physically cannot bake terrain-relief shadow.** A repeating tile doesn't know where the hill is, so the 3D read of hills/mountains *must* come from the lighting term. A fully flat wash leaves the GeoField relief ambiguous and unconvincing — the one place the GDD's "painted shading dominates lighting" pillar can't reach, because the shading would have to follow per-instance terrain slope.
+3. **Banded slope-shadow IS the cartographic anchor.** Art §9.1 specifies mountains drawn with "hand-drawn hatching shadow on one side." A soft 2-band hillshade reads as exactly that — drawn relief shading, not engine lighting.
+
+**Spec:** a **soft** 2-band ramp on the terrain's slope lighting (`dot(N, L)` against one threshold, gentle transition) — explicitly **not** the hard 3-band figure ramp (art §6.2), which would stripe a broad surface. A single shader uniform toggles band-vs-smooth-wash so the two can be A/B'd on real terrain (godot-ai MCP screenshot) before locking. Bands stay broad and low-contrast: relief read, not figure pop.
+
+Because this departs from art §4's environment rule, it is a **project-direction register decision** recorded here; the art GDD's §9 "Layer-Specific Application" table should gain a **"3D Wilderness (exterior)"** row pointing to this section.
+
+### 17.2 Cel terrain floor tiles (refines §7.3)
+
+The §7.3 AmbientCG **photoreal PBR** sets are replaced with newly **generated cel-register** floor tiles. Palette-quantizing the existing photoreal sets (art §5.4) is **rejected** as the conversion path: quantization is a color-*consistency* pass for already-painted assets, not a style-*conversion* tool — run on detailed photo textures it preserves the high-frequency realistic detail and yields a *posterized photo* (banding in smooth areas, speckle in busy ones), reading as noise rather than painted cel. Generation in the cel register is the path.
+
+**Tile requirements:**
+- **Palette-coordinated** to the master palette (art §5.4); no pure black/white (art §5.3).
+- **Low-frequency, painted** — big readable shapes with hatched shading (art §9.1), not photographic grain.
+- Carry **small-scale surface texture** (grass dapple, rock grain) **but NOT directional / relief shadow** — relief shadow comes from the §17.1.1 hillshade; baked directional shadow would double up and fight it.
+- (Seamless tiling is handled by the generation model; not specified here.)
+
+**Drop-in swap, no shader rewrite.** The splat samples a `Texture2DArray` built from files in `assets/wilderness_textures/` in fixed slot order (§7.1). Replacing the source files rebuilds the array; the `tag → slot` mapping and the shader are unchanged. So this is an asset-generation task plus a file swap, not a render rewrite.
+
+**Floor set** — forests and hills **reuse their climate's open-ground floor** (trees come from scatter, relief from the mesh), which collapses the set to ~9 (10 if jungle is distinct):
+
+| # | Floor tile | Biome / subtype tags it serves | Notes |
+|---|---|---|---|
+| 1 | **Grassland / plains** | `clear`, `clear_grassland`; floor under temperate `woods` + all `hills` | The workhorse. Lush temperate green. |
+| 2 | **Savanna** | `clear_savanna`; floor under tropical scrub / `jungle`\* | Dry gold-green. |
+| 3 | **Tundra** | `clear_tundra`; floor under `forest_taiga` | Pale lichen/rock, cold. |
+| 4 | **Swamp / marsh** | `swamp` (the §12.4 gap — now a generated tile, not a darkened jungle) | Murky mud + standing water. |
+| 5 | **Desert** | `desert` | Warm sand. |
+| 6 | **Badlands** | `desert_badlands` | Arid red rock/clay (may tint #5 instead — optional). |
+| 7 | **Mountain rock** | `mountains` | Grey rugged stone (pairs with §17.3 relief). |
+| 8 | **Volcanic** | `mountains_volcanic` | Dark basalt/ash **+ a companion lava-crack glow mask** (§17.4). |
+| 9 | **Snow / glacial** | `mountains_glacial`, high cold peaks | Pale ice/snow. |
+| (10) | **Jungle floor** \*(optional)* | `jungle`, if not reusing savanna | Deep tropical green. |
+
+Water (ocean/lake/river) stays on the water shaders (§8.4), no floor tile. This supersedes §7.3's photoreal mapping for the cel path; §7.3's *structure* (which tag → which slot) stands.
+
+### 17.3 Mountain ruggedness (refines §5.3)
+
+§5.3 already specifies **Ridged** fractal displacement for `mountains`/`mountains_volcanic` (sharp crests). This refines the **mesh** side so that displacement has geometry to bite into:
+
+- Where the built fan is **center + 6 corners** (one ring), mountain/volcanic hexes get a **subdivided fan** (1–2 levels, per §5.2's "optional subdivide"), and the ridged noise displaces the **interior** vertices into jagged relief.
+- The **6 shared hex corners stay PINNED** to their watertight `_corner_component_avg` heights — the exact invariant the terrain mesh and cliff walls already share, and the riverbed carve (§8.3) already exploits. Pinned corners ⇒ neighbors stay seamless, and the world-XZ hex grid (§10) + edge/tag data (§2) are untouched.
+- Detail tessellation is **gated to mountain/volcanic hexes** (a minority of the map) and **zoom-LOD'd**, so the vertex budget (§6.3) stays bounded even on a full range.
+
+This is the chosen alternative to "drop a mountain model on each hex" (tried 2026-06-29, cut: the centered models read as oversized and out-of-place, and a flat-bottomed asset can't conform to varying corner heights across a range without seams). Mesh displacement keeps the surface watertight and grid-safe.
+
+### 17.4 Volcanic caldera + hex-local lava (refines §8.1)
+
+Two render-only features on `mountains_volcanic` hexes, **small and on-hex** — explicitly **not** lava-rivers following edges or travelling between hexes:
+
+- **Caldera (mesh).** An **inverted carve** at the vent (hex center): a shallow radial **bowl + raised rim**, i.e. the §8.3 riverbed-carve machinery run in reverse. Corners pinned (seam-safe); deterministic per hex.
+- **Lava (shader, hex-local).** §8.1's "lava as an emissive splat layer" is refined to be **contained to the volcanic hex**: it is keyed to the `mountains_volcanic` splat weight, which the splat already confines to that hex — the only spillover is the thin edge-wedge blend into a neighbor (the "slight bleed, if any" that's wanted). The basalt floor tile (§17.2 #8) carries **sparse glowing cracks**; the shader writes those to `EMISSION` via a lava mask, so most of the hex is dark rock with a few bright veins. The **caldera floor reads as a small lava lake** via a **distance-to-hex-center** emissive boost — dense glow at the vent, dark rock at the rim.
+- **Shifting glow (both).** Animate emissive intensity with a slow `sin(TIME)` pulse and warp/scroll the crack pattern subtly over `TIME` — the river-water shader's animation idiom, but emissive. Render-only.
+
+**Scenario ask for the volcanic floor:** two tiles — a dark basalt/ash albedo and a matching lava-crack glow mask (or pack the glow into the albedo's bright cracks and key the shader off luminance).
+
+### 17.5 Implementation impact + open items
+
+This is a shader-and-asset pass over the **built** renderer, not a rewrite:
+
+- **(a)** Fold the soft 2-band hillshade (§17.1.1) + atmospheric wash (art §7.5) into `wilderness_splat`'s lighting, behind a band-vs-wash uniform.
+- **(b)** Refine the volcanic emissive in the splat: hex-local mask + caldera distance-to-center boost + animated glow (§17.4).
+- **(c)** Mesh build: subdivided fan + ridged displacement on mountain/volcanic hexes, and the caldera inverted carve — corners pinned (§17.3/§17.4).
+- **(d)** Drop the generated cel floor tiles into `assets/wilderness_textures/` (§17.2) — array rebuild, no shader change.
+- **(e)** Thin-outline material variant (`cel_outline`) on settlement / watchtower / dungeon markers (§17.1).
+- **(f)** Full cel (`cel_figure` + `cel_outline`) on the eventual 3D party avatar / creature tokens.
+
+**Open items:**
+- **A/B the terrain band-vs-wash** (uniform toggle, MCP screenshot) and confirm cel reads on sunlit rolling terrain — the §12.3 verify, now with a direction rather than a blank.
+- **Master-palette authorship** (art §5.4 / §15.3) is still open and gates palette-coordinating the generated tiles.
+- **Per-vent lava density + caldera depth** tuning (eyeball pass).
+- **Register deviation feedback:** add the "3D Wilderness (exterior)" row to art-direction §9 (§17.1.1).
+- **Banker's-rounding note:** all of §17 is visual continuous math (vertex heights, emissive, slope) — exempt from the banker's-rounding rule per §2 (it produces no game numbers).

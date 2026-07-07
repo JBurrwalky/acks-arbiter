@@ -1,33 +1,27 @@
 Bug List
 
-Status key: [FIXED 2026-06-12] / [DEFERRED]
+1: Encounter Parley screen has no exit, leave button does nothing or at least doesn't dismiss the layer. Esc key removes exploration HUD. 
 
-1: [FIXED 2026-06-12] Namimg a creature or vehicle in the Character tab does not populate the new name to the inventory tab.
-   → Creature rename now emits creature_inventory_updated so the inventory tab refreshes. (Vehicle rename already emitted vehicle_changed and worked.)
+2: E 10:29:57:560   roll_monthly_encounters_for_domain: Invalid call 'String' constructor: city_grass_scrub_settled
+  <GDScript Source>domain_encounter_resolver.gd:158 @ roll_monthly_encounters_for_domain()
+  <Stack Trace>  domain_encounter_resolver.gd:158 @ roll_monthly_encounters_for_domain()
+                 domain_handlers.gd:403 @ _resolve_domain_month()
+                 domain_handlers.gd:146 @ _handle_monthly_tick()
+                 event_handler_registry.gd:86 @ resolve()
+                 scheduler_loop.gd:354 @ _resolve_next_event()
+                 scheduler_loop.gd:294 @ _tick_normal()
+                 scheduler_loop.gd:251 @ tick()
+                 session_runner.gd:392 @ _process()
 
-2: [FIXED 2026-06-12 — creature-in-dungeon] Inventory page does not allow sending items to creatures or vehicle even if they have a hitched team/capacity, either by drag and drop or by right click menu.
-   → A creature shares its handler's dungeon cell, so it sat at distance 0 from you and the strict "exactly 1" adjacency rule rejected it. Same-cell is now reachable when a creature/vehicle is involved (two PCs at one cell still rejected). NOTE: a vehicle rejecting items in the *wilderness/settlement* would be a separate cause (no adjacency gate there) — capture the exact rejection text if it recurs.
 
-3: [FIXED 2026-06-12] Party is able to move with unhitched vehicles without abandoning their vehicles.
-   → Travel now prompts Leave Behind / Cancel when a vehicle can't move. "Leave behind" parks the cart + cargo as a conspicuous (heavy raid-risk) wilderness cache at the current hex, reusing the loot-cache system. FOLLOW-UP: a recovered cart is recoverable as an item only; re-deploying it into a working vehicle needs a "deploy vehicle from inventory" flow that doesn't exist yet.
+3: 6-mile hex map window does not roll and generate further hexes.
 
-4: [FIXED 2026-06-12] when equipping saddle and tack to animals, if the saddle and tack are in a stack in the owner's inventory, the whole stack equips, rather than split then equip. I.e. if the character inventory page shows saddle and tack (draft) x2 both will silently go to one animal. They must be unequipped, split, then re-equipped.
-   → Creature equip now splits one unit off a stack before equipping (mirrors the PC equip path).
-
-5: [FIXED 2026-06-12] Reaching a settlment gate node, then selecting "leave" hides the whole settlment POI menu, it does not return to the POI selection menu. This strands the player in a gray screen with no way out.
-   → "Leave" now emits leave_requested, which re-shows the PoI menu (the menu is hidden on travel arrival, so hide-panel alone stranded the player).
-
-6: [DEFERRED] The dungeon wall/ceiling culling/dithering is not good. See attached screencap.
-   → Visual/shader rendering pass; warrants its own focused session.
-
-7: Items still cannot be transferred to an animal or vehicle, even if capacity is available or a team is properly hitched.
-
-8: Setting Generator: some hexes are marked "unclaimed wilderness" with territory type "borderlands" and a culture label still applied, but there are no population counts present in the hex. May be a bug from the 0.1 culture floor preventing full regression to true wilderness and culture-wipe? seed: 40847028
-
-9: Setting gen Duchy realms are reaching scales of 12+ hexes, when the RAW limit is 4 to 11. May need some Duchy splitting mechanism to split duchies that reach 12 into two duchies of ~6 each, unless intentional to promote overreach and collapse/shatter? seed: 40847028
-
-10: Principalities are being vassalized by principalities, but that should promote the liege to King/kingdom. Seed: 38045604
-
-11: noncontiguous realms under the same direct lord, princes vassals of princes, seed 345235582
-
-12: setting gen review; replay does not surface a polity name or culture, just a hex number and pol_id number. Only realms that survive to the final epoch are named in the review/rewind. Related non-bug: would be nice ot be able to view the other map layers in review mode too (culture, sovereign toggle, territory, biome, elevation).
+4: camp screen has no watch selection to choose characters for watch. Reccomend a drag-and-drop sysytem with party + henchmen protraits. Also crashes on selecting begin rest: 
+E 0:30:44:625   CampHandlers._handle_rest_complete: Invalid call. Nonexistent function 'load_character' in base 'Node (campaign_repository.gd)'.
+  <GDScript Source>camp_handlers.gd:226 @ CampHandlers._handle_rest_complete()
+  <Stack Trace> camp_handlers.gd:226 @ _handle_rest_complete()
+                event_handler_registry.gd:86 @ resolve()
+                scheduler_loop.gd:354 @ _resolve_next_event()
+                scheduler_loop.gd:327 @ _tick_max_speed()
+                scheduler_loop.gd:249 @ tick()
+                session_runner.gd:392 @ _process()

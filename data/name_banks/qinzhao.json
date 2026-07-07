@@ -1,0 +1,430 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "Li",
+      "Wang",
+      "Zhang",
+      "Chen",
+      "Zhao",
+      "Huang",
+      "Zhou",
+      "Wu",
+      "Xu",
+      "Sun",
+      "Ma",
+      "Lin",
+      "Gao",
+      "Luo",
+      "Zheng",
+      "Liang",
+      "Jia Zhongyan",
+      "Jia Yunlong",
+      "Jia Zhiyuan",
+      "Jia Bowen",
+      "Jia Jianjun",
+      "Jia Mingyuan",
+      "Jia Zihan",
+      "Jia Dewei"
+    ],
+    "epithet": [
+      "the Tiger",
+      "the Wise",
+      "Jade-blade",
+      "the Loyal",
+      "Cloud-rider",
+      "the Iron-willed",
+      "the Far-marcher",
+      "Golden-spear",
+      "the Great",
+      "the Little",
+      "the Old",
+      "the New",
+      "the Black",
+      "the White",
+      "the Red",
+      "the Golden"
+    ],
+    "feature": [
+      "Ban",
+      "Beidao",
+      "Chadu",
+      "Chigang",
+      "Dagu",
+      "Donguan",
+      "Gaohai",
+      "Guhu",
+      "Heihuang",
+      "Jinjiang",
+      "Majiao",
+      "Meijing",
+      "Milin",
+      "Nanling",
+      "Neilu",
+      "Shangmu",
+      "Shengshan",
+      "Situ",
+      "Tiewan",
+      "Tongxi",
+      "Waixia",
+      "Xyuan",
+      "Xiaze",
+      "Xian",
+      "Xindao",
+      "Yandu",
+      "Yaogang",
+      "Yingu",
+      "Yuguan",
+      "Baihai"
+    ],
+    "military_unit": [
+      "the Tiger Ying",
+      "the Azure Banner"
+    ],
+    "personal_female": [
+      "Lihua",
+      "Yurong",
+      "Meixiang",
+      "Cuilan",
+      "Shuhui",
+      "Wanqing",
+      "Yingtai",
+      "Xiumei",
+      "Zhilan",
+      "Fenghua",
+      "Yuyan",
+      "Jingwen",
+      "Caiyun",
+      "Ruoxi",
+      "Hongyu",
+      "Lanying",
+      "Suyin",
+      "Minzhen",
+      "Yuehua",
+      "Qingzhao",
+      "Gaidun-di",
+      "Gaidun-dijade",
+      "Lianta-mu",
+      "Lianta-mujade",
+      "Numeng-jun",
+      "Numeng-junjade",
+      "Tuli-di",
+      "Tuli-dijade"
+    ],
+    "personal_male": [
+      "Zhongyan",
+      "Yunlong",
+      "Zhiyuan",
+      "Bowen",
+      "Jianjun",
+      "Mingyuan",
+      "Zihan",
+      "Dewei",
+      "Shaofeng",
+      "Hongyi",
+      "Anguo",
+      "Wenbo",
+      "Jingyao",
+      "Kaitai",
+      "Chengyu",
+      "Ruihu",
+      "Tianyou",
+      "Shenglong",
+      "Baoshan",
+      "Yongzhi",
+      "Gaidun-di",
+      "Lianta-mu",
+      "Numeng-jun",
+      "Tuli-di"
+    ],
+    "settlement": [
+      "Huaxia",
+      "Jincheng",
+      "Beiguan",
+      "Dajiang-cheng",
+      "Tuli-miao",
+      "Yuze",
+      "Ban",
+      "Beicheng",
+      "Chachengbao",
+      "Chicun",
+      "Dadu",
+      "Dongling",
+      "Gaomatou",
+      "Gumiao",
+      "Heishi",
+      "Jinzhai",
+      "Mazhen",
+      "Meizhuang",
+      "Man",
+      "Nancheng",
+      "Neichengbao",
+      "Shangcun",
+      "Shengdu",
+      "Siling",
+      "Tiematou",
+      "Tongmiao",
+      "Waishi",
+      "Xizhai",
+      "Xiazhen",
+      "Xiaozhuang",
+      "Xinan",
+      "Yancheng",
+      "Yaochengbao",
+      "Yincun",
+      "Yudu",
+      "Bailing",
+      "Beimatou",
+      "Chamiao",
+      "Chishi",
+      "Dazhai"
+    ],
+    "ship": [
+      "the Red Cliff",
+      "Jade Dragon",
+      "the Heaven-Mandate"
+    ],
+    "tavern": [
+      "The Plum-Blossom Inn",
+      "The Jade Cup",
+      "The Bai Cha",
+      "The Chi Jin",
+      "The Da Ma",
+      "The Gao Mi",
+      "The Gu Si",
+      "The Hei Tie",
+      "The Jin Tong",
+      "The Mei Yan",
+      "The Sheng Yin",
+      "The Tie Yu"
+    ]
+  },
+  "culture_id": "qinzhao",
+  "family": [
+    "east_asian"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_qinzhao.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "qinzhao",
+  "lexicon": {
+    "adjectives": {
+      "black": "hei",
+      "fair": "mei",
+      "far": "yao",
+      "golden": "jin",
+      "great": "da",
+      "high": "gao",
+      "iron": "tie",
+      "little": "xiao",
+      "new": "xin",
+      "old": "gu",
+      "red": "chi",
+      "sacred": "sheng",
+      "white": "bai"
+    },
+    "directional": {
+      "east": "dong",
+      "inner": "nei",
+      "lower": "xia",
+      "north": "bei",
+      "outer": "wai",
+      "south": "nan",
+      "upper": "shang",
+      "west": "xi"
+    },
+    "feature_words": {
+      "bay": "wan",
+      "cape": "jiao",
+      "coast": "an",
+      "ford": "du",
+      "forest": "lin",
+      "hill": "ling",
+      "isle": "dao",
+      "lake": "hu",
+      "marsh": "ze",
+      "mountain": "shan",
+      "narrows": "xia",
+      "neck": "jing",
+      "pass": "guan",
+      "plain": "yuan",
+      "ridge": "gang",
+      "river": "jiang",
+      "road": "dao",
+      "sea": "hai",
+      "stream": "xi",
+      "track": "tu",
+      "vale": "gu",
+      "waste": "huang",
+      "way": "lu",
+      "wood": "mu"
+    },
+    "resources": {
+      "bronze": "tong",
+      "gold": "jin",
+      "grain": "mi",
+      "horse": "ma",
+      "iron": "tie",
+      "jade": "yu",
+      "salt": "yan",
+      "silk": "si",
+      "silver": "yin",
+      "tea": "cha"
+    },
+    "settlement_words": {
+      "citadel": "chengbao",
+      "city": "cheng",
+      "fort": "zhai",
+      "hamlet": "cun",
+      "market": "shi",
+      "port": "matou",
+      "temple_town": "miao",
+      "town": "zhen",
+      "village": "zhuang"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "[surname] + [given]; toponyms = quality/feature + type: Jin-cheng (golden-city), Bei-guan (north-pass), Da-jiang (great-river).",
+    "gendered_endings": {
+      "female": [
+        "jade"
+      ],
+      "male": []
+    },
+    "patronymic_form": "the clan-surname (xing) comes first, then the given name (ming); generation-names within a zu (lineage); no patronymic particle.",
+    "toponymic_suffixes": [
+      "cheng",
+      "zhou",
+      "guan",
+      "shan",
+      "jiang",
+      "bei/-nan"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen warlord cheng and tomb-mounds: 'the Tomb of [name]', 'the Ruined Cheng of [warlord]'",
+    "military_units": "the [general] Ying (camp/army) / the [color] Banner: 'the Tiger Ying', 'the Azure Banner'",
+    "ships": "river-junk and war-junk names: 'the Red Cliff', 'Jade Dragon', 'the Heaven-Mandate'",
+    "taverns": "'The [Adjective] [Noun]': 'The Plum-Blossom Inn', 'The Jade Cup'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are the Sinitic morphs of the Agrippan canon (family_east_asian.json theonym_sets.sinitic) - never real Chinese gods. A Celestial Bureaucracy under the Mandate of Heaven: the One (Aiteng) presides as Highest Heaven; the Lawful powers are the celestial officials (-di emperors, -jun lords); the Neutral honor ancestors (the zu) and the local earth-and-grain powers; the Chaotic defy the celestial order. Confucian rites and ancestor-veneration order all.",
+    "clergy_ladder": {
+      "1": "Daoshi-tu (acolyte)",
+      "3": "Daoshi (priest)",
+      "5": "Fashi (ritual-master)",
+      "7": "Gaogong (high priest)",
+      "9": "Tianshi (celestial master)"
+    },
+    "demon_epithet_pattern": "the opposing powers are the demon-marshals (mo) outside the celestial order, each with an epithet: Maraxus -> Maluo the War-Fire Marshal; Vacidus -> Wuci the Devourer; Lusanto -> Lusan the Coin-Serpent.",
+    "holy_symbol_motifs": {
+      "Gaidun-di": "a green mountain over the grain-altar",
+      "Tuli-di": "a red sun-disc above the scales and seal of office"
+    },
+    "religious_orders_pattern": "the Miao (temple) of [power]: 'the Miao of Tuli-di'; the ancestral Ci (clan-shrine) for the zu.",
+    "saints_pattern": "deified heroes and worthy officials enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao; 'the Lord [name]'.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gaidun-di (the Earth Emperor, lord of mountains)",
+      "Numeno": "Numeng-jun (the Sage Lord of the winds)",
+      "Realta": "Lianta-mu (the Mother of Mercy)",
+      "Tulrius": "Tuli-di (the Sun-Justice Emperor)"
+    },
+    "the_one": "Aiteng (< Aeternus; the Highest Heaven, the source of the Mandate, served not petitioned)",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon - the demon-marshals (mo) outside the celestial order - and names the Lawful celestial officials, and Aiteng, as the tyrant-court of Heaven to be defied.",
+      "Lawful": "venerates the Lawful celestial officials under the Mandate - Aiteng the Highest Heaven, Tuli-di the Sun-Justice Emperor, Gaidun-di the Earth Emperor, Numeng-jun the Sage Lord - and names the Chaotic powers the demon-marshals (mo), warded; the celestial bureaucracy and the rites of the Mandate order all.",
+      "Neutral": "honors the ancestors (the zu) and the local earth-and-grain powers, the celestial court invoked at the Miao situationally; Confucian rites and ancestor-veneration bind."
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Sinitic feudal, ascending; DISPLAY titles English, native Sinitic court titles beneath. The Huangdi (emperor) holds the Mandate of Heaven (Tianming) over the Diguo; the Wang are kings/princes; the peerage descends Gong (duke) > Hou (marquis) > Bo (count) > Nan (baron). The Dudu hold the frontier military commands (march). (Native rank titles are the real Chinese register, allowed; no Chinese term is on the approved-foreign list, so display rulers are English.)",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH. No Chinese rank-title is on the approved-foreign list, so no native term is promoted to display. The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Emperor": "Empress",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Bo": "Nubo",
+      "Dudu": "Nudu",
+      "Gong": "Nugong",
+      "Hou": "Nuhou",
+      "Huangdi": "Nuhuang",
+      "Nan": "Nunan",
+      "Wang": "Nuwang"
+    },
+    "government": "feudal (a Celestial-Mandate realm: the Huangdi over the wang and the five peerages, the Confucian bureaucracy of officials; the celestial court and mandarinate)",
+    "heir": "Taizi (crown prince); Shizi (heir of a wang or noble)",
+    "honorifics": {
+      "lady": "Furen",
+      "lord": "Daren",
+      "warrior": "Wushi",
+      "your_grace": "Dianxia",
+      "your_majesty": "Bixia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Nanguo",
+        "ruler": "Baron",
+        "ruler_native": "Nan"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Boguo",
+        "ruler": "Count",
+        "ruler_native": "Bo"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Houguo",
+        "ruler": "Duke",
+        "ruler_native": "Hou"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Diguo",
+        "ruler": "Emperor",
+        "ruler_native": "Huangdi"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Wangguo",
+        "ruler": "King",
+        "ruler_native": "Wang"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Duduqu",
+        "ruler": "Marquis",
+        "ruler_native": "Dudu"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Gongguo",
+        "ruler": "Prince",
+        "ruler_native": "Gong"
+      }
+    },
+    "vassalage": {
+      "fealty": "Mengyue (sworn covenant)",
+      "liege": "Jun (sovereign)",
+      "tribute": "Gongfu",
+      "vassal": "Chen (subject)"
+    }
+  }
+}

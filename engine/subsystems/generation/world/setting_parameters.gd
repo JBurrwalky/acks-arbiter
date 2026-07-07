@@ -18,6 +18,10 @@ var map_size: String = "medium"
 var land_mass_style: String = "continental"
 ## "low" | "medium" | "high" → elevation-curve exponent 2.0 / 1.5 / 1.0 (§4.3).
 var mountain_frequency: String = "medium"
+## "cordillera" (many distinct linear spines) | "alpine" (fewer, bolder ranges with
+## broad lowlands). Drives the ridged-multifractal base frequency + octave count
+## (geo_field_generator._RANGE_STYLE) — a world-character dial, not relief amount.
+var mountain_range_style: String = "cordillera"
 ## "low" | "medium" | "high" — river-source elevation threshold (§4.4).
 var river_density: String = "medium"
 ## Ocean threshold on the shaped 0-1 heightmap (§4.5).
@@ -141,6 +145,7 @@ func to_dict() -> Dictionary:
 		"map_size": map_size,
 		"land_mass_style": land_mass_style,
 		"mountain_frequency": mountain_frequency,
+		"mountain_range_style": mountain_range_style,
 		"river_density": river_density,
 		"sea_level": sea_level,
 		"latitude_range": latitude_range,
@@ -165,10 +170,21 @@ func to_dict() -> Dictionary:
 
 
 static func from_dict(data: Dictionary) -> SettingParameters:
+	# Accept a raw `setting_parameters` DB row directly: its real parameter vector
+	# lives in the `params_json` string column (campaign_seed is a separate column
+	# the callers read on their own). Without this, from_dict(get_parameters(...))
+	# silently DEFAULTED every field — most damagingly map_size -> "medium", so a
+	# huge/large/small world regenerated its field at the wrong size and the 6-mile
+	# materialization window clamped off the field edge into open ocean.
+	if data.has("params_json"):
+		var parsed: Variant = JSON.parse_string(str(data["params_json"]))
+		if parsed is Dictionary:
+			data = parsed
 	var p := SettingParameters.new()
 	p.map_size = str(data.get("map_size", p.map_size))
 	p.land_mass_style = str(data.get("land_mass_style", p.land_mass_style))
 	p.mountain_frequency = str(data.get("mountain_frequency", p.mountain_frequency))
+	p.mountain_range_style = str(data.get("mountain_range_style", p.mountain_range_style))
 	p.river_density = str(data.get("river_density", p.river_density))
 	p.sea_level = float(data.get("sea_level", p.sea_level))
 	p.latitude_range = str(data.get("latitude_range", p.latitude_range))

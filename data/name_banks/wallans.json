@@ -1,0 +1,451 @@
+{
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "categories": {
+    "clan_house": [
+      "the Theudingos",
+      "the Ermaningos",
+      "the Hrothingos",
+      "the Wiljingos",
+      "the Amalingos",
+      "the gens Valeria",
+      "the gens Cornelia",
+      "the gens Aurelia",
+      "the gens Tullia",
+      "the Hildingos",
+      "the gens Caelia",
+      "the Athalingos",
+      "Theudereiksson",
+      "Ermanareiksson",
+      "Gundomersson",
+      "Hrothareiksson",
+      "Wiljareiksson",
+      "Athalmersson",
+      "Theudemersson",
+      "Hildereiksson",
+      "Witigeisson"
+    ],
+    "dungeon_ruin": [
+      "the Sunken Forum",
+      "the Howe of the Theudings",
+      "the broken Arx"
+    ],
+    "epithet": [
+      "the Iron-handed",
+      "Lion-of-the-Forum",
+      "the Law-keeper",
+      "of the Eternal City",
+      "the Oath-keeper",
+      "City-warden",
+      "the Far-marcher",
+      "Purple-clad",
+      "the Great",
+      "the Elder",
+      "the Bold",
+      "the Just",
+      "the Iron",
+      "the Fair",
+      "the Wise",
+      "the Stern"
+    ],
+    "feature": [
+      "Aldsamn",
+      "Argentberg",
+      "Aurfauk",
+      "Austhals",
+      "Eisarnins",
+      "Fagriter",
+      "Fairrjug",
+      "Ferrkamp",
+      "Frumnklus",
+      "Gleskoll",
+      "Gulthlak",
+      "Hauhmar",
+      "Hweitmark",
+      "Innem",
+      "Leitilors",
+      "Marhpals",
+      "Marmrprom",
+      "Mikilriv",
+      "Nithrsemt",
+      "Niwisilw",
+      "Nurthsin",
+      "Olewad",
+      "Raudwall",
+      "Sakweihwast",
+      "Salweg",
+      "Suthamn",
+      "Swartberg",
+      "Ufauk",
+      "Uthals",
+      "Westins"
+    ],
+    "military_unit": [
+      "hari and the preserved Latin legions:",
+      ","
+    ],
+    "personal_female": [
+      "Gunthild",
+      "Ermangund",
+      "Swanahild",
+      "Theudelinda",
+      "Hrothahild",
+      "Wiljagund",
+      "Amalaswintha",
+      "Aurelia Valeria",
+      "Cornelia Livia",
+      "Tullia Marcia",
+      "Severina Fabia",
+      "Octavia Caelia",
+      "Theudereika",
+      "Ermanareika",
+      "Gundomera",
+      "Hrothareika",
+      "Wiljareika",
+      "Athalmera",
+      "Theudemera",
+      "Hildereika",
+      "Witigeia",
+      "Erlands",
+      "Erlandsa",
+      "Gauands",
+      "Gauandsa",
+      "Numins",
+      "Numinsa",
+      "Riala",
+      "Rialaa",
+      "Thulrs",
+      "Thulrsa"
+    ],
+    "personal_male": [
+      "Theudereiks",
+      "Ermanareiks",
+      "Gundomers",
+      "Hrothareiks",
+      "Wiljareiks",
+      "Athalmers",
+      "Theudemers",
+      "Hildereiks",
+      "Witigeis",
+      "Marcus Valerius",
+      "Lucius Aurelius",
+      "Gaius Cornelius",
+      "Tullius Severus",
+      "Aurelian Fabius",
+      "Cassian Tullius",
+      "Valerian Caelius",
+      "Theudelinds",
+      "Amalaswinths",
+      "Erlands",
+      "Erlandss",
+      "Gauands",
+      "Gauandss",
+      "Numins",
+      "Numinss",
+      "Riala",
+      "Rialas",
+      "Thulrs",
+      "Thulrss"
+    ],
+    "settlement": [
+      "Quirgard",
+      "Castra-Theuda",
+      "Aurelium",
+      "Forum-Erlands",
+      "Eisarna-burgs",
+      "Atravada",
+      "Aldsarkburg",
+      "Argentforn",
+      "Aurkastburg",
+      "Austkoll",
+      "Eisarnkoln",
+      "Fagroppid",
+      "Fairrors",
+      "Ferrost",
+      "Frumnurbaurg",
+      "Gleswad",
+      "Gulthwik",
+      "Hauhwikell",
+      "Hweitarkburg",
+      "Innforn",
+      "Leitilkastburg",
+      "Marhkoll",
+      "Marmrkoln",
+      "Mikiloppid",
+      "Nithrors",
+      "Niwost",
+      "Nurthurbaurg",
+      "Olewad",
+      "Raudwik",
+      "Sakweihwikell",
+      "Salarkburg",
+      "Suthforn",
+      "Swartkastburg",
+      "Ufkoll",
+      "Utkoln",
+      "Westoppid",
+      "Winors",
+      "Aldsost",
+      "Argenturbaurg",
+      "Aurwad"
+    ],
+    "ship": [
+      "Pride of the Marei",
+      "the Iron Boar",
+      "Aquila of Quirgard"
+    ],
+    "tavern": [
+      "The Gilded Amphora",
+      "The Boar and Eagle",
+      "The Alds Argent",
+      "The Eisarn Aur",
+      "The Fagr Ferr",
+      "The Fairr Frumn",
+      "The Gulth Gles",
+      "The Hauh Marh",
+      "The Hweit Marmr",
+      "The Leitil Ole",
+      "The Mikil Sal",
+      "The Niwi Win"
+    ]
+  },
+  "culture_id": "wallans",
+  "family": [
+    "germanic",
+    "classical"
+  ],
+  "generator": {
+    "deterministic": true,
+    "source": "data/conlang/culture_wallans.json",
+    "tool": "tools/build_name_banks.py"
+  },
+  "government": "feudal",
+  "kit_id": "wallans",
+  "lexicon": {
+    "adjectives": {
+      "black": "swart",
+      "fair": "fagr",
+      "far": "fairr",
+      "golden": "gulth",
+      "great": "mikil",
+      "high": "hauh",
+      "iron": "eisarn",
+      "little": "leitil",
+      "new": "niwi",
+      "old": "alds",
+      "red": "raud",
+      "sacred": "sakweih",
+      "white": "hweit"
+    },
+    "directional": {
+      "east": "aust",
+      "inner": "inn",
+      "lower": "nithr",
+      "north": "nurth",
+      "outer": "ut",
+      "south": "suth",
+      "upper": "uf",
+      "west": "west"
+    },
+    "feature_words": {
+      "bay": "sin",
+      "cape": "prom",
+      "coast": "ors",
+      "ford": "wad",
+      "forest": "silw",
+      "hill": "koll",
+      "isle": "ins",
+      "lake": "lak",
+      "march": "mark",
+      "marsh": "pals",
+      "mountain": "berg",
+      "narrows": "fauk",
+      "neck": "hals",
+      "pass": "klus",
+      "plain": "kamp",
+      "ridge": "jug",
+      "river": "amn",
+      "road": "weg",
+      "sea": "mar",
+      "stream": "riv",
+      "track": "semt",
+      "vale": "wall",
+      "waste": "wast",
+      "way": "iter",
+      "wood": "nem"
+    },
+    "resources": {
+      "amber": "gles",
+      "gold": "aur",
+      "grain": "frumn",
+      "horse": "marh",
+      "iron": "ferr",
+      "marble": "marmr",
+      "oil": "ole",
+      "salt": "sal",
+      "silver": "argent",
+      "wine": "win"
+    },
+    "settlement_words": {
+      "citadel": "arkburg",
+      "city": "urbaurg",
+      "colony": "koln",
+      "fort": "kastburg",
+      "hamlet": "wikell",
+      "market": "forn",
+      "port": "ost",
+      "town": "oppid",
+      "village": "wik"
+    }
+  },
+  "morphology": {
+    "compounding_rule": "Germanic dithematic ([quality](stem) + element: Eisarna-burgs, iron-fort) layered over Latinate civic compounding (feature/adjective + civic suffix, eliding before a vowel: Castra-Theuda, the Theuda-house fort; Forum-Erlands): the capital Quirgard (the Gothic war-seat), the old urbs kept under its Latin name.",
+    "gendered_endings": {
+      "female": [
+        "a",
+        "ia"
+      ],
+      "male": [
+        "s",
+        "ius",
+        "or"
+      ]
+    },
+    "patronymic_form": "the Gothic ruling house keeps a dithematic lineage-name and -ingos; the Latinate populace keep the inherited gens (clan) name as a middle element (Marcus VALERIUS) and the filius- son-of frame; the throne fuses both - a thiudans who also carries a borrowed gens or a senatorial cognomen.",
+    "toponymic_suffixes": [
+      "um",
+      "ia",
+      "Castra-",
+      "Forum-",
+      "heim",
+      "burg"
+    ]
+  },
+  "patterns": {
+    "dungeons_ruins": "fallen Gothic burgs and the old Agrippan ruins: 'the Castra of Dur-[name]', 'the Sunken Forum', 'the Howe of the Theudings', 'the broken Arx'",
+    "military_units": "the Thiudans' hari (war-host) and the preserved Latin legions: 'the Hari of Quirgard', 'the Legio Ferrata (the Iron Legion)', 'the Iron-helms'",
+    "ships": "war-keels and the old galleys of the coast: 'Pride of the Marei', 'the Iron Boar', 'Aquila of Quirgard'",
+    "taverns": "'The [Adjective] [Noun]': 'The Gilded Amphora', 'The Boar and Eagle'"
+  },
+  "race": "human",
+  "religion": {
+    "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column), Latinate variants SECONDARY (the agrippan/Latinate canon forms, which are near-canonical because agrippan is the canon's home register), never real Germanic/Roman gods. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Roman law-and-senate tradition.",
+    "clergy_ladder": {
+      "1": "Alhs-skalks (temple-servant) / Cultor",
+      "3": "Gudja (priest) / Sacerdos",
+      "5": "Weiha-gudja (hallow-priest) / Flamen",
+      "7": "Ufar-gudja (high priest) / Pontifex",
+      "9": "Sinista-gudja (eldest priest) / Pontifex Maximus"
+    },
+    "demon_epithet_pattern": "the Chaotic powers, warded as skohsla (Gothic demons) rather than worshipped, keep their morphs + an epithet: Maraxus -> Marahs the War-Brand (Lat Maraxus the Tyrant-Flame); Vacidus -> Wakiths the Unmaker (Lat Vacidus the Unmaker); Lusanto -> Lusanths the Hoard-Worm (Lat Lusento the Coin-Serpent).",
+    "holy_symbol_motifs": {
+      "Erlands": "an iron sword crossed with the legion-eagle",
+      "Gauands": "the ploughed campus beneath the city-wall",
+      "Thulrs": "a sun-disc over a crossed sword and law-stele"
+    },
+    "religious_orders_pattern": "the Alhs (Germanic grove-temple) or Templum / Collegium (Latinate) of [power]: 'the Alhs of Thulrs', 'the Collegium of Tulrius'.",
+    "saints_pattern": "the Anses (the deified war-dead of the ruling house) and the Latin Divus/Diva (deified founders and law-givers of the cities), honored at the howe and inscribed on the senate-stele.",
+    "sample_deity_renames": {
+      "Gaiandus": "Gauands (Lat Gaiandus) - the enduring earth",
+      "Numeno": "Numins (Lat Numeno / Numenius) - sky and law-wisdom",
+      "Orlandus": "Erlands (Lat Orlandus) - iron, oath, war",
+      "Realta": "Riala (Lat Realta) - the mother, mercy",
+      "Tulrius": "Thulrs (Lat Tulrius) - the sun and justice"
+    },
+    "the_one": "Aiterns (Gothic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
+    "worship_by_alignment": {
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aiterns - as the tyrant-gods to be defied.",
+      "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded and unworshipped; the war-oath of the war-band and the law-stele of the senate bind alike, and the just thiudans rules by both",
+      "Neutral": "the ancestral war-dead (the Anses of the ruling house) and the city-genii (the Latin genius loci of the urbs); the great powers invoked at the alhs-grove and the templum situationally rather than worshipped wholesale"
+    }
+  },
+  "schema_version": 1,
+  "tier": "culture",
+  "titles": {
+    "_tiers_note": "Gothic ladder, ascending, with the Latinate civic substrate co-titles beneath. Gardingus (king's-man) barony; Marka-frauja (march-lord) march; Kindins (provincial governor) county over a Kindinassus, with the Latin Comes co-title for the conquered comitatus; Drauhtins (war-lord; *druhtinaz) duchy, beside the Latin Dux; Reiks (prince-ruler) principality, beside the Latin Princeps; Thiudans (king) kingdom over a Thiudangardi (Gothic 'kingdom'), styled Rex by the senate and the Latin chancery; Thiudans-Imperator (the king who wears the imperial purple of fallen Agrippa; Gmc thiudans + Lat imperator) empire over the Imperium-Thiudi. The preserved cities keep their Latin Consul, Senatus and Comes beneath the Gothic crown. The gudja (priest) and the Latin Pontifex stand outside the ladder. Rank titles fuse the real Gothic and Latin registers (allowed).",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler'). The *_native conlang forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Imperator": "Imperatrix",
+      "King": "Queen",
+      "Marquis": "Marquise",
+      "Prince": "Princess"
+    },
+    "female_forms_native": {
+      "Drauhtins": "Drauhtini",
+      "Gardingus": "Gardingjo",
+      "Kindins": "Kindini",
+      "Marka-frauja": "Marka-fraujo",
+      "Reiks": "Reikja",
+      "Thiudans": "Thiudana",
+      "Thiudans-Imperator": "Thiudana-Imperatrix"
+    },
+    "government": "feudal (a Gothic war-aristocracy over the Latinate cities and senate: the thiudans and his reiks-kin at the crown, the kindins-governors set over the provinces, the gardingus-retainers sworn to the war-host; the Latin senatus, the comites and the consular law-courts preserved and serving beneath)",
+    "heir": "Thiudans-barn (the king's child; the heir), styled Caesar in the Latin chancery",
+    "honorifics": {
+      "champion": "Wigands (Gothic warrior) / Eques (Latin knight)",
+      "elder": "Sinista (the eldest) / Senator",
+      "lady": "Fraujo / Domina",
+      "lord": "Frauja / Dominus",
+      "your_grace": "Frauja meins / Eminentia"
+    },
+    "tiers": {
+      "barony": {
+        "domain": "Barony",
+        "domain_native": "Gardas",
+        "ruler": "Baron",
+        "ruler_native": "Gardingus"
+      },
+      "county": {
+        "domain": "County",
+        "domain_native": "Kindinassus",
+        "ruler": "Count",
+        "ruler_native": "Kindins"
+      },
+      "duchy": {
+        "domain": "Duchy",
+        "domain_native": "Drauhti",
+        "ruler": "Duke",
+        "ruler_native": "Drauhtins"
+      },
+      "empire": {
+        "domain": "Empire",
+        "domain_native": "Imperium-Thiudi",
+        "ruler": "Imperator",
+        "ruler_native": "Thiudans-Imperator"
+      },
+      "kingdom": {
+        "domain": "Kingdom",
+        "domain_native": "Thiudangardi",
+        "ruler": "King",
+        "ruler_native": "Thiudans"
+      },
+      "march": {
+        "domain": "March",
+        "domain_native": "Marka",
+        "ruler": "Marquis",
+        "ruler_native": "Marka-frauja"
+      },
+      "principality": {
+        "domain": "Principality",
+        "domain_native": "Reiki",
+        "ruler": "Prince",
+        "ruler_native": "Reiks"
+      }
+    },
+    "vassalage": {
+      "fealty": "Treuwa (troth) / Fides (Latin faith)",
+      "liege": "Frauja / Patronus",
+      "tribute": "Gild (Germanic) / Tributum (Latin)",
+      "vassal": "Skalks (servant) / Cliens (Latin client)"
+    }
+  }
+}

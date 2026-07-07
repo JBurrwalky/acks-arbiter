@@ -107,7 +107,8 @@ func unregister(registry: EventHandlerRegistry) -> void:
 ## EventBus.activity_launched.
 ##
 ## Returns: { success: bool, activity_state_id: String, error: String }
-## error codes: "unknown_activity" | "on_cooldown" | "no_scheduler"
+## error codes: "unknown_activity" | "on_cooldown" | "no_scheduler" |
+## "persist_failed" | "insufficient_funds" (oversee_investment only, §91)
 func launch(
 	character_id: String,
 	activity_def_id: String,
@@ -134,6 +135,26 @@ func launch(
 
 	var session_rounds: int = _session_rounds_for(def)
 	var ticks_required: int = _compute_ticks_required(def, params)
+	var cp_committed: int = int(params.get("gp_committed", 0)) * 100
+
+	# §91 launcher-debits contract: oversee_investment's handler assumes the
+	# treasury was already debited at launch. This is the one shared launch
+	# site for every surface (player UI + any future one), so the debit goes
+	# here, not per-caller — matching RulerAI._execute's launch-time withdraw.
+	# Domain resolution uses the same deterministic query as the handler's
+	# own _resolve_domain_for_ruler (never trust a caller-supplied domain_id).
+	if activity_def_id == "oversee_investment" and cp_committed > 0:
+		var domain_id: String = CampaignRepository.primary_domain_id_for_character(character_id)
+		var withdrawal: Dictionary = DomainTreasury.withdraw(
+			domain_id, cp_committed, _calendar_day(), "expense",
+			"oversee_investment_committed",
+			"Committed %s to agricultural investment" % Currency.format_cost(cp_committed))
+		if not bool(withdrawal.get("ok", false)):
+			return {
+				"success": false,
+				"activity_state_id": "",
+				"error": "insufficient_funds",
+			}
 
 	var state_record: Dictionary = {
 		"campaign_id": _campaign_id,
@@ -149,7 +170,7 @@ func launch(
 		"absence_accumulated": 0,
 		"started_calendar_day": _calendar_day(),
 		"last_session_day": 0,
-		"cp_committed": int(params.get("gp_committed", 0)) * 100,
+		"cp_committed": cp_committed,
 		"params_json": JSON.stringify(params),
 		"scheduled_event_id": "",
 	}

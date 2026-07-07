@@ -36425,3 +36425,1690 @@ on-tick dispatch.
 - Scene scripts (the modal) aren't loaded by the headless suite — verified via `--check-only` + MCP.
 - Latent gaps surfaced by the enumeration (not fixed — pre-existing): `hex_river_edges.width_category` and `roads` have no struct/repo accessor (assembler raw-SELECTs them); `weather_states` has no map_id in its key; `db/schema.sql` is stale (missing migrations 157-159). The assembler reads defensively around all of these.
 **Next session should:** N/A for this dev tool. Back to the materialization M4 dials / M5 when Jedidiah directs.
+
+
+## Session 2026-06-23 — Dungeon/combat floor "dithering" fix (texture mipmaps)
+
+**Task:** Jedidiah reported the dungeon map floor looked like a "dithering mess" — a chaotic light/dark speckle (screen-door static) over the floor tiles at the zoomed-out isometric view, bad enough to obscure layout.
+**Model used:** Opus 4.8 for diagnosis, fix, and GPU-render verification.
+**Completed:**
+- Diagnosed root cause: the floor/wall textures (`assets/floors/slate_tile_light.png`, the two grass variants, `assets/walls/stone_brick_dark_01.png`, `wood_oak_weathered.png`) were imported with `mipmaps/generate=false`. `TacticalGrid3D` tiles the detailed slate texture (UV scale 2.0/cell) and the camera minifies it heavily when zoomed out, so without a mip chain the GPU undersamples the texels into aliasing speckle. They lacked mipmaps because Godot's detect-3d auto-mipmap pass only fires for textures referenced by *saved* material resources, but `TacticalGrid3D` builds its `StandardMaterial3D`s in code at runtime — so the hook never fired.
+- Enabled `mipmaps/generate=true` in all five texture `.import` files (local only — `*.import` is gitignored in this project per `.gitignore`).
+- Added `TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC` to the floor material (`build_floor_multimesh_voxel`) and the shared `_make_textured_material` (walls), since floors are viewed at a grazing isometric angle.
+- Durable, version-controlled guarantee: added `TacticalGrid3D._ensure_mipmaps(tex)` called from `_load_texture()`. It rebuilds any texture lacking a mip chain as an `ImageTexture` with `generate_mipmaps()` (decompressing first if needed). This survives a fresh clone / `.godot` wipe, where `.import` regenerates with default (no-mipmap) settings and detect-3d still wouldn't fire. No-op when the import already supplies mipmaps.
+- Fix covers both dungeon and combat maps (both render via `TacticalGrid3D`) and the wilderness grass textures.
+**Decisions made:**
+- Belt-and-suspenders: keep the `.import` mipmap edits (correct editor preview, immediate effect) AND the runtime `_ensure_mipmaps` guarantee (durable + tracked in git). The runtime path is the authoritative fix since `.import` is not version-controlled.
+**Interfaces defined or changed:**
+- New static `TacticalGrid3D._ensure_mipmaps(tex: Texture2D) -> Texture2D` (internal; called by `_load_texture`). No public API change.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None automated (texture mipmaps are not meaningfully testable under the headless dummy renderer — `get_image()` returns null there, which `_ensure_mipmaps` guards). Verified instead by GPU render via the godot-ai MCP: built a throwaway 26×26 stone-floor scene under the real isometric rig at zoomed-out `size=22`, captured `source="game"`. Floor rendered clean/even (no speckle). Also simulated a fresh clone by reimporting slate with `mipmaps=false` and re-rendering — still clean, proving the runtime path generates the mips. Temp dev scene + `main_scene` swap reverted; parse-checked `tactical_grid_3d.gd` clean.
+**Known issues:**
+- None. The faint regular tile pattern remaining on the floor is the intended slate texture (UV scale 2.0), now correctly filtered rather than aliasing.
+**Next session should:**
+- Optional polish only: if the slate tile pattern still reads as too busy at full zoom-out, consider lowering `FLOOR_UV_SCALE` (2.0 → ~1.0) so each cell shows the texture once. Not required for the reported bug.
+
+
+## Session 2026-06-24 — World map renders in a SubViewport anchored above the resizable status bar
+
+**Task:** Jedidiah reported the session status bar (a CanvasLayer, layer 80) occluded the bottom of the wilderness map. The map rendered full-screen into the root window viewport, so right-click context menus opened near the bottom got buried under the bar, and "center on party" focused on a point partly hidden behind the bar. Goal: anchor the map's viewport to the top of the status bar and resize the viewport WINDOW (not stretch the image) as the bar is dragged taller/shorter.
+**Model used:** Opus 4.8 for diagnosis, implementation, and in-game (godot-ai MCP) verification.
+**Completed:**
+- Wrapped the wilderness hex map in a SubViewport so it renders only in the area above the bar. `scenes/Main.tscn`: new `WorldViewport` (SubViewportContainer, full-rect anchors, `stretch = true`) → `WorldSubViewport` (SubViewport) → existing `HexMap` (scenes/maps/hex_map.tscn) reparented under it. Edited via the godot-ai MCP (Main.tscn is MCP-authored, carries `unique_id` attrs).
+- New `scenes/maps/world_viewport_frame.gd` (extends SubViewportContainer): on `EventBus.bar_height_changed(px)` sets `offset_bottom = -px`; on `_ready` forces `stretch=true` + full-rect anchors and pulls the bar's current height as a fallback.
+- `EventBus`: new signal `bar_height_changed(height_px: float)` (engine/autoloads/event_bus.gd) — the code already anticipated it (a comment in session_status_bar.gd referenced it "when that signal lands").
+- `SessionStatusBar` (scenes/ui/hud/session_status_bar.gd): new `get_effective_bar_height() -> int` (applied height when visible, 0 when hidden) + `_emit_bar_height()`; emits from `_apply_height_pixels` (covers drag + every state change), `_update_visibility`, `_on_notebook_open_state_changed`, and a new `_on_viewport_size_changed` wired to `get_viewport().size_changed` (EXPANDED height is viewport-relative, so it re-applies on window resize).
+- `engine/subsystems/session/session_runner.gd:173`: changed `get_parent().get_node("HexMap")` → `get_parent().find_child("HexMap", true, false)` so the renderer lookup survives the reparent.
+- Coding conventions: added §84 documenting the world-viewport-frame pattern.
+**Decisions made:**
+- Used the `SubViewportContainer(stretch=true) + SubViewport` pattern — the same one combat already uses (`scenes/ui/combat/combat_screen.gd:93`) — rather than a camera-offset hack. With `stretch=true` the SubViewport tracks the container size, so the Camera2D shows `window − bar` of world at unchanged zoom: the viewport WINDOW resizes and the image is rendered 1:1 (never scaled), exactly as requested.
+- Frame tracks the bar via a broadcast signal, not a hard reference — keeps SessionStatusBar and the map decoupled.
+- Scoped to the wilderness map this pass (Jedidiah's choice: "wilderness now, dungeon next"). The 3D dungeon map has the same root-viewport occlusion and is the designed next step.
+**Interfaces defined or changed:**
+- New signal `EventBus.bar_height_changed(height_px: float)` — emitted by SessionStatusBar, consumed by world_viewport_frame.gd. `height_px` = the bar's occluding height in px, 0 when hidden.
+- New `SessionStatusBar.get_effective_bar_height() -> int`.
+- Scene contract: the wilderness HexMap now lives at `Main/WorldViewport/WorldSubViewport/HexMap`. Resolve it via `find_child("HexMap", true, false)`, not a fixed node path.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- No new automated tests (pure scene/rendering-layout change; verified in-engine). Full suite re-run under APPDATA isolation (tools/run_tests.ps1, run 2): 465 suites passed / 17 failed — net-zero NEW failures vs the ~461–463/17 baseline. The one red check in `tests/test_session_status_bar.gd:70` (`widget zone has 9 cells; got 11`) is a PRE-EXISTING stale assertion: row 3 grew to 5 widgets when `_view_mode_btn` + `_enter_region_btn` were added (migration 119), unrelated to this change (I never touched `_build_widget_zone`). My status-bar edits add methods + signal emits only and are tree-safe in the harness (`_make_bar()` adds the bar to the tree before `_ready`).
+- In-game verification via godot-ai MCP (loaded "Iltaninu" campaign → wilderness): at the default 200px bar (window 1908×942) `WorldViewport.offset_bottom = -200` and `WorldSubViewport.size = 1908×742`; dragging the bar to minimal grew the SubViewport to 1908×892 live; hex art stayed the same size (no stretch); the party cluster re-centered in the visible (above-bar) area; clicking the in-SubViewport "Enter Settlement" button opened its dialog centered above the bar (proves GUI input forwards into the SubViewport).
+**Known issues:**
+- The 3D dungeon map (`dungeon_explore_state` `_scene`, dungeon_map_3d.tscn) still renders full-screen to the root viewport — same occlusion, not yet fixed (deferred by scope).
+- Synthetic right-click via the MCP debugger doesn't drive the renderer's `get_local_mouse_position()`-based hit test, so the wilderness right-click context menu couldn't be exercised through injected input; real mouse input is unaffected (GUI forwarding proven via the button-dialog test, and the menu's on-screen clamp reads the SubViewport rect so it clips above the bar).
+- The drag test left the persisted bar height at "minimal" (`user://session_status_bar_height.txt`) — cosmetic; the player adjusts it freely.
+**Next session should:**
+- Apply the same WorldViewport/SubViewport framing to the 3D dungeon map (mount `dungeon_map_3d` under `WorldSubViewport`, or give it its own bar-tracking frame) so dungeon context menus / camera focus also respect the bar.
+
+
+## Session 2026-06-24 — 3D dungeon map: bar-tracking SubViewport frame + wilderness-overlay fix
+
+**Task:** Apply the wilderness map's above-the-status-bar SubViewport framing to the 3D dungeon map (follow-up to the same-day wilderness change). The dungeon should render only in the area above the resizable status bar, resize with it (no image stretch), and keep its context menus / camera focus within the visible area.
+**Model used:** Opus 4.8 for implementation and in-game (godot-ai MCP + game_eval) verification.
+**Completed:**
+- Found + fixed a LATENT REGRESSION from the same-day wilderness change: `wilderness_explore_state.exit()` hid only the inner `HexMap` (`renderer.visible=false`), but the `WorldViewport` SubViewportContainer stayed visible and drew an opaque (cleared) rectangle that covers 3D world content rendered behind it — i.e. the dungeon (mounted in `SceneContainer`, which is earlier in the tree → drawn under `WorldViewport`). Now the whole frame hides/shows with the wilderness context.
+  - `engine/subsystems/session/session_runner.gd`: resolve `_world_viewport = get_parent().find_child("WorldViewport", true, false)` in `_ready`; new `get_world_viewport()`.
+  - `engine/subsystems/session/states/wilderness_explore_state.gd` enter/exit: toggle `runner.get_world_viewport().visible` alongside the existing renderer toggles.
+- Wrapped the dungeon scene in a bar-tracking SubViewport frame. `engine/subsystems/session/states/dungeon_explore_state.gd` `enter()`: instead of `push_node(_scene, ...)`, build `DungeonViewportFrame` (`SubViewportContainer` + `world_viewport_frame.gd`, `stretch=true`) → `DungeonSubViewport` (`own_world_3d=true`, `handle_input_locally=true`) → `_scene` (the dungeon `Node3D`), and push the FRAME via the nav stack. Added `const WorldViewportFrame := preload("res://scenes/maps/world_viewport_frame.gd")`.
+- Reused the existing generic `world_viewport_frame.gd` (tracks `EventBus.bar_height_changed`, anchors full-rect, `stretch=true`) for the dungeon frame — no new script.
+- Conventions §84 updated to document the two frames + the hide-when-inactive rule.
+- Cleared a spawned cleanup task: fixed the stale `tests/test_session_status_bar.gd:70` assertion (a long-standing baseline red). The widget zone has 11 children, not 9, since migration 119 added the two context-gated cross-scale buttons (`_view_mode_btn` / `_enter_region_btn`); updated the assertion to `== 11` + the comment (the *rendered* layout stays ~3×3 because the buttons are mutually exclusive). gdd-ui-architecture.md §3.8 keeps the 3×3 design language; not a UI redesign.
+**Decisions made:**
+- The dungeon uses its OWN frame (pushed via the nav stack, freed on pop), NOT the shared wilderness `WorldSubViewport`. Rationale: the dungeon mounts through `NavigationStack.push_node` into `SceneContainer` with push/pop lifecycle + fade transitions — wrapping `_scene` keeps that intact — and `own_world_3d` isolates the dungeon's self-contained 3D world (Camera3D + DirectionalLight3D + WorldEnvironment, built by `TacticalGrid3D.create_environment()`), exactly like the combat map.
+- Fixed the wilderness-overlay regression here rather than only adding the dungeon frame: it's the same root cause (a wilderness SubViewport frame left visible over a non-wilderness context). `transparent_bg` is not a fix — the container still intercepts input even when transparent; hiding the frame is the correct fix.
+**Interfaces defined or changed:**
+- New `SessionRunner.get_world_viewport() -> Node` — the wilderness map's SubViewportContainer; may be null in tests / frame-less scenes.
+- Dungeon scene-graph contract: `DungeonMap3D` now lives at `SceneContainer/DungeonViewportFrame/DungeonSubViewport/DungeonMap3D` (was `SceneContainer/DungeonMap3D`). All dungeon code addresses it via the `_scene` reference + relative `DungeonHUD/...` paths, which are unaffected.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- No new automated tests (scene/rendering-layout change). Full suite under APPDATA isolation (tools/run_tests.ps1, run 2): **466 passed / 17 failed**. Net-zero NEW failures verified by NAME (not count — the headless baseline count is flaky/order-dependent per build-workflow notes): every one of the 17 failures lives in a file this session did NOT touch (combat geometry `test_movement_resolver_3d`/LOS/ZoC, `test_dungeon_map_controller_voxel` Vector3i signals — the CONTROLLER, not the state I changed — clanhold domain_style, region-label angles, garrison, `_bankers_round`, inventory cascade), and the suites adjacent to the change PASS (`VoxelDungeonIntegration`, `WildernessContextMenuBuilder`, and `SessionRunner`'s own non-harness tests). `SessionStatusBar: all tests passed` now (was the stale red, fixed this session). `test_session_runner`'s signal failures are a pre-existing harness limitation (the suite instantiates SessionRunner without its Main.tscn siblings, so `_ready` aborts at `_nav_stack.setup()` — unchanged by me; my added `find_child("WorldViewport")` returns null harmlessly).
+  - First-run crash gotcha (resolved): the initial suite run crashed at the Godot banner (exit 255, empty log) because a zombie headless Godot pair from a prior run held the isolated test DB while the editor was mid-reimport of the edited scripts. Killed the orphaned `Godot_*` PIDs (kept the editor + godot-ai MCP) and re-ran clean. Symptom per build-workflow notes: `Get-Process *odot*` showing a console+main pair with a stale StartTime.
+- In-game verification via godot-ai MCP + `game_eval`: force-entered a stored dungeon ("the Sunken Halls of Nedjesta-djeser") by driving `runner.transition_to_state("dungeon", {entrance, spawn_cell})`. Confirmed at runtime: tree = `DungeonViewportFrame(SubViewportContainer, world_viewport_frame.gd) → DungeonSubViewport(own_world_3d=true) → DungeonMap3D` (camera + light + WorldEnvironment + 6 entity tokens inside); `offset_bottom=-200`, SubViewport `1908×742` (window 942 − bar 200); Camera3D `current=true`, party tokens rendering; **`WorldViewport.visible=false`** (overlay fix holds in the dungeon); emitting `bar_height_changed(400)` resized the dungeon SubViewport to `1908×542` live and restored to 742 at the real height (no image stretch). Cleaned up the forced entry via `clear_party_dungeon_position`.
+**Known issues:**
+- The forced-entry test dungeon built no `GridMeshes` floor geometry (a tiny 297-byte generated dungeon); unrelated to framing (tokens + camera render fine) and not touched by this work. A richly-stocked dungeon should be re-checked when DG-V1 per-type themes land.
+- Settlement exploration is menu-driven (CanvasLayer UI), already covered by the wilderness-overlay fix (WorldViewport hidden on wilderness exit). Combat self-frames (its own SubViewport), unaffected.
+**Next session should:**
+- Optional: re-verify a fully-stocked dungeon (rooms/walls/doors) renders correctly in the frame once richer dungeon content is available; this pass verified the framing + bar tracking with a minimal dungeon.
+
+
+## Session 2026-06-24 — Continuous-geography world-gen refactor GDD + wilderness-3d reassessment
+
+**Task:** Assess work landed since the 2026-06-16 3D-hex GDD; update gdd-wilderness-hex-3d.md to match current state; draft directives for refactoring world/setting generation into a continuous (non-hex) 3D heightmap with better climate/biome/watershed sim, normalized into hexes. Jedidiah's direction: "generate geography non-hexagonally, layer the hexmap on top, normalize terrain/elevation types."
+
+**Model used:** Opus 4.8 (1M context); a 4-agent assessment Workflow (gen-sophistication, materialization/region-scale state, GDD staleness, continuous-geography design research) + GDD authoring.
+
+**Completed:**
+- Assessed landed work (git + build_log + workflow): materialization M0-M4 LANDED (`region_zoom_in.gd` produces a playable 6-mile map; MCP-verified), region-scale system LANDED (24-mile view-only World Map Notebook tab + layer toggles `world_map_tab_page.gd`; "Enter Region" + Strategic/Regional toggle in `session_status_bar.gd`; migration-119 cross-scale), HexMap reparented under `Main/WorldViewport/WorldSubViewport/HexMap` (conventions §84), migration counter now 175.
+- KEY FINDING: 6-mile children DO carry `elevation_raw` (`region_zoom_in.gd:135`) but `_children_for_parent` FLAT-COPIES the parent's 24-mile value (`:212, :307`; edge children borrow a neighbor) -> 16-hex plateaus, no true sub-24-mile height. Geography is still ONE noise sample per 24-mile hex center (`heightmap_generator.gd:92-95,147-165`); rivers are a greedy vertex-walk with NO flow accumulation (`:186-269`), width by `log2(source_count)` (`:32-41`); lakes by a depression heuristic. Climate is already decent (quadratic latitude + above-ceiling lapse + rain-shadow BFS + coastal-moisture BFS) but precipitation is noise x multiplier, computed per-24-mile.
+- Authored NEW `generation/gdd-continuous-geography.md` (v0.1): field-first world gen. Coarse base raster (4x4 per 24-mi hex = 6-mile cell; <=43,200 cells at `huge`) + on-demand detail noise modulated by the coarse field. Hydrology: thermal erosion x3-5 + Priority-Flood (fill+watershed, O(n log n)) + D8 + flow accumulation + channel extraction (FAT) + Strahler order -> width/navigability + channel-incision carve; SKIP global hydraulic droplet erosion. Climate: orographic wind sweep (rain shadow EMERGES) + continentality + per-cell Köppen. `tag_for_footprint(field, footprint, scale) -> HexTags` is the load-bearing hex-normalization contract (area-weighted dominance, "mountains if >25%", stored runner-up biome; idempotent => cross-scale consistency is structural). Replaces the stochastic deviation-budget inheritance with field-sampling.
+- Updated `gdd-wilderness-hex-3d.md` -> v0.3: scale strategy now RESOLVED (the 24mi-2D / 3D-6mi split is the shipped architecture); `RAW_FIELD` (read `field_sampler.sample(x,y)`) is now the target default height source; SubViewport hosting fix (§13.2 + §3.1); migration 163 -> 175; added `hex_clicked` to the 5-signal contract; dependency is now the continuous-geography refactor + `gdd-setting-runtime-materialization.md`.
+
+**Decisions made:**
+- Continuous-geography refactor is the recommended NEXT world-gen build (pays off for the 2D maps + sim regardless of the 3D renderer); the 3D renderer then builds straight onto `RAW_FIELD` (no `PARENT_GUIDE` interim needed).
+- Base raster 4x4 per 24-mi hex; STORE (~6 MB BLOB) not regenerate; thermal + channel-incision erosion only (no global droplet erosion).
+- Keep Köppen classifier (seasonality regimes + already calibrated) over raw Whittaker.
+
+**Interfaces defined or changed:**
+- Proposed (NOT built): `field_sampler.gd` with `sample(x,y)` + `tag_for_footprint(field, footprint, scale) -> HexTags`; `setting_field_raster` table OR channel-keyed `PackedFloat32Array` BLOB; `region_zoom_in._children_for_parent` -> field-sample (stops flat-copying `elevation_raw`); `heightmap_generator._trace_rivers` -> D8/accumulation/Strahler.
+- `elevation_raw` SEMANTICS CHANGE: "24-mile center point-sample" -> "area-mean of the footprint over the continuous field" (consumers unaffected; values more faithful).
+- Renderer GDD contract: the 3D renderer must emit FIVE signals (`hex_clicked` added since v0.2) and mounts under `WorldSubViewport` (`own_world_3d=true`).
+
+**Database changes:**
+- None this session. Proposed (deferred, needs sign-off): `setting_field_raster` BLOB (or channel-keyed column).
+
+**Tests added/updated:**
+- None (design-only). Flagged for the build: re-baseline setting-gen suites + `SettingDatasetHasher`; add a cross-scale idempotence test (aggregating 6-mile tags reproduces the 24-mile tag) + a determinism test (same seed -> identical raster hash).
+
+**Known issues:**
+- [APPROVAL] The continuous-geography refactor amends `gdd-setting-generation.md` §4-5, `gdd-hex-subdivision.md` §6, `gdd-region-zoom-in.md` §4 (retires the deviation-budget inheritance model) — needs Jedidiah's sign-off BEFORE editing those GDDs.
+- [APPROVAL] The 2D->3D design-brief amendment is still pending (renderer GDD §15).
+- Decisions to confirm: base resolution 4x4, store-vs-regenerate, erosion scope (all recommended in `gdd-continuous-geography.md` §13).
+
+**Next session should:**
+- Get Jedidiah's rulings on the `gdd-continuous-geography.md` §13 gates (amend the 3 GDDs; base resolution; storage; erosion scope; build order).
+- On approval: begin Layer-1 raster + hydrology (Priority-Flood / D8 / flow-accumulation / Strahler) in a refactored `heightmap_generator.gd` + new `field_sampler.gd`; then the climate orographic sweep in `climate_generator.gd`; then `tag_for_footprint` + rewire `region_zoom_in.gd` to field-sample.
+
+
+## Session 2026-06-24 — Continuous-geography Layer-1 (base raster + hydrology) LANDED
+
+**Task:** Begin implementing the approved continuous-geography world-gen refactor (`gdd-continuous-geography.md`). Step 1 of the build order: Layer-1 = the continuous base raster + full hydrology chain, built ADDITIVELY (not yet wired into the live pipeline) on branch `feature/continuous-geography`.
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- New `engine/subsystems/generation/world/geo_field.gd` (class GeoField, RefCounted) — the continuous square base raster: 4 cells / 24-mile hex = 6-mile cells (`CELL_MILES=6.0`, `SUBDIV_PER_24MI=4`). Flat `PackedFloat32Array`/`PackedInt32Array` channels (surface, filled, flow_dir, flow_accum, strahler, water, temperature, precipitation) indexed row-major (coding_conventions §80 — no `Dictionary[Vector2i]`). Accessors `idx`/`col_of`/`row_of`/`in_bounds`/`size_cells`/`allocate(w,h)`; bilinear `sample_surface(cx,cy)`; `surface_hash()` (SHA-256 of raw IEEE-754 bytes) for determinism tests. `D8` neighbour table.
+- New `engine/subsystems/generation/world/geo_field_generator.gd` (class GeoFieldGenerator, static) — Layer-1 pipeline `generate(campaign_seed, params) -> GeoField`: noise stack (ported from heightmap_generator, sampled in mile-space) -> thermal erosion (delta-accumulated, 4 passes) -> sea-level ocean mask -> Priority-Flood depression fill (+epsilon, binary min-heap, Barnes 2014; interior filled depressions flagged lakes) -> D8 steepest-descent flow direction -> flow accumulation (descending-height push) -> channel extraction (FAT threshold by river_density) + Strahler stream order -> channel incision (lower by `INCISION_SCALE * ln(accum)`). All randomness via `WorldGenRng`; explicit total-order tie-breaks (cell index) on the heap + both sorts -> deterministic.
+- New test suite `tests/test_geo_field_layer1.gd` (27 checks): dimensions; surface in [0,1] + finite; land+ocean present; DETERMINISM (same seed -> identical `surface_hash` + flow/strahler/flow_dir); seed variation; Priority-Flood drainage invariant (every interior land cell has `flow_dir >= 0`); flow-accumulation monotonicity (downstream >= upstream) + a trunk forms; Strahler validity on a medium map + a hand-built Y-confluence UNIT test (junction -> order 2, stays 2 downstream); channel incision (`surface <= filled`); bilinear sampling; large-map perf (<8s). Registered in the runner (4 edits, ext id 471).
+
+**Decisions made:**
+- ADDITIVE landing: NOT wired into `setting_generator`/`heightmap_generator` yet (GDD §13 build order — build+test the field producer first; rewire `region_zoom_in` + swap the pipeline in later steps). Keeps the setting-gen determinism hash green — confirmed `SettingStage0Tests` passes 89 checks.
+- D8 on the square base raster for hydrology (GDD §5), NOT hex adjacency; hexagonalize only at the later `tag_for_footprint` step.
+- Strahler verified via a deterministic synthetic Y-confluence unit test, NOT a noise-map max-order assertion (an unbranched >=FAT stem is legitimately all order 1; max order on a noise map is FAT/size-dependent — the assertion was relaxed after it false-failed on medium/seed-42).
+
+**Interfaces defined or changed:**
+- `GeoField`: channels above + `allocate(w,h)` / `sample_surface(cx,cy)` / `surface_hash()`; consts `CELL_MILES=6.0`, `SUBDIV_PER_24MI=4`, `WATER_NONE/OCEAN/LAKE`, `D8`.
+- `GeoFieldGenerator.generate(campaign_seed:int, params) -> GeoField` (static); `_fat(params)->float` and `_strahler_order(field, fat)` are test-callable.
+- No change to existing pipeline interfaces.
+
+**Database changes:** None (additive in-memory module; persisting the raster as a BLOB is a later step per GDD §10).
+
+**Tests added/updated:** `test_geo_field_layer1.gd` (new, 27 checks, GREEN). Full suite (isolated %APPDATA%, run 2 / warm DB): **468 passed / 16 failed**. Net-zero NEW failures — the 16 are pre-existing carry-forwards (ranged/attack/maneuver combat resolvers, session_runner harness, dungeon_generator_v1, monopoly_registry, familiar_level_up, religion_conversion, clanhold, settlement_pois_schema, character persistence/aging/language) and none touch world-gen. Fresh-DB run-1 showed the usual ~52 FK-noise failures; run-2 warm dropped to baseline (per the build-workflow gotcha).
+
+**Known issues:**
+- FAT thresholds (low 600 / med 300 / high 150) yield mostly unbranched >=FAT stems on small/medium maps (max Strahler 1) — tributary branching needs lower FAT or larger maps. A TUNING decision deferred to the renderer-feedback pass; the algorithm is correct (synthetic confluence test proves the +1 rule).
+- Lake detection (`filled - surface > LAKE_FILL_THRESHOLD`) is a coarse Layer-1 approximation; refine with proper watershed labels later.
+- `flow_accumulation` sorts all cells via a GDScript lambda (O(n log n)); fine for one-time gen at world scale (large map well under the 8s budget).
+
+**Next session should:**
+- Layer-2: port `ClimateGenerator` onto the field (orographic precipitation sweep + continentality + per-cell Köppen) -> fills `GeoField.temperature`/`precipitation`.
+- Then `field_sampler.gd`: detail-octave `sample()` + `tag_for_footprint(field, footprint, scale) -> HexTags` (the hex-normalization contract, GDD §8).
+- Then rewire `region_zoom_in.gd` to field-sample (stop flat-copying `elevation_raw`) + persist the raster BLOB (GDD §10), then swap the pipeline over and re-baseline the determinism hash.
+
+
+## Session 2026-06-24 (cont.) — Continuous-geography Layers 2-3 LANDED; paused at the playtest-gated integration
+
+**Task:** Continue the continuous-geography world-gen build (Jedidiah: "continue through all layers until finished unless playtesting required; commit after each layer's tests pass"). Layers 2-3 of the field-first engine on branch `feature/continuous-geography`.
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- LAYER-2 (commit 1e62a7c) — `geo_climate_generator.gd` (`GeoClimateGenerator.apply`): temperature (lat^2 curve + above-ceiling lapse + continentality + anomaly noise), orographic west->east precipitation sweep (rain shadow EMERGES from windward moisture depletion) + box-blur + min-max normalize + texture noise, then per-cell Köppen classification REUSING `ClimateGenerator._classify_koppen` + `_assign_biome` verbatim (biome logic matches the live pipeline). `GeoField` gained `biome`/`biome_subtype` int channels + `BIOME_NAMES`/`SUBTYPE_NAMES`. Suite `test_geo_field_layer2` (10 checks): temp range, north<south, lapse, precip in [0,1], rain-shadow aggregate, >=3 land biomes, determinism.
+- LAYER-3 (commit ea082cb) — `geo_field_sampler.gd` (`GeoFieldSampler`): `tag_for_footprint(field, ox, oy, size, subsamples) -> Dictionary` the hex-normalization contract — samples a square field footprint, reduces to one hex's tags (elevation band + >25% mountain override; biome plurality + runner-up; coastal-biased water >=35%; area-mean elevation_raw); idempotent across scales. + `tag_24mile`/`tag_6mile` convenience + `make_detail_noise`/`sample_height_detailed` (detail-octave for the 3D renderer / sub-hex). Suite `test_geo_field_layer3` (15 checks): water coverage, mountain override + plurality + runner-up, uniform mean, CROSS-SCALE consistency (a 24-mile tag reproduces the plurality of its sixteen 6-mile tags), determinism, detail bounded.
+- Suite after each layer: Layer-2 469/16, Layer-3 470/16. Geo suites green (27/10/15 checks). `setting_stage0` determinism hash intact (89 checks). Net-zero new failures throughout — the field engine is ADDITIVE (not wired into the live pipeline); the 16 failures are pre-existing carry-forwards.
+
+**Decisions made:**
+- PAUSED at the live-pipeline integration (the next phase) per the "playtesting required" gate. The field ENGINE (Layers 1-3) is complete + tested; the integration changes generated worlds and needs visual calibration:
+  - precipitation / FAT / climate constants are tuned blind (no map view yet); the new biome/river distribution must be eyeballed on the 2D World Map tab.
+  - the field's Strahler channel network (cell-to-cell flow on the square raster) -> `HexRiverEdgeData` hex-edge rows is an UNSPECIFIED, non-trivial mapping that wants visual verification.
+- Integration should be FLAG-GATED (`SettingParameters.use_continuous_geography`, default off) so flipping it is the playtest action and the default pipeline + determinism hash stay green until calibrated.
+
+**Interfaces defined or changed:**
+- `GeoClimateGenerator.apply(field, campaign_seed, params)` (static).
+- `GeoFieldSampler.tag_for_footprint(field, ox:float, oy:float, size:float, subsamples:int) -> Dictionary` (keys: elevation, biome, biome_subtype, water, elevation_raw, biome_runner_up, runner_up_fraction); `tag_24mile`/`tag_6mile`; `make_detail_noise`/`sample_height_detailed`.
+- `GeoField` + `biome`/`biome_subtype` PackedInt32Array channels + BIOME_*/SUB_* enums + `BIOME_NAMES`/`SUBTYPE_NAMES`.
+- No live-pipeline interface changed (additive).
+
+**Database changes:** None yet (raster BLOB persistence is part of the integration phase, GDD §10).
+
+**Tests added/updated:** `test_geo_field_layer2.gd` (10), `test_geo_field_layer3.gd` (15). Both green. Total 470/16.
+
+**Known issues:**
+- FAT (channel threshold) + orographic precip constants are uncalibrated (no visual feedback yet) — expect tuning during the playtest pass.
+- Field-channel -> hex-edge-river mapping is unbuilt (integration phase).
+- The orographic sweep resets the moisture parcel per row at the west map edge (a simplification).
+
+**Next session should (INTEGRATION — needs Jedidiah's playtest):**
+- Add `SettingParameters.use_continuous_geography` flag (default off).
+- Flag-on path in `setting_generator`: run `GeoFieldGenerator` + `GeoClimateGenerator`; write 24-mile `setting_hexes` tags via `GeoFieldSampler.tag_24mile`; derive river edges from the Strahler channel network; (optional) persist the raster BLOB. Rewire `region_zoom_in._children_for_parent` to field-sample (stop flat-copying `elevation_raw`) when the field is present.
+- Then Jedidiah playtests the generated 2D World Map (biome/terrain/river distribution), calibrates FAT/climate, and on approval the flag flips to default + the determinism hash re-baselines.
+
+
+## Session 2026-06-24 (cont.) — Continuous-geography flag-gated pipeline integration LANDED (generate-and-inspect ready)
+
+**Task:** Wire the field-first engine into the live setting_generator behind a flag so Jedidiah can generate + inspect a continuous-geography world (commit a223144 on branch `feature/continuous-geography`).
+
+**Model used:** Opus 4.8 (1M context).
+
+**Completed:**
+- New `geo_field_to_grid.gd` (`GeoFieldToGrid`): when enabled, REPLACES the hex-native Layers 1-2 — runs `GeoFieldGenerator` + `GeoClimateGenerator`, then writes the per-24-mile-hex grid via `GeoFieldSampler.tag_24mile` + block-mean temperature/precipitation, producing ctx.hex_grid / river_edges / width / height in the SAME shape so all downstream layers run unchanged. INTERIM rivers: reuses `HeightmapGenerator._trace_rivers` on the field-derived elevation (the field Strahler-channel -> hex-edge mapping is the next calibration item).
+- Gated on ProjectSettings `acks/worldgen/continuous_geography` (default OFF) — NOT a seed/params field, so the shipped default path + its determinism hash are untouched. `setting_generator._run_geography`/`_run_climate` branch on `GeoFieldToGrid.is_enabled()` (cached in `ctx["_continuous_geo"]`).
+- BUG FIX in `geo_field_generator._build_height`: `raw` is a PackedFloat32Array but raw_min/raw_max were the float64 extrema, so the minimum (ocean) cell rounded just below raw_min -> `(raw - raw_min)` tiny-negative -> `pow(neg, 1.5) = NaN`. Fixed by clamping the normalized base to [0,1] before the curve. (The existing HeightmapGenerator uses a float64 Dictionary so never hit it.)
+- New suite `test_geo_field_integration` (18 checks): flag default-off; grid valid/complete (500 hexes, valid enums, land+ocean, >=3 biomes, land_value 3-9); rivers traced; determinism + medium-map finiteness (the NaN hunt that found the bug); flag toggle; and a FULL 8-LAYER PIPELINE SMOKE (set flag in-memory -> generate a small world -> 180 hexes + >=2 biomes + rivers -> reset flag). Confirms region painting / history sim / naming / infrastructure all run on field-derived terrain.
+
+**Decisions made:**
+- Flag is a ProjectSettings runtime toggle (not a SettingParameters field) to avoid touching the params determinism/share-token contract + the determinism hash while the path is experimental. CAVEAT: a world generated with it on is not reproducible from seed+params alone until the cutover lands (intentional for the experimental phase).
+- Interim rivers via the proven hex tracer; field-channel -> hex-edge rivers deferred (needs visual calibration).
+
+**Interfaces defined or changed:**
+- `GeoFieldToGrid.run(ctx) -> bool`, `GeoFieldToGrid.is_enabled() -> bool`, `GeoFieldToGrid.SETTING = "acks/worldgen/continuous_geography"`.
+- `setting_generator`: `ctx["_continuous_geo"]` set in `_run_geography`, read in `_run_climate`.
+- No persisted-interface change; the ProjectSettings key defaults OFF and is NOT registered in project.godot (tests stay on the default path).
+
+**Database changes:** None.
+
+**Tests added/updated:** `test_geo_field_integration.gd` (18 checks, green; incl. the full-pipeline smoke). Suite 471/16, net-zero new failures; SettingStage0/1 green; default path unchanged.
+
+**Known issues:**
+- Rivers are the old hex tracer on the new elevation (interim) — the field Strahler hydrology -> hex-edge river mapping is the next item.
+- FAT / orographic-precip / biome thresholds are uncalibrated (the point of the inspect pass).
+- The flag is GLOBAL ProjectSettings: enabling it persistently in project.godot would make the test suite run continuous geography (and fail `test_flag_default_off`). Inspect by setting it ON temporarily and OFF before running tests; do NOT commit project.godot with it on.
+
+**Next session should (after Jedidiah's inspect):**
+- Calibrate FAT (river density) + orographic precipitation + biome thresholds from the World Map.
+- Build the field Strahler-channel -> HexRiverEdgeData hex-edge river mapping (replace the interim tracer).
+- Then flip the default + re-baseline the determinism hash (the cutover).
+
+
+## Session 2026-06-25 — Fix flaky settled-lair lingering assertion (test_phase_9c.gd)
+
+**Task:** Eliminate the intermittent failure (~1 in 4 full-suite runs) of the `test_settled_lair_lingering_creates_settled_lair_kind` assertion in `tests/test_phase_9c.gd`: "d100=1 should produce is_lingering=true for any creature with percent_in_lair >= 1". Pre-existing flakiness, unrelated to world-gen.
+**Model used:** Opus 4.8 (1M) for diagnosis, fix, and verification.
+**Completed:**
+- Root-caused the flakiness to an unpinned-RNG leak. `DomainEncounterResolver._generate_encounter()` picks its creature with raw `randi() % filtered.size()` at `engine/subsystems/domains/domain_encounter_resolver.gd:598`, NOT the mocked `dice`. Every other roll in that function routes through `_roll_die(sides, dice)`. For the test's "woods" + animals (d8=4) pool of 13 creatures, 2 (`boar`, `boar_giant`) have `percent_in_lair = null` -> `in_lair_pct = 0` -> `1 <= 0` is false -> `is_lingering = false`. ~15% per-call failure, matching the observed ~1-in-4.
+- Rewrote the flaky single-call assertion (in `test_settled_lair_lingering_creates_settled_lair_kind`) into a robust, outcome-deterministic check that does NOT touch production: loop 50 draws with d100=1, read each drawn creature's `percent_in_lair` via `MonsterRegistry`, and assert the EXACT contract `is_lingering == (1 <= percent_in_lair)` for whatever creature is drawn, plus require >=1 lairing creature to actually exercise the lingering branch. The per-draw invariant is the literal code contract (cannot fail); the woods animal pool is 11/13 lairing, so the saw_lingering guard misses with probability ~(2/13)^50 (~1e-41).
+- Verified: ran the full suite 5x under APPDATA isolation. Stable runs (1,2,3,5) = 473 suites / 16 failed / 39 baseline assertion-failures, with 0 lingering-related failures in ALL 5 runs. Run 4 wobbled to 471/18, but the 17 extra failures were ALL continuous-geography/setting-materialization suites (hex_cells/materialize/region map/realm_count/world_map_id) -- pre-existing world-gen DB/FK flakiness, not this fix.
+**Decisions made:**
+- Fixed the TEST, not production, to keep the change scoped and avoid regressing the sibling test `test_terrain_aware_selection_filters_to_matching_creatures` (~line 1066), which deliberately relies on the random creature pick to sample the full filtered pool over 30 iterations. Routing line 598 through `dice` would collapse that test's sampling coverage.
+**Interfaces defined or changed:**
+- None.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_phase_9c.gd::test_settled_lair_lingering_creates_settled_lair_kind` -- lingering precondition check rewritten to be deterministic-in-outcome (loop + exact-invariant + at-least-one-lingering).
+**Known issues:**
+- [NEEDS-OPUS-REVIEW] Production abstraction hole: `DomainEncounterResolver._generate_encounter` takes a `dice` for deterministic/mockable rolls but the creature pick at line 598 uses raw `randi()`, escaping the abstraction (so a mocked/seeded dice cannot fully determine the encounter). Sibling `DragonVariantResolver` already uses the correct pattern `_roll_die(pool.size(), dice) - 1` (lines 154/200/295). Closing the hole is a one-line, distribution-identical change for null dice, but requires updating `test_terrain_aware_selection_filters_to_matching_creatures` (which depends on randomized sampling). Spawned a background task chip (task_00ec41f7) for this follow-up.
+**Next session should:**
+- (Optional) Close the `randi()` abstraction hole in `_generate_encounter` per the flagged follow-up, updating the terrain-selection sampling test accordingly.
+
+
+## Session 2026-06-25 — Dedicated Model-E up-tribute regression test (test_setting_materialization.gd)
+
+**Task:** Restore STRONG coverage of the Model-E war-vassal up-tribute mechanism after the 2026-06-25 climate change (temperature-dependent Köppen aridity) shifted seed 424242 so it no longer produces a families=0 laddered war-vassal crown. The integration assertion had been weakened from an EXISTENCE check (families=0 crown owes tribute>0) to a non-negative INVARIANT because it was coupled to that specific generated world. Replace the lost coverage with a deterministic unit test that builds the structure by hand.
+**Model used:** Opus 4.8 (1M) for analysis, test design, and verification.
+**Completed:**
+- Added `test_model_e_up_tribute()` to `tests/test_setting_materialization.gd` (registered in `run_all_tests` alongside the other pure unit tests, before the seed-coupled `_generate(424242)` block).
+- The test hand-builds a two-level war-vassal ladder with NO RNG/seed: overlord realm (sovereign) ← conquered realm (war-vassal, crown families=0, population in setting_hexes) ← sub-vassal realm. It drives the materializer's own code: `SettingMaterializer._create_crown_domain` (Pass 1, threading `crown_by_pid` so each war-vassal crown lieges to its overlord crown) then `_set_war_vassal_tribute` (Pass 5).
+- Asserts: the conquered crown (families=0, lieged) owes a positive `tribute_out_owed` == `bankers_round(compute_tribute_base_gp(own+transitive)*100)`; that value is strictly GREATER than the own-families-only value (proves REALM-scaling via transitive aggregation, not own-only/per-title); the sub-vassal crown owes its own realm-scaled tribute; the sovereign overlord owes 0; interior ladder nodes (families=0, same realm) owe 0 (Pass 5 is crown-only). Cross-checks `AbstractTributeResolver.compute_tribute_owed` (Pass 4): families=0 interior → 0, population-bearing leaf → >0.
+**Decisions made:**
+- Drove the actual private materializer methods (`_create_crown_domain`, `_set_war_vassal_tribute`) on a hand-built DB fixture rather than re-running full generation — consistent with the file's existing private-method unit tests (`_coastal_seat_child`, `_weighted_pick`) and faithful to the production tribute path. Expected values are computed via the same `TributeCalculator`/`XPAwardCalculator` functions (the file's established convention, cf. `test_stronghold_formula`); the non-circular regression force comes from the structural assertions (realm-vs-own scaling, sovereign-skip, crown-only, interior-zero).
+- Left the weakened integration invariant in place (it still guards "no families=0 laddered crown owes negative tribute" across whatever structure the seed yields); the new unit test is the crown-specific guard.
+**Interfaces defined or changed:**
+- None. (Test-only; reads `SettingMaterializer._create_crown_domain` / `_set_war_vassal_tribute`, `AbstractTributeResolver.compute_tribute_owed`, `TributeCalculator.compute_tribute_base_gp`, `XPAwardCalculator.bankers_round`.)
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_setting_materialization.gd::test_model_e_up_tribute` — new deterministic regression guard for war-vassal crown up-tribute (Model E). Suite now 188 checks (was ~176), "all tests passed".
+**Known issues:**
+- None new. The 16 pre-existing failing suites (familiars/army/vassal/magic-research UNIQUE+CHECK carry-forwards) are unchanged; SettingMaterializationTests is green.
+**Next session should:**
+- Continue M4 calibration / M5 per the setting→runtime materialization roadmap.
+
+
+## Session 2026-06-25 — Close the encounter-resolver randi() abstraction hole (follow-up)
+
+**Task:** Close the abstraction hole flagged earlier the same day: route `DomainEncounterResolver._generate_encounter`'s creature pick through the `dice` abstraction instead of raw `randi()`, so a mocked/seeded dice fully determines the encounter. Then repair every test that relied on the old randomized sampling.
+**Model used:** Opus 4.8 (1M) throughout.
+**Completed:**
+- `engine/subsystems/domains/domain_encounter_resolver.gd:598` — replaced `String(filtered[randi() % filtered.size()])` with `var pick_idx := _roll_die(filtered.size(), dice) - 1` + `String(filtered[pick_idx])`, matching the sibling `DragonVariantResolver`'s `_roll_die(pool.size(), dice) - 1` idiom. Distribution-identical in production (dice is null there -> `_roll_die` falls back to `randi_range(1, size)`; `- 1` -> uniform 0..size-1, same as `randi() % size`).
+- `tests/test_phase_9c.gd` — added an `IndexWalkDice` inner class (returns fixed d8/d100 but a settable, clamped creature-INDEX roll for any other 1dN) so tests can deterministically pick a specific creature or enumerate the whole filtered pool.
+- Rewrote `test_terrain_aware_selection_filters_to_matching_creatures` (the test the follow-up explicitly flagged): walks the index roll to enumerate the ENTIRE desert+men reachable pool and asserts no disallowed creature is ever reachable + the full eligible pool IS reachable. Preserves the original full-pool coverage without randi() sampling.
+- Repaired two MORE tests broken by the change (NOT flagged by the follow-up but caught by the run-2 diff): `test_hydra_in_ocean_terrain_marks_aquatic_true` and `test_hydra_in_swamp_terrain_marks_aquatic_false`. Both looped 40x hoping randi would land on a hydra; deterministic picking parked them on `dragon_adult`/`cockatrice` (pool index 0) forever. Now they WALK the index (IndexWalkDice) to the first hydra (hydras sit at pool indices 11-18 behind the dragon entries) and assert is_aquatic. Verified the dragon resolver fired on the dragon indices during the walk is hang-safe (`_pick_uniform_without_replacement` shrinks a remaining[] list, `_weighted_pick` is a single bounded scan — no reroll-until-distinct loop).
+- Hardened `test_settled_lair_dungeon_doubles_linger_chance` (was passing only by luck that swamp-animals filtered[0]=bat_giant has pct=35): now walks to a swamp animal with percent_in_lair in [25,50) and asserts the with-dungeon 2x linger flip on that one deterministic creature.
+**Decisions made:**
+- Fixed ALL tests affected by the production change, not just the one the follow-up named. The run-2 baseline diff is the safety net that surfaced the two unflagged hydra breakages.
+**Interfaces defined or changed:**
+- None (internal pick mechanism only; signatures unchanged).
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_phase_9c.gd`: new `IndexWalkDice` helper; rewrote `test_terrain_aware_selection_filters_to_matching_creatures`, `test_hydra_in_ocean_terrain_marks_aquatic_true`, `test_hydra_in_swamp_terrain_marks_aquatic_false`, `test_settled_lair_dungeon_doubles_linger_chance` to be deterministic under the dice abstraction.
+**Tests run:**
+- Canonical `tools/run_tests.ps1 -Runs 2`. Run 2 = 473 suites / 16 failed / 39 total assertion failures = EXACT pre-change baseline. Baseline-diff confirmed ZERO novel failures (the only delta vs the broken intermediate state was the two hydra messages disappearing: 41 -> 39 assertion failures, 40 -> 38 unique messages). All four edited tests pass.
+**Known issues:**
+- None new. (The [NEEDS-OPUS-REVIEW] abstraction hole from the earlier 2026-06-25 entry is now CLOSED.)
+- Convention recorded: docs/coding_conventions.md §38 now states all encounter-resolver randomness (incl. uniform creature selection) routes through the dice abstraction; tests drive the pick deterministically rather than loop-and-hope.
+**Next session should:**
+- Nothing required for this thread; encounter generation is now fully reproducible from a seeded/mocked dice.
+
+
+## Session 2026-06-25 — Volcanic mountains (24-mile range stamp + 6-mile vents)
+
+**Task:** Add volcanic mountains to continuous-geography world-gen. Mark whole mountain RANGES volcanic (not random individual peaks), randomize active vents primarily at the 6-mile level, lone peaks at a higher rate. Volcanic wins over glacial.
+**Model used:** Opus 4.8 (1M) — design + implementation + tests + UI.
+**Completed:**
+- New `engine/subsystems/generation/world/volcanism_painter.gd` (`VolcanismPainter`): the "geological-feature pass" deferred from continuous-geography v1 (the deferral was recorded in `culture_seeder._hex_matches_term`). `paint(ctx)` flood-fills mountain hexes into connected components (= ranges, the same unit RegionPainter clusters); a seeded per-component roll (anchor-hex stream key, `WorldGenRng`) stamps the WHOLE range `biome_subtype = "mountains_volcanic"` at ~20%, lone peaks (size-1 components) at ~50%. Volcanic overrides a prior `mountains_glacial`.
+- Wired into `setting_generator._run_culture_seeding` right after `RegionPainter.run_phase1`, before `_persist_hexes` — so the stamp lands in `hex_cells` for the 6-mile zoom to read.
+- `region_zoom_in.gd` (6-mile materialization): precomputes the volcanic-parent set from the full world map; `_children_from_field` now places ACTIVE VENTS — for a volcanic parent, each mountain child rolls (seeded per child axial) into `mountains_volcanic` at VENT_RATE_RANGE 0.25 / VENT_RATE_LONE 0.70. Lone-vs-range is derived from neighbors (a size-1 mountain component has no adjacent mountain → no volcanic neighbor → lone; a range hex always has ≥1 volcanic neighbor) via static `_is_lone_volcano`; vent decision is static `_volcanic_vent_subtype` (vent wins over glacial). The two new `_children_from_field` params are optional (default no-volcanism) so the existing materialization tests are unaffected.
+- `political_map_view.gd` (world/biome map): added `_BIOME_VOLCANIC` (dark basalt/ember), the `mountains_volcanic` cases in `_biome_color` + `_biome_label` ("Volcanic mountains"), and a "Volcanic" BIOME-mode legend entry. (Brings volcanic to parity with how glacial is surfaced; the in-play 3D renderer differentiates neither subtype.)
+- Updated the now-stale `culture_seeder._hex_matches_term` comment (the volcanic-peak pass exists; the relax-to-any-mountains rule stays because only ~20% of ranges are volcanic).
+**Decisions made:**
+- A "volcanic range" = a connected mountain component (geological unit), computed in VolcanismPainter itself rather than read from RegionPainter's region rows — avoids JSON round-trips + the sub-split "range_part" complication and is geologically correct (region sub-splits are a naming-granularity concern, not geology).
+- No migration: `mountains_volcanic` was already a valid `SUBTYPE_NAMES` entry (just never produced) and is already wired into SettlementEconomyInputs; range-vs-lone is derivable at zoom time, so nothing extra is persisted.
+- 24-mile = "this is a volcanic range" (whole range stamped); 6-mile = the actual scattered active vents. The volcanism overlay is intentionally NOT a field-aggregation (it comes from the hex-level range clustering), so it has its own logic at each scale — consistent with the user's contract.
+**Interfaces defined or changed:**
+- `VolcanismPainter.paint(ctx)` (mutates ctx.hex_grid, sets ctx["volcanic_hex_count"]); constants VOLCANIC_RANGE_CHANCE 0.20, VOLCANIC_LONE_CHANCE 0.50, RANGE_MIN 2.
+- `RegionZoomIn._children_from_field(field, pq, pr, parent, campaign_seed=0, volcanic_parents={})`; static `_is_lone_volcano(pq, pr, volcanic_parents)`, `_volcanic_vent_subtype(base_sub, vent_rate, campaign_seed, child)`; constants SUBTYPE_VOLCANIC, VENT_RATE_RANGE 0.25, VENT_RATE_LONE 0.70.
+**Database changes:** None.
+**Tests added/updated:**
+- New `tests/test_volcanism.gd` (registered as suite, ext_resource 477): component split (range vs lone peak), stamp determinism, stamp-only-on-mountains, whole-range-homogeneity, some-volcanic-across-6-seeds, glacial-override at 24mi; 6-mile `_is_lone_volcano` neighbor test, vent-rate bounds (1.0 always / 0.0 never), vent determinism + glacial override.
+**Known issues:**
+- Volcanic ranges are not yet NAMED distinctly (no "Mount X" fire-naming) — region naming treats them as ordinary ranges. Follow-on.
+- In-play 3D renderer doesn't differentiate volcanic (nor glacial) mountains — only the world/biome map does. Follow-on if play-surface differentiation is wanted.
+**Next session should:**
+- (Optional) volcanic-range naming hook in Stage 6; (optional) play-surface volcanic material; consider a GVP-catalog arc-realism pass if real volcano data tooling lands.
+
+
+## Session 2026-06-29 — Code-review fixes: river-render refactor + climate fidelity + test corrections
+
+**Task:** Run `/code-review ultra` on the `feature/continuous-geography` branch, then fix every finding with a clear solution and confirm the design calls with Jedidiah.
+**Model used:** Opus 4.8 (review, planning, implementation, in-engine verification via godot-ai MCP, adversarial-verification workflow).
+**Completed:**
+- Test corrections (3): `test_session_status_bar.gd` widget-zone assertion 11 -> 12 (it omitted the new `_region_overlay_btn`; `_build_widget_zone` adds exactly 12 children); `test_phase_9c.gd` `test_settled_lair_lingering_creates_settled_lair_kind` rewritten from `FakeDice` + 50-iteration "variety" loop (invalidated now that `_generate_encounter` routes the creature pick through `_roll_die(filtered.size(), dice)`, pinning the draw) to `IndexWalkDice` deterministic pool enumeration; `cliff_detector.gd` cliff `height_ft` now uses `XPAwardCalculator.bankers_round` not `roundi` (CLAUDE.md banker's rule; the height feeds ClimbResolver mechanics).
+- #10 Koppen Dfb/Dfd (Jedidiah: emit all four): `ClimateGenerator._classify_koppen` D-group now emits Dfa/Dfb/Dfc/Dfd via new consts `CONTINENTAL_WARM_C=4.0` / `CONTINENTAL_COLD_C=-2.0` (`CONTINENTAL_MILD_C=2.0` unchanged = woods/taiga edge). The previously-dead Dfb/Dfd biome arms are now live; biome output is provably unchanged (Dfa,Dfb -> woods; Dfc,Dfd -> taiga; split still at 2.0).
+- #8 Orographic rain-shadow (Jedidiah: fix it): `GeoField` gained `pre_incision_surface`; `GeoFieldGenerator.generate` snapshots `surface.duplicate()` after slope/prominence and before `_incise_channels`; `GeoClimateGenerator._precipitation` reads the geomorphic (pre-incision) surface for windward uplift (size-guarded fallback to `surface`). River-carved windward cells no longer read as dry leeward dips. surface_hash (surface+water only) is unaffected, so layer-1 determinism is preserved.
+- #5/#6/#7 River render (Jedidiah: all three): `hex_map_renderer_3d.gd` `_build_rivers` rewritten -- directed graph from `HexRiverEdgeData.flow_clockwise` (downstream = mesh corner (e+5)%6 = kb when clockwise) -> maximal-chain decomposition (breaks at sources/sinks/confluences/distributaries) -> one continuous welded Catmull-Rom ribbon per chain, per-sample width, data-driven downstream flow. Replaces per-edge ribbons, the corner-height flow heuristic, and `_other_nbr_pos`. Edge-indexed graph (out_edges as Array of indices) so out-degree>1 branches into separate chains instead of silently dropping all-but-one (adversarial-review hardening).
+**Decisions made:**
+- Koppen: split WITHOUT moving the woods/taiga boundary, so biomes and test baselines don't churn (none did). Dfb currently shares Dfa's biome and Dfd shares Dfc's -- flagged for Jedidiah if distinct biomes per sub-code are wanted later.
+- River flow direction taken from authoritative `flow_clockwise` data, not rendered corner heights (#7). Mapping independently confirmed via corner-index algebra (workflow reviewer, all 6 edges) and matches `geo_river_mapper._emit_edge`; NOT inverted.
+- Left the active river-tuning aesthetics alone beyond the three approved items.
+**Interfaces defined or changed:**
+- `GeoField.pre_incision_surface: PackedFloat32Array` (new; populated by `GeoFieldGenerator.generate`, read by `GeoClimateGenerator._precipitation`; empty -> fallback to `surface`).
+- `ClimateGenerator._classify_koppen` now emits Dfb/Dfd; new consts `CONTINENTAL_WARM_C`, `CONTINENTAL_COLD_C`.
+- `hex_map_renderer_3d.gd`: `_emit_river_chain(st, nodes, edges, out_edges, in_deg, out_deg, visited, start_ei)` and `_emit_river_ribbon(st, pts, widths, flows)` new signatures; `_other_nbr_pos` removed.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `test_session_status_bar.gd` (widget count 12), `test_phase_9c.gd` (IndexWalkDice lingering rewrite). Full headless suite: 474 passed / 17 failed = unchanged baseline (the 17 are pre-existing failures in unrelated subsystems: combat ZoC/LOS/charge, proficiency popups, party/familiar/vassal UNIQUE, clanhold style, mass-combat waves, magic research, item cascade). No new failures.
+**Known issues:**
+- River out-degree>1 (distributary) now branches correctly, but no procedural data produces it (steepest-descent -> single downstream) and the hand-authored `data/test_hex_map.json` Ashford River is not corner-connected, so the welded-chain path is exercised only by `geo_river_mapper` output (verified in-engine on campaign "Chadu"), not by a headless test. A corner-connected regression river would close that gap.
+- Dungeon SubViewport wrap (`dungeon_explore_state.gd`, in the worktree, not mine): `handle_input_locally=true` vs the wilderness frame's `false` -- needs an in-engine dungeon mouse-picking check; not part of the approved fix set, so flagged not fixed.
+**Next session should:**
+- If desired, give Dfb/Dfd distinct biomes/subtypes (currently grouped with Dfa/Dfc).
+- Verify dungeon mouse-picking in-engine after the SubViewport wrap.
+- Consider a corner-connected test river for welded-chain regression coverage.
+
+## Session 2026-06-29 — Culture emergence Phase 1: base-only seeding + civ/clan + stricter seed biomes
+
+**Task:** Begin the culture-emergence build (docs/handoff_culture_emergence_build.md). Implement Phase 1 — restrict the human seed pool to the 11 BASE cultures, assign civ/clan per GDD §3.2, tighten seed biomes to developable-only terrain, and reconcile the kit/name-bank data.
+**Model used:** Opus 4.8 (exploration, data authoring, implementation, headless verification).
+**Completed:**
+- **Authored the 11 base mechanical kits** (`data/cultures/{thiodmark,albawyn,shinarur,aryastan,kemetra,quirium,hellaspol,hinowa,huaxia,tollanaz,manitland}.json`). The mechanical kits the seeder loads were still the OLD member roster — no base records existed. Each base derives its mechanical scalars from the member it "reuses" (per its conlang concept note: thiodmark←alani, albawyn←cuchulan, shinarur←hammuran, aryastan←axsatran, kemetra←abydosian, quirium←agrippan, hellaspol←achillean, hinowa←yamataian, huaxia←jinxian, tollanaz←tlanec, manitland←numinan), with overrides: `identity.culture_id/demonym/toponym/csv_id`, `culture_class="base"`, dropped `synthesis_sources`, `civ_or_clan` per §3.2 (thiodmark/albawyn/manitland = clan; other 8 = civ — note this OVERRIDES yamataian's clan member value for hinowa→civ), `alignment.allowed` = all three (§3.7), rewritten `terrain.seed_biomes`, `flavor.name_bank_key=<base>`, regenerated `flavor.flavor_text`. Generated via a scratchpad transform script + validated programmatically (all 11 OK).
+- **Restricted the human seed pool to bases.** `CultureSeeder._select_cultures` now builds the human pool via `_candidate_pool(..., bases_only=true)`, which filters `culture_class=="base"`. Added `CultureCatalogLoader.culture_class(record)` (default `"member"`). Demihuman/beastman selection unchanged. Old member kits stay on disk but are dormant (excluded by the marker) — physical retirement deferred to a controlled cleanup (no behavior change, since the marker already gates them; GDD Q11 Gundic retirement folds into that pass).
+- **Subtype-resolved seed-biome matching.** `CultureSeeder._hex_matches_term` no longer collapses `woods`→{forest,dense,taiga} / `clear`→any. Now: `forest`→woods+subtype `""`, `taiga`→`forest_taiga`, `dense forest`→`forest_dense`, `grassland`→clear+(`""`|`clear_grassland`), `savanna`→`clear_savanna`; kept tundra/hills/mountains arms (incl. the glacial/volcanic→any-mountains dwarf relaxation). Verified against the actual climate_generator subtype vocabulary; `clear_steppe`/`clear_scrub` are Phase-2 deforestation products (not painted at seed). Base seed_biomes drawn only from {grassland, savanna, forest, taiga} so humans never seed dense-forest/jungle/desert/tundra/swamp/glacial-or-volcanic mountains.
+- **Rebuilt the name banks.** `tools/build_name_banks.py` now emits 122 banks (was 65): 11 bases + 54 hybrids added, 10 old-member banks refreshed for the new title/alignment conventions. Freshness `--check` GREEN. This FIXED a pre-existing failing state (banks were missing for every new conlang kit at HEAD).
+**Decisions made:**
+- **Data-driven seeding gate** (`culture_class="base"` marker + accessor) rather than a hardcoded base-id list, so eventual deletion of old member kits is a pure cleanup with no behavior change. Don't reintroduce member-id allowlists.
+- **Base scalars copied from the representative member** (PROVISIONAL, engineering authority) — the conlang kits explicitly state each base reuses its member's register; mechanical tuning can follow later.
+- **Deferred physical retirement** of the ~54 old human member kits + Gundic to a dedicated pass (lower risk than deleting now; the marker dormant-izes them for seeding).
+- A few deep cosmetic flavor strings in the base kits still name the source member (e.g. "name_bank 'alani'", "stone halls of the Alani"); not load-bearing (the load-bearing name_bank_key/language/palette are correct). Left for a flavor-polish pass.
+**Interfaces defined or changed:**
+- `CultureCatalogLoader.culture_class(record: Dictionary) -> String` — "base" | "member" (default "member").
+- `CultureSeeder._candidate_pool(catalog, match_counts, t, bases_only := false)` — new 4th param; human call passes `true`.
+- `CultureSeeder._hex_matches_term` — now subtype-resolved (see above); seed-biome term vocabulary tightened.
+- Base mechanical kit shape: `mechanical.identity` carries `culture_class="base"` + `csv_id="BASE_0N"`, no `synthesis_sources`.
+- Every new `setting_*`-consuming system that filters human cultures should gate on `culture_class=="base"`, not tier alone.
+**Database changes:**
+- None. (Pure data-file + code change; `setting_polities` already carries `culture_id`/`civ_or_clan_state`.)
+**Tests added/updated:**
+- `test_setting_stage3.gd`: added `test_only_bases_seed_for_humans` (every seeded human culture has `culture_class=="base"`) and `test_humans_avoid_undevelopable_homelands` (no human homeland on jungle/desert/swamp/forest_dense/clear_tundra/mountains_glacial/mountains_volcanic). Suite 195→217 checks, GREEN.
+- `test_setting_name_banks.gd`: `EXPECTED_BANK_COUNT` 65→122 with a note that `--check` is the real authority. Suite GREEN (1850 checks).
+- Full isolated headless suite: **475 passed / 16 failed** on two consecutive runs (was 474/17 — net +1: name-banks freshness fixed, zero new failures). The 16 are the known pre-existing failures (combat ZoC/LOS/charge, proficiency popups, familiar/follower/magic-research/vassal UNIQUE, clanhold ledger, mass-combat, item cascade) — none touched by this work.
+**Known issues:**
+- Old human member kits (alani, cuchulan, hammuran, …) + Gundic still on disk (dormant). Their banks still build (part of the 122). Physical retirement is a deferred cleanup pass.
+- Cosmetic member-name residue in base kit flavor strings (see Decisions).
+- In-engine map-legend visual (base names in the culture legend) NOT spot-checked — a headless multi-generate roster dump was too slow (continuous-geography geo-gen); the deterministic Stage3 assertions cover the exit criteria. Recommend an editor spot-check when the map view is next opened.
+- Seeding homogeneity (GDD Q12): 11 bases is a much smaller pool than 65; whether early maps feel too homogeneous is an OPEN design question for Jedidiah, not a Phase-1 blocker (humans still seed ≥1 on a medium map).
+**Next session should:**
+- Phase 2 — territory gating: `effective_territory_cap(hex, dominant_race, civ_or_clan)` per GDD §4.2–4.4, gating `_advance_classification` (sim) + `classification_advancement.gd` (runtime); graduated deforestation (§5.2–5.4) as a timed cost via a runtime `_phase_deforestation`; reforestation. Add `clearing_progress` persistence (column or side table) + `sim_constants` (CLEAR_TICKS_STEP=20, CLEAR_TICKS_JUNGLE=30, REFOREST_*).
+- Controlled retirement pass for the old member kits + Gundic (delete `data/cultures/`, `data/conlang/`, `data/name_banks/` for the retired ids; re-run `build_name_banks.py --check`; update EXPECTED_BANK_COUNT).
+- (Optional) base-kit flavor-string polish + an in-engine seeding spot-check.
+
+## Session 2026-06-29 — Culture emergence Phase 2a: biome/race territory gating
+
+**Task:** Continue the culture-emergence build (handoff §4). Implement Phase 2a — the §4 territory-cap that gates how far a hex can develop, read through the dominant culture's race.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **New `TerritoryCap` helper** (`engine/subsystems/generation/world/territory_cap.gd`, class_name): `effective_cap(biome, subtype, elevation, race, river_or_coastal) -> "wilderness"|"borderlands"|"civilized"`. Encodes §4.2 human (elevation ceiling: mountains→Borderlands, volcanic/glacial→Wilderness; biome cap: grassland/savanna→Civ, plain-forest/taiga→Borderlands, dense-forest/jungle/swamp/dry-desert→Wilderness; desert cradle exception: river/coastal desert→Civ), §4.3 dwarf (any mountain→Civ, hills→Borderlands, flat→Wilderness), §4.4 elf (forest/jungle incl. forested mountains→Civ, bare mountains→Wilderness, else Borderlands). Pure; `rank`/`min_class`/`allows` helpers.
+- **Gated `HistorySimulator._advance_classification`** on `TerritoryCap.allows(cap, target)` — a held hex only advances to a class its §4 cap permits. Cap read via new `_hex_territory_cap(key)` → `_dominant_race(key)` (dominant culture instance's race, default human) + river/coastal incidence. Clanhold cultures unaffected (they never reach the advancement path; their existing wilderness clamp stands).
+- **Per-hex river incidence:** `_build_river_barriers` now also fills `_river_incident` (Vector2i→true for a hex incident to ANY river edge, all widths) for the §4.2 cradle exception; the navigable-only barrier set is unchanged.
+**Decisions made:**
+- Cap is read through the hex's CURRENT biome; the §5.2 "on exceeding the cap → deforest" transition (Phase 2b) raises a forest hex's cap by changing the biome, so 2a's cap and 2b's deforestation are two halves of one mechanic.
+- River incidence uses ALL widths (handoff §5.2: every sim-scale river is "major" enough); only navigable rivers remain diffusion barriers.
+**Interfaces defined or changed:**
+- `TerritoryCap.effective_cap(biome, subtype, elevation, race, river_or_coastal) -> String`; `.rank/.min_class/.allows`. Shared by sim + (pending) runtime classification.
+- `HistorySimulator`: new `_river_incident` member; new `_hex_territory_cap(key)` + `_dominant_race(key)`.
+**Database changes:**
+- None yet. (Phase 2b will need per-hex `clearing_progress` persistence — a setting_hexes schema change — pending Jedidiah's approval per CLAUDE.md data-model rule.)
+**Tests added/updated:**
+- New `tests/test_territory_cap.gd` (registered as TerritoryCapTests; 35 checks) covering the §4.2/4.3/4.4 tables + desert cradle + helpers.
+- Full suite **476 passed / 16 failed** (net +1 vs Phase-1's 475/16; the new TerritoryCapTests is the +1). Determinism (Stage3/4) + calibration smoke (6 checks) green on two consecutive runs. Zero new failures.
+**Known issues:**
+- The cap raises the wilderness-class fraction (calibration smoke wilderness ~74.5%, realms 16.7) because forests/mountains/jungle now cap below Civilized. This is the designed effect; §5.2 graduated deforestation (Phase 2b) is the escape valve that lets civilization clear forest to reach Civilized. The §17 Large×20 balance target may want 2b before a full re-tune.
+- Runtime `classification_advancement.gd` (6-mile play-time) NOT yet gated — only the 24-mile sim is. The runtime resolver is a pure checker; gating it cleanly means threading a precomputed `max_classification` from the domain's hex biome/race (follow-on, lower-traffic path).
+- **Parallel work observed:** `scenes/maps/hex_map_renderer_3d.gd` (+138) and new `assets/wilderness_kit/{building,mountain}/` appeared in the working tree mid-session (not mine — likely the live Godot editor session, PID 11032). Phase 2a was committed (31d1cfb) with ONLY my 5 files; the renderer/asset work was left untouched/uncommitted.
+**Next session should:**
+- Phase 2b — graduated deforestation as a timed cost: per-hex `clearing_progress` (setting_hexes column — NEEDS Jedidiah's data-model approval), graduated transitions dense→forest→clear (climate subtype §5.3) + jungle→clear (30t), a `_phase_deforestation` sim/runtime event (+1/tick, +2 near a market class I–III settlement), constants `CLEAR_TICKS_STEP=20`/`CLEAR_TICKS_JUNGLE=30`/`CLEAR_RATE_NEAR_MARKET3=2`. Generalize `infrastructure_generator._deforest`'s biome-flip + `original_biome`.
+- Phase 2c — reforestation (natural +1/tick ceiling Forest; elven +2/+3 to original incl. Dense/Jungle).
+- Wire the runtime classification resolver to the cap.
+**Commits:** 62ca2e9 (Phase 1), 31d1cfb (Phase 2a).
+
+## Session 2026-06-29 — Culture emergence Phase 2b: graduated deforestation (timed cost)
+
+**Task:** Continue Phase 2 (handoff §4). Implement graduated deforestation as a timed cost so forest/jungle hexes being developed past their §4 biome cap clear over time and can civilize.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **Migration 178** (`178_setting_hexes_clearing_progress.sql`): non-destructive `ALTER TABLE setting_hexes ADD COLUMN clearing_progress INTEGER NOT NULL DEFAULT 0`. Chosen as a column (vs side table) — 1:1 per hex, read/written in the same row access as biome/territory_class, mirrors the existing `original_biome` per-hex deforestation column, auto-covered by the determinism hash (which keys on `SettingRepository.HEX_COLUMNS`). Confirmed by Jedidiah (efficiency + stability).
+- **Persistence wiring:** `clearing_progress` added to `SettingRepository.HEX_COLUMNS`; `geo_field_to_grid.gd` hex builder initializes it to 0 (so every in-memory grid hex carries it for the Layer-2/3/4 `save_hexes` calls — `_bulk_insert` fails loudly on missing keys). Fixed the lone hand-built fixture (`test_setting_stage0._hex_row`).
+- **New `Deforestation` helper** (`deforestation.gd`, class_name; pure): `is_clearable(biome)`, `next_step(biome, subtype, koppen)` (§5.2 graduated steps: dense forest→plain forest→clear; taiga→clear; jungle→clear), `cleared_subtype(koppen, from_subtype)` (§5.3 climate-band→subtype: tropical→savanna, cold/taiga→steppe, arid/summer-dry→scrub [Borderlands-terminal], temperate→grassland). Keyed on the persisted `setting_hexes.koppen`.
+- **`HistorySimulator._phase_deforestation`** (new 4a phase, runs after `_phase_demography` in both the fast + profiled tick paths): for each non-clanhold polity's held forest/jungle hex with a human dominant culture, that is FULL for its class (pop ≥ advance_fraction × class cap) but biome-capped below the next class (`not TerritoryCap.allows(cap, next)`), accrue `clearing_progress += clear_rate_base`; on reaching the step threshold, apply `Deforestation.next_step`, preserve `original_biome`, reset the counter. The biome flip raises the §4 cap so next tick's `_advance_classification` can advance. Deterministic (no RNG).
+- **Constants** (`sim_constants.gd`, PROVISIONAL): `clear_ticks_step=20`, `clear_ticks_jungle=30`, `clear_rate_base=1`.
+**Decisions made:**
+- **Sim-time integration on setting_hexes** (pairs with 2a, addresses 2a's elevated wilderness fraction). The handoff also calls for a RUNTIME EventScheduler `_phase_deforestation` (6-mile gameplay) — deferred as a follow-on; the pure `Deforestation` helper + clearing_progress concept are reusable there.
+- **Sim-time uses a UNIFORM +1/tick** (no `+2`-near-market-III accelerator): market class is assigned at Layer 6, AFTER the history sim, so the §5.4 market accelerator is a runtime-phase feature. Documented in `sim_constants`.
+- Clearing is human-driven only (`_dominant_race == "human"`); clanholds/beastmen skipped (no dense settlement); elves reforest (Phase 2c).
+**Interfaces defined or changed:**
+- `Deforestation.is_clearable/next_step/cleared_subtype` (pure; shared by sim + future runtime phase).
+- `setting_hexes.clearing_progress` (INTEGER, default 0); `SettingRepository.HEX_COLUMNS` extended; every in-memory grid hex carries `clearing_progress`.
+- `HistorySimulator._phase_deforestation`/`_accrue_clearing`/`_next_class` (new); `_phase_deforestation` is the 12th tick phase (after demography).
+- `SimConstants.clear_ticks_step/clear_ticks_jungle/clear_rate_base`.
+**Database changes:**
+- Migration 178 — `setting_hexes.clearing_progress`. Sequential, non-destructive.
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_deforestation_steps` + `test_cleared_subtype_mapping` (TerritoryCapTests now 49 checks).
+- `test_setting_stage0._hex_row` fixture carries `clearing_progress`.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged vs Phase 2a; zero new failures). Determinism (Stage3 + hash) green; calibration smoke green with **wilderness 74.5% → 69.3%** (deforestation reclaiming forest, as designed). Migration 178 applied cleanly; clearing_progress round-trips.
+**Known issues:**
+- Runtime EventScheduler `_phase_deforestation` (6-mile) + the §5.4 `+2`-near-market-III accelerator NOT built — sim-time only for now.
+- Reforestation (Phase 2c) not built — `Deforestation` currently only steps DOWN.
+- Parallel work still uncommitted in the tree (`scenes/maps/hex_map_renderer_3d.gd`, `assets/wilderness_kit/{building,mountain}/`) — not mine; left untouched. Phase 2b committed with ONLY my files.
+**Next session should:**
+- Phase 2c — reforestation: natural (+1/tick on depopulation, ceiling Forest, cleared needs a Forest neighbor, jungle Clear→Jungle 15t with a Jungle neighbor) + elven (+2/+3, any settled hex, restore to `original_biome` incl. Dense/Jungle). Reverse via `Deforestation` (add `reforest_step`). Constants `REFOREST_*`.
+- Wire the runtime classification resolver (`classification_advancement.gd`) + a runtime EventScheduler deforestation phase with the market-class accelerator.
+- Phase 3 (expansion constraints), then Phase 4 (hybrid emergence — Opus review).
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), + this (P2b).
+
+## Session 2026-06-29 — Culture emergence Phase 2c: reforestation (natural + elven)
+
+**Task:** Complete Phase 2 (handoff §4) — reforestation: depopulated was-forest land regrows, and elf-held land is actively reforested, reversing the §5.4 deforestation steps.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **`Deforestation.reforest_target(biome, subtype, original_biome, koppen, elven)`** (pure): the ONE up-step toward original/climax, or {} at the ceiling. Only a WAS-FOREST clear hex regrows (`original_biome` ∈ {woods, jungle}) — naturally-clear grassland never afforests. clear → climate climax (taiga for cold, else plain forest); clear(was-jungle) → jungle; plain forest → dense is ELVEN-only and only where dense is the climate climax (Cfa/Cfb/Dfa/Dfb). `needs_neighbor` = the natural seed-source biome ("" = none); elves are exempt.
+- **`HistorySimulator._phase_reforestation`** (new 4a phase, after deforestation in both tick paths): iterates `_land_keys`. Rate by mode — depopulated (pop==0) → natural +1/tick; elf-dominant held (pop>0) → elven +2/tick. A was-forest clear/plain hex accrues `clearing_progress` (reused as up-progress) toward the step threshold (`reforest_ticks_jungle=15` for jungle, else `clear_ticks_step=20`), then flips the biome up and resets. Natural requires a target-biome neighbor (`_has_neighbor_biome`); elves don't. At-climax / not-a-was-forest hexes instead REVERSE any in-progress clearing (drain clearing_progress). Deterministic (no RNG).
+- **Constants** (`sim_constants.gd`, PROVISIONAL): `reforest_rate_natural=1`, `reforest_rate_elf=2`, `reforest_rate_elf_adj=3` (runtime), `reforest_ticks_jungle=15`.
+**Decisions made:**
+- **clearing_progress is reused for up-progress** (the two directions are mutually exclusive per hex per tick — deforestation is human pop>0; reforestation is pop==0 or elf-held). The one ambiguous biome (plain forest, which can clear-down OR elven-regrow-up) is disambiguated by actor: the elven-dense branch treats progress as up; everything else drains it down.
+- **Natural ceiling is Forest/taiga, not Dense** (§5.4); only elves restore the dense climax. A cold-band cleared hex regrows to taiga (its local climax), not generic plain forest.
+- **Sim-time elven rate is uniform +2** — the §5.4 `+3`-adjacent-to-elven-settlement uses the runtime settlement set (deferred, same reason as 2b's `+2`).
+- **Only was-forest clear hexes regrow** (`original_biome` set); virgin grassland never afforests, even for elves ("restore toward original_biome" — no original, no target).
+**Interfaces defined or changed:**
+- `Deforestation.reforest_target(...)` (pure; shared by sim + future runtime phase).
+- `HistorySimulator._phase_reforestation`/`_reforest_hex`/`_has_neighbor_biome` (new); `_phase_reforestation` is the 13th tick phase (after deforestation).
+- `SimConstants.reforest_rate_natural/reforest_rate_elf/reforest_rate_elf_adj/reforest_ticks_jungle`.
+**Database changes:**
+- None (reuses `setting_hexes.clearing_progress` from migration 178).
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_reforestation_targets` (TerritoryCapTests now 58 checks): climate-climax regrowth, was-jungle→jungle, no-afforestation of virgin clear, elven-only dense, climax biomes have no up-step.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged; zero new failures). Determinism green. Calibration smoke wilderness **69.3% → 72.9%** (reforestation regrowing depopulated land — the cap↔deforest↔reforest cycle now balances ~73%).
+**Known issues:**
+- Elven `+3`-adjacent + the runtime EventScheduler reforestation/deforestation phases (6-mile gameplay) NOT built — sim-time only.
+- Rare cross-actor edge: a human partially clears a plain forest, then elves restore to dense — the residual down-progress is read as up-progress (bounded ≤ threshold ticks). Accepted for v1.
+- Runtime `classification_advancement.gd` cap-gating still unwired (Phase 2a follow-on).
+- Parallel editor work (`hex_map_renderer_3d.gd`, `assets/wilderness_kit/`) still uncommitted in the tree — not mine; left untouched. Phase 2c committed with ONLY my files.
+**Next session should:**
+- **Phase 3 — expansion constraints** (handoff §5): cap-aware unfavorable-terrain avoidance (§4.6 per-race preference order), natural-borders preference (rivers/coast/mountain-spine + the consolidate-before-expand saturation gate), overseas expansion (coordinate with §7.4d contiguity — Opus review). Hook `_phase_expansion`/`_resolve_contest` frontier scoring + `sim_constants` weights.
+- Then Phase 4 (hybrid emergence — highest arch risk, Opus review). Phase 5 (clanhold migration) DEFERRED.
+- Backlog: runtime EventScheduler deforestation/reforestation phases + market/settlement accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), + this (P2c). Phase 2 COMPLETE.
+
+## Session 2026-06-29 — Culture emergence Phase 3a: cap-aware terrain avoidance (§5.1/§4.6)
+
+**Task:** Begin Phase 3 (handoff §5). Implement the cap-aware unfavorable-terrain avoidance: peaceful expansion prefers terrain the culture's RACE can develop, in the §4.6 biome→elevation order, avoiding hard exclusions.
+**Model used:** Opus 4.8 (implementation + headless verification).
+**Completed:**
+- **`TerritoryCap.is_hard_excluded(race, biome, subtype, elevation)`** (§4.6 hard exclusions: human glacial mountains; elf swamp/desert/glacial; dwarf/beastman none) + **`TerritoryCap.terrain_rank(...)`** (§4.6 soft order in (0,1], biome dominates elevation: human clear>forest>jungle/swamp>desert with flat>hills>mtn modulation; elf forest/jungle>clear, elevation irrelevant; dwarf mountains>volcanic>glacial>hills>flat, biome irrelevant). Pure.
+- **`HistorySimulator._expansion_preference(pol, key)`** = cap weight (civ/borderlands/wilderness from `_c`) × `terrain_rank`, or `expansion_pref_excluded` for a §4.6 exclusion (nonzero → never hard-stuck). `_compute_frontier` multiplies each frontier hex's `mult` by this preference and stores `pref` per entry. So PEACEFUL expansion expands toward developable land first. `_resolve_contest` strength + `_phase_war` are UNTOUCHED (war ignores the preference).
+- **Boxed-in escape valve** in `_expand_polity`: only when the best frontier hex is a §4.6 hard exclusion (best `pref` < `expansion_boxed_in_threshold` = 0.11, just above the excluded weight) does the polity expand at a reduced rate (`expansion_boxed_in_rate`); ordinary wilderness-capped frontier (forest/mountain — the deforestation path to civ) still expands at full rate.
+**Decisions made:**
+- **Gentle gradient (wilderness 0.55, not a harsh 0.2)** — PROVISIONAL, tuned for sim health. A harsh wilderness penalty makes realms refuse forest/mountain (which civilize via deforestation), crowding onto scarce clear and leaving the map mostly unowned. The §4.6 `terrain_rank` carries the finer order; the cap weights just tilt toward higher-cap land.
+- **The preference biases ORDER, not amount** (the budget loop spends a fixed hex-count); only the boxed-in valve (rare, exclusion-only) reduces amount. An earlier over-broad valve threshold death-spiraled (throttled realms → less size-scaled budget → smaller) — fixed to fire only for genuinely excluded-bound polities.
+**Interfaces defined or changed:**
+- `TerritoryCap.is_hard_excluded(...)` / `TerritoryCap.terrain_rank(...)` (pure).
+- `HistorySimulator._expansion_preference(pol, key)` / `_cap_pref_weight(cap)`; `_compute_frontier` entries now carry `pref`.
+- `SimConstants.expansion_pref_civilized/borderlands/wilderness/excluded`, `expansion_boxed_in_threshold/rate`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_territory_cap.gd` gains `test_expansion_exclusions_and_rank` (TerritoryCapTests now 68 checks): §4.6 exclusions per race + the biome-dominates-elevation ordering.
+- Full suite **476 passed / 16 failed** on two consecutive runs (unchanged; zero new failures). Determinism green. Calibration smoke IMPROVED: wilderness **72.9% → 57.6%** (closer to the §17 ~50% target), civ_owned 65% → 79%, unowned 30% → 19% — the preference directs expansion onto land that civilizes.
+**Known issues:**
+- **DEBUGGING LESSON:** a `var mult := <expr with Dictionary.get()>` introduced a Variant-inference PARSE ERROR that silently broke the ENTIRE history_simulator compile → the sim never ran → 100% wilderness + 37 failures, and identical numbers across constant changes (the tell). Fixed with `var mult: float =`. When a constant change has ZERO effect, suspect a compile break, not balance.
+- Phase 3b (natural borders + saturation) and 3c (overseas — Opus review) not built.
+- Parallel editor work (`hex_map_renderer_3d.gd`, `assets/wilderness_kit/`) still uncommitted — not mine; left untouched.
+**Next session should:**
+- **Phase 3b** (handoff §5.2): `natural_border_resistance` per frontier edge (rivers/coast/mountain-spine damp peaceful expansion) + consolidate-before-expand saturation gate (≥75% hexes at ≥50% current-biome pop cap → redirect budget to internal growth). War exempt.
+- **Phase 3c** (handoff §5.3): overseas expansion across short sea gaps (coastal-settlement requirement) → non-contiguous sea-linked colonies; coordinate with §7.4d contiguity. OPUS REVIEW before building.
+- Then Phase 4 (hybrid emergence — Opus review).
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), + this (P3a).
+
+## Session 2026-06-29 — Culture emergence Phase 3b: natural-border resistance + consolidate-before-expand (§5.2)
+
+**Task:** Phase 3b (handoff §5.2). Make peaceful expansion respect rivers as natural borders, and add a consolidate-before-expand saturation gate so realms fill their interior before spilling across a border. War-making exempt throughout.
+**Model used:** Opus 4.8 (implementation, calibration tuning, headless verification).
+**Completed:**
+- **`HistorySimulator._build_river_barriers`** now also builds `_river_edge_any` ("q,r,e" → true for EVERY river edge, both widths, both directions) — distinct from the navigable-only `_river_barrier` diffusion set. `_river_free_approach(pid, n)` reports whether a frontier hex has a river-free owned-neighbour approach.
+- **`HistorySimulator._compute_frontier`** damps a frontier hex's `mult` by `SimConstants.natural_border_resistance_river` (0.5) **only when the hex is enemy-owned AND reached only across a river** (CONTEST-only — NOT empty-land settlement). Each entry now also carries `river_crossed` + `settle` for the gate.
+- **Consolidate-before-expand gate** in `_expand_polity`: `_is_border_bounded(pol, frontier)` (no river-free developable open SETTLE target left, and the realm abuts a river-crossed frontier or a coastline) + `_is_saturated(pol)` (≥0.75 of POPULATED hexes at ≥0.50 of their CURRENT-biome cap, `cap_for(_hex_territory_cap)`) reduce the expansion budget by `consolidate_rate` (0.5, never 0). War (`_phase_war`) untouched.
+- **`SimConstants`**: `natural_border_resistance_river=0.5`, `consolidate_rate=0.5`, `saturation_hex_fraction=0.75`, `saturation_pop_fraction=0.50` (all PROVISIONAL, documented).
+- **`tools/calib_sweep.gd` + `.tscn`** — new standalone calibration harness (Large×N in ~2.5 min, skips the 492-suite runner which is too slow/DB-contended to tune against). Kept as the standing tuning tool for the planned ascendant-pop-growth compensation pass.
+**Decisions made:**
+- **River resistance is CONTEST-ONLY** (Jedidiah ruling 2026-06-29). Reliable Large×12 sweeps showed that damping empty-land settlement across rivers strands trans-river wilderness unclaimed on the finite-tick sim and regresses the §17 coverage target ~4pts (wilderness 58.6→62.4, unowned 24.4→27.3, even at a gentle 0.7; the cost comes from the frontier REORDERING, not the magnitude — 0.9 ≈ 0.7 ≈ same hit). Restricting the damp to inter-realm border contests keeps coverage at the 3a baseline while mature borders still settle onto rivers via stabilization.
+- **The saturation gate is INCLUDED** (Jedidiah: include it, do NOT tune it against the wilderness target — if maps come out too wild, raise ascendant-polity pop growth to compensate instead). In practice the gate is coverage-neutral *because* the resistance is contest-only: empty land stays freely claimable, so realms are rarely border-bounded and the gate seldom fires.
+- **Saturation is measured against the CURRENT-biome ceiling** (`cap_for(_hex_territory_cap)`), not the post-deforestation cap — a realm does not wait to clear forest before seeking new space (handoff §5.2). Populated hexes only (razed pop-0 land can't grow, so it doesn't count toward fill).
+**Interfaces defined or changed:**
+- `HistorySimulator`: new members `_river_edge_any`; new methods `_river_free_approach(pid, n)`, `_is_border_bounded(pol, frontier)`, `_is_saturated(pol)`. `_compute_frontier` entries gain `river_crossed`/`settle` keys (only caller is `_expand_polity`).
+- `SimConstants`: `natural_border_resistance_river`, `consolidate_rate`, `saturation_hex_fraction`, `saturation_pop_fraction`.
+**Database changes:** None.
+**Tests added/updated:**
+- Full suite **476 passed / 16 failed** (warm-DB measured run) — exactly the pre-3b baseline; the 16 are the known pre-existing combat/proficiency/ZoC/LOS/encounter/item-cascade failures, none in world-gen/history-sim/calibration/determinism. Determinism + all setting-stage + calibration suites green. Phase 3b's new logic is stateful sim-internal (no new pure functions like 3a's TerritoryCap helpers); it is covered by the determinism + calibration integration suites rather than new unit tests.
+- **Calibration (final config, Large×12, contest-only 0.5 + gate 0.5):** wilderness 59.2 / civ_owned 69.8 / unowned 24.8 / realms 31.1 / indep_civ 13.6 — vs pure-3a baseline 58.6 / 70.0 / 24.4 / 35.0 / 15.7. Headline metrics NEUTRAL (within noise); realms consolidate 35→31 with unowned flat (consolidation toward the §17 "5–10 independent realms" band, not collapse).
+**Known issues:**
+- River-border AESTHETIC not yet visually verified in-engine (the renderer is up in the parallel editor session — eyeball the political map: borders should preferentially align to rivers where two realms meet across one). The stabilization effect is by-construction but subtle.
+- The realms 35→31 drop appears across ALL frontier-reordering variants (any resistance < 1.0), so it is a determinism-shift artifact of reordering, not specific to the contest scope. Benign (unowned flat).
+- `tools/calib_sweep.*` writes test campaigns into `campaign_test.db`; clear it (`find <iso-appdata> -iname campaign_test.db* -delete`) before a full-suite run or the bloat slows the suite past the 10-min headless timeout.
+**Next session should:**
+- **Phase 3c** (handoff §5.3 — OPUS REVIEW gate): overseas expansion across short sea gaps (coastal-settlement requirement) → non-contiguous sea-linked colonies; must coordinate with §7.4d contiguity (`_phase_contiguity`) so sea-linked colonies are NOT auto-severed (mark them sea-linked). Soft `SEA_CROSS_COST` distance curve. Present the design before/while building (it touches the contiguity contract).
+- Then Phase 4 (hybrid emergence — highest arch risk, Opus review).
+- Backlog: ascendant-polity pop-growth boost (the agreed compensation lever if coverage dips); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), + this (P3b).
+
+## Session 2026-06-29 — Culture emergence Phase 3c: overseas expansion (§5.3)
+
+**Task:** Phase 3c (handoff §5.3, the Opus-review gate — touches the §7.4d contiguity contract). Coastal polities colonize empty coastal hexes across short sea gaps; colonies must respect the 10-hex sea-lane governance distance and SPLIT off if war stretches their nearest sea link past it.
+**Model used:** Opus 4.8 (design review, implementation, calibration + test verification).
+**Completed:**
+- **Design ruling (Jedidiah, this session):** REVISE the handoff's "no hard distance cap" — overseas reach is capped at `sea_lane_range` (the SAME 10-hex limit §7.4d contiguity uses). No one governs/fights across more open water than that (migrations, a later phase, are the exception). A realm that loses the coast keeping its colony within range must SPLIT.
+- **The reuse-`sea_lane_range` insight:** because overseas reach == the contiguity sea-lane range, the split is AUTOMATIC and needs NO new code. A colony ≤10 hex (shared ocean) is in the capital's `_connected_components` component → never severed; the moment war pushes its nearest link past 10, it drops out of that component → existing `_phase_contiguity` sheds it (secede / absorb / revert). No stored sea-link marker needed (connectivity is recomputed live from geometry).
+- **`HistorySimulator._precompute_sea_lanes`** (hooked after `_precompute_ocean_components` in `run()`): builds `_sea_lane_neighbors` (static — each coastal land hex → coastal hexes within `sea_lane_range` sharing an ocean; same distance + shared-ocean test contiguity uses).
+- **`HistorySimulator._compute_frontier`** now appends an overseas-frontier block: for each POPULATED owned coastal hex, its EMPTY sea-lane neighbours become settle entries (`overseas=true`), weighted by `_sea_cross_factor(d)` = `sea_cross_base · sea_cross_decay^(d-1)`. Land frontier processed first so land-adjacent targets win the `seen` dedup. Colonization of EMPTY land only — no amphibious contest (that is war). `_settle_wilderness` (existing) plants the colony.
+- **`SimConstants`**: `sea_cross_base=0.6`, `sea_cross_decay=0.92` (PROVISIONAL). Reuses `sea_lane_range`.
+- **New suite `tests/test_setting_overseas.gd`** (15 checks, registered): sea-lane precompute links within range / not beyond; overseas frontier includes a reachable empty coast (flagged overseas, positive weight) but not an enemy-owned one; depopulated coast can't launch; colony within range = one component (not severed); colony beyond range = separate component (the split).
+**Decisions made:**
+- Reach == `sea_lane_range` (one governing distance for colonization + contiguity + split). Confirmed with Jedidiah before building.
+- Launch requirement = owns a POPULATED coastal hex ("coastal settlement of any size"; no civ/size gate). Any non-beastman coastal polity (beastmen never reach `_compute_frontier`).
+- Colonization of empty coastal land only; amphibious WAR is out of scope for 3c.
+- Soft distance-decayed `SEA_CROSS_COST` keeps colonies sane (near preferred, overseas dispreferred vs contiguous land) — PROVISIONAL.
+**Interfaces defined or changed:**
+- `HistorySimulator`: new member `_sea_lane_neighbors`; new methods `_precompute_sea_lanes()`, `_sea_cross_factor(d)`. `_compute_frontier` entries may carry `overseas=true`.
+- `SimConstants`: `sea_cross_base`, `sea_cross_decay`.
+**Database changes:** None. (No sea-link marker / column — the handoff's suggested marker is redundant; connectivity is geometry-derived live.)
+**Tests added/updated:**
+- New `SettingOverseasTests` — 15 checks, all pass.
+- Full suite **477 passed / 16 failed** (warm-DB run 2; run 1 on fresh DB is the documented FK-noise artifact, ignore). 477 = prior 476 + the new suite; the 16 are the known unrelated combat/proficiency/ZoC failures. Zero new failures; determinism + all setting-stage suites green.
+- **Calibration (overseas ON, Large×12):** wilderness 64.2 / civ_owned 69.8 / unowned 25.8 / realms 31.0 / indep_civ 13.3 — vs 3b 59.2 / 69.8 / 24.8 / 31.1 / 13.6. Wilderness +5 (new colonies are wilderness-CLASS frontier), concentrated on high-coastline/archipelago seeds (1005/1006/1008/1011); civ_owned, unowned, realm counts neutral (no fragmentation). Within the accepted coverage envelope (compensate via ascendant pop growth if wanted).
+**Known issues:**
+- Overseas colonies raise wilderness % on heavy-coastline maps (colonies are frontier). Expected, not a carpet. `sea_cross_base` is the lever if colonies want to be more selective.
+- River-border (3b) + colony aesthetics still not visually verified in-engine — recommend eyeballing the political map with the renderer.
+- `_compute_frontier` overseas block is O(coastal-owned × sea-lane-neighbours) per polity per tick; the per-pair sea-lane graph is precomputed once (ocean/coast are static).
+**Next session should:**
+- **Phase 4 — hybrid culture emergence** (`culture_synthesis_parents`): first-order hybrids emerge at runtime where base cultures meet. HIGHEST architecture risk in the arc; Opus review. The 54 hybrid naming kits + 122 name banks are already built (P1); this wires mechanical emergence.
+- Backlog: ascendant-polity pop-growth boost (the agreed coverage-compensation lever); runtime EventScheduler deforestation/reforestation phases + market/elf accelerators; wire runtime `classification_advancement.gd` to TerritoryCap. P5 (clanhold migration) still DEFERRED.
+**Commits:** 62ca2e9 (P1), 31d1cfb (P2a), fb974fa (P2b), c5c119a (P2c), 207134c (P3a), ed30921 (P3b), + this (P3c). PHASE 3 COMPLETE.
+
+## Session 2026-06-29 — Retire the 49 legacy member culture kits (GDD Q11)
+
+**Task:** Jedidiah flagged the 122-bank count as inflated by stale kits. Audited, confirmed 49 dormant legacy human "member" kits, and (on his ruling) physically RETIRED them — the deferred GDD Q11 cleanup.
+**Model used:** Opus 4.8 (audit, dependency analysis, execution, verification).
+**Completed:**
+- **Audit:** 122 name banks = 122 conlang kits (1:1, auto-discovered). Composition: 11 human BASE + 6 demihuman + 10 beastman (all actively seeded) + 46 hybrid conlang-only (reserved for Phase 4) + **49 legacy human member kits (dormant)**. No true orphans; 1 dangling ref (`beastmen` generic kit → no `beastmen` bank, already code-handled via `CultureSeeder.GENERIC_BEASTMAN_CULTURE_ID` exclusion). Of the 49 members, 32 single-family + 17 cross-family blends — all equally dormant (humans seed only bases; hybrids synthesize from `BASE_01..11` + `elvish`/`dwarven`/`beastman` families, NOT member ids — verified).
+- **Deleted 147 files:** the 49 members' `data/cultures/<id>.json` + `data/conlang/culture_<id>.json` + `data/name_banks/<id>.json`. Re-ran `tools/build_name_banks.py` → 73 banks + manifest (count 73), validation GREEN, `--check` freshness OK. Only `_manifest.json` changed among surviving banks (the other 73 are byte-identical → deterministic build, Phase-1 banks were fresh).
+- **Engine fallbacks repointed:** the two hardcoded `else "agrippan"` last-resort culture fallbacks in `name_generator.gd` / `infrastructure_generator.gd` → `"albawyn"` (a base). (`ids_by_tier("human")` always returns the 11 bases now, so the literal is unreachable, but it's correct.)
+- **Build-script sample list** (`build_name_banks.py` spot_check) repointed off members (self-healing anyway via the in-cultures filter).
+- **4 test suites repointed off member fixtures** (verified replacement properties): `test_setting_name_banks` agrippan→`quirium` (classical/feudal/Marcus/Imperator; Regnum→"Kingdom" since bases use English-display domains now) + sargonid→`aryamark` (2-family hybrid); `test_setting_stage4a` agrippan→quirium, vargari→albawyn (synthetic instances, cosmetic); `test_setting_stage6` agrippan→quirium (+ "Regnum"→"Kingdom" assertion); `test_npc_personality` abydosian→`kemetra` (5-axis `npc.personality_weight_biases`). `EXPECTED_BANK_COUNT` 122→73.
+**Decisions made:**
+- Retire all 49 (Jedidiah: "retire them now"). Confirmed safe: never seeded, not hybrid parents, not demihuman/beastman. The 17 cross-family member blends are dormant too; their only test use (a 2-family fixture) repoints to a hybrid bank (hybrids ARE 2-family), so no coverage lost.
+- Generation output is UNCHANGED by the retirement (the 49 were never in any seed pool) → determinism + calibration unaffected.
+**Interfaces defined or changed:** None (pure data + fixture cleanup). `CultureCatalogLoader` now loads 28 cultures, `NameBankLoader` 73 banks.
+**Database changes:** None.
+**Tests added/updated:** 4 suites repointed (above). Full suite **477 passed / 16 failed** (warm-DB run 2) — unchanged baseline; SettingNameBanks 1115 checks (was 1850; fewer banks = fewer per-bank checks), Stage4a/Stage6/NpcPersonality green. The 16 are the known unrelated combat/proficiency failures.
+**Known issues:**
+- The generic `beastmen` mechanical kit still references a non-existent `beastmen` bank — harmless (code excludes it via `GENERIC_BEASTMAN_CULTURE_ID`), left as-is.
+- docs/ may still mention retired member cultures in prose (informational, non-breaking) — not swept.
+**Next session should:**
+- Phase 4 — hybrid culture emergence (the 46 hybrid banks are now the clear forward-looking set; highest arch risk, Opus review).
+- Backlog unchanged: ascendant-pop-growth coverage lever; runtime EventScheduler defor/refor phases; wire runtime classification_advancement to TerritoryCap.
+
+## Session 2026-06-29 — CORRECTION: recover 9 hybrids wrongly swept by the member retirement
+
+**Task:** While scoping Phase 4, Jedidiah caught that 9 hybrid pairings had no kit. Root-caused to the member retirement (commit 8654bd8) over-deleting — recovered them.
+**Model used:** Opus 4.8.
+**What went wrong:** The retirement's member heuristic was "data/cultures mechanical kit + race human + no `culture_class==base`". 9 hybrids were authored in the OLD style (a mechanical kit ALONGSIDE their conlang kit + `HYB_NN` csv_id), so they matched the heuristic and were deleted as "members". They are exactly the 9 base-pairs the conlang-only hybrid set (46) didn't cover — so the 55-pair hybrid space had a 9-hole gap.
+**The 9 (HYB_csv = pair):** HYB_16 shidhean = albawyn×hinowa; HYB_19 senecar = albawyn×manitland; HYB_21 sumset = kemetra×shinarur; HYB_22 sargonid = quirium×shinarur; HYB_35 ptolan = hellaspol×kemetra; HYB_43 serican = huaxia×quirium; HYB_49 thracan = hellaspol×manitland; HYB_50 ryujin = hinowa×huaxia; HYB_55 tikan = manitland×tollanaz.
+**Completed:**
+- Recovered the 9 **conlang kits ONLY** (`git checkout 8654bd8~1 -- data/conlang/culture_<id>.json`) — NOT their legacy mechanical kits, matching the other 46 conlang-only hybrids (Phase 4 synthesizes hybrid mechanics from the two parent bases at runtime; a recovered mechanical kit would just be dormant dead weight again).
+- Regenerated banks → **82** (was 73): 11 base + **55 hybrid** (now complete, all 11C2 pairs) + 6 demihuman + 10 beastman. Validation green, `--check` fresh.
+- `EXPECTED_BANK_COUNT` 73 → 82; conventions §85 corrected (40 members retired, not 49; the 9 hybrid recovery + the rule to exclude `csv_id` `HYB_*` when retiring members).
+**Decisions made:**
+- Recover (not re-author): the kits were hand-authored; recovery is higher-fidelity than fresh portmanteaus. Supersedes the earlier "author the 9" answer.
+- Conlang-only recovery (no mechanical kit) — keeps all 55 hybrids uniform for the Phase 4 synthesis path.
+- The OTHER 40 deleted kits ARE genuine old-roster members (non-`HYB` csv_id) — correctly retired, not recovered.
+**Interfaces/Database changes:** None.
+**Tests added/updated:** `EXPECTED_BANK_COUNT` 82. Full suite **477/16** (unchanged); SettingNameBanksTests 1250 checks (was 1115; +9 hybrid banks). Generation unaffected (hybrids aren't seeded until Phase 4 emerges them).
+**Known issues:**
+- LESSON for future culture cleanups: a kit's `csv_id` prefix (`HYB_` vs `BASE_` vs none) is the authoritative type signal — NOT the presence/absence of a mechanical kit. The member heuristic should have excluded `HYB_*`.
+**Next session should:** Resume Phase 4 build — 4a is now "build the parent-pair→hybrid definition table" (all 55 kits exist; no authoring needed), then 4b synthesis engine, 4c border merge, 4d conquest merge, 4e tests. Fold the resolved Phase-4 design decisions into the GDD as each sub-phase lands (per Jedidiah).
+
+## Session 2026-06-29 — Phase 4a: recover + adjust 9 hybrid mechanical kits; STATIC-hybrid architecture
+
+**Task:** Begin Phase 4 (hybrid emergence). Jedidiah directed recovering the 9 over-deleted hybrids' MECHANICAL kits too ("they were valuable; use what was there and adjust"). Design recon surfaced the core forks; this session recovers + adjusts the 9 and locks the architecture.
+**Model used:** Opus 4.8 (design review, recovery, adjustment, verification).
+**Design decisions (Jedidiah, this session):**
+- **Merge resolution forks:** asymmetric blend by the kit's authored LEAN; merge changes SUBSTRATE culture-weights only (reuse diffusion/go-native; no polity-identity flip); per-base-pair LOCK-IN once a merge fires; complete all 55 pairings.
+- **Hybrid mechanical source = STATIC authored kits, NOT runtime synthesis.** Every hybrid is a `data/cultures/<id>.json` kit with `culture_class="hybrid"` + `culture_synthesis_parents=[a,b]`; loaded like a base but excluded from seeding (`bases_only` filter excludes `!= "base"`); emergence looks it up by parent pair. **This eliminates the GDD's "highest-architecture-risk" item** (runtime culture-instance mutation) — GDD §3.6 + §9 Concern updated to RESOLVED.
+- **The other 46 hybrid mechanical kits will be GENERATED at build time (sub-phase 4b)** by trait-blending the two parent bases (lean-weighted), committed + hand-tunable — before any merge wiring.
+**Completed (4a):**
+- Recovered the 9 hybrid MECHANICAL kits from git `8654bd8~1` (shidhean/senecar/sumset/sargonid/ptolan/serican/thracan/ryujin/tikan — the full rich shape: terrain/expansion/conquest/lifecycle/infrastructure/rulership/npc/class_kit_weights).
+- **Adjusted all 9:** `identity.culture_class="hybrid"`; `identity.csv_id=HYB_NN`; `identity.culture_synthesis_parents=[base_a,base_b]` (from the conlang `synthesis_sources`); `alignment.allowed`→ all three (§3.7 supersedes the kits' old 2-of-3 restriction).
+- GDD §3.6/§9, conventions §85 (culture_class now 3-valued: base|hybrid|member) updated.
+**Decisions made:** parent-pair→hybrid lookup is DERIVED at load from `culture_synthesis_parents` (no separate `hybrids.json` table needed). Recovery > re-authoring (hand-authored kits, higher fidelity).
+**Interfaces:** new `identity.culture_class="hybrid"` value; new `identity.culture_synthesis_parents` field on hybrid kits.
+**Database changes:** None (a `setting_polities.culture_synthesis_parents` column will land in 4b/4c when emergence persists).
+**Tests:** Suite **477/16** (unchanged); SettingStage3 (seeding) 217 checks green — hybrids excluded from seeding (culture_class != base), not seeded, dormant until emergence. No catalog-count assertions exist. Name-banks 82/1250.
+**Known issues:**
+- The 9 recovered kits' deeper fields (seed_biomes — irrelevant since hybrids never seed; old scalar tuning) are left as authored; tune during 4b alongside the 46 generated kits for consistency.
+**Next session should:** **4b — the hybrid-kit generator:** blend the 46 missing hybrids from their parent bases (asymmetric by lean; scalars=lean-weighted mean, sphere/terrain=lean-weighted union, civ_or_clan via §3.4, all-three alignment), write as `culture_class="hybrid"` kits, commit all 55. Add the load-time parent-pair→hybrid lookup + a `CultureCatalogLoader.culture_synthesis_parents` accessor. THEN 4c border merge, 4d conquest merge, 4e tests/calibration.
+**Commits:** 3738cda + de4300f (9 hybrids recovered: conlang+banks), + this (9 hybrid mechanical kits recovered+adjusted).
+
+## Session 2026-06-29 — Phase 4b: generate the 46 hybrid mechanical kits (archetype blend)
+
+**Task:** Produce the 46 missing hybrid mechanical kits so all 55 base-pair hybrids exist as static `culture_class="hybrid"` kits (the architecture decided in 4a). Jedidiah's design constraint: AVOID simple mechanical averaging (it clusters hybrids toward a bland centroid).
+**Model used:** Opus 4.8 (design, generator, validation, tuning).
+**Design decisions (Jedidiah, this session):**
+- **Archetype model, NOT averaging.** Hybrid traits are sourced per-trait by cultural ROLE + a directional "character push," with UNION on the repertoire — the union + per-trait sourcing is what produces distinctness. Three primary archetypes from the parents' civ/clan (§3.2): **Conquest Aristocracy** (clan×civ — martial elite over an absorbed civ), **Peer Synthesis** (civ×civ), **Confederated Peoples** (clan×clan). Peer Synthesis sub-flavors by the combined SECONDARY sphere (military is universally dominant, so it can't differentiate): **Hegemonic / Mercantile / Theocratic / Scholastic / Classical**.
+- **No emergent "tension" trait** (Jedidiah): traits come only from the parents (+ archetype push), no dissimilarity term.
+- **Full-detail kits** matching the authored 9 (mechanical + templated flavor).
+**Completed:**
+- **`tools/generate_hybrid_kits.py`** (committed, reusable): archetype classifier + sub-flavor selector + per-archetype scalar recipe + sphere blend/tilt + troop/NPC-bias union + class-weight/road blend + full templated flavor (values, architecture, flavor_text, phonemic_palette pulled from the conlang blend). `--validate` (regression vs the 9) / `--generate` (writes the 46).
+- **Validation:** the recipe reproduces the 9 hand-authored hybrids to **8/9 within ~0.12 mean-abs-delta** (shidhean 0.028, sargonid 0.053); the 1 outlier (`tikan`, 0.31) is a deliberate bespoke "peaceful despite fierce parents" kit — kept authored, not generated. Tuned the directional pushes (Peer collapse min−0.15→mean, rigidity max+0.10→mean+0.05, Hegemonic aggr +0.15→+0.05, Confederated collapse +0.05→+0.15) to center the formula.
+- **Generated the 46** (full-detail kits, culture_class="hybrid", culture_synthesis_parents). **Distinctness confirmed:** every scalar well-spread (stdev 0.09–0.15), no extreme blowouts (nothing ≤0.2 or ≥0.95), **zero exact-scalar duplicates** — the averaging-clustering problem is solved.
+**Decisions made:** generated kits keep the 9 authored ones untouched; flavor is templated (refinable narratively); `tikan`-type bespoke pairs among the 46 (if any feel wrong) are the user's to hand-tune — the formula gives a coherent default.
+**Interfaces:** all 55 hybrids are now static catalog entries. parent-pair→hybrid lookup (4c) will scan `culture_synthesis_parents`.
+**Database changes:** None.
+**Tests:** Suite **477/16** (unchanged); SettingStage3 seeding green (the 55 hybrids load as culture_class="hybrid", excluded from seeding). data/cultures now 83 (28 base/demi/beast + 55 hybrid).
+**Known issues:**
+- Flavor_text is templated (some generic phrasing); the conlang phonemic_palette is real. Narrative polish is optional/runtime-LLM territory.
+- The archetype→civ/clan mapping is deterministic; a few clan×civ pairs the author intended as peaceful (tikan) won't match the Conquest default — review the 46 and hand-tune any that feel mischaracterized.
+**Next session should:** **4c — border merge roll.** Add the parent-pair→hybrid load-time lookup + `CultureCatalogLoader.culture_synthesis_parents` accessor; in `_resolve_contest`/`_phase_expansion`, the merge-vs-displace roll between two distinct human BASE cultures grows HYB(A,B) substrate weight (per-pair lock). Then 4d conquest merge, 4e tests+calib.
+**Commits:** ca4f910 (P4a: 9 kits) + this (P4b: 46 generated + generator tool).
+
+## Session 2026-06-29 — Naming workstream #1: rename Quirium→Vallica + FIX generator non-determinism
+
+**Task:** Begin the hybrid-naming workstream (Jedidiah, sequenced naming-first). Item 1: rename the base culture Quirium ("sounds like 'query'") → Vallica/Vallicans (name-only; Roman/Latin flavor, traits, deity-morphs all unchanged). Surfaced + fixed a generator determinism bug in the process.
+**Model used:** Opus 4.8.
+**Completed:**
+- **Quirium → Vallica rename (name-only):** `git mv` data/cultures/quirium.json→vallica.json + data/conlang/culture_quirium.json→culture_vallica.json; updated identity (culture_id=vallica, demonym=Vallican, toponym=Vallica; csv_id stays BASE_06) + kit_id + name_bank_key. Regenerated banks (quirium.json→vallica.json, manifest). Updated `BASE_CSV` in `generate_hybrid_kits.py` + the `build_name_banks.py` spot-check sample. The 10 hybrids with Quirium as a parent now read `vallica` (8 generated via re-run; 2 authored — sargonid, serican — patched). Repointed 3 test fixtures (name_banks/stage4a/stage6) quirium→vallica (the vallica bank is byte-identical Latin content, so Imperator/Marcus/classical assertions hold). Conventions §85 updated.
+- **FIXED generator non-determinism** (`tools/generate_hybrid_kits.py`): `union_npc`, `blend_spheres`, `subflavor`, and the top-sphere/top2 picks iterated `set(...)` and used `max`/`sort` WITHOUT a tie-break, so tied npc-bias axes / secondary spheres shuffled between runs — every `--generate` produced different kits (caught when the vallica re-gen diffed all 46, not just the 10 quirium ones). Now sorts the union iteration + breaks every tie by name. **Verified idempotent: 3 consecutive `--generate` runs → identical sha1.** (The 4b-committed kits had arbitrary npc biases from this bug; they're now deterministic — a one-time content shift on the unseeded hybrid kits.)
+**Decisions made:** Vallica is name-only (Jedidiah). Determinism is mandatory for a committed generator (reproducible regen) — the fix is the correct one, not a content choice.
+**Interfaces/Database changes:** None (data + tool only). BASE_06 = vallica now.
+**Tests:** Suite **476/17** on two consecutive runs; the 17th is the carry-forward flaky `test_phase_9c` (combat call-to-arms / terrain-selection — unrelated to culture). All culture/setting/determinism/name-bank suites green; name-banks 82/1250.
+**Known issues:** Hybrid NAMES still reference the old Roman/"rom"/"quir" roots (romkem, novarom, quirgard) — those regenerate in workstream item #2 (rules-based naming engine), next.
+**Next session should:** **Naming workstream #2 — the rules-based naming engine:** word-coiner (phonology palette+phonotactics → novel word) + phonemic-shifter (re-render a name through a target's sound-laws); Conquest = conquered-endonym-in-conqueror's-register, Peer = coin "the <top-shared-trait>-folk", Confederated = coin a "people/nation" root. Peer ties surfaced to Jedidiah. Build, generate, EVALUATE quality (pivot to a structured-LLM batch if stilted). Then #3 = spec the stratified deity-usage + Conquest merge-gating (clan-conquers-civ only) into gdd-hybrid-conlang-fusion.md.
+**Commits:** ca4f910 (P4a) + 916d31e (P4b) + this (Vallica rename + determinism fix).
+
+## Session 2026-06-29 — Naming workstream #1b: overhaul 7 base culture names
+
+**Task:** Jedidiah flagged most base names as poor-sounding or place-suffix-based (a culture name must name the PEOPLE, not the place). Renamed 7 of 11 bases (name-only).
+**Model used:** Opus 4.8.
+**Completed:** Quirium→Vallica (earlier), Thiodmark→**Thiodons**, Hellaspol→**Ellinike**, Shinarur→**Shamhar**, Tollanaz→**Tollteca**, Manitland→**Wendaki**, Huaxia→**Qinzhao**, Hinowa→**Yamatsu** (Albawyn/Aryastan/Kemetra kept). Each = name-only: renamed base kit + conlang kit + bank, updated identity (culture_id/demonym/toponym/name_bank_key) + flavor_text, kept all traits/phonology/names. Updated `BASE_CSV` (+ the hardcoded `brythald` pair) in both tools; re-ran `--generate` so all 46 hybrids' `culture_synthesis_parents` use new names; patched the 9 authored hybrids by hand. Conventions §85.
+**Decisions:** demonym=PEOPLE (Thiodons), toponym=LAND (Thiodmark); `-mark/-gard/-heim` are place-suffixes, valid only on toponyms — this invalidates the place-suffix hybrid names (aryamark/hellmark/ashurheim/tollangard/hinogard) for the hybrid-naming redo.
+**Tests:** Suite **477/16** (clean baseline; zero new failures). Seeding 217 + name-banks 82/1250 green. No test referenced the renamed bases.
+**Next:** redo the hybrid-naming proposal (workstream #2) against the NEW base roots + the people-name rule (no place-suffixes); then apply hybrid renames; then #3 deity/merge-gating GDD spec.
+
+
+## Session 2026-06-30 — Naming workstream #2: rename all 54 hybrids to rules-based people-names
+
+**Task:** Redo the hybrid-naming proposal against the NEW base roots + the people-not-place rule; coin in reviewable batches of 5; then apply the renames (data + code + docs) and verify.
+**Model used:** Opus 4.8.
+**Completed:**
+- Coined + Jedidiah-approved NEW people-names for all 54 first-order hybrids across 11 review batches (brythald kept as his own coinage). Full old->new table + method in gdd-hybrid-conlang-fusion.md §5.
+- Method by archetype: Conquest (24) = the conquered civ re-voiced in the conqueror clan's phonology + that clan's people-ending (Thiodons Gothic -ans/-ungs/-ings; Albawyn Goidelic -raige/Fir-/-wyn; Wendaki Comanche -nu/-teka; e.g. quirgard->wallans, novarom->parinu, hellmark->nikungs). Peer (28) = a coined word for the pair's distinctive shared trait, built from BOTH parents' lexemes + a register ending (romkem->djetani, serican->lijian, ptolan->sebasos). Confederated (2) = a coined people/nation word (maniheim->samanumu, senecar->cenumu).
+- Applied via a one-off script + the generator: flipped each conlang kit_id + filename; fixed brythald's stale conlang synthesis_sources ([6,7]->[BASE_01,BASE_02]); repointed generate_hybrid_kits.py RECOVERED to the 9 new ids and re-ran --generate (rebuilt the 46 generated kits, whose demonym/prose all derive from the id); rename+hand-patched the 9 authored kits (preserving authored mechanicals); applied a Ch'ulet demonym override (generator only emits id.capitalize()); deleted + rebuilt all 82 name banks.
+- Repointed references: tests/test_setting_name_banks.gd (aryamark->arjungs), tools/build_name_banks.py + tools/name_hybrids.py samples, gdd-culture-catalog.md (shidhean example->shidean), gdd-culture-emergence-and-territory.md (sargonid->tamkari validation ref), NEW gdd-hybrid-conlang-fusion.md §5 (naming-method section + full 55 table), docs/coding_conventions.md §85 (rename-mechanics note).
+**Decisions made:**
+- Peer naming re-grounded mid-run (Jedidiah): dropped the cross-exonym / real-ethnonym approach + the Latin -ans default; returned to coined shared-trait words in the two parents' blended register. in_group_loyalty treated as near-universal (like military/orthodoxy) so the distinctive trait spreads across religious/mercantile/arcane/epistemic/expressive.
+- Naming constraints: demonym names the PEOPLE not the place (-mark/-gard/-heim only on toponyms); NO real deity NAMES (generic god-words ok: ilu/teotl/shen/netjer); names read as a people/nation not a cult; NO verbatim real-world ethnonyms (cross-exonyms like Seres/Lijian/Yauna are inspiration only, coined not lifted); Peer trait ties surfaced for Jedidiah's pick.
+- brythald kept (his coinage). ptolan/serican/sargonid (prior keepers) replaced by coined forms once the base overhaul invalidated their roots. shidean kept the bespoke sidhe theme (respelled).
+**Interfaces defined or changed:**
+- 54 hybrid culture_ids renamed (old->new table in gdd-hybrid-conlang-fusion §5.4). culture_synthesis_parents UNCHANGED (they reference stable BASE ids, so parent-refs never move on a hybrid rename). generate_hybrid_kits.py RECOVERED set now = {shidean,cenumu,ramqet,tamkari,sebasos,lijian,nikitu,xianjin,tikanu}.
+- A hybrid's id lives in TWO coordinated places: the conlang FILENAME stem (generator pair_map) AND the conlang internal kit_id field (bank builder keys off it, expects filename==kit_id). Both must agree on a rename.
+**Database changes:** None (data files only).
+**Tests added/updated:** test_setting_name_banks.gd repointed aryamark->arjungs. No new tests (rename is name-only; Phase 4e adds emergence tests).
+**Known issues:**
+- Cosmetic: a few conlang banks_patterns still embed an old demonym in sample unit/ship names (e.g. "the Hari of Aryamark" in the arjungs bank) — left as-is to avoid corrupting homeland/toponym fields via a blanket replace; polish in a later narrative pass (kits' _generated note already flags "refine narratively").
+- Toponyms (land names) preserved unchanged across the people-rename; some still echo the old people-name (Serica for lijian) — intentional (land != people); revisit only if desired.
+**Next session should:**
+- Naming workstream #3: spec into gdd-hybrid-conlang-fusion.md the stratified deity usage (Conquest: temples+nobles=conqueror deity-names, shrines+commoners=conquered; Peer/Confed=fuse via the sound-laws — a RUNTIME/materialization feature) + the Conquest MERGE-GATING (clan-conquers-civ only; the static kits assume the clan is the conqueror, so civ-over-clan must displace, not merge).
+- Then Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + CultureCatalogLoader accessor; merge-vs-displace roll growing HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ).
+**Commits:** 68f0da3 (naming #2: rename all 54 hybrids).
+
+
+## Session 2026-06-30 — Naming workstream #3: deity stratification + Conquest merge-gating (GDD spec)
+
+**Task:** Spec the stratified deity usage + the Conquest merge-gating into gdd-hybrid-conlang-fusion.md (naming workstream #3; sequenced before Phase 4c).
+**Model used:** Opus 4.8.
+**Completed:**
+- gdd-hybrid-conlang-fusion.md §6 (NEW) + §7 (2 open questions): the deity-usage + merge-gating spec. gdd-culture-emergence-and-territory.md §3.3 gets the gating rule cross-referenced at the merge-vs-displace branch.
+- KEY FINDING (verified against the data): every hybrid conlang religion.sample_deity_renames already carries TWO deity morphs per Agrippan canon-name (one per parent family), written "PRIMARY (Lang. SECONDARY)". PRIMARY = the linguistic backbone (blend.lean / inherits[0]) — a LINGUISTIC axis, DECOUPLED from the religious conqueror. So deity stratification needs NO data change, only runtime routing.
+- Conquest stratification (§6.2): temples + Ruler/Noble NPCs -> the CONQUEROR's morph; shrines + commoner/peasant NPCs -> the CONQUERED's morph. Route by parent-FAMILY (conqueror = the clan), NOT by primary/secondary slot. Checked all 24: the 16 Germanic/Celtic conquests have conqueror=primary, but the 8 Wendaki conquests keep the settled civ as their linguistic backbone (a nomad conqueror adopting the administrative tongue), so their conqueror (Wendaki) sits in the SECONDARY morph — hence route by family, not slot.
+- Peer/Confed fusion (§6.3): no conqueror -> the primary (backbone-fused) morph used uniformly; it is already the canon-name reflexed through the fused phonology (the "hybridize via the conlang sound-laws" result Jedidiah asked for).
+- Merge-gating (§6.4 + emergence §3.3): clan x civ merges ONLY when the CLAN wins (-> clan-over-civ Conquest hybrid); civ-over-clan DISPLACES (no merge); civ x civ (Peer) + clan x clan (Confed) are SYMMETRIC (no gating). One archetype-level gate — conqueror derived from civ_or_clan (the clan parent); no new kit field, no per-hybrid flag.
+**Decisions made:**
+- Decoupled the LINGUISTIC backbone (which tongue's phonology dominates the lexicon) from the RELIGIOUS conqueror (who owns the temples). This resolves the Wendaki-conquest "inversion" (civ backbone but clan conqueror) WITHOUT re-authoring 8 lexicons, and is historically apt (Yuan/Qing/post-Rome).
+- Merge-gating is archetype-level, not per-hybrid, because all 24 Conquest kits uniformly encode clan=conqueror (the naming pass enforced this).
+**Interfaces defined or changed:**
+- Runtime contract (future): the deity router selects the morph tagged with the CLAN family for temples/nobles and the CIV family for shrines/commoners (Conquest); the primary morph uniformly (Peer/Confed). The Phase-4c merge-vs-displace roll gates clan x civ to clan-winner-only.
+- Noted data-shape refinement (deferred to materialization): split the per-deity "Primary (Lang. Secondary)" string into {family: morph} for clean family-keyed lookup.
+**Database changes:** None.
+**Tests added/updated:** None (GDD spec only; no code/data touched).
+**Known issues:**
+- Deity-morph data shape is parse-y (one string per deity); the clean {family: morph} split is deferred to the NPC/temple/shrine materialization pass (§7 open Q).
+**Next session should:**
+- Phase 4c: load-time parent-pair->hybrid lookup (scan culture_synthesis_parents) + a CultureCatalogLoader accessor; merge-vs-displace roll in _resolve_contest / _phase_expansion between two distinct human BASE cultures -> grow HYB(A,B) substrate weight (per-pair lock; Conquest gated clan-over-civ per §6.4 / emergence §3.3).
+**Commits:** 3381462 (naming #3 GDD spec).
+
+
+## Session 2026-06-30 — Phase 4c: hybrid emergence border merge (substrate)
+
+**Task:** Implement Phase 4c — the runtime border merge that emerges first-order hybrids into the culture substrate (load-time parent-pair->hybrid lookup + _phase_hybridization). Design per gdd-culture-emergence §3.3/§3.6 + gdd-hybrid-conlang-fusion §6.4.
+**Model used:** Opus 4.8.
+**Completed:**
+- CultureCatalogLoader: hybrid_for_parents(a,b) — load-time, cached, order-independent parent-pair->hybrid_id lookup (scans culture_class=="hybrid" records' culture_synthesis_parents); + culture_synthesis_parents(record) accessor; clear_cache() resets the pair cache; culture_class doc updated (base|hybrid|member).
+- CultureSeeder: eagerly builds instances for all 55 hybrid catalog records (seed-EXCLUDED as polities, present for lookup per §3.6; deterministic per-culture RNG stream, no perturbation to seeded jitter). Added culture_class + language_family to every _jitter_instance.
+- HistorySimulator._phase_hybridization(tick) — scans substrate SEAMS (a land hex where two DISTINCT human BASE cultures each hold >= hybrid_seam_threshold); a per-BASE-PAIR merge-vs-displace decision (locked once; tick-independent draw), gated to SAME-CLASS pairs (civ x civ Peer, clan x clan Confederated); on merge grows HYB(A,B) via _lerp_toward (sum-preserving). SUBSTRATE ONLY — no polity flip; assimilation/expansion/diffusion untouched (minimal calibration blast-radius). Hooked after _phase_substrate in BOTH tick paths. Helpers: _top_two_bases, _is_human_base, _civ_or_clan_of, _decide_merge, _shares_language_family, _family_set. State: _merge_decisions.
+- SimConstants: hybrid_seam_threshold=0.2, hybrid_merge_base_p=0.25, hybrid_merge_family_bonus=1.6, hybrid_merge_rate=0.08 (all §4c PROVISIONAL).
+- tests/test_setting_hybridization.gd (19 checks; registered — 4 edits: tscn ext_resource+node, runner @onready+run-loop): lookup order-independence + Confed/Conquest resolution + misses; _top_two_bases picks bases over hybrids; shared-language-family; merge grows hybrid + shrinks both parents + sum=1; Conquest pair skipped at a border; below-threshold no-merge; displace/lock/determinism.
+**Decisions made:**
+- 4c SCOPE = SAME-CLASS peaceful-border merges only (Peer + Confederated); Conquest (clan x civ) emerges via §4d conquest (a peaceful border lacks the conqueror-over-subject the Conquest kit models, and §6.4's clan-over-civ gate needs a clear winner). Jedidiah-chosen (AskUserQuestion).
+- Merge probability is PROVISIONAL: base_p x shared-language-family, one tick-INDEPENDENT per-pair draw (a stable property of seed+pair, revealed on first contact). Parity + alignment drivers (§3.3) deferred to §4e calibration.
+- Hybrid instances built EAGERLY at seed (all 55) — simplest + deterministic, avoids lazy campaign-seed threading; inert until a merge grows the weight.
+- Substrate-only, no assimilation change (4c isolated for calibration safety); the hybrid reaches a small seam equilibrium under assimilation counter-pressure — domination/persistence is §4d.
+**Interfaces defined or changed:**
+- CultureCatalogLoader.hybrid_for_parents(a: String, b: String) -> String; .culture_synthesis_parents(record) -> Array.
+- Culture INSTANCE now carries culture_class + language_family (added in CultureSeeder._jitter_instance).
+- HistorySimulator._phase_hybridization(tick); _merge_decisions dict (pair-key "a|b" -> "merge"/"displace", canonical a<b); RNG stream tag "hybridize_decide" (tick 0, key=pair).
+- SimConstants.hybrid_seam_threshold / hybrid_merge_base_p / hybrid_merge_family_bonus / hybrid_merge_rate.
+**Database changes:** None (4c is in-memory substrate; persistence is §4d).
+**Tests added/updated:** test_setting_hybridization.gd (19 checks, new, registered). Suite 478/16 on two consecutive runs (477 baseline + this suite; the 16 are pre-existing UI/combat/flaky failures — none culture-related). SettingStage3 now bounds-checks the 55 hybrid instances too (217->382 checks, all green); the "no hybrid is seeded" invariant (Stage3) still passes.
+**Known issues:**
+- The hybrid seam-substrate reaches only a small equilibrium under assimilation counter-pressure (expected for 4c); it becomes dominant/persistent only once §4d flips the polity + retargets assimilation.
+- Merge probability drivers are minimal (base x family); parity/alignment + prevalence calibration are §4e.
+**Next session should:**
+- Phase 4d: conquest merge + persistence. On conquest (a base conquers a distinct base), roll merge-vs-displace with the §6.4 gate (clan x civ -> Conquest hybrid ONLY when the clan wins; civ-over-clan displaces; civ x civ / clan x clan symmetric); when a polity's territory goes dominantly hybrid, flip its culture_id to the hybrid + persist culture_synthesis_parents to setting_polities (a migration). Then 4e: emergence tests + calibration (parity/alignment drivers, prevalence via calib_sweep, baseline-neutral).
+**Commits:** ce86099 (Phase 4c).
+
+
+## Session 2026-06-30 — Phase 4d: hybrid emergence conquest merge + persistence
+
+**Task:** Phase 4d — the CONQUEST-trigger hybrid merge (§6.4-gated) + the finalize relabel that makes a realm's people become the hybrid, persisted to setting_polities.
+**Model used:** Opus 4.8.
+**Completed:**
+- CONQUEST merge: `HistorySimulator._assimilate_held_hexes` retargeted — on a conqueror's held hex carrying a foreign BASE substrate, `_conquest_merge_target(owner, subject)` returns the hybrid to assimilate toward INSTEAD of the owner (conquered/contested zones become the hybrid). §6.4 gate: clan×civ merges ONLY clan-over-civ (owner=clan); civ-over-clan + unknown pairs displace (assimilate toward owner); same-class symmetric. Reuses the §4c per-pair lock (`_merge_decisions`) — a pair that border-merged (§4c) and one that conquest-merges resolve to the SAME hybrid/decision. Alignment still assimilates toward the realm's own alignment.
+- FINALIZE relabel (Jedidiah via AskUserQuestion — "relabel at finalize"): `_finalize_hybrid_identities()` (first line of `_finalize`, before serialize/handoff) — a realm whose POPULATED substrate (`_dominant_populated_culture`, mass-weighted) is dominantly a HYBRID at >= `hybrid_adopt_min_share`=0.5 gets culture_id relabeled to that hybrid + `culture_synthesis_parents=[base_a,base_b]` recorded; base realms carry []. Emits a "cultural_shift"/"hybrid_emerged" event. NO mid-sim identity flip — the sim runs on base ids; this is a present-day handoff relabel (calibration-safe).
+- Persistence: migration 179 (`ALTER TABLE setting_polities ADD COLUMN culture_synthesis_parents TEXT NOT NULL DEFAULT '[]'`; auto-discovered from db/migrations/), schema.sql column, `SettingRepository.POLITY_COLUMNS` += culture_synthesis_parents (auto-hashed by setting_dataset_hasher, which keys on POLITY_COLUMNS), `_polity_rows()` emits the JSON field.
+- SimConstants: `hybrid_adopt_min_share`=0.5 (§4d PROVISIONAL).
+- **FIX (caught in verification):** adding a column to `SettingRepository.POLITY_COLUMNS` requires EVERY `save_polities` row-builder to carry it — `_polity_rows()` (sim output) AND the seeder's `_make_polity`/`_make_beastman_polity` (the tick-0 SEED snapshot persisted at `setting_generator.gd:152`). I initially only added it to `_polity_rows`; the seed builders lacked it, so `_bulk_insert` (which fails loudly on a missing key) rejected the seed save → `generate()` returned false → a full world-gen cascade (100% wilderness, 0 polities, regions unnamed, ~20 suites red). Added `"culture_synthesis_parents": "[]"` to both seed builders (seed polities are always base cultures). Restored 478/16.
+- test_setting_hybridization.gd extended (§4d): conquest-merge gating (clan-over-civ merges, civ-over-clan gated-out, displace-lock), same-class symmetric conquest, `_dominant_populated_culture` mass-weighting, finalize relabel (hybrid-dominant -> relabeled + parents) + base-dominant kept (parents []).
+**Decisions made:**
+- Persistence = FINALIZE RELABEL (Jedidiah, AskUserQuestion): the sim runs on base ids (no mid-sim polity-identity flip, per the standing ruling); only the SUBSTRATE goes hybrid mid-sim; at finalize, hybrid-dominant realms are relabeled for the present-day map + naming. Calibration-safe (a handoff fact, not a sim-dynamics flip).
+- Conquest merge reuses the §4c per-pair lock (unified: a base-pair merges/displaces consistently across border + conquest); the §6.4 directional gate (clan-over-civ) is applied at the conquest site (owner = conqueror) BEFORE consulting the lock.
+- The retarget also converts same-class PEACEFUL-border owned hexes (owned mixed substrate), not just conquered ones — ACCEPTED: a stable border producing a hybrid people is realistic + lets Peer/Confed realms actually become hybrids (enabling the relabel). §4c's `_phase_hybridization` remains the (weaker, assimilation-eroded) seam seeder incl. the unowned buffer.
+**Interfaces defined or changed:**
+- setting_polities.culture_synthesis_parents (JSON [base_a,base_b] or []); migration 179; `SettingRepository.POLITY_COLUMNS` += it; sim_polities row field.
+- `HistorySimulator._conquest_merge_target(owner,subject)->String`; `_dominant_populated_culture(pol)->{cid,share}`; `_finalize_hybrid_identities()`.
+- `SimConstants.hybrid_adopt_min_share`.
+**Database changes:** migration 179 (setting_polities.culture_synthesis_parents; non-destructive ADD COLUMN default '[]').
+**Tests added/updated:** test_setting_hybridization.gd extended with §4d coverage (30 checks total: 4c + 4d). Suite **478/16** on two consecutive runs = the pre-4d baseline + the extended suite, ZERO new failures. The 16 are pre-existing UI/combat/flaky failures + a pre-existing `koppen` hex-fixture — none culture/4d-related. (Determinism hash carries the new POLITY_COLUMNS column automatically via setting_dataset_hasher.)
+**Known issues:**
+- The retarget converts owned mixed substrate broadly (border + conquest); prevalence is gated only by the per-pair merge probability (base x family). Full prevalence / parity / alignment calibration is §4e.
+**Next session should:**
+- Phase 4e: hybrid-emergence integration test (a full generated-map run producing >= 1 hybrid realm, deterministic) + the calibration pass — add the parity/alignment merge drivers (§3.3), tune prevalence via `tools/calib_sweep.tscn`, and verify wilderness / realm-count neutrality vs the §17 targets.
+**Commits:** d01279c (Phase 4d).
+
+## Session 2026-07-01 - Watchable history replay: animate culture + territory layers, seed labels
+
+**Task:** The Screen C history-sim replay animated only political ownership; the Culture and Territory (civ/borderlands/wilderness) layers showed the present-day end-state, so cultures spreading and the civilization frontier advancing were not watchable epoch by epoch. Jedidiah needs those visible to troubleshoot how the runtime maps turn out, plus a culture-seed label ("Vallican_01") per polity so seed cultures are legible during the sim before they earn a proper name.
+
+**Model used:** Opus 4.8, implementation + design.
+
+**Completed:**
+- Migration 180 (db/migrations/180_setting_replay_culture_territory.sql): ADD COLUMN culture_by_hex, territory_by_hex to setting_replay_frames; seed_label to setting_replay_palette. Non-destructive '' defaults; schema.sql updated to match.
+- SettingRepository: REPLAY_FRAME_COLUMNS = [tick, owner_by_hex, culture_by_hex, territory_by_hex]; REPLAY_PALETTE_COLUMNS = [polity_id, color, seed_label]. (Determinism hasher keys on these constants, so the new columns hash automatically; determinism stays reproducible since the data is deterministic.)
+- HistorySimulator: generalized _rle_owners into _rle_field(value_of: Callable) (shared RLE over canonical hex order); _capture_replay_frame now captures owner_by_hex, culture_by_hex (_dominant_key of _culture_w), territory_by_hex (territory_class). _build_palette computes seed_label "<CultureName>_NN" via per-culture ordinal in sorted-polity-id order; _seed_culture_name capitalizes the culture id.
+- ReplayFrameDecoder.decode_value_map: keeps EVERY hex incl. '' entries (frame-authoritative), vs decode_owner_map which skips ''.
+- political_map_view.gd: _culture_override / _territory_override maps + show_cultures() / show_territories() (cleared by bind); _culture_of() / _territory_of() read frame override when loaded else present-day; set_seed_labels() + seed_culture_colors(ids) (deterministic union pre-seed); frame-aware _replay_tooltip + _owner_label (seed label first, eventual name in parens).
+- screen_generate_replay.gd: _show_frame pushes per-frame culture + territory; begin_replay builds seed_labels from palette + pre-seeds culture colours from _all_frame_cultures() union; _on_mode_selected keeps replay_mode active for Political/Culture/Territory (Biome/Elevation stay present-day terrain); updated layer-toggle comments/tooltips.
+
+**Decisions made:**
+- Seed label rides on setting_replay_palette (already enumerates every frame owner, including dead polities kept in _polities) rather than setting_fallen_polities (selective) or setting_polities (alive-only). Avoids touching FALLEN_POLITY_COLUMNS / the fallen hash.
+- Culture/territory decode is frame-authoritative (include '' entries); the view must not fall back to present-day for a "none" hex - otherwise an extinct culture would show its end-state.
+- Culture colours pre-seeded from the union across all frames so a culture that spreads then dies still draws in its own hue on rewind.
+- Biome/Elevation deliberately left present-day (terrain never changes across the history).
+
+**Interfaces defined or changed:**
+- setting_replay_frames: +culture_by_hex TEXT, +territory_by_hex TEXT (RLE, canonical hex order, ''=none).
+- setting_replay_palette: +seed_label TEXT ("Vallican_01").
+- ReplayFrameDecoder.decode_value_map(rle, ordered_hexes) -> {Vector2i: value} (keeps '').
+- HistorySimulator._rle_field(value_of: Callable) -> String.
+- political_map_view: show_cultures(map), show_territories(map), set_seed_labels(dict), seed_culture_colors(ids).
+
+**Database changes:** Migration 180 (3 ADD COLUMN). No data migration needed for existing campaigns (defaults ''); the columns are repopulated on the next generate().
+
+**Tests added/updated:** test_campaign_creation_seams.gd - decode_value_map unit check (keeps '' hex); live checks that frames carry culture_by_hex/territory_by_hex, territory values are valid ACKS classes, owned hexes carry a dominant culture, and every palette polity has a "<Culture>_NN" seed label. Full headless suite 478 passed / 16 failed on two consecutive runs = exact prior baseline (the 16 are unrelated pre-existing failures: proficiency popup, combat LOS/ZoC, party split/merge, armor, encounters). CampaignCreationSeamsTests green both runs (35 checks).
+
+**Decisions/conventions:** Added coding_conventions.md section 88 (watchable replay: shared _rle_field, decode_value_map frame-authority, union culture colours, palette-carried seed label). Supersedes the section 80 "replay frames store ownership only" note.
+
+**Known issues:**
+- In-engine visual verification (godot-ai MCP project_run + scrub the replay) not yet done this session - logic + headless tests only. Recommend a smoke pass: generate a setting, open Screen C, scrub Culture and Territory layers, confirm they animate and the Political tooltip shows "<Culture>_NN".
+- Pre-existing "unsupported format character in operator '%'" log noise near Stage4e is NOT from this work (political_map_view isn't loaded headless; sim format strings are valid %s/%02d and all setting-gen suites pass).
+
+**Next session should:**
+- In-engine smoke verification of the animated Culture/Territory layers + seed-label tooltip via godot-ai MCP.
+- Optional: consider a per-frame culture/territory LEGEND or on-map count caption on Screen C (currently only the realms-count caption animates).
+
+
+## Session 2026-06-30 — Phase 4e: hybrid-emergence calibration + integration test (CULTURE ARC COMPLETE)
+
+**Task:** Phase 4e — verify hybrids actually emerge on generated maps, calibrate prevalence, add an integration test. Closes the culture-emergence build.
+**Model used:** Opus 4.8.
+**Completed:**
+- Extended `tools/calib_sweep.gd` with hybrid-emergence metrics (hybrid_realms via culture_synthesis_parents, distinct_hybrids, hybrid_dom_hexes + diagnostics realms_hyb_plurality / max_hyb_share) — the standing harness now measures hybrid prevalence.
+- DIAGNOSED the emergence chain (sweeps + targeted HYBDBG debug, since removed): hybrid SUBSTRATE emerges robustly; whole hybrid REALMS emerge when a realm ADOPTS its large, prestigious emergent hybrid via §7.4f GO-NATIVE (the "reuse go-native" path from Jedidiah's original ruling) — enabled because the seeder injects the 55 hybrid instances (Phase 4c), making them go-native-eligible.
+- FIXED the recording gap: go-native sets culture_id but NOT culture_synthesis_parents, and `_finalize_hybrid_identities` skipped realms already == their dominant. Added **Case 1** (a realm whose culture_id is ALREADY a hybrid records its parent bases at finalize) alongside **Case 2** (a base-owned realm whose populated substrate is dominantly a hybrid is relabeled). So BOTH go-native and substrate-dominance hybrid realms persist their parents.
+- DECISION (Jedidiah AskUserQuestion): "embrace go-native + record" over "finalize-only" — go-native adopting the emergent hybrid IS the realm-emergence mechanism (matches the original "reuse go-native" ruling; a ruling class adopts the blended identity of its people). Reverted the interim go-native-excludes-hybrids guard.
+- CALIBRATED `hybrid_merge_base_p` 0.25 -> 0.5 (Large×6 sweeps): 0.5 gives ~0.67 hybrid realms/map (3 on strong-contact seed 1000, 0 on isolated seeds) + ~26 hybrid-dominant substrate hexes/map, §17-NEUTRAL (wild 57.3 vs 58 baseline; realms 28.5 vs 30.5). 0.7 was hotter (1.83 realms but a seed-1000 runaway at 239 hexes ~= half the map); 0.5 tames the variance. `hybrid_adopt_min_share` 0.5 -> 0.35 (Case 2 plurality not majority; Case 1/go-native dominates in practice). All PROVISIONAL — bump base_p toward 0.7 for more prominent hybrids.
+- `test_setting_hybridization.gd` + `test_hybrid_emerges_on_generated_map`: a full large seed-1000 generation asserting hybrid substrate hexes > 0 AND >= 1 recorded hybrid realm (the whole 4c->4d->4e chain end to end).
+**Decisions made:**
+- Hybrids manifest at TWO levels: (1) SUBSTRATE / regions (conquest+border zones become dominantly a hybrid -> Layer-5 names them with the 55 hybrid name banks) — the primary, robust manifestation; (2) whole REALMS via go-native adoption — occasional, contact-dependent. Both realistic.
+- The §3.3 parity/alignment merge drivers stay DEFERRED: the per-pair-locked decision + the go-native developed-gradient already yield a sensible prevalence, and parity/alignment are contextual (don't fit the per-pair lock cleanly). Intentional simplification, not a gap.
+**Interfaces defined or changed:**
+- HistorySimulator._finalize_hybrid_identities: Case 1 records culture_synthesis_parents for go-native'd hybrid realms; Case 2 relabels substrate-dominant base realms. `_phase_go_native` may now adopt hybrid subjects (present in _culture_instances since Phase 4c).
+- SimConstants.hybrid_merge_base_p=0.5, hybrid_adopt_min_share=0.35 (both PROVISIONAL).
+- calib_sweep.gd hybrid metrics (kept for future tuning).
+**Database changes:** None (4e is calibration + test; the culture_synthesis_parents migration 179 landed in 4d).
+**Tests added/updated:** test_setting_hybridization.gd += the full-generated-map integration test (33 checks total). Suite **478/16** on two consecutive runs = baseline + this suite, 0 new failures; SettingCalibration green (§17-neutral), SettingGenerationDataFreshness green (determinism holds).
+**Known issues:**
+- Hybrid REALMS are contact-dependent (some maps 0) — inherent to procedural geography; substrate/region hybrids appear on ~half the maps. base_p is the prevalence knob.
+- In-engine visual verification (hybrid regions NAMED by Layer 5 + shown on the political map) not yet done — recommend an eyeball pass.
+**Next session should:**
+- The culture-emergence build (base/hybrid, territory gating, deforestation, expansion, hybrid emergence 4a-4e) is COMPLETE. Optional: playtest-tune base_p; in-engine verify hybrid region naming/rendering. Phase 5 (clanhold migration / Völkerwanderung) remains DEFERRED (design sketch only).
+**Commits:** 6520eea (Phase 4e).
+
+## Session 2026-07-01 — Culture rebalance: hybrid reabsorption fix (Peer-hybrid realms)
+
+**Task:** Rebalance hybrid emergence per playtest feedback — Peer (civ×civ) hybrids weren't forming at whole-realm scale ("small pockets reabsorbed"). User directive: "Boost Peer-hybrid vigor."
+**Model used:** Opus 4.8 (diagnosis + implementation + calibration).
+**Completed:**
+- Proved both "vigor" levers were architecturally INERT: `_developed()` is consumed ONLY in `_phase_go_native`, which never sees a hybrid as a subject culture (`_subject_culture_share` returns the dominant non-owner, always a base; a thin hybrid seam is never the plurality). Verified by cranking a go-native hybrid bonus to 5.0 → BYTE-IDENTICAL output. Removed both the go-native gradient bonus (sim_constants `hybrid_go_native_bonus`) AND the seeder's `HYBRID_VIGOR` dev bump. The prior round's 2.88 hybrid-realms came from the race-gate + qinzhao levers, NOT "vigor."
+- Found + fixed the REAL bug (the "pockets reabsorbed" report): in `_assimilate_held_hexes`, once a held hex's dominant non-owner culture is itself a hybrid, `_conquest_merge_target(base, hybrid)` returns "" (a hybrid is not a base), so assimilation reverts the hex to the owner BASE and ERODES the emergent hybrid before it reaches whole-realm scale. Fix: when the dominant-other is a CIV hybrid of the owner's own base, keep driving the hex toward that hybrid (`culture_target = subj`) instead of reverting. Peer (and civ-Conquest) hybrids now consolidate to realms. Added `_is_hybrid(cid)`, `_hybrid_has_parent(hyb, base)`; `_jitter_instance` carries `culture_synthesis_parents` on the instance (no per-tick catalog lookup).
+- CIV-GATED the retarget (`_civ_or_clan_of(subj) == "civ"`): a CLAN hybrid (Confederated clan×clan, or clan-classified Conquest) must NOT consolidate into a realm — clan cultures are clanholds, which clamp their hexes to wilderness density and seat NO urban settlements (§5.3). Ungated, clan hybrids (e.g. samanumu = thiodons×wendaki) took over realms and erased urban settlements → 0-settlement worlds → materialization break. Clan hybrids stay substrate (their §4c/§4d role); only civ fusions grow to whole-realm scale.
+- Calibrated `hybrid_merge_base_p` 0.5 → 0.2: the reabsorption fix made hybrids viable at realm scale, so far fewer border-merges are now needed. Large×8: ~6.4 hybrid realms/large map, §17 in band (wild 52.1%, civ 73.9%), distinct ~2.1; Peer/civ hybrid ids (xianjin, shangteca, kinshungs, wallans) now appear as REALM cultures. (Ungated retarget @ base_p=0.5 overshot to 15 realms + §17 broke to wild 43%.)
+- Hardened `test_setting_materialization` (Jedidiah-approved via AskUserQuestion "keep fix, harden test"): 3 assertions assumed ≥1 URBAN settlement, but a tiny/short world can materialize all-Class-VI (realm-head / County seats only — the test's own line-1003 comment anticipates this). Line 559 → `placed+nc>0` (≥1 settlement of ANY kind); the copy-from-`setting_settlements` check gated on `placed>0`; the `history_context`-keys check now samples an entrance WITH provenance (also DE-FLAKES the old `LIMIT 1`, which could land on a `{}` County seat even when urban settlements existed). Full coverage preserved whenever urban settlements emerge.
+**Decisions made:**
+- "Vigor" (the `developed` scalar) is NOT a usable lever for hybrid REALM formation — the mechanism is substrate accumulation + finalize relabel, and base-assimilation REABSORPTION was the blocker. (§4e's prior "hybrid realms emerge via go-native" narrative was based on an inert path.)
+- Only CIV hybrids consolidate to realms; clan hybrids stay substrate (they are clanholds — dense-realm formation is contradictory).
+- Test fragility (a fixed marginal micro-seed) is handled by hardening the test to its own stated all-Class-VI invariant, NOT by constraining the sim (large maps stay healthy).
+**Interfaces defined or changed:**
+- `HistorySimulator._is_hybrid(cid) -> bool`, `_hybrid_has_parent(hyb: String, base_cid: String) -> bool`.
+- Culture instance dict now carries `culture_synthesis_parents: Array` (`CultureSeeder._jitter_instance`).
+- `SimConstants`: removed `hybrid_go_native_bonus`; `hybrid_merge_base_p` 0.5 → 0.2.
+**Database changes:** none.
+**Tests added/updated:**
+- `test_setting_materialization.gd`: hardened 3 assertions for the all-Class-VI world + de-flaked the history_context sampling. Suite = 478/16 on run 2 (warm), `SettingMaterializationTests: all tests passed (214 checks)` — net-zero new failures vs the 478/16 baseline (confirmed by git-stash isolation: my changes stashed → identical 478/16; the ONLY suite my changes flipped was materialization, now hardened).
+**Known issues:**
+- Any culture-model change perturbs the deterministic sim trajectory; the materialization test's marginal seed (424242/small/short) now yields an all-Class-VI world — handled via the (approved) test hardening.
+- Foreign parallel-editor work is in the working tree (replay culture/territory layers: setting_repository.gd REPLAY_* columns, migration 180, replay_frame_decoder.gd, screen_generate_replay.gd, political_map_view.gd, test_campaign_creation_seams.gd, schema.sql, wilderness assets/shader/GDD) — committed the rebalance via EXPLICIT pathspec only; foreign changes left uncommitted. Baseline 16 failures (clanhold_annex, stamp_powers/language, settlement_kind schema, GeoField height, combat LOS/ZoC, etc.) are pre-existing/foreign, present with my changes stashed too.
+- Elf "fading" reassessment still deferred (separate from this rebalance).
+**Next session should:**
+- (If desired) tune hybrid prevalence via `hybrid_merge_base_p` (0.2 → higher for more, lower for fewer) — currently ~6.4 realms/large map.
+- P5 clanhold migration (still deferred).
+
+
+## Session 2026-07-01 — Ruler AI Phase 0: StrategicDisposition/RulerProfile data layer
+
+**Task:** Phase 0 of the NPC Ruler AI per gdd-ruler-ai.md §4/§10 + gdd-npc-personality.md §8 (the handoff-ruler-ai-build.md Phase-0 prompt): the approved `ruler_dispositions` table, `StrategicDisposition`/`RulerProfile` shared types, `StrategicDispositionBuilder.build()` reproducing the §8.3 formulas verbatim, generation wiring into every NPC-ruler creation path, a one-shot backfill, the golden unit test, and persistence round-trips.
+**Model used:** Fable 5 (ultracode: a 5-scout understand workflow mapped the contracts pre-build; a 4-lens adversarial verify workflow refuted the implementation post-build).
+**Completed:**
+- **Migration 181 `ruler_dispositions`** (PK `character_id` REFERENCES characters; `campaign_id` NOT NULL; motivation_primary/secondary; the 7 strategic-axis INTEGER snapshot; the 8 REAL weights; `crisis_response` TEXT CHECK(aggressive/defensive/diplomatic/cautious); `aggression_toward`/`alliance_preference` JSON TEXT DEFAULT '{}'; created_at/updated_at; campaign index). Appended identically to `db/schema.sql`. Registered in `CampaignRepository._SCOPE_DIRECT_CAMPAIGN` — the setting-only sites (`SettingRepository._DATA_TABLES`, `SettingDatasetHasher._table_specs()`) are deliberately NOT applicable to a runtime table (conventions §89).
+- **`engine/shared_types/strategic_disposition.gd`** (`class_name StrategicDisposition`): the full §8.2 struct (motivations, 7-axis snapshot, 8 weights, crisis_response, relational dicts) + `weights()`/`axis_snapshot()`/`to_profile()` + from_dict/to_dict; `from_dict` accepts both the in-memory dict shape and the DB row shape (`_coerce_realm_map` parses the serialized JSON dicts; malformed shapes → {} and non-numeric values are skipped — hardened per the verify pass so "never errors" holds even for hand-corrupted TEXT).
+- **`engine/shared_types/ruler_profile.gd`** (`class_name RulerProfile`): the legacy weight-vector view (8 weights + crisis_response + the two dicts), `from_disposition()` with duplicated dicts (mutation-isolated), never persisted separately.
+- **`engine/subsystems/realm_ai/strategic_disposition_builder.gd`** (`class_name StrategicDispositionBuilder`, all static): `build(personality, alignment)` implements §8.3 verbatim — `_u`/`_inv`/`_mot`/`_clamp01`/`_orthodoxy_term` (float math throughout; no integer-division truncation) + the §8.4 crisis quadrants. Null/Tier-C personality degrades to baseline-5 axes + mot()=0 via `NpcPersonality.axis()`. `seed_relational_dicts(d, realm_id)` seeds `aggression_toward` from realm_relations bands (hostile 0.8 / unfriendly 0.5, PROJECT CALL) and `alliance_preference` from warm bands (cordial 0.3 / friendly 0.5 / allied 0.7, scaled by `(0.5+0.5·diplomatic_weight)·(0.5+0.5·u(self_interest))`, PROJECT CALL — dormant in v1); absent relations → empty dicts. `build_and_persist_for_character(id)` (refuses PCs) + idempotent `backfill_campaign(campaign_id)` (domain owners ∪ realm heads, living NPCs only, skips existing rows).
+- **`engine/subsystems/realm_ai/ruler_disposition_repository.gd`** (`class_name RulerDispositionRepository`, all static): save (INSERT OR REPLACE upsert) / get (null when absent) / has / delete / list_ruler_ids_for_campaign.
+- **Wiring:** `NpcRulerGenerator.generate_for_domain` builds+persists the disposition after reassign_domain_owner (non-fatal on failure); `stock_rulers_and_tribute` runs `backfill_campaign` (summary key `dispositions_backfilled`); `SettingMaterializer._build_ruler` wires BOTH the classed and beastman paths (beastman = no personality JSON → neutral-baseline disposition; realm row doesn't exist yet there so relational dicts stay empty by design).
+- **EventBus:** declared the 4 approved §11 signals (`ruler_action_taken`, `ruler_strategy_reassessed`, `ruler_activated_for_lod`, `ruler_deactivated_for_lod`) per the handoff's "Phase 0 or first use"; emitters land in Phases 2-4.
+**Decisions made:**
+- `motivation_primary/secondary` columns added to the table beyond the §10 field list — the §8.2 struct includes them and a faithful DB round-trip needs them without re-reading the personality JSON.
+- Backfill call sites = the two bootstrap paths (`stock_rulers_and_tribute`, plus every creation path writing eagerly); NO session-load hook — Phase 3's LOD promotion adds the lazy "build if not cached" ensure per gdd-ruler-ai.md §8.2, and a session-runner hook now would be restructured by Phase 2 anyway. Saved campaigns predating 181 get rows at next bootstrap/backfill/promotion.
+- PCs are refused by `build_and_persist_for_character` (push_warning, no row) — the player's domain is never planner-driven.
+- Dead rulers (`is_dead=1`) are excluded from backfill.
+- The §8.3 revenge bump on `aggression_toward` is DORMANT — the "revenge subject" needs npc-personality §5 relationships (deferred subsystem); documented in the builder header.
+- Alignment casing: DB stores lowercase; builder normalizes via `PersonalityAxes.normalize_alignment` so the GDD's "Lawful" and the DB's "lawful" both work; unknown → neutral.
+**Interfaces defined or changed:**
+- `StrategicDispositionBuilder.build(personality: NpcPersonality, alignment: String) -> StrategicDisposition` (static, pure); `.seed_relational_dicts(d, realm_id)`; `.build_and_persist_for_character(character_id) -> StrategicDisposition|null`; `.backfill_campaign(campaign_id) -> int`.
+- `RulerDispositionRepository.save_disposition(campaign_id, character_id, d) -> bool` / `.get_disposition(character_id) -> StrategicDisposition|null` / `.has_disposition(id)` / `.delete_disposition(id)` / `.list_ruler_ids_for_campaign(campaign_id) -> Array`.
+- `StrategicDisposition.weights() -> Dictionary`, `.axis_snapshot() -> Dictionary`, `.to_profile() -> RulerProfile`, `WEIGHT_KEYS`, `CRISIS_RESPONSES`; `RulerProfile.from_disposition(d)`.
+- `NpcRulerGenerator.stock_rulers_and_tribute` summary gained `dispositions_backfilled: int`.
+- EventBus: `ruler_action_taken(ruler_npc_id, domain_id, action_id, outcome)`, `ruler_strategy_reassessed(ruler_npc_id, trigger, changes)`, `ruler_activated_for_lod(ruler_npc_id)`, `ruler_deactivated_for_lod(ruler_npc_id)`.
+**Database changes:**
+- Migration 181 `ruler_dispositions` + `idx_ruler_dispositions_campaign` (see Completed). schema.sql updated in kind. Non-destructive; the table is a regenerable cache of the builder over characters.personality + characters.alignment.
+**Tests added/updated:**
+- `tests/test_strategic_disposition.gd` (suite id 482, 4-edit registration, 15 tests / 86 checks): the §8.3 GOLDEN worked example (Lawful baron → military 0.846, oppression 0.801, diplomatic 0.078, tol 0.0005, passed as "Lawful" to prove normalization) + hand-derived assertions for the baron's other five weights; §8.4 crisis quadrants incl. 5/6 boundary; orthodoxy branches (lawful/chaotic/neutral/unknown-degrades-to-neutral); null-personality baseline; clamp01 floor; Tier-C unsampled default; determinism; to_dict/from_dict (incl. DB-row shape + invalid crisis_response degrade); RulerProfile view (+ dict mutation isolation); DB round-trip (save/get/upsert/list/delete, lossless via JSON compare); build_and_persist (golden persisted + no-personality baseline); PC refusal; backfill (==2 exact: domain owner + realm head; PC/bystander/dead excluded; idempotent re-run ==0); seed_relational_dicts (hostile→0.8, allied→scaled, neutral→nothing, empty-realm degrade).
+- **Suite: run2 = 479 passed / 16 failed vs the 478/16 baseline — the +1 is this suite; the 16 failure fingerprints all match the documented pre-existing carry-forwards (scheduler transition, combat LOS/ZoC/trickery, party split/merge, dungeon encounter, stamp_powers/language, CASCADE schema, GeoField). Net-zero new failures.**
+- Ultracode verification: 4 adversarial lenses (formula fidelity vs §8.3/§8.4 term-by-term incl. all 10 motivation tags vs MOTIVATION_TAGS; SQL executed verbatim against real SQLite incl. CHECK rejection + 22/22/22 column-placeholder-param audit + scope-audit consumption + multi-statement migration precedent 028; test-math hand-recomputation of every expected value; GDScript/conventions) — 0 confirmed defects.
+**Known issues:**
+- `alliance_preference`'s scale factor is an invented affine form for the GDD's loose "scaled up by diplomatic_weight and u(self_interest)" — dormant in v1, flagged PROJECT CALL in the builder; revisit when diplomacy lights up.
+- `INSERT OR REPLACE` refreshes `created_at` on rebuild, so `list_ruler_ids_for_campaign`'s "creation order" is approximate after re-derivations (no consumer depends on it).
+- Saved campaigns predating migration 181 have no disposition rows until a bootstrap/backfill/LOD-promotion runs (by design — see Decisions).
+- Foreign parallel-editor work remains uncommitted in the working tree (replay culture/territory layers, wilderness textures/shader); this session's changes are separate files + disjoint edits in shared files.
+**Next session should:**
+- **Phase 1** (handoff-ruler-ai-build.md §4): `RulerActionCatalog.available_for(...)`, register the approved composite intents (`raise_garrison`, `hold`, `defensive_resistance` stub, `manage_stronghold`), and the net-new `manage_stronghold.gd` handler (abstract value-record fast path).
+- Then Phase 2 (scorer + monthly tick + backdrop auto-stabilize; flag the domain_handlers integration [NEEDS-OPUS-REVIEW]).
+
+
+## Session 2026-07-01 — Ruler AI Phase 1: action catalog + manage_stronghold + raise_garrison
+
+**Task:** Phase 1 of the NPC Ruler AI per gdd-ruler-ai.md §5/§11 (handoff-ruler-ai-build.md §4): `RulerActionCatalog.available_for(...)`, the net-new `manage_stronghold.gd` handler (abstract build/upgrade/repair), the `raise_garrison` composite, and registration of the approved planner intents in the activity vocabulary. Same session as Phase 0 (Jedidiah: "judgment calls approved for now. Move on to the next phase.").
+**Model used:** Fable 5 (ultracode: 4-scout understand workflow → implementation → 4-lens adversarial verify → fixes → re-verified suite).
+**Completed:**
+- **`engine/subsystems/realm_ai/ruler_action_catalog.gd`** (`class_name RulerActionCatalog`, static): `available_for(ruler, domain, world_state) -> Array` of precondition-gated candidates `{action_id, base_value, weight_key, crisis_modulated, params}` per the §5 tables (all 12 rows; base values 0.45/0.35/0.20 | 0.40/0.20/0.15/0.25/0.10/0.45 | 0.50/0.40/0.45; weight keys map §5's economic/fortification/religious/oppression/military columns; crisis_modulated exactly on defensive_resistance + withstand_siege). Terminal/succession lifecycles offer nothing; `ruined_stronghold` still plans (§7.4). PROJECT-CALL constants: `INVESTMENT_TRANCHE_CP` 1,000gp (RAW 1d10 families/1,000gp granularity), `MANAGE_STRONGHOLD_MIN_TREASURY_CP` 500gp (one RAW construction-day). "At stronghold" for abstract NPC domains proxied by "domain has a completed stronghold" (documented PROJECT CALL).
+- **`engine/subsystems/activities/handlers/manage_stronghold.gd`** (`class_name ManageStrongholdHandler`) — the net-new NPC-usable construction path (§13 dependency closed). owner_character_id-keyed like administer_domain. Build/upgrade: incremental whole-gp treasury→cp_value spends toward the territory minimum (15,000/22,500/32,000gp per 6-mile hex) via `DomainTreasury.withdraw` → `update_stronghold` → `recompute_sufficiency_after_change`; creates the abstract record (DomainStocker conventions: cp_value=gp×100, shp in gp units) when none exists. Repair: ATOMIC full-construction-cost rebuild (RAW: only half of siege damage repairable during the siege; the rest rebuilds at full cost) capped at min(recorded value, territory minimum) [PROJECT CALL], then `LifecycleHandler.restore_from_ruin`; unaffordable → spends NOTHING (the 30-day ruin grace + auto-abandon is the designed failure mode). Registered in `domain_handlers_registration.gd`.
+- **`engine/subsystems/activities/handlers/raise_garrison.gd`** (`class_name RaiseGarrisonHandler`) — composite: conscripts → militia → `solicit_mercenaries` for civ/borderlands/wilderness; `levy_tribal_warriors` (flipped to `assignment_kind='garrison'`) for clanholds; every wrapped handler re-checks its own RAW gates; wrapped handlers get a CLEAN `{character_id}` state (no params_json leak). Funding trigger = `RulerActionCatalog.garrison_needs_raising`: under the universal 2gp/family minimum (+2 clanhold) OR wilderness under the 4gp/family base-morale threshold.
+- **`engine/subsystems/activities/handlers/defensive_resistance.gd`** — Phase-3 stub (returns `phase_3_pending`); registered so the id validates.
+- **`data/activities/ruler_ai_category.json`** — the 4 approved composite intents PLUS `withstand_siege` (see Decisions); planner-internal category (UI blocks hard-code their id lists, so nothing leaks to player launchers).
+- **Adversarial verify round (4 lenses) found 5 RAW-fidelity defects + 1 spec deviation + 3 hardening items — ALL FIXED before the final suite run** (see Decisions/Known issues).
+**Decisions made:**
+- **repress_population gate corrected against RAW (verify finding):** `acore_axioms_strongholds_and_domains.xml:510-516` constrains WHICH troops repress ("Militia cannot be used to repress the peasantry"), not whether repression is available while militia exist. Gate = "domain has ≥1 active NON-militia unit" (an eligible repressing force; repression requires troops per `:489`) + not already repressed this month. The GDD §5.2 precondition cell ("no militia in force") was itself the misreading — corrected in the GDD with a revision-history note, **flagged for Jedidiah review**.
+- **raise_garrison composition (GDD §5.2 deviation, documented in the GDD revision history, flagged for Jedidiah):** conscripts BEFORE militia (RAW: conscripts levy "without affecting domain morale or revenue" `daw_armies_recruitment.xml:315`; militia cost revenue+morale while called up `:429-431`); the mercenary leg runs through `solicit_mercenaries` because direct `hire_mercenaries` RAW-requires a prior successful solicitation (`ax_campaign_play.xml:566`) — the composite does everything RAW allows in one month and reports the residual honestly (offers land as `mercenary_offers_pending`); clanholds route to the existing tribal-warrior levy (militia/conscript RAW-blocked, `ax_domains_of_chaos.xml:36`). The solicit backstop also covers a clanhold with an empty tribal pool.
+- **"2/3/4 gp/family" phrasing tightened everywhere:** RAW's enforced floor is 2gp/family (+2 clanhold offset); borderlands 3gp is customary (no penalty); wilderness 4gp is a base-morale threshold — the planner treats it as the wilderness funding TARGET (PROJECT CALL), so `raise_garrison` now also triggers for a wilderness domain at 2gp/family (previously it never would while RAW bled its base morale).
+- **`withstand_siege` added to the vocabulary** (no handler until the Phase-3 siege path): the §5.3 catalog emits it, but it existed in NO activity JSON, so the §9.2 validator could never validate it — an extension of the approved §11 registration intent, noted in the GDD revision history.
+- `hold` deliberately has NO handler (§5.2 "(none)"); the Phase-2 planner resolves it without dispatch.
+- Hardening: sub-gp stronghold shortfalls read as sufficient (whole-gp spend floor) at both the catalog gate and the handler, killing a potential offer/block planner loop; dead `is_clanhold` removed from the catalog.
+**Interfaces defined or changed:**
+- `RulerActionCatalog.available_for(ruler: Dictionary, domain: Dictionary, world_state := {}) -> Array` (world_state keys: `threat_present`, `extraction_underway`, `besieged`); candidate shape `{action_id, base_value, weight_key, crisis_modulated, params}`; `RulerActionCatalog.garrison_needs_raising(garrison: Dictionary) -> bool` (public shared trigger); base-value consts + `INVESTMENT_TRANCHE_CP`/`MANAGE_STRONGHOLD_MIN_TREASURY_CP`.
+- `ManageStrongholdHandler.on_complete(state, _runner) -> Dictionary` (params: `mode` auto|build|repair, `budget_cp`); returns `{summary, mode, stronghold_id, spent_cp, value_cp_after, minimum_cp, restored_from_ruin?, blocked_reason?}`.
+- `RaiseGarrisonHandler.on_complete(state, _runner) -> Dictionary` returns `{summary, meets_minimum, at_target, solicited_mercenaries, steps, garrison_before, garrison_after}`.
+- `DefensiveResistanceHandler.on_complete` (stub, `blocked_reason: "phase_3_pending"`).
+- Activity vocabulary: `ruler_ai` category with `raise_garrison`, `hold`, `defensive_resistance`, `manage_stronghold`, `withstand_siege`; three handler registrations appended to `DomainActivityHandlersRegistration.register_all`.
+**Database changes:** none (no migration; strongholds/domains/troop_units columns reused).
+**Tests added/updated:**
+- `tests/test_ruler_action_catalog.gd` (suite id 483, 4-edit registration; 18 tests): vocabulary registration (5 ids, 3 handlers, hold/withstand_siege deliberately handler-less); baseline candidate set; investment treasury gate; the RAW-corrected repress trio (no troops → absent; militia-only → absent; militia+mercenary → OFFERED); repressed-this-month gate; train_troops gating (Manual at Arms + completed stronghold); manage_stronghold gating (treasury tranche + sufficiency + whole-gp threshold); wilderness-4gp trigger (wilderness at 2gp/family offered, civilized not); threat/besieged candidates; terminal lifecycle; manage_stronghold build-to-minimum (exact cp accounting) + partial build + already_sufficient; atomic repair restores ruin + blocked-when-broke (nothing spent, grace keeps running); raise_garrison civilized (conscripts-first, meets 2gp target, idempotent re-run) + wilderness (levy pools cap at ~2.1gp/family → solicits mercenaries) + clanhold tribal path (only tribal_warrior units, garrison-assigned); defensive_resistance stub.
+- Suite runs: pre-fix measurement run2 = 480/16; post-fix confirmation run2 = **480/16** (Phase-0 baseline 479 + this suite; the 16 failures are the documented pre-existing carry-forwards — net-zero new failures). `RulerActionCatalog: all tests passed (81 checks)`; `StrategicDisposition: all tests passed (86 checks)` (unperturbed by Phase 1).
+**Known issues:**
+- **[NEEDS-JEDIDIAH-REVIEW] Two GDD §5.2 corrections made during the build** (repress precondition; raise_garrison composition incl. the solicit-based mercenary leg and the wilderness 4gp target) — RAW-driven, recorded in gdd-ruler-ai.md's revision history 2026-07-01. If Jedidiah prefers the original readings, the gates are one-line reverts.
+- `withstand_siege` and `hold` have catalog entries but no handlers (by design: Phase-3 siege path / deliberate no-op). The Phase-2 scorer must special-case `hold` (no dispatch) and not dispatch `withstand_siege` until Phase 3.
+- levy_militia's RAW revenue/morale costs while called up (`daw_armies_recruitment.xml:429-431`) are not modeled by the existing handler (pre-existing gap, noted during the verify pass — not introduced here).
+- The composite's mercenary leg stops at solicitation; converting `mercenary_offers_pending` into hires is the (pre-existing) HiringPanel/Phase-5 flow — the Phase-2/3 planner can pick `hire_mercenaries` in a later month once offers exist.
+**Next session should:**
+- **Phase 2** (handoff §5): `RulerActionScorer` (utility = base × weight × §6.2 situational modifiers incl. stronghold state), `RulerAI.process_campaign_month` mirroring `NpcSyndicateMonthlyResolver`, backdrop auto-stabilize (§8.4), integration into `domain_handlers._handle_monthly_tick` — flag the integration `[NEEDS-OPUS-REVIEW]`.
+- Then Phase 3 (crisis responder + LOD + extraction-resistance replacement; Opus for the §7.3 threshold work).
+
+
+## Session 2026-07-01 — Ruler AI Phase 2: scorer + monthly-tick integration + backdrop auto-stabilize
+
+**Task:** Phase 2 of the NPC Ruler AI per gdd-ruler-ai.md §6/§3.2/§3.3/§8.4 (handoff-ruler-ai-build.md §5): `RulerActionScorer` (§6.2 situational-modifier tables), `RulerAI.process_campaign_month` (the decide→execute batch mirroring NpcSyndicateMonthlyResolver), the §8.4 backdrop auto-stabilize pass, and the `domain_handlers._handle_monthly_tick` integration. Same session as Phases 0-1.
+**Model used:** Fable 5 (ultracode: 4-scout understand → implement → 4-lens adversarial verify → 11-defect fix batch → 2-lens re-verify → 6 more fixes → clean suite).
+**Completed:**
+- **`engine/subsystems/realm_ai/ruler_action_scorer.gd`** (`class_name RulerActionScorer`): utility = base × governing weight × Π §6.2 modifiers (morale-tier table verbatim incl. the four bands; treasury <2-months → spendy ×0.4 + RAISING-tax-decree ×1.5, >6-months → investment ×1.4; garrison ×2.0; stronghold ×2.0 / ruined ×3.0; threat → defensive ×2.0 [PROJECT CALL in the 1.5-2.5 band] + the §5.1 economic set (administer/investment/tax-decree) ×0.5). `hold` = flat unmodified 0.10 floor. Tax decrees are DIRECTION-aware (the §6.2 morale column is "decree(LOWER tax)"; the broke boost is the §5.1 raise lever). Tie-break via a per-(ruler, calendar_day) seeded RNG over a canonical pre-sort (total-order key includes the decree value). `actions_for_scale` (1/2/3 by domains_ruled ≥3/≥6 or families ≥2,500/≥10,000 — PROJECT CALL).
+- **`engine/subsystems/realm_ai/ruler_ai.gd`** (`class_name RulerAI`): `process_campaign_month(campaign_id, calendar_day, active_set, domain_results := [])` — one turn per active ruler on their PERSONAL domain (RAW acore_axioms:265-272), resolved with the IDENTICAL deterministic query the activity handlers use so plan and execution provably target the same row; lazy disposition ensure (§8.2); candidates → scored → top-N distinct-by-(action|decree-kind) → static handler dispatch (`state.character_id`, params_json; issue_decree gets explicit domain_id; oversee_investment: the planner performs the LAUNCH-contract treasury debit via `DomainTreasury.withdraw` (category "expense") and blocks on failure) → `EventBus.ruler_action_taken`. `hold`/`withstand_siege` recorded, never dispatched; `call_to_arms` routing deferred to Phase 3. Henchmen are never planned for. `provisional_active_set` = full-tier non-pc/non-henchman living NPC domain-owners [PROVISIONAL until Phase 3's RulerLodManager].
+- **`engine/subsystems/realm_ai/ruler_backdrop_stabilizer.gd`** (`class_name RulerBackdropStabilizer`, pure statics): §8.4 — (1) `adjust_garrison_summary` zeroes the -1/gp-short morale penalty for the ROLL only (expenses stay real); (2) the administer assumption is an OPTS flag adding exactly +1 to the event-modifier sum (never the dict flag — that leaks the +5% XP bonus through `_save_domain`); (3) `apply_neglect_floor(result, prior, event_modifiers_sum)` floors at min(prior, 0) ONLY when the remaining modifiers are ≥0 — negative modifiers are substantive damage (challenger pillage, lairs, punitive taxes) and §8.4 says they apply in full; known ±1 masking bound documented; (4) no discretionary activity = absence from the active set.
+- **`domain_handlers.gd` integration [NEEDS-OPUS-REVIEW]:** `_resolve_domain_month` gained an optional `opts` param (empty = byte-identical player path); the domain loop classifies player-side / active-NPC / backdrop and applies the stabilizer opts to backdrop; `RulerAI.process_campaign_month` runs AFTER the per-domain resolution loop with the result dicts in hand (§3.2); `auto_pause` now fires ONLY when a player-side domain exists (`_player_character_ids` = PCs + PC-employed henchmen, so a henchman heir keeps the domain player-side and paused) — previously it fired whenever ANY domain existed; `_save_domain` now resets `is_repressed_this_month`/`repression_cp_per_family_this_month` (repression is a monthly stance — the columns' own documented contract, previously unimplemented: one repression permanently capped morale at 0).
+- **Determinism sweep:** all 26 files with the `owner_character_id = ? LIMIT 1` domain-resolution query now carry `ORDER BY created_at, id` (activity handlers, `retreat_resolver._stronghold_hex`, and the `, id` tiebreak added to `primary_domain_id_for_character` + `RealmGraph.apex_for_character`) — plan-vs-execution divergence for multi-domain owners is closed everywhere.
+- **Foreign working-tree regression caught & restored:** the parallel session's tree had REVERTED the committed null-guard from 2253a14 in `domain_encounter_resolver.gd` (`String(null)` crash for location-less domains on the monthly encounter roll). Guard re-applied verbatim. **Flag for the parallel-session owner.**
+**Decisions made:**
+- One planner turn per ruler (personal domain) — §6.1's "top-2..3 for large realms" reads as multiple ACTIONS on that domain, not multiple domains; multi-domain rows are off-RAW (acore:265-272) and now at least deterministic.
+- The §8.4 neglect floor's "neglect alone" = non-negative event modifiers after garrison suppression + assumed administration (any remaining negative is substantive damage). PROJECT CALL, documented with its ±1 bound.
+- Two state-aware tax decrees (never a no-op): LOWER-to-200cp when taxed above standard (the §6.2 morale-repair lever); RAISE-toward-300cp only when treasury < 2 months of expenses (the §5.1 revenue lever; the -1/gp morale modifier prices it). Only the top-scored tax variant executes in a month.
+- auto_pause behavior change (NPC-only campaigns tick through the monthly report) is deliberate per §3.2 and marked [NEEDS-OPUS-REVIEW] in-code.
+**Interfaces defined or changed:**
+- `RulerActionScorer.score_candidates(candidates, disposition, ctx, rng) -> Array` (ctx keys: morale, treasury_cp, monthly_expenses_cp, current_tax_cp, garrison_needs_raising, stronghold_below_minimum, stronghold_ruined, threat_present); `.actions_for_scale(aggregate) -> int`; `.monthly_rng(ruler_id, calendar_day)`.
+- `RulerAI.process_campaign_month(campaign_id, calendar_day, active_set: Array, domain_results := []) -> Array` (per-ruler reports {ruler_id, domain_id, actions:[{action_id, params, utility, outcome}], skipped_reason?}); `RulerAI.provisional_active_set(campaign_id) -> Array`.
+- `RulerBackdropStabilizer.resolution_options()/adjust_garrison_summary(g)/apply_neglect_floor(result, prior, mods)`; opts consts `OPT_ASSUME_GARRISON_FUNDED`/`OPT_ASSUME_ADMINISTERED`/`OPT_NEGLECT_MORALE_FLOOR`.
+- `DomainHandlers._resolve_domain_month(domain_data, calendar_day, opts := {})` (additive); monthly-tick return dict gained `ruler_reports`; `auto_pause` is now conditional.
+- `RulerActionCatalog.available_for` ctx-independent but the tax-decree candidates are state-aware; scoring ctx gained `current_tax_cp`.
+**Database changes:** none (no migration).
+**Tests added/updated:**
+- `tests/test_ruler_ai_monthly.gd` (suite id 484, 14 tests / 50 checks): scorer determinism; every §6.2 modifier ratio (1.8, 7.5, 0.4, 1.4, raising-1.5, lowering-never-boosted, lowering-morale-column-1.4, threat 2.0/0.5); hold flat floor; actions_for_scale; the §6.3 iron-fisted-baron ordering (raise_garrison > repress > administer, hand-recomputed); a 3-month white-box morale trend (-2 → 0 under the planner, injected roll 7); §8.4 stabilizer statics incl. the damage-bypass case and prior-damage preservation; the mixed batch (active acts / backdrop doesn't / lazy disposition); provisional-active-set exclusions (named/pc/dead); **and two REAL-tick integration tests** driving `DomainHandlers._handle_monthly_tick` via a FakeRunner: mixed campaign (auto_pause true, active NPC acted, backdrop held ≥ Apathetic with no phantom administer flag, repression transients reset) + NPC-only campaign (auto_pause false, tick reschedules).
+- `tests/test_ruler_action_catalog.gd` updated (17 tests / 83 checks): baseline no longer expects a no-op tax decree; new `test_tax_decree_state_gating`.
+- **Final suite: run2 = 481 passed / 16 failed — net-zero new failures vs the Phase-1 480/16 baseline (+1 = suite 484). `RulerAiMonthly: all tests passed (50 checks)`, `RulerActionCatalog: 83 checks`, `StrategicDisposition: 86 checks`.**
+- Verification: 4 adversarial lenses found 9 defects (5 confirmed — multi-domain routing, investment free-money, backdrop XP leak, henchman-heir misclassification, permanent repression; 4 plausible — threat table gap, tax-boost mismatch, neglect-floor damage suppression, missing integration coverage) → all fixed → 2-lens re-verify found 6 more (the foreign null-guard revert, retreat_resolver + `, id` ordering residuals, investment ledger double-entry, the false player-debit premise, the ±1 floor bound) → all fixed/documented.
+**Known issues:**
+- **[PRE-EXISTING, spawned as task chips for Jedidiah]:** (1) the decree UI/handler gp-vs-cp units bug (a player's "2 gp" tax decree writes 2 cp — task_11e51985); (2) the PLAYER oversee_investment path never debits the treasury (free growth — task_aea5086f; the NPC path is fixed and is the reference implementation).
+- The foreign parallel session should be told its working tree reverts the 2253a14 null-guard in domain_encounter_resolver.gd (restored here).
+- issue_decree summaries print cp values labeled "gp/family" (cosmetic; covered by the units-bug chip).
+- `provisional_active_set` is the Phase-3 placeholder (full-tier gate without the 6-mile-window geometry).
+**Next session should:**
+- **Phase 3** (handoff §6): `RulerCrisisResponder` (§7.1 posture biases, §7.2 challenger routing, §7.4 stronghold-loss priority), the §7.3 disposition-modulated extraction-resistance replacement (neutral must regression-match the 50% BR anchor), `RulerLodManager` (§8.1 window+buffer, full-tier-gated, promote/demote signals).
+- Then Phase 4 (LLM narration contract + `ruler_ai_state` table).
+
+
+## Session 2026-07-02 — Decree gp/cp units bug fix
+
+**Task:** Fix the pre-existing currency-units bug in the decree pipeline flagged by the Ruler AI Phase 2 session (task_11e51985): the Decrees & Remote Orders sub-tab presents a 0-10 gp/family spinbox and passed the raw int straight through as `issue_decree`'s `value` param, which `IssueDecreeHandler` wrote RAW into the cp-denominated `domains.{tax,liturgy,tithe}_rate_cp_per_family` columns — a "2 gp/family" tax decree actually set 2 cp/family, cratering domain revenue 100x.
+**Model used:** Sonnet 5.
+**Completed:**
+- Investigated every caller of `issue_decree`/those three columns before choosing a fix boundary (`ruler_action_catalog.gd`, `ruler_ai.gd`, `ruler_action_scorer.gd`, `overview_sub_tab.gd`, `decrees_and_remote_orders_sub_tab.gd`, plus all test fixtures). Found `RulerActionCatalog` already passes cp values correctly ("VALUE IS CP") and `RulerActionScorer._utility` compares `params.value` directly against `ctx.current_tax_cp` (both cp-scale) to classify raising vs. lowering tax decrees. Converting at the handler (the originally-suggested fix) would have required also converting the catalog AND renaming/rescaling the scorer's cp-comparison contract — a much larger blast radius than the actual bug. Fixed at the UI boundary instead, leaving the handler/catalog/scorer cp-in contract untouched.
+- `engine/subsystems/activities/handlers/issue_decree.gd`: documented the cp-in contract in the class doc-comment; fixed the null-value fallbacks (were 2/1/1 cp — a units bug in their own right, silently setting revenue to ~1% of the RAW-standard rate — now 200/100/100 cp matching `db/schema.sql` defaults and RAW-standard rates); fixed the summary strings, which were printing the raw cp value labeled "gp/family" (now divide by 100).
+- `scenes/ui/notebook/domain/sub_tabs/decrees_and_remote_orders_sub_tab.gd`: `_params_for`'s numeric-kind branch now multiplies `rate_spin.value` by 100 (gp -> cp) before building the `issue_decree` params dict.
+- `scenes/ui/notebook/domain/sub_tabs/overview_sub_tab.gd`: found a **second, independent** instance of the same bug — its tax/liturgy/tithe steppers bypass the `issue_decree` activity entirely and call `CampaignRepository.update_domain_settings` directly on the same cp columns, with the same "gp/family" labels and 0-10 spinbox range reading/writing raw cp. This was arguably worse in practice: `_render_decree` fed a live cp value (e.g. 200) straight into a spinbox clamped to max_value=10, so it silently displayed/would-resave a clamped 10 instead of the true 200. Fixed `_render_decree` (divide cp -> gp on load) and `_on_decree_issue_pressed` (multiply gp -> cp on save).
+**Decisions made:**
+- Conversion boundary is the UI layer (both decree UIs), not the handler. Rationale: the handler's cp-in contract is already load-bearing for `RulerActionCatalog`/`RulerActionScorer` (NPC ruler AI), so moving the boundary there would touch the AI decision pipeline for a bug that's actually confined to the two player-facing UI entry points. `IssueDecreeHandler`'s doc-comment now states the contract explicitly so future UI callers don't reintroduce this.
+- Did not touch `ruler_action_catalog.gd`'s "VALUE IS CP" comments/values — verified correct as-is.
+**Interfaces defined or changed:**
+- No public interface/signature changes. `IssueDecreeHandler.on_complete`'s `params.value` semantics (cp/family for tax/liturgy/tithe) are now documented rather than implicit; unchanged in practice for `RulerActionCatalog`/`RulerAI` callers, changed (fixed) for both UI callers.
+**Database changes:** None.
+**Tests added/updated:**
+- New suite `tests/test_issue_decree_handler.gd` (registered as suite 485 in `test_runner.gd`/`test_runner.tscn`): a 200-cp ("2 gp/family") tax decree yields `tax_rate_cp_per_family == 200` (the regression case), plus liturgy/tithe column writes, null-value RAW-standard fallbacks (200/100/100 cp), and the summary string reading "2 gp/family" (not "200 gp/family").
+**Known issues:**
+- No existing test suite covers `overview_sub_tab.gd`'s decree steppers (no `test_overview_sub_tab.gd` in the repo) — the second bug instance there is fixed but unverified by an automated UI test; `test_issue_decree_handler.gd` only covers the handler's contract, not that sub-tab's gp<->cp conversion. Manual/in-engine verification would be needed for full confidence on that UI path.
+- `overview_sub_tab.gd`'s decree-card hint text claims the stepper "is dispatched as an issue_decree activity (Singular Minor)" — it is not; it writes `update_domain_settings` directly. Pre-existing doc/behavior mismatch, unrelated to the units bug, not fixed this session.
+**Verification:**
+- Headless suite: **482 suites passed / 16 failed** (all 16 pre-existing baseline failures — language proficiency, dungeon/ZoC combat, tactical-grid Vector3i signal shapes, splat texture height overrides, clanhold `invalid_style_for_method`, etc. — none touch decrees/tax/liturgy/tithe/currency). Net delta: **+4 suites** from the new `IssueDecreeHandler` suite (5 test functions), zero regressions.
+- Dismissed the `task_11e51985` chip (decree gp/cp units bug) as fixed.
+**Next session should:** Nothing decree-specific queued. If picking up general Ruler AI work, see the 2026-07-01 session's "Next session should" (Phase 3: `RulerCrisisResponder` + `RulerLodManager`).
+
+## Session 2026-07-02 — Fix free player oversee_investment (launch-time treasury debit)
+
+**Task:** Fix `task_aea5086f` — the PLAYER launch path for `oversee_investment` never debited the domain treasury, letting a player commit gp to agricultural investment for free unbounded family growth via `DomainGrowthResolver`. The NPC RulerAI path was already fixed 2026-07-01 by withdrawing at its own launch site (`RulerAI._execute`); the player path bypasses RulerAI and goes through the shared `ActivityTimeCostExecutor.launch()` instead, which had no equivalent debit.
+**Model used:** Sonnet 5 (implementation + tests + doc update).
+**Completed:**
+- `engine/subsystems/activities/activity_time_cost_executor.gd` — `launch()` now performs the §91 launcher-debit for `oversee_investment` (gated on `activity_def_id == "oversee_investment" and cp_committed > 0`) BEFORE creating the `activity_state` row or scheduling any event. Domain is resolved via `CampaignRepository.primary_domain_id_for_character(character_id)` (the shared deterministic ORDER BY query per §91) — never the caller-supplied `params.domain_id`, so a stale/wrong param can't misdirect the withdrawal. `DomainTreasury.withdraw(..., "expense", "oversee_investment_committed", ...)` mirrors RulerAI's category/subcategory exactly, so the handler's own `+cp_committed` "investment" ledger row keeps its meaning (spend on the expense side, commitment on the investment side — no double-counting). On withdrawal failure, `launch()` returns `{success: false, error: "insufficient_funds"}` and nothing is persisted or scheduled (fail closed, matching Singular-activity "cancellation = total failure" semantics).
+- This is the ONE shared launch site for every surface (the player's Decrees & Remote Orders sub-tab calls `executor.launch()` directly per `scenes/ui/notebook/domain/sub_tabs/decrees_and_remote_orders_sub_tab.gd:_on_launch_pressed`), so the fix covers the player path without touching the UI file. RulerAI's monthly batch bypasses this executor entirely (calls handlers' `on_complete` directly) and keeps its own inline withdraw from the 2026-07-01 session — no double-debit risk between the two paths since they never both fire for the same launch.
+- Updated the `error` codes docstring on `launch()` to list `"persist_failed"` and `"insufficient_funds"`.
+- `docs/coding_conventions.md` §91 — updated the launcher-debits bullet to record the fix, name the exact gating condition and domain-resolution rule, and generalize the guidance for any future launcher-cost activity (debit at `executor.launch()` if scheduler-driven, or inline at the caller if it bypasses the executor like RulerAI does).
+**Decisions made:**
+- Put the debit in the shared `ActivityTimeCostExecutor.launch()` rather than in the UI launcher (`decrees_and_remote_orders_sub_tab.gd`) or in the handler's `on_complete`. Rationale: `launch()` is the actual single choke point for every scheduler-driven surface today and any future one (per §32's `ActivityLaunchContext` launcher contract); putting it in the UI file would require every future launch surface to remember the debit independently, re-opening the same hole. `on_complete` is the wrong site because by the time it fires the activity has already been scheduled/committed — a failed withdrawal there can't cleanly un-launch an in-flight Ongoing activity.
+- Domain resolution uses `CampaignRepository.primary_domain_id_for_character(character_id)`, not `params.get("domain_id")`, even though the UI already passes a (currently correct) `domain_id` param. Rationale: §91's hardened rule is "resolve the ruler's domain is ONE deterministic query, everywhere" — trusting a caller-supplied domain_id reintroduces exactly the multi-domain drift class of bug that §91's adversarial-verify rounds eliminated elsewhere.
+**Interfaces defined or changed:**
+- `ActivityTimeCostExecutor.launch()` return value: added `error: "insufficient_funds"` as a possible value (oversee_investment only). Callers already branch on `result.get("success", false)` and log `result.get("error", "")` generically (see `decrees_and_remote_orders_sub_tab.gd:_on_launch_pressed`), so no caller-side change was needed.
+**Database changes:** None (no schema change; uses existing `ledger_entries` + `domains.treasury_cp` via `DomainTreasury.withdraw`).
+**Tests added/updated:**
+- `tests/test_activity_time_cost_executor.gd` — `_setup()` now creates a funded `_domain_id` (100,000gp) owned by `_character_id` (previously the suite had no domain at all, which would have made every oversee_investment launch fail closed under the new debit).
+- Added `test_oversee_investment_launch_debits_treasury_exactly_once()` — launches with `gp_committed=1000`, asserts the treasury balance drops by exactly 100,000cp, exactly one new ledger row is written, and that row's category/subcategory/cp_amount match the §91 contract.
+- Added `test_oversee_investment_launch_blocked_when_insufficient_funds()` — a second character/domain with 0 treasury; asserts `launch()` fails closed with `error == "insufficient_funds"`, no `activity_state_id` is returned, and the treasury is left untouched.
+- Full suite (2 consecutive isolated runs; `tools/run_tests.sh`): 482 suites passed / 16 failed on both a fresh single run and the first of the two-run pass — identical to the pre-existing baseline from the same-day decree gp/cp-units session (no new failures). `ActivityTimeCostExecutor` suite (13 test functions including the 2 new ones) passes cleanly.
+**Known issues:**
+- `tools/run_tests.sh` exits with shell status 1 after Run 1 (`set -e` catching Godot's nonzero process exit) on this machine right now — reproduced identically on a clean single-activity-unrelated run, caused by headless-console RID-leak-at-shutdown ERRORs (`54 resources still in use at exit` etc.), NOT by any test assertion failure. Pre-existing engine/infra artifact, unrelated to this session's change — `TEST RESULTS: 482 suites passed, 16 failed` is written to `headless_test_run.log` before the process exits nonzero, so the actual test signal is unaffected, but the script currently can't complete its normal two-run "report run 2" flow on this machine. [NEEDS-OPUS-REVIEW: worth a follow-up session to make `tools/run_tests.sh`/`.ps1` tolerant of Godot's nonzero exit code from leaked RIDs at shutdown, e.g. `"$GODOT" ... > "$log" 2>&1 || true` before the `set -e` trips the whole script — otherwise the "second consecutive run" baseline-discipline convention can't be exercised on this machine as written.]
+**Next session should:**
+- Consider the `tools/run_tests.sh`/`.ps1` nonzero-exit-tolerance fix above (low-risk, mechanical).
+- Both bug chips flagged in the 2026-07-01 Ruler AI Phase 2 session are now resolved: `task_11e51985` (decree gp/cp units) fixed 2026-07-02 earlier today; `task_aea5086f` (this session) fixed. No outstanding chips from that session remain.
+- Phase 3 of the Ruler AI build (crisis responder + LOD manager + §7.3 extraction-resistance replacement) remains the next substantive Ruler AI work per the 2026-07-01 session's handoff.
+
+
+## Session 2026-07-02 — Ruler AI Phase 3: crisis responder + §7.3 resistance + Regional LOD
+
+**Task:** Phase 3 of the NPC Ruler AI per gdd-ruler-ai.md §7/§8 (handoff-ruler-ai-build.md §6): `RulerCrisisResponder`, the disposition-modulated extraction-resistance replacement (50%-anchor regression contract), and `RulerLodManager`. Continuation of the Phases 0-2 arc.
+**Model used:** Fable 5 (ultracode: 3-scout understand → implement → 3-lens adversarial verify → 6-fix batch → suite).
+**Verify round (3 lenses, all findings fixed pre-final-run):** (1) [CONFIRMED] an emerged-but-armyless challenger set `threat_present`, making an undispatchable `defensive_resistance` the top pick — burning the ruler's action slot every month forever (§7.2 keys defensive routing on "materialized AS AN ARMY"; the normal NPC post-emergence state has no linked army). Fixed: `threat_present` = hostile army ∨ siege only; an unfielded challenger joins the §7.2 STABILITY-pressure class (with accumulating + morale collapse). (2) [CONFIRMED] a besieged-only domain discarded `sieges.besieging_army_id` — same undispatchable-defense loop; now threaded as the resistance target. (3) [CONFIRMED] the sieges test fixture missed three NOT-NULL columns. (4) the §7.2 tax stability bias was direction-blind (would boost a RAISE-tax decree — accelerating the spiral it exists to bleed); now direction-gated like the §6.2 morale column. (5) the LOD conflict hook wasn't campaign-scoped. (6) two unescaped `%` literals in test messages. Plus: `morale_collapse` (computed but unconsumed) now drives the stability biases; the demotion `cancel_all_for_owner` path gained FakeScheduler coverage; stale scorer header fixed.
+**Completed:**
+- **`engine/subsystems/realm_ai/ruler_crisis_responder.gd`** (`class_name RulerCrisisResponder`, static): (1) `detect_threats(domain, month_result)` — the §7 threat classes: challenger accumulating (month_result summary) vs materialized (active `npc_challenger` threat row) vs FIELDED (row with `linked_army_id`), hostile army (any active threat row with a linked army, surfaced as `hostile_army_id`; a non-concluded siege's `besieging_army_id` fills it when no threat row supplied one), besieged, ruined stronghold, morale collapse (≤ −3). **`threat_present` = fielded army ∨ siege ONLY** — §7.2 keys defensive routing on "materialized as an army"; an unfielded challenger is stability pressure, never an undispatchable defensive target. (2) `posture_biases(crisis_response, threats)` — the §7.1 table (aggressive → resistance+call-to-arms ×1.5; defensive → garrison/withstand/stronghold; cautious → garrison/withstand/hold-hoard ×1.5; `diplomatic` degrades to cautious per §7.1) + §7.2 STABILITY biases (administer/LOWER-tax ×1.5, garrison/repress ×1.25 — fired by accumulating, emerged-unfielded, or morale-collapse states; the tax key is direction-gated in the scorer) + §7.4 ruin urgency (hard ×2.0 for aggressive/defensive, soft ×1.25 for cautious/diplomatic) — all PROJECT CALL, one const block. (3) `resistance_threshold(disposition, defending_own_stronghold)` — the §7.3 formula verbatim (0.50 − 0.15·military_weight − 0.10·aggressive + 0.15·cautious/diplomatic + 0.10·own-stronghold, clamp [0.2, 0.9]); **a NULL disposition returns exactly 0.50 — the regression anchor by construction**.
+- **`extraction_resistance_heuristic.gd` generalized (gdd-army-warfare.md §4.3.3's "replaced wholesale" contract):** `evaluate(...)` gained an optional `opts` ({disposition, defending_own_stronghold}); the threshold routes through `RulerCrisisResponder.resistance_threshold`; default opts are behaviorally identical to the old flat 50%; `threshold_ratio` added to the return; reasons generalized (`garrison_below_threshold`/`garrison_meets_threshold`). **Federation + loyalty rolls + `vassal_revolted` untouched.**
+- **`defensive_resistance.gd` stub → real:** resolves the ruler's personal domain, loads the disposition, calls the generalized evaluate with the §7.3 opts, returns `{will_resist, evaluation}` + ledger row. `RulerAI._take_turn` enriches its params with the DETECTED `hostile_army_id` (+ `defending_own_stronghold` when besieged) before dispatch.
+- **Scorer/planner crisis integration:** `RulerAI` uses `detect_threats` for world_state (extraction_underway = hostile army; besieged wired — closing the Phase-2 gap) and passes `posture_biases` into the scorer as `ctx["crisis_biases"]` (multiplicative, so §6.1's "apply crisis bias" composes with scoring and keeps the deterministic tie-break machinery; keys support `issue_decree|<kind>`); `hold`'s flat floor accepts the crisis bias (cautious hoarding, §7.1) while staying exempt from §6.2 modifiers.
+- **`engine/subsystems/realm_ai/ruler_lod_manager.gd`** (`class_name RulerLodManager`): `active_set(campaign_id, extra_ruler_ids := [])` = full-tier, living, non-pc/non-henchman rulers of non-terminal domains LOCATED on the campaign's `regional_6mi` map — per §8.1 the region map IS the play window (the rolling frontier grows the map itself), so window+buffer reduces to map membership today (located domains only exist there; abstract domains are Backdrop by definition; the 10-hex ring becomes a real check only if located-off-window domains ever exist — documented). The `extra_ruler_ids` conflict hook widens the set but NEVER bypasses the full-tier gate (§8.1 materialization safety). **Fixture fallback (PROJECT CALL):** campaigns with no region map (Avalon etc.) keep the Phase-2 full-tier behavior. `sync(campaign_id, scheduler, extras)` diffs an in-memory per-campaign cache → emits `ruler_activated_for_lod`/`ruler_deactivated_for_lod`, lazily builds dispositions on promotion (§8.2), defensively cancels `ruler_strategic_turn` events on demotion. Cache is session-local — persistence + the §8.2 demotion grace land with Phase 4's `ruler_ai_state`.
+- **`domain_handlers._handle_monthly_tick`:** `RulerLodManager.sync(...)` replaces `RulerAI.provisional_active_set` (which remains, documented as superseded).
+- **Parallel-session integration:** the units-bug chip session (task_11e51985) landed `issue_decree` as CP-in with fixed fallbacks + UI-boundary conversion and took suite id 485 — verified compatible with the catalog's "VALUE IS CP" contract (their header cites it); this session's suite took 486.
+**Decisions made:**
+- The §7.3 "neutral disposition" regression anchor = NULL disposition (backdrop/unbuilt rulers): any BUILT disposition has a nonzero military weight, so null-degradation is the only reading that makes the anchor exact — and it doubles as the graceful-degradation contract.
+- `diplomatic` gets cautious's +0.15 threshold shift and posture biases (§7.1's "otherwise behave as cautious"); the appeasement half of the diplomatic posture IS the raised threshold (conceding where resistance isn't clearly survivable) — real parley awaits gdd-ruler-diplomacy.md.
+- An ACCUMULATING challenger is §7.2 stability pressure, not an active foe: it biases stability actions but does not set `threat_present` (defensive actions need a materialized threat).
+**Interfaces defined or changed:**
+- `RulerCrisisResponder.detect_threats(domain, month_result := {}) -> Dictionary` (keys: challenger_accumulating/materialized, hostile_army, hostile_army_id, besieged, ruined_stronghold, morale_collapse, threat_present); `.posture_biases(crisis_response, threats) -> Dictionary` ({action_key: multiplier}); `.resistance_threshold(disposition, defending_own_stronghold := false) -> float`.
+- `ExtractionResistanceHeuristic.evaluate(domain_id, attacker_army_id, calendar_day, dice := null, opts := {})` — additive; return gained `threshold_ratio`; reasons renamed (`garrison_below_threshold`/`garrison_meets_threshold` — grep found no other consumers of the old strings).
+- `DefensiveResistanceHandler.on_complete` params: `{attacker_army_id, defending_own_stronghold}` → `{summary, will_resist, evaluation}`.
+- `RulerLodManager.active_set(campaign_id, extra_ruler_ids := []) -> Array`; `.sync(campaign_id, scheduler := null, extra_ruler_ids := []) -> {active, promoted, demoted}`; `.clear_cache()`; `STRATEGIC_TURN_EVENT`.
+- Scorer ctx gained `crisis_biases: Dictionary`.
+**Database changes:** none (no migration).
+**Tests added/updated:**
+- `tests/test_ruler_crisis_lod.gd` (suite id 486, 11 tests): §7.3 threshold values for all four postures incl. the null-anchor and clamp bounds; the two-way evaluate() shift (aggressive resists at 30% where the placeholder declines; cautious declines at exactly 50% where the placeholder resists); the real defensive_resistance handler (+ no-attacker degradation); the §7.1/§7.2/§7.4 bias table incl. diplomatic≡cautious; scorer bias consumption (incl. hold); threat detection (calm / accumulating / materialized+linked-army / besieged via a minimal sieges row); ruined-domain prioritization (0.648 vs all comers); LOD geometry + tier gate + conflict-hook gate (named-tier NEVER promoted — the §8.1 materialization-safety test); fixture fallback; sync promote/demote signals + lazy disposition.
+- `test_extraction_resistance_heuristic.gd`: generalized reason strings + explicit 0.50 threshold_ratio/threshold_br anchor assertions. `test_ruler_action_catalog.gd`: defensive_resistance degradation test updated (no longer a stub).
+- **Final suite: run2 = 483 passed / 16 failed — net-zero new failures (Phase-2 baseline 481 + the parallel session's issue-decree suite + this suite). `RulerCrisisLod: all tests passed (59 checks)`; the untouched `ExtractionResistanceHeuristic`/`ExtractionResistanceRealmAI` suites stay green (the 50% anchor + federation/loyalty machinery regression-proof).**
+**Known issues:**
+- The extraction FLOW (`army_marcher._apply_marching_extraction`) still credits extraction instantly without calling the resistance decision — the documented army-warfare placeholder; wiring the marcher to `DefensiveResistanceHandler`/evaluate + field-battle creation is army-warfare work, not planner work (flagged for that subsystem's next session).
+- `call_to_arms` dispatch remains recorded-not-routed (CallToArmsMuster needs obligation/vassal routing — Phase-3 scope per handoff was the §7.3 replacement; the §7.1 bias already prioritizes it).
+- LOD sync cache is in-memory (save/load reconciliation + demotion grace = Phase 4 `ruler_ai_state`); `RulerAI.provisional_active_set` retained but superseded.
+- The §8.1 "player-relevant conflict" hook is a parameter (`extra_ruler_ids`) awaiting an army-warfare caller.
+**Next session should:**
+- **Phase 4** (handoff §7): `RulerActionNarrator` (Seam A mock-correct narration), the Seam B reassessment hook (validated → situational modifier only), and the `ruler_ai_state` table (migration; LOD tier + last_strategic_turn_day + last-action id + narration cache) — which also persists the LOD cache + §8.2 demotion grace.
+- Then the §8 after-all-phases sweep: global definition of done, conventions, [NEEDS-OPUS-REVIEW] confirmations.
+
+
+## Session 2026-07-02 — Ruler AI Phase 4: LLM contract seams + ruler_ai_state persistence
+
+**Task:** Phase 4 of the NPC Ruler AI per gdd-ruler-ai.md §9/§10 (handoff-ruler-ai-build.md §7): `RulerActionNarrator` (Seam A mock-correct narration), the Seam B strategy-reassessment hook (validated → situational modifier only), and the `ruler_ai_state` table (LOD tier persistence + §8.2 demotion grace + turn stamp + narration cache). Completes the approved five-phase planner arc (P5 clanhold migration remains deferred).
+**Model used:** Fable 5 (ultracode: 3-scout understand → implement → 3-lens adversarial verify → 6-fix batch → suite ×2).
+**Verify round (3 lenses, 12 confirmed findings deduplicating to 6 defects, ALL fixed pre-final-run):** (1) [CONFIRMED critical] the nudge test's "unbiased month doesn't pick hold" assumption was false for a neutral motivation-less personality — its §8.3 weights score EVERY weighted action below hold's 0.10 floor, so hold wins legitimately; fixed by giving the fixture the rich baron personality (fortification 0.24 → raise_garrison 0.40×0.24×2.0 = 0.192 unbiased winner). (2) [CONFIRMED] the fixture has SIX deviant axes, not five (mysticism 3 passes the ≤3 filter). (3) [CONFIRMED] the bare "issue_decree" Seam-B bias key validated but rides the scorer's UNGATED generic-key fallback, bypassing the raise-tax direction gate — a configured LLM could boost a raise-tax decree ×4 into the morale spiral the gate exists to block; validation now rejects it (`decree_bias_requires_kind`), the |kind form is required. (4) [CONFIRMED] the §8.2 grace gate checked only the CHARACTER half of eligibility (_is_full_tier_npc) — a ruler whose domain went terminal (abandoned/salted/succession_pending) kept "planning" through 30 days of grace; grace now also requires `_has_plannable_domain` (the geometry query's lifecycle filter minus location — location is what grace forgives). (5) [CONFIRMED] in-process snapshot restore (SessionRunner.load_slot) left the in-memory LOD cache stale, defeating the DB hydration; `RulerLodManager.clear_cache()` now runs in load_session beside the disease/siege on-load reconciliations. (6) [CONFIRMED ×2 minor] INSERT OR REPLACE reset created_at on every upsert (falsifying active_ruler_ids' creation-order contract) — created_at now carried through via COALESCE(?, datetime('now')); and same-day decree variants aliased one narration-cache key — narrate_action gained an optional variant_key (pass the decree kind), mirroring the planner's action_id|decree_kind distinctness.
+**Completed:**
+- **Migration 182 `ruler_ai_state`** (one row per LOD-touched NPC ruler, PK character_id): lod_tier ('active'/'backdrop' CHECK), last_strategic_turn_day, last_action_id, demotion_pending_day (NULL = not pending; the §8.2 grace stamp), narration_cache JSON, created_at/updated_at + campaign index. Mirrored at db/schema.sql tail; registered in `CampaignRepository._SCOPE_DIRECT_CAMPAIGN` (runtime table → scope map + schema only, conventions §89; test_savegame_snapshot enforces classification).
+- **`engine/subsystems/realm_ai/ruler_ai_state_repository.gd`** (`RulerAiStateRepository`, static): get_state ({} when absent; demotion_pending_day reads back as null), upsert (merge-update over a whitelist, INSERT OR REPLACE carrying created_at through COALESCE), active_ruler_ids (lod_tier='active', the sync hydration source), delete_state.
+- **`engine/subsystems/realm_ai/ruler_action_narrator.gd`** (Seam A, gdd-ruler-ai.md §9.1): `narrate_action(ruler, domain, action_id, outcome, calendar_day := -1, variant_key := "") -> ResponseEnvelope`. Assembles the §9.1 context (task_type ruler_action_narration; realm_name via RealmRepository.get_realm_for_character → domain name → generic; cached personality_summary/speech_notes; disposition_directives = ONLY the §9.1-surviving 1-3/8-10 axis directives via NpcPersonality.deviant_axes + PersonalityAxes.directive_for; motivations w/ ruler_dispositions fallback; disposition_toward_player = personality.disposition; trend "stable" documented default). SHORT-CIRCUITS on `LLMManager.is_configured()` (the stub only warns + returns the generic fallback); any null/failed/is_fallback envelope substitutes the DETERMINISTIC per-action_id template — `data/templates/ruler_action_templates.json` phrase bank ({ruler}/{realm} substitution, _default fallback) + the structured outcome summary in parentheses (engine truth) + the SHARED §9.3 motivation-phrase bank via the new public `PersonalityMock.motivation_phrase(tag)`. Narrations cache into ruler_ai_state.narration_cache keyed "day|action[|variant]", pruned to 12 by lowest day (key-sort tiebreak). Unconfigured narration is a pure function of persisted rows — the §12 no-variance bar.
+- **`engine/subsystems/realm_ai/ruler_strategy_reassessor.gd`** (Seam B, §9.2 / design brief §11.3): `reassess(ruler, trigger, situation)` — NO-OP under mock (no stub call, reason llm_not_configured); configured path parses the envelope and routes through `apply_validated`. `validate_suggestion` = STRICT schema validation against the action vocabulary (new `RulerActionCatalog.ACTION_IDS` const + "issue_decree|tax/liturgy"; bare "issue_decree" rejected — gate bypass; unknown keys/actions/postures/non-numerics reject the WHOLE suggestion with a reason; biases clamped [0.25, 4.0], aggression_toward [0,1]). A valid suggestion becomes a ONE-TURN pending slot ({biases, posture}, in-memory by design) consumed by `RulerAI._take_turn`: optional posture override for that turn's §7.1 bias row + multiplicative biases riding ctx["crisis_biases"] and its safety gates — never executes, never mutates the persisted disposition; aggression_toward validated + reported but recorded-only (diplomacy dormant §5.4). Emits `ruler_strategy_reassessed(ruler_npc_id, trigger, changes)` on acceptance. Significance thresholds remain PROJECT CALL (§13) — callers pass their trigger.
+- **`RulerLodManager` persistence + §8.2 demotion grace:** `sync(campaign_id, scheduler := null, extra_ruler_ids := [], calendar_day := -1)` — promotion upserts lod_tier='active', demotion 'backdrop'; a COLD in-memory cache hydrates its prior set from `RulerAiStateRepository.active_ruler_ids` (a loaded session resumes quietly — no promotion-signal replay); with a real calendar_day, a GEOMETRY exit by a still-eligible ruler (character gate AND `_has_plannable_domain`) stamps demotion_pending_day and stays active ≤ `DEMOTION_GRACE_DAYS` (30, the §8.2 "e.g., 1 month" PROJECT CALL); re-entry during grace clears the stamp silently; expiry/eligibility-loss demotes (signal + cancel + tier write). Returned "active" includes grace holdovers (they keep planning). calendar_day = -1 keeps immediate demotion (fixture/back-compat). domain_handlers' monthly tick passes calendar_day; `SessionRunner.load_session` now clears the LOD cache beside the disease/siege on-load reconciliations (covers load_slot in-process restores).
+- **`RulerAI`:** `_record_turn_state` stamps last_strategic_turn_day + the TOP-SCORED executed action id after every real turn; `_take_turn` consumes the Seam-B pending slot (posture override + bias merge into crisis_biases).
+**Decisions made:**
+- Narrator short-circuits on is_configured() rather than always calling request_narration: the stub warns per call and returns a generic fallback — nothing to ask for; the is_fallback-safe clause still substitutes the template for failed/fallback envelopes from a REAL provider.
+- The deterministic template composes phrase-bank + outcome summary + shared motivation bank (all data-driven per the §9.3 fragment-bank convention, new bank at data/templates/ruler_action_templates.json) — LLM later changes prose quality only.
+- Seam-B pending modifiers are in-memory static (not persisted): under the mock they never populate, and a lost nudge degrades to the deterministic baseline; persistence would be speculative machinery for an unconfigured provider.
+- Grace is for GEOMETRY exits only (the player moved away); eligibility loss (death, tier, terminal domain) demotes immediately — grace must never keep a corpse or a domainless ruler planning.
+**Interfaces defined or changed:**
+- `RulerAiStateRepository.get_state(character_id) -> Dictionary`; `.upsert(campaign_id, character_id, fields) -> bool` (whitelist: lod_tier, last_strategic_turn_day, last_action_id, demotion_pending_day, narration_cache); `.active_ruler_ids(campaign_id) -> Array`; `.delete_state`.
+- `RulerActionNarrator.narrate_action(ruler_npc_id, domain_id, action_id, action_outcome, calendar_day := -1, variant_key := "") -> ResponseEnvelope`; `.assemble_context(...) -> Dictionary` (the §9.1 package); `.template_narration(action_id, context) -> String`; `.clear_template_cache()`; TASK_TYPE, MAX_CACHE_ENTRIES.
+- `RulerStrategyReassessor.reassess(ruler_npc_id, trigger, situation := {}) -> Dictionary`; `.apply_validated(ruler_npc_id, trigger, suggestion) -> Dictionary` (the post-envelope half; tests' entry point); `.validate_suggestion(suggestion) -> {valid, reason, normalized}`; `.consume_pending(ruler_npc_id) -> Dictionary` (pops); `.clear_pending()`; TASK_TYPE, BIAS_MIN/MAX.
+- `RulerActionCatalog.ACTION_IDS` (the registered §5/§11 vocabulary; Seam-B validation target).
+- `RulerLodManager.sync(...)` gained `calendar_day := -1`; `DEMOTION_GRACE_DAYS := 30`.
+- `PersonalityMock.motivation_phrase(tag) -> String` (public bank accessor).
+- `EventBus.ruler_strategy_reassessed` now emitted (by apply_validated).
+**Database changes:** migration 182 `ruler_ai_state` (+ schema.sql tail + _SCOPE_DIRECT_CAMPAIGN registration).
+**Tests added/updated:**
+- `tests/test_ruler_narration_state.gd` (suite id 487, 13 tests, 137 checks): state-repository round-trip incl. NULL grace stamp + merge-update; stub narration deterministic/no-variance/is_fallback + realm-name degradation chain + fragment-bank composition; §9.1 context shape (6 surviving directives, cached fields, disposition -2, trend stable); null-personality degradation + ruler_dispositions motivation fallback; template bank covers all 11 ACTION_IDS + _default, all distinct; narration cache hit/prune-to-12/same-day variant keys; reassess no-op under mock (no signal, no pending); 12 malformed-suggestion rejections incl. the bare-decree-key gate bypass + whole-suggestion strictness; valid-suggestion normalization (clamps both ways); the one-turn nudge (hold flips to top at exactly 0.40 = 0.10×4.0, pending consumed, next month unbiased); turn stamp; LOD reload reconciliation (no promotion replay); the full §8.2 grace arc (stamp → holdover → boundary-day → re-entry clears → expiry demotes → tier loss AND terminal-domain lifecycle bypass grace).
+- Registered as the 4-edit pattern (tscn ext_resource id "487_ruler_narration_state_tests" + node; runner @onready + run-array).
+- **Final suite: run2 = 484 passed / 16 failed — net-zero new failures (Phase-3 baseline 483 + this suite). `RulerNarrationState: all tests passed`.**
+**Known issues:**
+- No production caller narrates yet — Seam A awaits the observation UI (ruler_action_taken carries everything narrate_action needs; the future domain-report screen should pass calendar_day + the decree kind as variant_key).
+- Seam B has no production trigger — significance thresholds are PROJECT CALL (§13, playtest values); reassess() is wired and validated but nothing calls it until those land.
+- disposition_trend is a documented "stable" constant — no live disposition-trend tracking system exists yet.
+- The §8.1 conflict hook (extra_ruler_ids) still awaits its army-warfare caller; call_to_arms routing + marcher extraction wiring remain army-warfare work (unchanged from Phase 3).
+**Next session should:**
+- The handoff §8 after-all-phases sweep: confirm the global definition of done (mixed-campaign monthly tick: no NPC auto_pause, no LLM, active rulers act, backdrop stabilizes — already covered by suites 484/486/487), and review the outstanding [NEEDS-OPUS-REVIEW] flags (Phase-2 scorer integration; §7.3 extraction-resistance replacement; auto_pause gate; repression monthly reset; run_tests.sh nonzero-exit tolerance).
+- Ruler-AI P5 (clanhold migration) remains deferred by design; army-warfare wiring (marcher extraction → resistance decision, call_to_arms dispatch, conflict-hook caller) goes to that subsystem's next session.
+
+
+## Session 2026-07-03 — Ruler AI post-arc: Opus review sweep + Seam A production caller
+
+**Task:** handoff-ruler-ai-build.md §10 post-arc items — 10.1 (Opus review pass over the 5 outstanding [NEEDS-OPUS-REVIEW] flags), 10.2 (wire the built-and-tested Seam-A narrator to a real caller), and the §8 global-definition-of-done confirmation. 10.3 (Seam B triggers) stays BLOCKED (needs a real LLM provider + Jedidiah's §13 significance thresholds); 10.4 (army-warfare wiring) belongs to that subsystem's session; 10.5 are Jedidiah decisions.
+**Model used:** Opus 4.8 (review + implementation + tests).
+**Completed:**
+- **10.1 review — 4 of 5 flags CONFIRMED correct (no change), 1 fixed:**
+  - *Phase-2 scorer integration* (`domain_handlers._handle_monthly_tick`): CONFIRMED. Economic resolution + `_save_domain` run for all domains BEFORE `RulerAI.process_campaign_month`, which re-reads domain state via its own deterministic query — no clobber; `_resolve_domain_month` opts default empty = byte-identical player path; per-(ruler,month) seeded RNG keeps it deterministic.
+  - *Phase-3 §7.3 extraction-resistance* (`ruler_crisis_responder.resistance_threshold` + `extraction_resistance_heuristic.evaluate`): CONFIRMED. Code formula matches gdd-ruler-ai.md §7.3 lines 291-296 exactly; a NULL disposition returns exactly 0.50 (the `if disposition != null` guard + no own-stronghold term); federation/loyalty/`vassal_revolted` machinery untouched.
+  - *auto_pause player-side gate*: CONFIRMED. `auto_pause = has_player_domain` (PCs + PC-employed henchmen via `_player_character_ids()`); NPC-only ticks passing through is the deliberate §3.2 change.
+  - *Repression monthly reset* (`_save_domain` zeroes `is_repressed_this_month` + `repression_cp_per_family_this_month`): CONFIRMED. Both in-resolution readers — `domain_expense_calculator.gd:90` (expense charge) and `domain_handlers.gd:363` (morale) — consume the columns during `_resolve_domain_month`, BEFORE the reset in the later `_save_domain`; the repress handler's own ledger row is `cp_amount:0` (marker, not a charge) so there is no double-charge; the NPC catalog gate (`ruler_action_catalog.gd:140`) correctly reads the reset value at post-loop planning time. Closes the real permanent-morale-cap-at-0 bug.
+  - *run_tests.sh nonzero-exit tolerance*: **FIXED.** `set -euo pipefail` aborted the whole script when Godot exits nonzero from RID-leak-at-shutdown, killing run 2 before it started (defeating the two-run baseline flow). Now the Godot invocation captures its code as data (`|| exit_code=$?`), reports it per-run, guards the summary grep with `|| true`, and `exit "$exit_code"` at the very end — parity with run_tests.ps1's approach. Verified: both runs hit exit 1 (RID leak) yet the script completed both and printed the summary.
+- **10.2 Seam A production caller — narrated ruler actions in the HUD event log (SessionStatusBar UnifiedLog):** per Jedidiah's ruling (the narration is case (a): a retroactive, cosmetic one-line summary of an action the engine already took — NOT a conversation layer — so it belongs in the event log box, needs no LLM). Chosen surface = the `GameLog` autoload → `EventBus.log_entry_added` → embedded UnifiedLog, the same signal-driven pipeline every other subsystem uses.
+  - `game_log.gd`: `_connect_domain_signals` now connects `EventBus.ruler_action_taken`; new `_on_ruler_action_taken(ruler_npc_id, domain_id, action_id, outcome)` calls `RulerActionNarrator.narrate_action(...)` with `Timekeeping.get_calendar_day()` (the signal fires synchronously inside the monthly tick, so it is already the tick's day → the narration_cache is reused) and `outcome.decree_kind` as variant_key, then `_append("domain","ruler_action", env.text, ...)`. Degrades to a bare engine-truth line if narration ever yields empty. **Relevance/anti-spam is free:** `ruler_action_taken` only fires for ACTIVE-LOD rulers (6-mile window + buffer) — backdrop rulers never reach the log.
+  - `issue_decree.gd`: the success outcome now carries `"decree_kind": kind` (additive) so the narrator's cache variant_key can keep two same-day decree kinds from aliasing one cache slot. No test asserted the exact outcome shape.
+**Decisions made:**
+- Seam-A surface = the existing GameLog→UnifiedLog event log, NOT a new domain-monthly-report modal. Rationale: the narration is a stock retroactive flavor line (Jedidiah's case (a)); the signal-driven GameLog path is the idiomatic surface (20+ subsystems use it) and the LOD active-set gate is already the relevance filter, so no new screen and no spam rule are needed. A dedicated report/observation screen remains future design work if ever wanted.
+- Put `decree_kind` in issue_decree's structured outcome rather than changing the `ruler_action_taken` signal signature (a cross-system contract) or re-parsing params in the log handler — the handler already knows its kind, and the signal payload stays `outcome`-only.
+**Interfaces defined or changed:**
+- `IssueDecreeHandler.on_complete` outcome dict gained `decree_kind: String` (additive).
+- `GameLog` now consumes `EventBus.ruler_action_taken` and files a `domain`/`ruler_action` log entry (category `domain`, type `ruler_action`, actor = ruler, target = domain, data `{action_id, is_fallback}`).
+- No signal signatures changed; no DB/schema changes; no new autoloads.
+**Database changes:** none.
+**Tests added/updated:**
+- `tests/test_ruler_narration_state.gd` (suite 487, now 147 checks, up from 137): +`test_seam_a_game_log_caller` (emitting `ruler_action_taken` files exactly one non-empty `ruler_action` log entry whose text == the deterministic narrator output; re-emit same-day is byte-identical = cache reuse; actor/category asserted) and +`test_seam_a_decree_variants_not_aliased` (a tax decree and a liturgy decree the same day produce DISTINCT narrations, each carrying its own outcome summary — the variant_key anti-alias contract).
+- **Final suite: run2 = 484 passed / 16 failed — net-zero new failures vs the Phase-4 484/16 baseline.** `RulerAiMonthly: 50 checks`, `RulerCrisisLod: 59 checks`, `RulerNarrationState: 147 checks`, `GameLogStore: 38 checks` all green. §8 definition-of-done confirmed by the already-green suites 484 RulerAiMonthly / 486 RulerCrisisLod / 487 RulerNarrationState.
+**Known issues:**
+- Seam B still has no production trigger (10.3): BLOCKED on a real LLMManager provider + Jedidiah's §13 significance thresholds/cooldown. `reassess()`/`validate_suggestion` remain wired and validated; do NOT relax the bare-`issue_decree` bias-key rejection when wiring.
+- Army-warfare wiring (10.4) remains that subsystem's next session: marcher-extraction → §7.3 resistance decision, `call_to_arms` dispatch via CallToArmsMuster, and the §8.1 conflict-hook caller (`extra_ruler_ids`).
+- Two gdd-ruler-ai.md §5.2 corrections + the Seam-B thresholds are [NEEDS-JEDIDIAH-REVIEW] (10.5).
+- run_tests.sh still exits nonzero on this machine (RID leak at shutdown) — now tolerated/documented, not fatal; the authoritative signal is the log summary.
+**Next session should:**
+- Army-warfare session: pick up 10.4 (marcher extraction → resistance, call_to_arms routing, conflict hook).
+- When a real LLM provider + §13 thresholds land: wire Seam B triggers (10.3).
+- Ruler-AI P5 (clanhold migration) remains deferred by design.
+
+## Session 2026-07-04 — Army-warfare Phase E: 6-mile map army token layer
+
+**Task:** Execute Phase E of `docs/handoff-army-warfare-seams.md` §7 — the on-map army presence on the regional (6-mile) hex map: tokens (40px, unit-count badge, §7 state-color borders, always visible regardless of fog), left-click selection + animated dashed path overlay, the player-army right-click context menu with GDD §7.3 eligibility gating + disabled-state tooltips, a supply gauge on selection, and read-only inspect for NPC armies. Signal-driven refresh, no polling.
+**Model used:** Opus 4.8 (understand fan-out via Workflow, implementation, tests, verification).
+**Completed:**
+- **CRITICAL CORRECTION to the handoff premise:** the handoff (§7) names the 2D `scenes/maps/hex_map_renderer.gd` + `hex_map_landmark_icons.gd` as the regional renderer to mirror. That is STALE. `project.godot:14` sets `rendering/wilderness_hex_mode="heightmap_3d"`, so `SessionRunner._maybe_swap_wilderness_3d()` (session_runner.gd:548) renames+`queue_free()`s the 2D `HexMap` at boot and swaps in `scenes/maps/hex_map_renderer_3d.gd` (Node3D). The 2D renderer is dead code under the live flag. Phase E was built as a **3D overlay on `hex_map_renderer_3d.gd`**, NOT a Node2D layer.
+- **New `engine/subsystems/armies/army_map_presence.gd`** (`ArmyMapPresence`, RefCounted, static) — the headless-testable token model: `list_tokens_for_map(map_id)` (non-disbanded, positioned armies; fog ignored), `composition(army_id)` (unit_count/total_br/troop_count via army_unit_assignments⋈troop_units), `is_player_owned(row)`/`is_player_owned_id(id)` (PC or PC's henchman — strict "player-orderable", deliberately narrower than siege's PC-associate which also counts NPC vassals), `border_color_for_state()` (§7.1 palette), `supply_gauge(army_id)` (weeks-of-supply + green/amber/red band). PROJECT-DESIGNED supply bands: green ≥3wk / amber 1–3wk / red <1wk.
+- **`scenes/maps/hex_map_renderer_3d.gd`** — added `_army_root` ("Armies") Node3D + `_path_root` ("ArmyPath"); `signal army_token_clicked(army_id, coord)`; `_rebuild_armies()` (rebuilds tokens from ArmyMapPresence; NO fog gate — always visible per Jedidiah 2026-07-04) called from `_on_map_loaded` + `_on_frontier_grown`; `_make_army_marker()` (state-color border disc + owner-tint body cylinder + billboarded Label3D unit-count badge, larger than the party capsule); `set_selected_army()`/`_apply_army_highlight()` (scale-up); `set_army_path_overlay()`/`clear_army_path_overlay()`/`_rebuild_path_dashes()` (animated marching-ants dashed segment, animated in `_process` off real time); `army_id_at_hex()`; `refresh_armies()`. `_pick()` gained an army-token branch (party wins same-hex ties). Signal-driven refresh (NO polling): connects `army_formed`/`army_disbanded`/`battle_concluded`/`armies_collided`/`army_supply_cut` → full rebuild, `army_arrived_at_hex` → rebuild + clear stale path for the selected army, `order_queued` (filtered to `army_travel_leg`) → rebuild (catches the encamped→marching recolor, the only signal at that transition).
+- **`scenes/ui/troops/army_marching_context_menu.gd`** — reworked the pre-existing (previously-unwired) builder to the full §7.3 order set with real eligibility + disabled-state tooltips: March/Forced/Cautious gated on **hex adjacency** (armies move one 6-mile hex per leg; AXIAL_NEIGHBOR_DIRS verified against WildernessHexMath.axial_to_world); March+Requisition / March+Loot / Requisition-here / Loot-here **disabled behind `PHASE_B_EXTRACTION_AVAILABLE=false`** with a Phase-B tooltip (handoff §7.5 — don't ship placeholder economics); Begin-Siege disabled (Phase 9); Disband available for encamped AND marching (cancels the leg first); Encamp for marching. Added `build_menu_options()` adapter → the `dungeon_context_menu.gd` shape (`action_type="army_order"` + trailing Cancel). `execute_action()` guards extraction (returns `phase_b_pending`) and cancels the in-flight leg before Disband. Fixed an `int(null)` crash on unpositioned armies (`_int_or_zero`).
+- **`engine/subsystems/session/states/wilderness_explore_state.gd`** — wired the interaction: connects `army_token_clicked` (select player army → highlight + path + gauge; NPC → read-only inspect) and `hex_clicked` (deselect); `_on_hex_context_menu_requested` opens the army order menu (targeting the right-clicked hex) when a player army is selected, else falls through to the party menu; `_on_context_action` dispatches `army_order` via `ArmyMarchingContextMenu.execute_action`; `_refresh_army_path` reads the single pending `army_travel_leg` from the live scheduler (`get_events_for_owner`) and draws the overlay; `_show_army_gauge`/`_open_army_inspect` (read-only detail panel, centered). Cleaned up on `exit`.
+- **`scenes/ui/components/army_supply_gauge.gd`** (new) — compact on-select supply widget: `_draw()` green/amber/red weeks-of-supply bar + `Currency.format_cost` text readout; pulls from `ArmyMapPresence.supply_gauge`.
+- **`scenes/ui/notebook/troops/army_detail_panel.gd`** — `display(army_id, read_only=false)`; read-only mode replaces the owner action bar with an "observation only" note (so an inspected enemy army is not commandable).
+- **Adversarial review pass (3-reviewer + verify Workflow) → 2 confirmed logic defects FIXED:** (1) `_army_hex_index` collapsed co-located armies to a single clickable id — two armies on one hex (valid durable state: friendly non-merging per collision-detector O-A-2) rendered stacked and only the last-sorted was selectable. Fixed: `_army_hex_index` is now `coord → Array[army_id]`, stacked markers fan out by `ARMY_STACK_OFFSET`, and `_pick` cycles through co-located armies via `_next_army_at` (repeated clicks at the hex advance the selection). (2) Selecting a player army after inspecting an NPC army left the layer-26 inspect panel drawn on top — `_select_army` now calls `_close_army_inspect()` first. Both re-verified: `--check-only` clean + a second MCP campaign-load smoke confirmed the edited renderer compiles + `_rebuild_armies` runs clean.
+**Decisions made:**
+- Built against the **3D renderer** (the live one), not the 2D renderer the handoff named — verified via project.godot flag + the session-runner swap. Flagged for Jedidiah: the handoff doc §7 is stale re: which renderer is live.
+- **Ownership breadth for orderability = PC or PC's henchman** (NOT the broader siege "PC-associate" that includes NPC vassals). A vassal NPC ruler's own army is influenced via call-to-arms/duties, not direct march orders → inspect-only on the map.
+- **Extraction orders disabled behind a Phase-B flag** rather than wired to the flat-gp placeholder (handoff §7.5). One flag flip (`PHASE_B_EXTRACTION_AVAILABLE`) enables them when Phase B lands.
+- **Single-segment path overlay:** armies pre-schedule exactly one `army_travel_leg` at a time (no stored multi-hex route exists — no path column, no legs table). The overlay draws that one in-flight segment, read from the in-memory `EventScheduler`. A true multi-hex army route would need new storage or multi-leg pre-scheduling (flagged as future work).
+- **Full rebuild on every army signal** rather than per-token diffing — there is NO `army_state_changed` signal (every `update_army({"state":...})` is signal-less), and a handful of armies per map makes a wholesale rebuild trivially cheap and bug-free. Flagged: a dedicated `army_state_changed(army_id, old, new)` signal would let the layer diff and would remove the `order_queued` event-type filter hack; belongs to the army-warfare 10.4 wiring.
+- **Menu builder split** honors gdd-dungeon-map-ui.md §1 / conventions §19.6: pure-logic order set + eligibility is testable (`ArmyMarchingContextMenu`, RefCounted+class_name), the map layer only renders + dispatches.
+**Interfaces defined or changed:**
+- `hex_map_renderer_3d.gd`: NEW `signal army_token_clicked(army_id: String, coord: Vector2i)`; NEW public methods `set_selected_army(army_id)`, `set_army_path_overlay(from_hex, to_hex)`, `clear_army_path_overlay()`, `army_id_at_hex(coord) -> String`, `refresh_armies()`.
+- `ArmyMapPresence` (new): `list_tokens_for_map(map_id) -> Array[{army_id,name,hex_q,hex_r,state,unit_count,total_br,troop_count,is_player_owned}]`, `composition(army_id) -> {unit_count,total_br,troop_count}`, `is_player_owned(army)/is_player_owned_id(army_id) -> bool`, `border_color_for_state(state) -> Color`, `supply_gauge(army_id) -> {has_data,stockpile_cp,weekly_cost_cp,weeks_remaining,band,status,text}`. Consts `STATE_COLOR`, `SUPPLY_GREEN_WEEKS=3.0`, `SUPPLY_AMBER_WEEKS=1.0`.
+- `ArmyMarchingContextMenu`: `build_menu_options(army_id, target_q, target_r) -> Array` (dungeon_context_menu shape; `action_type="army_order"`, `army_action`, `army_id`, `hex_q/hex_r`); `build_items_for_army` reworked to full §7.3; `execute_action` extraction guard + disband-cancels-leg. Const `PHASE_B_EXTRACTION_AVAILABLE=false`, `MENU_CATEGORY="army"`.
+- `army_detail_panel.display(army_id, read_only := false)` (additive optional param).
+- No DB/schema changes; no new autoloads; no EventBus signal signatures changed (only new consumers).
+**Database changes:** none.
+**Tests added/updated:**
+- New suite `tests/test_army_map_presence.gd` (`ArmyMapPresenceTests`, registered id 488): border-color palette, composition aggregation, PC-vs-NPC ownership, supply-gauge bands (green/amber/red + no-row), and `list_tokens_for_map` filtering (excludes disbanded / unpositioned-assembling / other-map armies; carries composition + ownership).
+- Extended `tests/test_armies_section_ui.gd`: adjacency gating (March enabled only for an adjacent hex, disabled-with-tooltip otherwise), Phase-B disabled extraction + `execute_action` `phase_b_pending` rejection, disband+encamp for marching armies, `build_menu_options` shape (army_order action_type + trailing Cancel), and read-only detail panel hides command buttons.
+- Fixed the pre-existing menu tests' assumptions (still pass under the reworked builder).
+- **Final suite (run 2, authoritative): 485 passed / 16 failed — net-zero NEW failures vs the 484/16 baseline** (the +1 passed is the new ArmyMapPresenceTests; the 16 are the pre-existing baseline flakies, none referencing the Phase-E files). `ArmyMapPresence: all tests passed.` + `ArmiesSectionUI: all tests passed.`
+**Verification:**
+- Runtime smoke via godot-ai MCP: loaded a saved campaign ("Generated World — Ufwids") into the wilderness. Confirmed the **3D renderer is live** (the `HexMap/Armies` Node3D — my `_army_root` — exists at the right path; only the 3D renderer has it), the session loads + renders the map + party with **zero script errors**, and `_on_map_loaded → _rebuild_armies()` runs clean (this campaign's current map has no positioned armies → empty token list, no crash). Renderer `_ready` (roots + all 7 EventBus signal connections) validated at boot. All 7 connected signals verified declared in event_bus.gd. `_make_army_marker` (token pixels) not runtime-exercised here (no armies on the map) — its data model is fully headless-tested and Label3D/CylinderMesh API verified; a manual visual checklist is below.
+- Every touched `scenes/` script passed `--check-only` (only the known autoload/class_name false-positives; no real syntax errors).
+- **Manual visual checklist (needs a campaign with an army on the party's current map — natural once Phases A–F field armies):** (1) token renders at hex with unit-count badge + state-color border, larger than the party token; (2) token moves on leg arrival + border color tracks state transitions (assembling→marching→encamped); (3) left-click selects (scale-up highlight) + supply gauge appears; (4) selected army shows the animated dashed path when a leg is pending; (5) right-click a destination → order menu with correct enabled/disabled + cooldown/Phase-B tooltips; adjacent hex enables March, distant disables it; (6) NPC army click opens the read-only inspect (no command buttons), not the order menu; (7) tokens appear over unexplored/fogged hexes (always-visible rule).
+**Known issues:**
+- Extraction orders (Requisition/Loot, marching + at-hex) are disabled pending Phase B (`PHASE_B_EXTRACTION_AVAILABLE`); flip the flag when the extraction resolver + `requisition_leg`/`loot_leg` land.
+- Path overlay is single-segment (one leg) — no multi-hex army route exists yet.
+- No `army_state_changed` signal — layer reconstructs state via full rebuild on lifecycle signals + the `order_queued` filter. A dedicated signal (army-warfare 10.4) would be cleaner.
+- Same-hex party+army: the party wins the pick (party-hex is checked before armies), so an army sharing the PARTY's hex isn't independently click-selectable in v1 (documented). Co-located ARMIES (army+army) ARE reachable — cycled via repeated clicks.
+- Handoff §7 doc is stale (names the dead 2D renderer) — flagged for Jedidiah.
+**Next session should:**
+- Phase A/B/C/D/F of `docs/handoff-army-warfare-seams.md` (battle routing, extraction RAW core, resistance seam, call_to_arms/withstand_siege, NPC siege initiation). When Phase B lands, flip `PHASE_B_EXTRACTION_AVAILABLE` and the extraction orders go live.
+
+## Session 2026-07-04 — Army-warfare Phase A: battle/siege routing backbone
+
+**Task:** Execute Phase A of `docs/handoff-army-warfare-seams.md` §3 — make the built battle machinery reachable: (1) register the BattleDispatcher collision listener at session activation so march-time collisions become battles; (2) create+instantiate field_battle_panel.tscn with scheduler pause/resume; (3) the stateless ConflictParticipants helper feeding RulerLodManager.sync's extra_ruler_ids from live player-involved conflicts (immediate sync on conflict creation + every monthly tick). Plus the §7.6 world-log for silent battles.
+**Model used:** Opus 4.8 (understand fan-out + routing design + implementation + tests).
+**Completed:**
+- **Handoff corrections (verified against code, per the verify-first mandate) — the handoff under-scoped Phase A significantly:**
+  - `BattleDispatcher.register_collision_listener()`/`unregister_collision_listener()` **did not exist** (doc-comment only) — WROTE them.
+  - `ArmyMarcher.register()` **was called by NO production code** — the `army_travel_leg` handler was never in the live registry, so armies never completed marches AND `armies_collided` never fired. Registered ArmyMarcher at session load (this also fixes Phase E marches actually resolving).
+  - `field_battle_panel.tscn` **did not exist**; the panel builds its whole UI in code (`_build_layout`) — CREATED a 1-node `.tscn` (root CanvasLayer + script, `layer=90`).
+  - Scheduler pause/resume was **unwired end-to-end** (dispatch only emits `battle_pause_for_player`); §7.6 world-log posting was **unwired**. Both built.
+  - `resolve_silently` (not `resolve_battle_silently`); `continue_battle` returns a dict (panel drives synchronously) — noted, not touched.
+- **`BattleDispatcher` (`engine/subsystems/armies/battle_dispatcher.gd`):** added static `register_collision_listener()`/`unregister_collision_listener()` (idempotent `is_connected` guards) + `_on_armies_collided(a,b,q,r)` which supplies `Timekeeping.get_calendar_day()` (armies_collided carries no day) and calls `dispatch_collision`. **The decision tree + resolvers are untouched** (the constraint).
+- **`ConflictParticipants` (new, `engine/subsystems/realm_ai/conflict_participants.gd`, RefCounted/static, headless-tested):** `active_ruler_ids(campaign_id)` — stateless re-derivation of the opposing NPC ruler ids of live player-involved conflicts. field_battles (`is_player_involved=1 AND outcome=''`) + sieges (`resolution_mode='full' AND current_phase != 'concluded'`); resolves army→ruler via `political_owner_id`, plus `strongholds.owner_character_id` for garrison-only siege defenders. Returns raw NPC owners; the §8.1 full-tier gate inside `RulerLodManager` drops named-tier opponents (bandit captains / challengers are `persistence_tier='named'`), so a named-tier ruler is NEVER promoted — the materialization-safety invariant.
+- **`SessionRunner` (`engine/subsystems/session/session_runner.gd`):** in `load_session` — register `_army_marcher` (ArmyMarcher) + `BattleDispatcher.register_collision_listener()` + instantiate `field_battle_panel.tscn` as a sibling under Main; in `end_session` — unregister both + hide the panel. In `_ready` — subscribe `battle_pause_for_player`→pause / `battle_concluded`→resume (owns the scheduler pause so the panel stays UI-only; captures pre-battle pause state to not clobber a manual pause), and `battle_started`/`siege_started`→`_on_conflict_started_for_lod` (immediate LOD conflict-hook sync).
+- **`domain_handlers._handle_monthly_tick`:** the monthly `RulerLodManager.sync(...)` now passes `ConflictParticipants.active_ruler_ids(_campaign_id)` for `extra_ruler_ids` (was `[]`).
+- **Adversarial review (3-reviewer + verify Workflow) → 2 confirmed bugs FIXED:** (1) **crash** — `ConflictParticipants._collect_siege_rulers` did `String(row.get("defending_army_id", ""))`, but godot-sqlite returns a Godot `null` (key present → the `""` default never applies) for the NULLABLE column, and `String(null)` crashes — killing the LOD sync in exactly the garrison-only-defence siege the fallback serves. Fixed with the `"" if v == null else String(v)` guard the codebase already uses for nullable columns (+ regression test). (2) **logic** — `_on_battle_concluded_for_scheduler` wasn't keyed to the paused battle's id: a silent NPC-vs-NPC battle concluding synchronously (same collision-detector loop) while a player battle is paused resumed the clock out from under the open player panel and never re-paused. Fixed by capturing `_paused_for_battle_id` on the first pause and resuming only on the matching conclusion. Both re-verified: `--check-only` clean + suite re-run.
+- **`GameLog` (`engine/autoloads/game_log.gd`):** subscribes to `battle_concluded` → re-queries `BattleRepository.get_battle` → appends a `combat` world-log line (`npc_battle_resolved` for silent, `pc_battle_concluded` for player) with a readable outcome phrase (§7.6). No resolver change.
+**Decisions made (routing-design pass, Opus):**
+- **Immediate LOD sync lives in SessionRunner (on `battle_started`/`siege_started`), NOT inside the static dispatchers.** Coupling the `engine/subsystems/armies` + `sieges` dispatchers to `realm_ai`/`RulerLodManager` would risk the forbidden decision-tree edits and add a cross-subsystem dependency. ConflictParticipants scopes to player-involved, so an NPC-vs-NPC `battle_started` is a harmless idempotent no-op.
+- **Scheduler pause/resume owned by SessionRunner** (the loop owner) rather than the panel — keeps the scenes/ panel scheduler-free and the pause logic in engine/. Pre-battle-pause state captured on the first `battle_pause_for_player` (it re-fires per phase) so conclusion restores it rather than clobbering a manual pause.
+- **World-log via GameLog subscribing to `battle_concluded`** (re-querying for belligerents) rather than editing the resolver or coupling armies→GameLog — one owner, existing signal, covers silent + player battles.
+- **Registered ArmyMarcher at session load** — necessary for the collision chain AND a genuine fix for Phase E (marches never resolved because the leg handler was unregistered).
+**Interfaces defined or changed:**
+- `BattleDispatcher.register_collision_listener()` / `unregister_collision_listener()` (static; now implemented) + `_on_armies_collided(a,b,q,r)`.
+- `ConflictParticipants.active_ruler_ids(campaign_id) -> Array[String]` (new class_name).
+- `GameLog` now consumes `EventBus.battle_concluded` (world-log `combat`/`npc_battle_resolved`|`pc_battle_concluded`).
+- SessionRunner now consumes `battle_pause_for_player`, `battle_concluded`, `battle_started`, `siege_started`; holds `_army_marcher`, `_field_battle_panel`.
+- No DB/schema changes; no new autoloads; no EventBus signal signatures changed; BattleDispatcher decision tree + resolvers untouched.
+**Database changes:** none.
+**Tests added/updated:**
+- New suite `tests/test_battle_routing.gd` (`BattleRoutingTests`, id 489, 6 tests): NPC-vs-NPC → silent resolve + `npc_battle_resolved` log entry; collision listener routes `armies_collided` → one battle; PC-involved → interactive (`is_player_involved=1` row + `battle_pause_for_player`); ConflictParticipants returns the opposing NPC ruler; **§8.1 full-tier gate: named-tier opposing ruler dropped from `active_set`, full-tier admitted**; conflict conclusion (`outcome != ''`) drops the ruler from ConflictParticipants (feeds grace demotion).
+- **Suite: 486 passed / 16 failed — net-zero NEW failures** vs the 485/16 (Phase E) baseline (the +1 passed is BattleRoutingTests, now 7 tests incl. the garrison-only-siege crash regression; the 16 are pre-existing flakies). Confirmed across runs (486/16 pre-review-fix; the interim 485/17 was only the new garrison test's incomplete INSERT — 5 NOT NULL siege columns — fixed; final run 486/16 green). `BattleRouting` + `ArmyMapPresence` + `ArmiesSectionUI` all green.
+**Verification:**
+- Runtime smoke via godot-ai MCP: loaded a saved campaign — the session loaded with **zero script errors**, and **`/Main/FieldBattlePanel` (CanvasLayer, self-built UI) materialized**, confirming `load_session`'s ArmyMarcher registration + `BattleDispatcher.register_collision_listener()` + panel instantiation and the `_ready` battle/siege signal connections all run clean at runtime.
+- Every touched scene/session script passed `--check-only` (autoload false-positives only; no real syntax errors).
+- **Manual checklist (needs armies fielded on the map — natural once a march collision or a threats-sub-tab battle occurs):** (a) two NPC armies colliding on a march resolve silently and a `combat` log line appears; (b) a PC-involved collision pauses the scheduler and opens the FieldBattlePanel, which closes + resumes on conclusion; (c) starting a player-involved battle promotes the opposing full-tier NPC ruler into the LOD active set (a named-tier bandit/challenger is NOT promoted).
+**Known issues:**
+- The scheduler-paused + panel-visible aspects of a PC-involved battle are scene-level → manual/MCP checklist (see below), not headless-asserted.
+- Load-time re-open of an in-progress battle's panel (a battle saved mid-flight) is NOT wired — out of Phase A scope (the panel rebuilds statelessly from `get_battle_state`, but nothing re-emits `battle_pause_for_player` on load). Flag for a later pass.
+- Registering ArmyMarcher changes behavior: scheduled army marches now resolve (previously dormant). Intended, but worth noting for anyone with a save mid-march.
+**Next session should:**
+- Phase B (extraction RAW core), then C (resistance seam — consumes A's routing + B), D, F. The §12 capstone integration scenario becomes runnable after C.
+
+## Session 2026-07-04 — Army-warfare Phase B: RAW extraction core
+
+**Task:** Execute Phase B of `docs/handoff-army-warfare-seams.md` §4 — replace the extraction placeholder with the RAW subsystem: `ExtractionResolver` (yields/cooldowns/family-loss/ceiling), encamped `requisition_leg`/`loot_leg` activities, the marching-extraction rewrite (fixing the gp-into-cp unit bug + the missing movement-halving), per-domain ceiling-tracking persistence, and the Phase-C resistance call site stubbed. Plus flipping the Phase-E extraction orders live.
+**Model used:** Opus 4.8 (understand fan-out + RAW verification + implementation + tests + review).
+**RAW verified** (`acks-raw-lookup`, `daw_campaigning_armies.xml` §requisition_and_looting L319-352): requisition 40 gp/family once per domain per 6 months (no family loss); loot up to 20 gp/family, 1 family lost per 20 gp; combined 60 gp/family ceiling; moving army halves movement + single-hex-or-pro-rated; encamped current-then-adjacent.
+**Completed:**
+- **NEW `engine/subsystems/armies/extraction_resolver.gd`** (`ExtractionResolver`, static, headless-tested): `resolve(army_id, domain_id, mode, calendar_day, pro_rate_divisor=1)`. Yield = `min(base_rate/divisor, 60−cumulative) gp/family × domains.peasant_families × 100` cp via `XPAwardCalculator.bankers_round`. Loot decrements `peasant_families` by `floor(gp_total/20)` (clamped ≥0). Requisition once per 6 months (cooldown); combined 60 gp/family ceiling per domain, reset each 6-month period (population-recovery proxy). Plus `domain_for_hex`, `is_friendly_domain` (RealmGraph apex), `preview` (read-only UI eligibility), and a stubbed `_resistance_hook_phase_c` (returns true; Phase C fills it).
+- **CRITICAL RAW input:** yield uses `domains.peasant_families` — the per-hex `domain_hexes.families` column is **0 at runtime** (M2b-1 deferral) and must NOT be used. The acceptance-bar "100-family domain → 4000 gp" confirms the whole-domain count.
+- **NEW `engine/subsystems/armies/extraction_scheduler.gd`** (`ExtractionScheduler`): encamped `requisition_leg`/`loot_leg` 7-day scheduled events mirroring `ArmyMarcher` (register/handle/cancel/begin_*); sets `armies.state` requisitioning/looting → encamped; current-then-adjacent geography (`HexMapController.get_neighbors`, first eligible domain — requisition needs friendly); ALL leg state in `event.data` so it survives save/load; emits the completion signals.
+- **`army_marcher`:** `_apply_marching_extraction` rewritten to delegate to `ExtractionResolver`, pro-rated across the leg's `{from,to}` distinct domains (requisition friendly-only), threading `map_id`; **gp-into-cp unit bug fixed** (resolver credits cp). **Movement-halving fixed** — `compute_army_daily_miles` gained `extraction_mode` and applies ×0.5 (RAW L344; it was documented-but-never-applied — extraction had zero effect on leg duration).
+- **NEW migration `183_domain_extraction_ledger.sql`** (+ schema.sql mirror + `_SCOPE_DIRECT_CAMPAIGN` registration): per-`(campaign_id, domain_id)` ledger — `period_anchor_calendar_day`, `last_requisition_calendar_day`, `cumulative_extracted_gp_per_family`, `families_lost`. The per-army `requisition_cooldowns_json` (inert) can't enforce the cross-army per-domain ceiling — hence a domain-keyed table.
+- **EventBus:** `army_requisition_completed(army_id, domain_id, gp_yield)`, `army_loot_completed(army_id, domain_id, gp_yield, families_lost)`.
+- **`SessionRunner`:** registers `_extraction_scheduler` at `load_session` / unregisters at `end_session` (park-unhandled lesson from Phase A); `get_extraction_scheduler()` accessor.
+- **UI enablement:** `PHASE_B_EXTRACTION_AVAILABLE=true` — the Phase-E extraction orders are now LIVE, gated on real eligibility (`_requisition_eligibility`: friendly territory + cooldown + ceiling via `ExtractionResolver.preview`; loot always available). `execute_action` gained an `extraction_scheduler` param (encamped Requisition/Loot → `begin_*`); march extraction → `march_army(normal, mode)` (fixed the prior `cautious` double-halve); `wilderness_explore_state._dispatch_army_order` passes the session's extraction scheduler.
+**Decisions made (RAW/design pass, Opus):**
+- **Ceiling reset = 6-month period** (`period_anchor`), the same window as the requisition cooldown — a tractable "until population recovery" proxy (the domain's monthly `DomainGrowthResolver` restores families; there is no per-cap recovery timestamp). Live-compare-vs-`60×families` was the alternative; period-reset is simpler and testable.
+- **Marching pro-rate = base rate ÷ distinct leg domains** ({from,to}); a leg is one hex-hop so ≤2 domains. Requisition friendly-only; loot any.
+- **Per-domain ledger** owns BOTH the cooldown and the ceiling (RAW frames both per-domain across armies); the per-army `requisition_cooldowns_json` stays vestigial.
+- **Extraction+cautious movement** stacks multiplicatively (×0.25); extraction alone = ×0.5. Documented.
+**Interfaces defined or changed:**
+- `ExtractionResolver.resolve(army_id, domain_id, mode, calendar_day, pro_rate_divisor=1) -> {success, mode, domain_id, gp_yield_cp, gp_per_family, families_lost, families_before}`; `domain_for_hex`, `is_friendly_domain`, `preview`. Consts `MODE_REQUISITION/LOOT`, rates 40/20/60, `COOLDOWN_DAYS=180`.
+- `ExtractionScheduler.begin_requisition/begin_loot(army_id, current_time, scheduler)`, `register/unregister/cancel`; consts `EVENT_REQUISITION_LEG`/`EVENT_LOOT_LEG`.
+- `ArmyMarcher.compute_army_daily_miles(army_id, march_mode, extraction_mode="none")` (additive param).
+- `ArmyMarchingContextMenu.execute_action(..., extraction_scheduler=null)` (additive param); `PHASE_B_EXTRACTION_AVAILABLE=true`.
+- New EventBus signals (above). New `domains`-scoped table. `SessionRunner.get_extraction_scheduler()`.
+**Database changes:** migration 183 `domain_extraction_ledger` (+ schema.sql mirror + `_SCOPE_DIRECT_CAMPAIGN`).
+**Tests added/updated:**
+- New suite `tests/test_extraction_resolver.gd` (`ExtractionResolverTests`, id 490, 9 golden tests): requisition 40/family + cooldown stamp; 2nd-requisition-in-window rejected; loot ceiling + full family loss (domain → 0); partial family loss floor + pro-rate; 6-month ceiling/cooldown reset; marching loot pro-rate across two domains (+ per-domain family loss); marching requisition skips enemy territory; extraction leg halves movement; encamped requisition_leg survives save/load mid-leg.
+- Updated `test_army_marcher.gd` (marching extraction now seeds a friendly domain) and `test_armies_section_ui.gd` (extraction orders now eligibility-gated, not flag-disabled).
+- **Adversarial review (3-reviewer + verify Workflow) → 2 confirmed bugs FIXED** (+ 1 self-caught): (a) **supply-less army charged for nothing** — `resolve` decremented families + stamped the ledger and returned `success:true` even when `_credit_army` no-op'd (army has no `army_supply_state` row — the bandit/challenger create_army pattern); fixed by guarding the supply row UP FRONT (`_fail("no_supply_state")` before any domain side effect) + regression test. (b) **preview/resolve cooldown desync** — `preview` suppressed the requisition-cooldown check once the (independent) ceiling period expired, so the menu enabled an order `resolve` then silently rejected; fixed by removing the `period_expired` gate on the cooldown branch (the cooldown and ceiling-period clocks are independent) + regression test. (c) self-caught: `String(army.get("map_id"))` crashed on a NULL `map_id` in the menu builder (the §95 nullable-column trap) — null-guarded.
+**Known issues:**
+- Resistance is a permissive stub (`_resistance_hook_phase_c` returns true) — Phase C wires the §7.3 decision + battle routing so a resisted extraction becomes a battle whose outcome gates the yield.
+**Next session should:**
+- Phase C (resistance seam) — fills `_resistance_hook_phase_c`, consuming Phase A's battle routing + Phase B's extraction flow. Then D, F.
+
+## Session 2026-07-04 — Army-warfare Phase C: the extraction-resistance seam
+
+**Task:** Execute Phase C of `docs/handoff-army-warfare-seams.md` §5 — wire the Phase-B extraction flow to the domain owner's §7.3 resistance decision so a resisted extraction becomes a real battle whose outcome gates the yield. Integrates Phase A (battle routing) + Phase B (extraction) + the already-built `ExtractionResistanceHeuristic`. Closes the core of build-log 10.4.
+**Model used:** Opus 4.8 (understand fan-out + RAW verification + implementation + adversarial review + fixes + tests).
+**RAW verified** (`acks-raw-lookup`): `daw_campaigning_armies.xml §requisition_and_looting L341-342` "the domain's leader may resist requisition or looting by fighting a battle." **Discrepancy flagged:** the handoff §5 step 5 (+ its reading of GDD §4.3.3) claims a henchman-morale roll fires when a lord loots his own vassal's domain — but the RAW "Henchman Morale roll" (`ax_campaign_play.xml:518-528`) is a **Call-to-Arms** mechanic ("calling for the full garrison counts as demanding two duties"), NOT a requisition/loot mechanic, and GDD §4.3.3 (605-611) contains no such note. Per doc-authority (RAW is SACRED; flag discrepancies) the lord-vassal case is FLAGGED for Jedidiah, not implemented as an invented rule.
+**Completed:**
+- **NEW `engine/subsystems/armies/extraction_resistance_router.gd`** (`ExtractionResistanceRouter`, static): the seam. `should_proceed(domain_id, army_id, mode, calendar_day) -> bool` is the body `ExtractionResolver._resistance_hook_phase_c` now delegates to. Flow: friendly-domain short-circuit (own-realm requisition never gives battle) → per-day episode cache (decide once per (domain,army,mode,day) so a pro-rated multi-hex march doesn't re-roll per hex) → resolve the owner → **player-owned domain GUARD** (block + notification alert, never auto-resolve — step 4) → NPC owner: `ExtractionResistanceHeuristic.evaluate` with the §7.3 disposition opts (`RulerDispositionRepository.get_disposition`; null → 0.50 anchor) → on `will_resist`, materialise a defender levy (personal garrison + each responding vassal's garrison via `ArmyRepository.create_army/create_supply_state/create_officer/create_assignment`, mirroring `CallToArmsHandler`) → `BattleDispatcher.dispatch_collision` → **gate the yield on the outcome**. Silent NPC-vs-NPC battles resolve synchronously (outcome read via `BattleRepository.get_battle`, mapped to extractor-won regardless of which side the dispatcher labelled the tactical attacker); the levy is then demobilised (survivors back to garrison, army disbanded — handoff §5 step 3). Interactive (player-involved) battles can't be awaited in the synchronous hook → block-this-attempt (documented v1: the player re-issues after winning; the interactive levy demob is deferred to the broader mustered-army cleanup).
+- **`extraction_resolver.gd`:** `_resistance_hook_phase_c` now returns `ExtractionResistanceRouter.should_proceed(...)` (was a permissive stub).
+- **`battle_dispatcher.gd`:** re-entrancy GUARD — `dispatch_collision` no-ops (`already_battling`) if either army is already in state `battling`. Phase C exposed this: the router materialises a defender at the extraction hex and dispatches it, then `ArmyMarcher`'s own post-arrival `detect_at_hex` re-scans that hex; without the guard an ONGOING (interactive) resistance battle would spawn a duplicate (`detect_at_hex` does not skip battling armies; silent battles are safe because the loser retreats/disbands before the re-scan).
+- **`session_runner.gd`:** `ExtractionResistanceRouter.reset_episode_cache()` on `load_session` (the static per-day cache is not campaign-scoped; a fresh session starts clean).
+**Decisions made (Opus, RAW/design + review pass):**
+- **The resistance orchestration is a SEPARATE static service (`ExtractionResistanceRouter`), not folded into `ExtractionResolver`** — it couples armies + realm_ai + battle, which the resolver deliberately does not. The resolver's hook signature is unchanged.
+- **Authoritative `field_battles.outcome` → winner mapping** (the resolver's own boolean at `field_battle_resolver.gd:698` is over-broad, masked only by annihilation early-returns): attacker won iff outcome ∈ {attacker_victory, defender_annihilation, defender_voluntary_withdrawal}; defender won iff ∈ {defender_victory, attacker_annihilation, attacker_voluntary_withdrawal} (attacker_annihilation = the ATTACKER was annihilated); draw otherwise.
+- **Step 4 player-domain surface = notification only (v1).** The persistent `domain_threats` row + a resist-choice modal don't cleanly exist (`domain_threats.kind` is a fixed CHECK enum; the threats sub-tab renders only 4 kinds). Per the handoff's own "if no clean surface exists, stop and ask Jedidiah rather than inventing a modal", the guard blocks + notifies; the persistent surface is 10.4-coupled. FLAGGED.
+- **Defender is materialised from the FULL federated force** (personal + responding-vassal garrisons) so the battle fields what the §7.3 decision committed; demobilised back to garrison after a silent battle.
+**Interfaces defined or changed:**
+- `ExtractionResistanceRouter.should_proceed(domain_id, army_id, mode, calendar_day) -> bool`; `reset_episode_cache()`.
+- `BattleDispatcher.dispatch_collision` now returns `{error:"already_battling"}` when either army is `battling` (additive; existing callers unaffected).
+- `SessionRunner.load_session` clears the router episode cache.
+- No schema changes, no new migrations (Phase C is pure logic over Phase A/B state).
+**Database changes:** none.
+**Tests added/updated:**
+- NEW `tests/test_extraction_resistance_router.gd` (`ExtractionResistanceRouterTests`, id 491, 10 tests): outcome→winner mapping (all 7 values); friendly short-circuit; null-disposition resists at the 50% anchor; cautious declines at 50% (0.65 threshold); aggressive resists at 40% (below the neutral bar); silent-battle outcome gates the yield consistently; defender levy demobilises after a silent battle (survivors → garrison, army disbanded); ownerless (NULL owner_character_id) domain doesn't crash; pro-rated march decides once per domain per episode; marching resistance fires exactly ONE battle (the dispatch re-entrancy guard); player-domain extraction blocks + surfaces a notification.
+- Registered (4 edits: ext_resource + node in `test_runner.tscn`; `@onready var` + run-loop entry in `test_runner.gd`).
+- **Adversarial review (3-dimension × verify Workflow, 14 agents) → 4 CONFIRMED bug classes FIXED:** (a) CRITICAL `String(null)` on nullable `owner_character_id` (§95 trap) → null-guard + regression test; (b) HIGH cross-campaign static episode-cache pollution → `reset_episode_cache()` on `load_session`; (c) MEDIUM unchecked `create_supply_state` return → check + disband-on-failure; (d) CRITICAL×2 + HIGH defender levy never demobilised (units stuck `on_campaign`, army orphaned at hex) → `_demobilize_defender` for the silent case + test. Two findings REFUTED (a claimed race — the flow is synchronous; a null-disposition concern — `resistance_threshold` guards null). One PLAUSIBLE (same-day double-commitment) is resolved by the demobilisation fix.
+**Known issues:**
+- **[NEEDS-JEDIDIAH-REVIEW] Lord-vassal loot (step 5):** not implemented — the RAW henchman-morale roll is a Call-to-Arms mechanic, not a loot one (see RAW note above). Jedidiah to rule whether looting a vassal's domain should trigger a loyalty consequence (an invented extension) or stay unopposed.
+- **[NEEDS-JEDIDIAH-REVIEW] Player-domain resist surface (step 4):** v1 guard emits a notification + blocks; the persistent threat-row (needs a new `domain_threats.kind`) + resist-choice modal are deferred to 10.4 (NPC marching extraction, the trigger, is also 10.4 — the guard is not reachable in play yet).
+- **Interactive-defender demobilisation deferred:** a player-involved resistance battle's levy persists post-battle (the async battle can't be demobilised in the synchronous hook) — the broader mustered-army-demobilisation gap (shared with call-to-arms). Silent (NPC-vs-NPC) levies fully demobilise.
+- **Latent (not Phase C):** `field_battle_resolver.gd:698` `attacker_won`/`defender_won` booleans are over-broad (annihilation appears in both); currently harmless (annihilation early-returns short-circuit), but fragile.
+**Next session should:**
+- Phase D (`call_to_arms` routing + `withstand_siege`), then Phase F (NPC siege initiation). Then the arc capstone: run the ruler-AI §12 integration scenario end-to-end (hostile army extracting → resistance → battle → outcome). Get Jedidiah's rulings on the two flagged items.
+
+## Session 2026-07-04 — Army-warfare Phase D: call_to_arms + withstand_siege dispatch
+
+**Task:** Execute Phase D of `docs/handoff-army-warfare-seams.md` §6 — close the two remaining ruler-AI dispatch stubs. Route `RulerAI.call_to_arms` through the favors-and-duties layer into `CallToArmsMuster.issue_call` (reusing the loyalty machinery), and give `withstand_siege` a real minimal dispatch (defender posture on the existing siege row + hold the ruler's armies). Both must emit `ruler_action_taken` with `dispatched:true`.
+**Model used:** Opus 4.8 (understand fan-out + RAW re-verification + implementation + adversarial review + tests).
+**RAW re-verified** (`acks-raw-lookup`): call_to_arms magnitude — a called vassal musters at least 1/2 the realm garrison (`daw_armies_recruitment.xml:658-660`; `acore_axioms_strongholds_and_domains.xml:353-356`); full garrison = 2 duties. Duty safe-total + cumulative −1-per-excess loyalty roll (`acore_axioms:353-356`; non-henchman no free duty `:392-397`). Muster tranches ½/¼/remainder by title period (`:373-382`). **Flagged:** the withstand_siege "defend from inside, no sortie" posture is a PROJECT-DESIGNED choice — `daw_sieges.xml` does not forbid a defender sortie; the handoff already frames it as "minimal per Jedidiah's decision", so it's a sanctioned design call (not a RAW divergence to re-litigate).
+**Completed:**
+- **`ruler_ai.gd`:** `_NO_DISPATCH` reduced to `["hold"]` (withstand_siege removed); threaded an EventScheduler `scheduler` param through `process_campaign_month → _take_turn → _execute` (the static planner had no scheduler; needed for call_to_arms tranche events + march cancellation). NEW `_dispatch_call_to_arms` (enumerate `VassalRepository.list_active_for_liege`, call `FavorsDutiesResolver.trigger_call_to_arms` per vassal at the 50% RAW-min defensive magnitude, merge all mustered troops into ONE lord army — an existing ruler army if present, else the first call's auto-created army captured + reused as the override) and `_dispatch_withstand_siege` (find the domain's active siege, set `defender_posture='hold_fast'`, cancel marching orders for the ruler's armies at the siege hex). Helpers `_find_ruler_merge_army`, `_hold_ruler_armies_at_siege`. New const `CALL_TO_ARMS_DEFENSIVE_MAGNITUDE_PCT=50`.
+- **`favors_duties_resolver.gd`:** `_apply_obligation` gained optional trailing params `lord_army_id_override=""` + `magnitude_pct_override=50` (threaded to `CallToArmsMuster.issue_call`; magnitude now `clampi(override,50,100)`), so existing 5-arg callers are byte-identical. NEW public `trigger_call_to_arms(assignment, calendar_day, magnitude_pct, scheduler, dice, lord_army_id_override)` — the planner's deliberate-crisis-muster entry point: builds a call_to_arms classification and calls `_apply_obligation`, so it REUSES the same obligation-creation + `_compute_safe_duty_threshold` + `_run_loyalty_check` + `vassal_revolted` machinery (the planner triggers a duty, it does not re-implement the table). Returns the `_apply_obligation` dict enriched with `success` + `lord_army_id` (via `_lord_army_for_call` reading `call_to_arms_state`) so the planner can merge subsequent vassals.
+- **`siege_resolver.gd`:** the voluntary `apply_method('sally')` branch now refuses (`{ok:false, error:'defender_holding_fast'}`) when `defender_posture=='hold_fast'`. Default `'undecided'` leaves the sally exactly as before — the ONE place the resolver reads the posture (it branches on defender behavior there); the blockade/reduction/assault progression is untouched.
+- **`siege_repository.gd`:** `defender_posture` added to `_SIEGE_UPDATE_FIELDS`.
+- **`domain_handlers.gd`:** passes `_runner.get_scheduler()` to `process_campaign_month`.
+**Decisions made (Opus):**
+- **The scheduler is threaded, not the whole runner** — the planner only needs the EventScheduler for tranche/march events; `domain_handlers` sources it from `_runner.get_scheduler()` (the same accessor `FavorsDutiesResolver.roll_monthly` already uses). `scheduler=null` (tests) still persists `call_to_arms_state` rows; only the tranche EVENTS require a live scheduler (`issue_call` already guards null).
+- **Reuse via `_apply_obligation`, not a parallel implementation** — `trigger_call_to_arms` delegates to the existing obligation flow (adding two optional params) rather than duplicating the sizing/loyalty/issue logic. The random monthly duty roll and the planner's deliberate call now share one code path.
+- **50% defensive magnitude (documented const)** — the RAW minimum half-garrison; crisis-posture magnitude scaling (aggressive rulers calling the full garrison = a second duty) is a flagged future refinement, kept at the RAW-safe 50% for v1.
+- **Merge into one lord army** — vassals muster into a single defense (an existing ruler army, else the first successful call's auto-created army), matching the handoff's "merge toward the ruler's defense."
+**Interfaces defined or changed:**
+- `RulerAI.process_campaign_month(campaign_id, calendar_day, active_set, domain_results=[], scheduler=null)` — additive trailing param; `_take_turn` + `_execute` likewise gained a trailing `scheduler=null`.
+- `FavorsDutiesResolver.trigger_call_to_arms(assignment, calendar_day, magnitude_pct=50, scheduler=null, dice=null, lord_army_id_override="") -> Dictionary` (new public). `_apply_obligation` gained two optional trailing params.
+- `SiegeRepository._SIEGE_UPDATE_FIELDS` now whitelists `defender_posture`; the `sieges` table gained a `defender_posture` column.
+- `RulerAI` dispatch dicts for `call_to_arms` (`{dispatched, vassals_called, vassals_revolted, loyalty_rolls, lord_army_id}`) and `withstand_siege` (`{dispatched, siege_id, armies_held}`).
+**Database changes:** migration 184 `sieges.defender_posture TEXT NOT NULL DEFAULT 'undecided'` (+ schema.sql mirror + `_SIEGE_UPDATE_FIELDS`). Values code-validated ('undecided' | 'hold_fast').
+**Tests added/updated:**
+- NEW `tests/test_ruler_dispatch_phase_d.gd` (`RulerDispatchPhaseDTests`, id 492, 8 tests): call_to_arms dispatches + musters both vassals (one `call_to_arms_state` per vassal + a merge lord army); 3 tranche events scheduled per vassal; no-vassals → not dispatched; the cumulative loyalty check fires + a disloyal non-henchman vassal revolts beyond the safe total (deterministic via FakeDice on the public trigger); withstand_siege sets `hold_fast` on the active siege (siege otherwise unchanged); no-siege → not dispatched; a `hold_fast` defender's sally is refused while an `undecided` defender's is not; end-to-end — a besieged active ruler with vassals picks a defensive action (`call_to_arms`/`withstand_siege`) with `dispatched:true`.
+- **Adversarial review (3-dimension × verify Workflow) → 2 CONFIRMED bugs FIXED:** (a) HIGH — `_find_ruler_merge_army` included `'battling'` in the merge-target filter, so call_to_arms tranches could reinforce an army mid-battle (the field resolver assumes a fixed roster; `CallToArmsMuster`'s own garrison lookup already excludes battling) → removed `'battling'`; (b) HIGH — `_dispatch_withstand_siege` silently defended only `sieges[0]` (the OLDEST) when a domain held multiple besieged strongholds → now holds ALL active sieges on the domain (posture + march-cancel per siege). One finding refuted. Also fixed a test-fixture bug (garrison must be a garrison ARMY via `army_unit_assignments`, not loose `troop_units.assignment_kind` — the representation `compute_realm_garrison_unit_count` counts) and broadened the end-to-end assertion (a besieged ruler may legitimately pick `defensive_resistance` — all three defensive actions now dispatch for real).
+**Known issues:**
+- **[NEEDS-JEDIDIAH-REVIEW / project call]** withstand_siege "hold, no sortie" posture is PROJECT-DESIGNED (RAW doesn't forbid sorties) — sanctioned by the handoff as Jedidiah's minimal-behavior decision; noted for the record.
+- Crisis-posture magnitude scaling for call_to_arms deferred (v1 = flat 50%).
+- The muster-range vassal filter is "all active vassals" (v1) — geographic muster-range gating is a Phase-3+ LOD item (`gdd-ruler-ai.md` §5.3), consistent with the rest of the planner.
+**Next session should:**
+- Phase F (NPC siege initiation — `gdd-army-warfare.md` §4.10: `ThreatEscalationDriver` + post-battle retreat-into-stronghold → victor-may-besiege). Then the arc capstone: the ruler-AI §12 integration scenario end-to-end (hostile army extracting → resistance → battle → outcome). Confirm build-log 10.4 fully closed.
+
+## Session 2026-07-04 — Army-warfare Phase F: NPC siege initiation (arc capstone)
+
+**Task:** Execute Phase F of `docs/handoff-army-warfare-seams.md` §7½ = `gdd-army-warfare.md` §4.10 — give NPC armies their organic routes into sieges. Route 1: an `npc_challenger` threat on an active-LOD NPC domain is fielded and escalated (accept → siege/battle; refuse → RAW pillage). Route 2: a field-battle loser retreating into a friendly stronghold lets the victor besiege. Closes ruler-AI build-log 10.4 §8.1 and completes the army-warfare-seams arc (A-F).
+**Model used:** Opus 4.8 (understand fan-out + RAW re-verify + implementation + adversarial review + fixes + tests).
+**RAW re-verified** (`acks-raw-lookup`): challenger offers battle at first opportunity, ruler refuses → challenger pillages → -4 morale (`acore_axioms_strongholds_and_domains.xml:627-630`); defeated army may retreat into a friendly stronghold/settlement in the hex, victor may then besiege (`daw_axioms_pitching_battle.xml:564-571`); domain conquered when all strongholds fall (`daw_campaigning_armies.xml:764-768`). No RAW divergence.
+**Completed:**
+- **NEW `engine/subsystems/domains/threat_escalation_driver.gd`** (`ThreatEscalationDriver`, static) — Route 1. `process_campaign_month(campaign_id, calendar_day, active_ruler_ids, scheduler)` runs in the monthly tick AFTER `RulerAI`. Per active-LOD ruler's personal NPC domain: reads `DomainThreatRepository.get_active_challenger_for_domain`, skips non-`npc_challenger` + already-dispatched (payload_json `dispatched_day`); fields the challenger via `NPCChallengerEmergence.materialize_challenger_as_army` (idempotent — RAW "offers battle"); the defender answers via `ExtractionResistanceHeuristic.evaluate` (§7.3, the SAME machinery as `defensive_resistance`, + the ruler's disposition). Accept (`will_resist`) → mirror the threats-sub-tab dispatch EXACTLY (stronghold → `SiegeDispatcher.dispatch_new_siege(challenger, stronghold, garrison, day, scheduler)`; no stronghold → `BattleDispatcher.dispatch_collision(garrison, challenger, hex, day)`). Refuse → `morale_penalty = 4` (RAW pillage; stored positive, `domain_handlers` subtracts it) + re-offered monthly. Bookkeeping in `payload_json`. Emits `threat_escalated`.
+- **NEW `engine/subsystems/armies/battle_retreat_siege_router.gd`** (`BattleRetreatSiegeRouter`, static) — Route 2. `on_retreat_into_stronghold(victor, stronghold, defeated, day, scheduler)`: player victor (`ArmyMapPresence.is_player_owned_id`) → emit `siege_decision_required` + NO auto-siege (the player chooses Besiege/Encamp/March-on); NPC victor → deterministic heuristic (`_npc_should_besiege`: supply ≥ 2 weeks AND live hostile intent) → `SiegeDispatcher.dispatch_new_siege`. `register_listener(scheduler_provider: Callable)` subscribes `battle_loser_retreated_into_stronghold`; SessionRunner registers it with `get_scheduler` at load / unregisters at end (so a dispatched siege gets the live scheduler — the battle aftermath carries none). The decision is a pure static fn (headless-testable).
+- **`retreat_resolver.gd`:** FIXED `_find_friendly_stronghold_at` — the pre-Phase-9 placeholder always returned `{}`, so `retreated_into_stronghold` NEVER fired. Now queries `strongholds` by `location_map_id/location_hex_q/location_hex_r` + `owner_character_id` + `status != 'destroyed'` (the hex columns exist, indexed by `idx_strongholds_hex`). This makes Route 2's trigger functional.
+- **`field_battle_resolver.gd`:** `_resolve_post_battle_state` emits `battle_loser_retreated_into_stronghold(victor, stronghold, loser, battle_id)` when the loser retreats into a stronghold (new `_emit_retreat_into_stronghold`; victor = the OTHER army in the `field_battles` row; annihilation early-returns skip it — an annihilated army is disbanded, not retreated).
+- **`domain_handlers.gd`:** calls the driver after `RulerAI.process_campaign_month`. **`event_bus.gd`:** signals `threat_escalated`, `battle_loser_retreated_into_stronghold`, `siege_decision_required`. **`game_log.gd`:** subscribes `threat_escalated` → unified-log line per stage. **`session_runner.gd`:** register/unregister the retreat router (7d-3 block + end_session).
+**Decisions made (Opus):**
+- **The driver TRIGGERS the existing threat→army→dispatch pipeline; it re-implements nothing** — same `materialize_challenger_as_army` + `evaluate` + dispatchers the player threats sub-tab uses. Guards fall out of iterating `active_ruler_ids` (NPC/active-LOD only; player + backdrop excluded) + processing only `npc_challenger` (§4.10.4 — bandit swarms never siege).
+- **Route 2 detect/dispatch split:** the battle aftermath (no scheduler) DETECTS retreat-into-stronghold + emits; a SessionRunner-owned router (holds the live scheduler) DECIDES + dispatches. Keeps the scheduler out of the battle-resolution signature while still scheduling the siege ticks.
+- **NPC hostile intent = hostile-unless-proven-friendly** — a victor that just defeated the domain's field army IS the aggressor; a landless free actor (empty realm apex — a challenger / free company) keeps its hostile intent; only a same/allied-realm victor is exempted. (Review-fixed: the first cut required a realm apex and so never besieged for landless victors.)
+- **`MIN_SUPPLY_WEEKS_TO_BESIEGE = 2`** — RAW-anchored §4.10.3 heuristic constant, tunable.
+**Interfaces defined or changed:**
+- `ThreatEscalationDriver.process_campaign_month(campaign_id, calendar_day, active_ruler_ids, scheduler=null) -> Array`.
+- `BattleRetreatSiegeRouter.on_retreat_into_stronghold(victor, stronghold, defeated, day, scheduler) -> {decision, ...}`; `register_listener(Callable)` / `unregister_listener()`; const `MIN_SUPPLY_WEEKS_TO_BESIEGE`.
+- New EventBus signals `threat_escalated(threat_id, domain_id, stage)`, `battle_loser_retreated_into_stronghold(victor, stronghold, defeated, battle_id)`, `siege_decision_required(victor, stronghold, defeated)`.
+- `RetreatResolver._find_friendly_stronghold_at` now returns a real match (behavior change: an army co-located with its own stronghold retreats INTO it).
+**Database changes:** none (payload_json bookkeeping; no migration).
+**Tests added/updated:**
+- NEW `tests/test_phase_f_npc_siege.gd` (`PhaseFNpcSiegeTests`, id 493, 8 tests): active-LOD challenger accepts → simplified siege; cautious defender below threshold refuses → -4 pillage, no siege; a domain not in the active set (backdrop/player) stays unfielded; a bandit swarm never escalates; retreat-into-own-stronghold is detected (the RetreatResolver fix); NPC victor besieges with supply + hostile intent; NPC victor encamps when under-supplied; player victor gets the prompt + no auto-siege.
+- **Adversarial review (3-dimension × verify Workflow, 21 agents) → fixes applied:** (a) HIGH — `_has_hostile_intent` required a realm apex, so a LANDLESS victor (a challenger / free company) never besieged → changed to hostile-unless-provably-friendly (landless → hostile); (b) HIGH — a never-fielded challenger's NULL `linked_hex_q/r` dropped the field battle onto (0,0) → read the battle hex from the MATERIALISED army instead; (c) HIGH flag on `defending_own_stronghold=false` — REVIEWED and KEPT false: the reviewer's direction reasoning was inverted (the §7.3 term ADDS +0.10 = makes resistance HARDER, so `true` would perversely make a stronghold-holder more likely to refuse+be pillaged); the term models sortie-reluctance which is misaligned with accept-via-siege-defence, so the disposition baseline is correct (comment made bulletproof). Four low/plausible findings (helper duplication, Callable-GC, the guarded emit, the unit-less-BR-0 edge) left as documented v1.
+**Known issues:**
+- **materialize_challenger_as_army yields a UNIT-LESS army (BR 0)** — a pre-existing gap (the player threats sub-tab has the same). So `evaluate` sees `attacker_br=0` and an NPC domain with any garrison ALWAYS accepts (disposition matters only when the challenger has BR). Flagged; the challenger-army unit population is out of Phase F scope.
+- **[NEEDS-JEDIDIAH-REVIEW / project call]** the player-victor Besiege/Encamp/March-on MODAL is not built — Phase F emits `siege_decision_required` + the player is informed, but the full prompt UI is deferred (the player can besiege via the existing army/siege UI). Same discipline as Phase C step 4. NPC victor is fully functional.
+- **[Jedidiah call, default no]** NPC-domain bandit swarms do not auto-siege (§4.10.4).
+**Next session should:**
+- The army-warfare-seams arc (A-F) is COMPLETE. Run the ruler-AI §12 integration scenario end-to-end (hostile army extracting → resistance → battle → outcome) as the capstone, and confirm build-log 10.4 fully closed. Consider populating the challenger army with troops (the unit-less gap above).
+
+## Session 2026-07-04 — Army-warfare-seams arc CAPSTONE (ruler-AI §12 integration; arc closed)
+
+**Task:** Run the arc's capstone (handoff §8 / `gdd-ruler-ai.md` §12): "Hostile army extracting → `defensive_resistance` federates vassals and resolves — outcome routes to army-warfare battle resolution." Author it as a hand-authored integration scenario exercising the WHOLE chain end-to-end, and confirm build-log 10.4 fully closed.
+**Model used:** Opus 4.8.
+**Completed:**
+- **NEW `tests/test_ruler_ai_capstone.gd`** (`RulerAiCapstoneTests`, id 494, 2 tests) — the §12 scenario, driven through the REAL `ExtractionResolver.resolve` entry point (not the router in isolation), so the full arc runs: **extraction (Phase B)** → the **§7.3 resistance decision with VASSAL FEDERATION** (Phase C `ExtractionResistanceRouter` + `ExtractionResistanceHeuristic`'s `_federate_vassal_forces`) → a **materialised field battle** (Phase A dispatch) → the **battle outcome gating the loot yield** (Phase C gate).
+  - **Scenario:** an aggressive lord whose PERSONAL garrison (BR 4) is BELOW the resistance threshold (0.28 × BR-20 reaver = 5.6) resists ONLY because the loyal vassal's federated BR 4 tips the federated total to 8 ≥ 5.6. Asserts: (1) the vassal's muster loyalty was rolled during the decision (`vassal_assignments.last_loyalty_outcome` set → federation ran); (2) it resolved as a real `field_battles` battle; (3) `resolve().success == extractor_won` (mapped from the battle outcome → the yield gate).
+  - **Control test:** the SAME lord + garrison but NO vassal is below threshold and CONCEDES (no battle, loot proceeds, families lost) — PROVING the vassal federation is what enabled resistance.
+  - **Determinism:** `base_loyalty_modifier=4` makes the federation deterministic — `loyalty_result` departs only on `total ≤ 5`, and `2d6 + 4 ≥ 6`, so the vassal always musters regardless of the pseudo-random roll (no FakeDice injection needed through `resolve()`).
+**Decisions made:** the capstone asserts the integration via SURVIVING artifacts (the vassal's recorded loyalty outcome, the `field_battles` row, the gated `resolve()` result) rather than the defender levy's unit roster — Phase C demobilises the silent-battle levy back to garrison, so the levy army is gone by the time `resolve()` returns.
+**Interfaces defined or changed:** none (integration test only; reuses `ExtractionResolver.resolve`, `ExtractionResistanceRouter._winner_side`, `ExtractionResistanceHeuristic.evaluate`, `VassalRepository`).
+**Database changes:** none.
+**Tests added/updated:** `tests/test_ruler_ai_capstone.gd` (id 494, 2 tests).
+**Known issues:** none new. The arc's flagged v1 items remain (player-victor besiege modal, unit-less challenger army, bandit-swarm auto-siege) — all documented in the Phase C/F entries.
+**Next session should:**
+- **The army-warfare-seams arc (A-F + capstone) is COMPLETE, and ruler-AI build-log item 10.4 is FULLY CLOSED** (10.4.1-10.4.5: extraction routing, call_to_arms routing, conflict hook, resistance seam, and the §12 integration scenario all landed). Optional follow-ups: populate the challenger army with troops (the unit-less gap), and build the player-victor Besiege/Encamp/March-on modal.
+
+
+## Session 2026-07-04 — Threat armies field real troops; militia-death reverse flow (limited resource)
+
+**Task:** Follow-up to the army-warfare-seams arc. (1) FORWARD FLOW: make the two threat materializers (`BanditSpawner.materialize_swarm_as_army`, `NPCChallengerEmergence.materialize_challenger_as_army`) create REAL `troop_units` instead of BR-0 unit-less shells. (2) REVERSE FLOW: ensure combat losses persist to the garrison/militia source and survive army disband. (3) Militia as a LIMITED resource — enforce the RAW 2-per-10-families cap against militia already under arms, and make militia deaths a permanent population + morale loss. Jedidiah design calls: challenger "leads the domain's bandits" (RAW morale-scaled band, no retinue formula); militia deaths = "permanent population + morale loss" (full RAW model).
+**Model used:** Opus 4.8 throughout (implementation + RAW verification + adversarial-review workflow orchestration).
+**Completed:**
+- NEW `engine/subsystems/domains/threat_force_composer.gd` — shared forward-flow helper. `field_bandit_force(army_id, campaign_id, owner_id, troop_count, calendar_day)` creates the army-leader officer + chunked (≤120) `troop_units` (`source_type='mercenary'`, `troop_type='Brigands'`, self-funding, BR 0.008/soldier) and assigns them. `bandit_force_for_domain(domain_id)` returns the RAW morale-scaled band size (active swarm `bandit_count`, else morale tier ≤-4→1/family, -3→1/2, -2→1/5, else 1/10, floored at 1).
+- `engine/subsystems/domains/bandit_spawner.gd` — wired `ThreatForceComposer.field_bandit_force` after `create_army` (fields the swarm's `bandit_count`).
+- `engine/subsystems/domains/npc_challenger_emergence.gd` — wired `field_bandit_force` with `bandit_force_for_domain` (challenger leads the domain's bandits); replaced the stale "no troop_units in v1" header comment.
+- `engine/subsystems/activities/handlers/levy_militia.gd` — cap enforcement: added `_current_active_militia(domain_id)` (`SUM(count)` of active militia); `available = max(0, (peasant_families/10)*2 - existing)`; returns `blocked_reason='militia_cap_reached'` (or `'insufficient_peasants'`) at the ceiling. (Fixed an orphaned `static` keyword introduced mid-edit — `_current_active_militia` and `_parse_params` are both `static func`.)
+- `engine/subsystems/armies/army_casualty_resolver.gd` — `_resolve_side` accumulates `militia_deaths_by_domain` (crippled/dead militia keyed by `assigned_domain_id`); `resolve_battle_casualties` merges both sides and calls new `_apply_militia_population_loss(domain_id, killed, calendar_day)` → `peasant_families -= killed` (floor 0), morale `-1`/`-2` by killed-density (`killed*10/families >= 2`), clamp `[-4,4]`, plus a record-only ledger entry (`category='other'`, `subcategory='militia_casualties'`). Return dict gained `militia_population_loss`.
+- NEW `tests/test_militia_casualty_persistence.gd` (suite id 495; registered via the 4 edits) — 13 tests, all pass.
+**Decisions made:**
+- Challenger force basis = the domain's morale-scaled bandit band (RAW is silent on retinue size; Jedidiah 2026-07-04). Reuse `bandit_force_for_domain` rather than invent a level-based retinue.
+- Bandits modeled as `source_type='mercenary'` (only CHECK-valid freebooter category) with `troop_type='Brigands'` carrying the semantics; self-funding (no payroll on a threat army).
+- Militia-death morale loss scaled by KILLED density to the RAW -1/-2 levy-density scale, applied directly on death (see Known issues re: the un-modeled temporary levy penalty).
+- Militia population loss applied at the ONE battle-resolution site (once per battle) so it can't double-charge; the shrunken `peasant_families` shrinks the levy cap → the resource is genuinely bounded.
+**Interfaces defined or changed:**
+- `ThreatForceComposer.field_bandit_force(army_id, campaign_id, owner_id, troop_count, calendar_day) -> Array` (created unit ids; [] on guard/officer failure). `ThreatForceComposer.bandit_force_for_domain(domain_id) -> int`. Consts `UNIT_SIZE=120`, `BRIGAND_BR_PER_SOLDIER=0.008`, `BRIGAND_MORALE=-1`.
+- `ArmyCasualtyResolver.resolve_battle_casualties` return now includes `militia_population_loss: {domain_id -> {killed, families_before/after, morale_before/after}}`; each side summary gains `militia_deaths_by_domain`.
+- `LevyMilitiaHandler` blocked result gains `blocked_reason` (`militia_cap_reached` | `insufficient_peasants` | existing `clanhold_style_no_militia`).
+**Database changes:**
+- None (no migration). All fields already existed (`troop_units.assigned_domain_id/source_type/status/count`, `domains.peasant_families/morale`).
+**Tests added/updated:**
+- `test_militia_casualty_persistence.gd` (13 tests): forward flow (real units + chunking + guards + morale-scaled force), militia cap (2/10, blocked-at-cap, partial availability after existing), militia-death population/morale loss (reduction, density scaling, floors/clamps), end-to-end battle → population loss, and combat-loss persistence through disband.
+- Full suite 492 passed / 16 failed across TWO consecutive runs (net-zero new failures; the 16 are the documented pre-existing baseline: wave-2/no-stronghold, collapse_risk_tick, liege_id, etc.).
+- Adversarial review workflow (5 agents, 4 dimensions: RAW faithfulness / correctness-edges / integration-persistence / db-schema, each with refute-by-default verify): `confirmed_count: 0` — no defects.
+**Known issues:**
+- [FOR-JEDIDIAH — Layer-1 faithfulness] The TEMPORARY levy penalties (L429 revenue reduction + L430 morale hit that L431 keeps "until sent home") are NOT modeled at levy time (pre-existing gap). Permanent-on-death loss is applied directly, scaled by death density, rather than by converting a tracked temporary penalty. Defensible now; full RAW model would apply the temporary penalty at levy and make the killed fraction permanent on death.
+- [PRE-EXISTING, flagged as a separate task] `ledger_entries.category` CHECK only allows `revenue/expense/tribute_in/tribute_out/investment/other`; `levy_militia`/conscript/raise-garrison/tribal-warrior handlers write `category='garrison'`, which is silently dropped. New resolver code correctly uses `'other'`. Spawned a background task to fix the systemic issue.
+**Next session should:**
+- Resume the army-warfare handoff §10 remaining items: 10.3 Seam-B triggers (real LLM provider + §13 thresholds), 10.4 army-warfare wiring (marcher extraction, call_to_arms routing, conflict hook), 10.5 Jedidiah decisions (GDD §5.2 corrections + Seam-B thresholds).
+- If Jedidiah wants full RAW militia fidelity, implement the temporary domain-levy penalties at levy time (revenue + morale), then convert the killed fraction to permanent on death.
+
+
+## Session 2026-07-04 — Garrison ledger CHECK-constraint fix (category='garrison' → 'other')
+
+**Task:** Fix domain activity handlers that write `ledger_entries` with `category="garrison"`, which the table's CHECK constraint (`revenue/expense/tribute_in/tribute_out/investment/other`) rejects — every such write failed the CHECK and was silently dropped (`CampaignRepository.add_ledger_entry` logs a `push_error` and returns `""`), so the domain economic ledger was missing these records.
+**Model used:** Opus 4.8 for the full session (grep audit, taxonomy decision, fix, tests, verification).
+**Completed:**
+- Grepped the ledger-display code (`scenes/ui/notebook/domain/sub_tabs/treasury_sub_tab.gd`) — it renders `category`/`subcategory` as free text with no special-casing of a `'garrison'` category; the `AUTO_PAY_KEYS`/`_auto_garrison` references there are auto-pay *policy* toggles, unrelated to the ledger enum. So Option (a) (fix the callers) was correct; no schema migration needed.
+- Changed `category="garrison"` → `category="other"` in FIVE handlers (task listed 4; `inspect_troops.gd` was a 5th, unlisted offender). All five write `cp_amount: 0` (record-only), so all map to the `'other'` record-only bucket; the semantic tag stays in `subcategory`:
+  - `engine/subsystems/activities/handlers/levy_militia.gd` (`militia_levy`)
+  - `engine/subsystems/activities/handlers/conscript_troops.gd` (`conscript_levy`)
+  - `engine/subsystems/activities/handlers/raise_garrison.gd` (`raise_garrison_composite` and `tribal_warriors_garrisoned`)
+  - `engine/subsystems/activities/handlers/inspect_troops.gd` (`inspect_troops`)
+- Added an in-code comment at each site naming the CHECK enum and why `'other'` is correct, matching the note already in `army_casualty_resolver.gd` (`militia_casualties`).
+**Decisions made:**
+- Chose Option (a) over adding a `'garrison'` category (Option b) because the ledger UI does not special-case a garrison category and the already-documented convention (`docs/coding_conventions.md` §51, line 3303) says `'other'` is the catch-all for informational/non-gp rows and to never invent new categories without a migration. This also matches the existing `army_casualty_resolver.gd` convention the task pointed to.
+- No new convention emerged — the fix brings these handlers into compliance with the existing §51 rule, so `coding_conventions.md` was left unchanged.
+**Interfaces defined or changed:** None. Same `add_ledger_entry(data)` shape; only the `category` value string changed. Ledger consumers keyed on `subcategory` are unaffected (subcategories unchanged).
+**Database changes:** None. No migration (Option a). The `ledger_entries` CHECK enum is unchanged.
+**Tests added/updated:**
+- `tests/test_militia_casualty_persistence.gd` — added `test_garrison_record_persists_as_other()` (direct `add_ledger_entry` with `category='other'` returns a non-empty id and `list_ledger_entries` includes the row) and `test_levy_militia_persists_ledger_entry()` (end-to-end: `LevyMilitiaHandler.on_complete` persists a `militia_levy` row with `category='other'`). Both are genuine regression guards — before the fix the levy row was dropped by the garrison-category CHECK, so `list_ledger_entries` returned nothing. Registered both in `run_all_tests()`. Added `_ledger_rows_for()` helper.
+**Verification:** Full headless suite = 492 suites passed / 16 failed (net-zero vs. established baseline; the 16 are pre-existing carry-forward failures — proficiency popup, encounter rolls, LOS/ZoC combat, `test_domain_stocker` garrison-unit stocking, etc., none touching the ledger). `CHECK constraint failed: category` errors in the run log dropped to 0; no `add_ledger_entry: failed ... sub=(militia_levy|conscript_levy|raise_garrison_composite|tribal_warriors_garrisoned|inspect_troops)` lines remain.
+**Known issues:** None from this change.
+**Next session should:**
+1. Nothing follow-on required for this fix. (Unrelated: the pre-existing `test_domain_stocker.gd:214` "expected 16 garrison units; got 0" failure remains in the carry-forward 16 and is orthogonal to the ledger.)
+
+
+## Session 2026-07-06 — Live LLM integration layer spec (gdd-live-llm-integration)
+
+**Task:** Architect (spec only, no build) the live LLM integration layer as `generation/gdd-live-llm-integration.md`: provider-agnostic service behind the LLMManager stub; v1 = Ollama CLOUD (per Jedidiah — local models not currently feasible; must be model-agnostic across Ollama's cloud catalog); final version = BYOM (local / API keys / other providers), with bespoke-per-provider work surfaced and deferred; plus a section enumerating every system that must be built before the layer is fully functional.
+**Model used:** Fable 5 (ultracode) — 9-reader research workflow (GDDs, built seams, conventions, live web research on the Ollama cloud API) + 92-claim gap-verification pass + completeness critic, then single-context authoring via acks-gdd-author.
+**Completed:**
+- **`generation/gdd-live-llm-integration.md` (new, Draft v1.0, ~600 lines, architecture/umbrella archetype).** Registered in `docs/document_map.md` under a new "LLM Integration" section.
+- Key design decisions captured in the spec: (1) **await-based async core** — new `LLMManager.generate(context, opts) -> ResponseEnvelope` coroutine whose unconfigured/mock path executes ZERO awaits (same-frame return → no-variance bar + sync test loop both hold by construction); `request_narration` demoted to mock-only legacy shim; NO retroactive write-back machinery — consumers that want live text await it (fire-and-forget coroutine signal handlers; GameLog Seam-A handler becomes one). (2) **Providers are pure** (build_request/parse_response only, no I/O) → unit-testable with canned wire fixtures; transport = HTTPRequest node pool under the autoload; v1 = stream:false everywhere (Godot SSE bug #96621 documented; Ollama native NDJSON reserved as the future streaming path). (3) **One Ollama adapter serves cloud AND local** (base_url + optional Bearer key delta; wire contract fully specced from official docs retrieved 2026-07-06: /api/chat, /api/tags, /api/show, flat error shape, GPU-time quotas/Free-tier=1-concurrent, model-churn 404 policy, NO per-token pricing → cost panel redefined as token counts). (4) **Ollama Cloud does NOT support structured outputs** (official docs; issue #13206) → capability-flag architecture + prompt-embedded schema + ONE re-prompt + consumer strict-reject (Seam-B pattern generalized as the layer-wide JSON policy). (5) Layer-7 live upgrading moves OUT of the generation pipeline into a new **NarrativeUpgrader** batch pass (campaign-creation progress UI + settings-triggered backfill for late-configured providers). (6) QoS classes interactive/decoration/batch with per-class timeout/retry, coalescing by cache key, fast-forward burst cap (16, drop-oldest), circuit breaker (3 fails → 120s degraded).
+- §18 = the requested "systems remaining before fully functional" section: authoritative blocker table (dialogue subsystem + 3 tables; §5 relationships/§6 knowledge; disposition trend; quest/rumor runtime; FF-1/FF-2 factions + faction narration-cache home; session-log store; free-text input + action-vocabulary finalization; Tier-1 play-time cache; religion_hooks accessor; region-polish write-back; culture_id threading verify; setting-lore maturity; model-eval harness) + the Jedidiah-only decisions (Seam-B §13 thresholds; boss-tactical-AI ruling; narrative lock/hash rulings).
+- §17 = BYOM provider matrix (OpenAI-compatible family incl. LM Studio/OpenRouter/llama.cpp/vLLM quirks; Anthropic contract) with the bespoke-work items explicitly deferred and surfaced per the tasking.
+- §19 = build plan Phases L-0 (types/settings/mock, no network) → L-1 (transport/queue/generate/Ollama) → L-2 (wizard UI) → L-3 (Seam A live + NarrativeUpgrader) → L-4 (optional polish), each with file lists and acceptance bars, sized for Sonnet sessions.
+**Decisions made:**
+- v1 endpoint = Ollama NATIVE API only (not /v1): richer usage stats, one canonical shape, NDJSON-streaming-compatible later; /v1-SSE is the Godot-broken path.
+- Test hard-override: `LLMManager.force_mock(true)` called by test_runner._ready() — closes the hole where a developer's live settings.cfg could poison the suite (test-DB isolation redirects the DB, not settings).
+- API key stored plaintext in user://settings.cfg [llm] with hard redaction rules (never in campaign DB/saves/logs/errors) — flagged [APPROVAL] A4; OLLAMA_API_KEY env override at load.
+- Narration hard length cap = 1,200 chars (Seam A 300) — resolves gdd-unified-log-panel.md O-L5 (flagged A5).
+- Seam-A live behavior accepts late/out-of-order log lines within a tick burst (flagged A6); stale is_fallback cache entries regenerate when configured (fixes the unconditional re-serve at ruler_action_narrator.gd:51-59).
+- Boss tactical AI: recommend deferring indefinitely; if ever built, Seam-B-style constrained selection from the legal action list (flagged A7 for ruling).
+**Interfaces defined or changed:** None in code (spec only). Specced for build: `LLMManager.generate(context, opts) -> ResponseEnvelope` (coroutine), `set_provider/force_mock/test_connection/list_models/cancel_all/usage_summary`; `LLMProvider` base (id/capabilities/build_chat_request/parse_chat_response/model-list+probe pairs); `RulerActionNarrator.narrate_action_live(...)`; `NarrativeGenerator.build_blocks(ctx)`; `NarrativeUpgrader.run(campaign_id)`; new signal `setting_narrative_upgraded(campaign_id, done, total)`; ResponseEnvelope additive fields (model/prompt_tokens/completion_tokens/latency_ms/task_type); provider string registry replacing the dead Provider enum ([APPROVAL] A2); task profiles at data/llm/task_profiles.json; llm_context/ directory established.
+**Database changes:** None. Reserved (deferred with first consumer): `llm_narration_cache` sketch in GDD §13.4 with §89/§93 registration instructions. Two rulings requested before L-3: setting_narrative lock exemption for save_narrative + removal of setting_narrative from the §80 dataset hasher ([APPROVAL] A3).
+**Tests added/updated:** None (spec session). §20 of the GDD defines the strategy: providers tested synchronously against golden wire fixtures; async via injected FakeProvider resolving through call_deferred; no test performs network I/O; no-variance + stage-8 assertions must survive L-0..L-2 unmodified; manual live-smoke checklist incl. the §8.7 empirical probes (cloud structured-output support, 401/429 bodies, /api/show on cloud, NDJSON-through-HTTPClient spike).
+**Known issues:**
+- Seven [APPROVAL] items (A1-A7) consolidated in GDD §21 need Jedidiah before/at build; A3 (lock+hash) gates Phase L-3.
+- Doc drift found and recorded in §21 for fixing at build time: conventions §8.3 stale await/is_empty example; §9.4 aspirational set_provider/MockLlmProvider API (L-0 realizes it); CLAUDE.md/handoffs cite docs/acks-arbiter-build-plan.md but the file is docs/acks_arbiter_build_plan.md; game_log_entries missing from db/schema.sql (pre-existing drift).
+- Web-research facts are point-in-time (2026-07-06); §8.7 lists the probes that must be re-verified live at build (esp. structured outputs on Ollama Cloud — docs say NO, one third-party post claims parity).
+**Next session should:**
+1. Jedidiah review of GDD §21 [APPROVAL] items A1-A7 (especially A3 lock/hash and A7 boss-AI ruling).
+2. Build Phase L-0 (types/settings/mock realization — no network, pure green-suite work), then L-1 (transport + Ollama adapter + generate()); L-1 ends with the manual §8.7 probe run against ollama.com recorded back into the GDD.
+3. Unrelated standing items: army-warfare optional follow-ups; ruler-AI 10.3 Seam-B triggers now additionally gated on this layer landing + §13 thresholds.
+
+
+## Session 2026-07-06 (cont.) — LLM spec approval rulings A1-A7 applied (gdd-live-llm-integration v1.1)
+
+**Task:** Fold Jedidiah's rulings on the seven [APPROVAL] items into `generation/gdd-live-llm-integration.md` (same session as the spec authoring; rulings delivered immediately after review).
+**Model used:** Fable 5.
+**Completed:**
+- **A1 (generate() entry point), A2 (provider string registry + dead-enum deletion + envelope fields), A3 (setting_narrative lock exemption + §80 hasher exclusion), A5 (1,200/300-char narration caps): APPROVED as specced.** GDD §21 rewritten from "items for Jedidiah" to "ALL RULED 2026-07-06"; §18.2 updated (only Seam-B §13 thresholds remain a pending Jedidiah call); Status bumped to Draft v1.1 "build unblocked through L-4"; document_map.md status updated.
+- **A4 (plaintext API key): APPROVED WITH CONDITIONS**, folded into §12.3 as normative: (a) the UI must disclose plaintext storage beside every key-entry field (wizard §12.4 step 2 updated) and game documentation must carry the same risk disclosure; (b) more secure options must be explored as follow-up — new open question Q6 (OS keychain via GDExtension / Windows DPAPI / encrypted ConfigFile with machine-derived key; must keep the disclosure accurate; not a v1 blocker). Rationale recorded: not live-multiplayer, exposure is local-machine only.
+- **A6 (Seam-A ordering): RULED — in-order queued append** (the spec's out-of-order acceptance was rejected). §5.3 redesigned: GameLog keeps an ordered pending queue for ruler_action_taken — each emission synchronously reserves a slot in emission order, awaited envelopes fill slots, slots flush head-first; head-of-line blocking bounded by the decoration QoS timeout (timed-out/failed head flushes its deterministic template, unblocking the rest); other log categories unaffected; unconfigured path resolves every slot same-frame in reservation order (no-variance bar intact). Phase L-3 file list + tests updated (staggered fake-provider completions must append in emission order; timed-out head flushes template and unblocks).
+- **A7 (boss tactical AI): RULED — deprecated idea insufficiently scrubbed from older docs, NOT a deferrable feature.** Removed from the GDD's scope entirely (§1 out-of-scope note, §16 "Removed, not deferred", §18.2 struck, §21 records the ruling). The stale references elsewhere (design brief line ~277 Tier-2 row + whatever a grep finds) are delegated per Jedidiah to a cheaper-model cleanup session — spawned as background task chip task_55df856b with a self-contained prompt (incl. the brief-edit authorization and the do-not-touch note for the new GDD's deliberate historical record).
+**Decisions made:**
+- All recorded in the GDD §21 ruling annotations; no decisions beyond Jedidiah's rulings themselves. The A6 ordered-queue mechanism (slot reservation + head-first flush + timeout unblock) is the one new design element this addendum adds.
+**Interfaces defined or changed:** None in code (spec-only). The A6 ruling changes the SPECCED GameLog Seam-A handler design (ordered pending queue) ahead of Phase L-3 build.
+**Database changes:** None.
+**Tests added/updated:** None (spec session). Phase L-3's specced test list gained the A6 ordering assertions.
+**Known issues:**
+- Only remaining Jedidiah decision for the LLM arc: Seam-B §13 significance thresholds + cooldown (unchanged; gates Seam-B triggers, not the layer build).
+- Q6 (secure key storage exploration) added as tracked follow-up work.
+- Boss-tactical-AI doc scrub pending as spawned background task task_55df856b (cheaper model; design-brief edit authorized by A7 ruling).
+**Next session should:**
+1. Build Phase L-0 (types/settings/MockLlmProvider/set_provider/force_mock — no network; behavior identical until configured), then L-1 (transport + OllamaProvider + generate() + queue/QoS; ends with the §8.7 live probes against ollama.com recorded back into the GDD).
+2. Run the boss-tactical-AI doc scrub (task_55df856b) on a cheap model if the chip wasn't started.
+3. L-2 wizard (remember: scene scripts aren't exercised headless — verify via godot-ai MCP), then L-3 (Seam A live + A6 ordered queue + NarrativeUpgrader; A3 approvals already in hand).
+
+
+## Session 2026-07-06 (cont. 2) — Boss-tactical-AI documentation scrub (task_55df856b)
+
+**Task:** Execute the doc-scrub delegated by the A7 ruling (`generation/gdd-live-llm-integration.md` §21): remove all references to the deprecated "boss tactical AI" LLM use case from project documentation. Spawned as background task_55df856b during the LLM-integration spec session; run standalone here.
+**Model used:** Sonnet 5.
+**Completed:**
+- `docs/acks_arbiter_design_brief_v11.md`: removed "boss tactical AI" from the §9.2 Tier-2 (Live LLM call) use-case cell (line ~277), and removed the "Boss encounter tactical AI" line from the §16.2 Tier-2 roadmap list (line ~540).
+- `docs/acks_arbiter_build_plan.md`: deleted the O-2 "Boss Encounter Tactical AI" build item (full subsection + table row); removed the dangling "O-2 implements the advanced ones" clause from the F-1 Monster Behavior AI writeup (line ~336); decremented the complexity-4 count in the Summary Table's complexity-distribution line (7→6) to reflect the removed item.
+- `docs/monster_system_map.md`: removed two dangling forward-references to the deleted O-2 build item (§2.21 spell-selection divergence point; the "What This Document Does NOT Contain" tactical-AI-decision-trees bullet), keeping the surviving F-1 content intact.
+- `CLAUDE.md`: fixed the stale directory-listing filename `generation/combat_behavior_tags.md` → `generation/gdd_combat_behavior_tags.md` (file didn't exist under the old name; noted by Jedidiah as a trivial fix while scoping this task).
+**Decisions made:**
+- Resolved via Jedidiah clarification mid-session: the deterministic tag-based "tactical AI" system (`gdd_combat_behavior_tags.md`, referenced by `docs/rule_system_map.md` and `generation/gdd-combat-map-generation.md`) is a distinct, legitimate, non-LLM concept and was left untouched. The build_plan.md O-2 item, despite its deterministic-sounding description (spell selection via behavior tags), was ruled to BE the same deprecated "boss tactical AI" concept described elsewhere (build_log 2026-07-06 entry: "if ever built, Seam-B-style constrained selection from the legal action list") — so it was removed entirely, not just renamed.
+- `generation/gdd-live-llm-integration.md` left untouched per explicit instruction — its §1/§16/§18.2/§21 deliberately record the deprecation ruling as historical record.
+- `build_log.md`'s own historical mentions of "boss tactical AI" (this file, append-only) were left untouched — log entries are never edited retroactively.
+- Left `generation/gdd-ui-architecture.md`'s unrelated local "O-2" numbered open-question and `generation/gdd-spell-system.md`'s citation of old build-plan phase-label examples (including "O-2") untouched — neither references the boss-tactical-AI concept; both are unrelated uses of similar-looking labels.
+**Interfaces defined or changed:** None (documentation-only session).
+**Database changes:** None.
+**Tests added/updated:** None. Confirmed via grep that no `engine/**/*.gd` files reference "boss tactical", "tactical AI", or similar — this was purely stale documentation, never implemented in code.
+**Known issues:**
+- The Summary Table's complexity-distribution line in `docs/acks_arbiter_build_plan.md` was already stale before this session (stated totals didn't match actual row counts even before the O-2 removal, off by ~5 across other buckets) — out of scope for this task, only the directly-affected complexity-4 bucket was corrected. A full recount/fix is a separate minor cleanup if anyone cares.
+**Next session should:**
+1. Resume the LLM-integration build plan per the 2026-07-06 spec session: Phase L-0 (types/settings/MockLlmProvider — no network), then L-1 (transport + OllamaProvider + generate() + §8.7 live probes).
+2. No action needed on boss-tactical-AI — this scrub is complete; task_55df856b chip should be dismissed.
+
+
+## Session 2026-07-06 — Player "resist or concede" surface for NPC extraction (migration 185 + NpcRaidDriver)
+
+**Task:** Build the player-facing "resist or concede" surface for when an NPC army requisitions/loots the PLAYER's domain (handoff-army-warfare-seams.md §5 step 4, approved by Jedidiah 2026-07-06). Phase C left it as a notification-only guard because no clean surface existed and NPC marching-extraction against a player domain was not reachable in play (10.4). This session builds the persistent threat + resist/concede action AND the minimal in-play trigger.
+**Model used:** Opus 4.8 (full session: recon, design, implementation, tests, docs).
+**Completed:**
+- **Migration 185** (`185_domain_threats_hostile_extraction.sql`): rebuilds `domain_threats` to add `hostile_extraction` to the `kind` CHECK enum (SQLite can't ALTER a CHECK — rename/create/copy/drop/recreate-indexes, the 011/013/133 pattern; leaf table, indexes created AFTER the DROP so the renamed-away names are free). New partial-unique index `idx_domain_threats_unique_active_hostile_extraction (domain_id, linked_army_id)`. Mirrored in `db/schema.sql`. No whitelist change (domain_threats already in `_SCOPE_DIRECT_CAMPAIGN` + campaign-delete).
+- **`ExtractionResistanceRouter`** (`extraction_resistance_router.gd`): replaced `_surface_player_domain_alert` (notify-only) with `_handle_player_domain` — idempotent-per-(domain,raider) persistent `hostile_extraction` threat row + danger alert + `threat_escalated("extraction_threatened")`, returns false to block. New public `resolve_player_choice(threat_id, choice, day)`: RESIST -> `materialize_player_defender` (domain garrison levy, no vassals) + `BattleDispatcher.dispatch_collision` (player-involved -> interactive FieldBattlePanel), threat marked departed; CONCEDE -> set payload decision=concede, `_clear_episodes_for(domain,army)`, re-run `ExtractionResolver.resolve` through the now-open gate to credit, mark departed, disband the raider. Stamps `raider_owner_id` into payload for the driver's cadence check.
+- **`NpcRaidDriver`** (NEW `engine/subsystems/domains/npc_raid_driver.gd`, static): the in-play trigger. Monthly tick after ThreatEscalationDriver; for an aggressive (crisis_response=="aggressive") active-LOD NPC ruler bordering a player domain, fields a brigand war-band (`ThreatForceComposer.field_bandit_force`, RAID_FORCE_SIZE=240) at the frontier hex and issues a same-hex LOOT leg (`ArmyMarcher.march_army`). Idempotency + cadence (RAID_COOLDOWN_DAYS=180) read from the latest hostile_extraction row's payload. Wired into `domain_handlers._handle_monthly_tick`.
+- **Threats sub-tab** (`encounters_threats_sub_tab.gd`): new "Hostile Extraction" card rendering active hostile_extraction rows with Resist/Concede buttons -> `resolve_player_choice`; summary count added.
+- **`ArmyDisbander`**: added `REASON_RAID_CONCLUDED` to `VALID_REASONS` (a concede disperses the raider). Bug found: `disband` silently no-ops on an unlisted reason.
+- **`GameLog`**: phrases for the new `threat_escalated` stages (raid_launched / extraction_threatened / extraction_resisted / extraction_conceded).
+**Decisions made:**
+- **Trigger mechanism = minimal raid driver** (AskUserQuestion, Jedidiah 2026-07-06). NPC marching-extraction against a player domain was NOT reachable (ruler-AI defense-only by §4.10.1; GDD line ~702 defers raids to Phase 7+). Chose a threat-escalation-style driver (NOT a ruler-planner action) so the "defense-only v1" invariant holds. Declined: adding an offensive raid_extraction action to RulerActionCatalog (breaks the invariant), and surface-only-defer-trigger.
+- Same-hex loot leg (raider fielded already at the frontier hex): a real from-hex leg would self-loot the aggressor's own domain because marching-LOOT does not skip friendly domains (unlike requisition).
+- Concede applies on RE-ISSUE, not the blocking pass (inherent to the sync `should_proceed` hook — same shape as the interactive-battle v1 limitation, conventions §97).
+- Resist surface = a threats-sub-tab ACTION, not a new modal (consistent with the Phase-F siege-decision precedent: signal + sub-tab, no auto-pause modal).
+**Interfaces defined or changed:**
+- `ExtractionResistanceRouter.resolve_player_choice(threat_id: String, choice: String, calendar_day: int) -> Dictionary` ({ok, choice, ...}); `materialize_player_defender(domain_id, attacker_army_id, calendar_day) -> String`.
+- `NpcRaidDriver.process_campaign_month(campaign_id, calendar_day, active_ruler_ids, scheduler=null) -> Array`.
+- `ArmyDisbander.REASON_RAID_CONCLUDED = "raid_concluded"`.
+- New `threat_escalated` stages: raid_launched, extraction_threatened, extraction_resisted, extraction_conceded (payload threat_id may be "" for raid_launched).
+- `domain_threats.kind` gains `hostile_extraction`; payload_json carries {mode, decision, first_seen_calendar_day, raider_name, raider_owner_id}.
+**Database changes:**
+- Migration 185 (domain_threats kind CHECK enum + partial-unique index). Non-destructive rebuild.
+**Tests added/updated:**
+- `test_extraction_resistance_router.gd` (+7): updated player-domain test to assert the threat row; new idempotency, resist->levy+battle, concede->yield+family-loss+raider-disband, and 4 NpcRaidDriver tests (aggressive-neighbor raids+raises-threat, non-aggressive no-raid, no-adjacent-player no-raid, idempotent-while-pending). All pass.
+- Headless SCENE smoke (throwaway, deleted): instantiated the real sub-tab script, seeded a threat via the router, confirmed Resist/Concede render + concede flow (200000cp / 100 families lost, RAW-correct) + row clears. Substitute for the godot-ai MCP smoke (that MCP was unavailable this session).
+**Two-run net-zero:** runs 3 and 4 both 492 passed / 16 failed with an IDENTICAL failing-assertion set (40 pre-existing assertions across 16 carry-forward suites — combat/terrain/party-split/etc., none feature-related). Run 1 after the migration showed the known first-application FK-in-wipe cascade (trailing PRAGMA foreign_keys=ON persists only during the applying run); cleared on run 2+.
+**Known issues:**
+- Pre-existing latent bugs noticed (NOT fixed — out of scope): `ArmyDisbander` no-ops on unlisted reason, so `extraction_resistance_router`'s `_materialize_defender` "muster_failed" disband calls never disband; `_demobilize_defender` uses release_reason='defense_over' which fails the army_unit_assignments CHECK (logs a SQL error, non-fatal). Both flagged in conventions §101.
+- Interactive resist levy is not demobilised post-battle (shared v1 gap with call-to-arms, per §97).
+- v1 raid gates on aggressive disposition + adjacency only (no realm-relations war-state yet); documented in gdd-army-warfare.md §4.10.6 as the minimal bring-forward.
+**Next session should:**
+- Optional: fix the two flagged pre-existing latent bugs (ArmyDisbander unlisted-reason no-op; _demobilize_defender release_reason CHECK) as a small cleanup.
+- Resume the LLM-integration build plan (Phase L-0) per the 2026-07-06 spec, the standing next-action.
+
+
+## Session 2026-07-06 (cont. 3) — Fix two latent army-disband/demob reason bugs (spawned task_49b000ce)
+
+**Task:** Fix the two pre-existing latent bugs flagged during the hostile_extraction surface session (conventions §101, build_log same-day entry): (1) `ArmyDisbander.disband` silently no-ops on an unlisted `reason`, so the `"muster_failed"` disband calls never actually disbanded; (2) `ExtractionResistanceRouter._demobilize_defender` wrote an invalid `release_reason='defense_over'` that fails the `army_unit_assignments` CHECK enum.
+**Model used:** Sonnet 5.
+**Completed:**
+- **`ArmyDisbander`** (`army_disbander.gd`): added `REASON_MUSTER_FAILED := "muster_failed"` to `VALID_REASONS` (following the `REASON_RAID_CONCLUDED` precedent from the same-day session).
+- **`extraction_resistance_router.gd`:** all 3 `_materialize_defender` disband call sites now pass `ArmyDisbander.REASON_MUSTER_FAILED` instead of the bare string literal.
+- **`npc_raid_driver.gd`:** found 2 MORE identical bare-string `"muster_failed"` call sites in `_field_raider` (same bug, same session's code, not originally flagged) — fixed to use the constant too. Grepped the whole codebase afterward; only the constant definition remains as a string literal.
+- **`_demobilize_defender`** (`extraction_resistance_router.gd`): `release_reason` changed from the invalid `'defense_over'` to `'disband'` (already a valid CHECK member; semantically correct — the levy row updates `state='disbanded'` right after). No migration needed.
+**Decisions made:**
+- Fixed the 2 additional `npc_raid_driver.gd` occurrences even though the task only named `extraction_resistance_router.gd` — same bug pattern, same feature, left in place it would just be the next thing flagged.
+- Used the already-valid `'disband'` value rather than adding a new `'defense_over'` CHECK member via migration — no distinct behavior hinges on the reason being different from a normal disband, so the smaller fix was correct.
+**Interfaces defined or changed:**
+- `ArmyDisbander.REASON_MUSTER_FAILED = "muster_failed"` (new public constant, now in `VALID_REASONS`).
+**Database changes:** None.
+**Tests added/updated:** None (no test asserted the old broken strings; existing `test_extraction_resistance_router.gd` suite covers the code paths and continues to pass).
+**Known issues:** None new.
+**Verification:** Two consecutive full headless runs, both **492 suites passed / 16 failed**, assertion-failure set byte-identical to this same day's pre-fix baseline (40 unique pre-existing assertions, unrelated to this change) — net-zero confirmed. Confirmed zero `army_unit_assignments`/`release_reason` CHECK failures in either run (the CHECK-constraint-failed lines still present in the log are all pre-existing, unrelated tables — draft_vehicles, strongholds, tribal_warriors, etc.).
+**Next session should:** Nothing outstanding from this cleanup. Standing next-action remains: resume the LLM-integration build plan (Phase L-0) per the 2026-07-06 spec session.
+
+
+## Session 2026-07-06 (cont. 2) — Player post-victory siege-decision modal (Phase F Route 2 surface)
+
+**Task:** Build the player-facing post-victory decision modal that consumes `EventBus.siege_decision_required` — the modal Phase F (2026-07-04) deferred. After a PLAYER army defeats a foe that retreats into a stronghold, `BattleRetreatSiegeRouter.on_retreat_into_stronghold` emits `siege_decision_required` and never auto-besieges for a player; nothing listened, so the player got no prompt. Now a SessionRunner-owned listener auto-pauses and opens a Besiege / Encamp / March-on modal. Jedidiah approved 2026-07-06.
+**Model used:** Opus 4.8 (full session: recon, design, implementation, tests, MCP smoke, docs).
+**Completed:**
+- **EventBus** (`event_bus.gd`): new signal `siege_decision_resolved(stronghold_id, choice)` — the unified log surfaces it.
+- **BattleRetreatSiegeRouter** (`battle_retreat_siege_router.gd`): new static `resolve_player_decision(choice, victor, stronghold, defeated, day=-1, scheduler=null)` — sibling to the NPC `on_retreat_into_stronghold` heuristic so all retreat->siege dispatch is in one headless-testable class. besiege -> `SiegeDispatcher.dispatch_new_siege`; encamp/march_on -> `_encamp_victor` (cancel any stray leg + set encamped, idempotent). Choice constants `CHOICE_BESIEGE`/`CHOICE_ENCAMP`/`CHOICE_MARCH_ON`. Null scheduler / day<0 default from the registered `_scheduler_provider` / `Timekeeping` so the modal never holds either.
+- **SiegeDecisionPanel** (NEW `scenes/ui/battle/siege_decision_panel.gd` + `.tscn`, CanvasLayer layer=95): pure-UI modal. `open_for_decision(victor, stronghold, defeated)` -> header + situation body (read-only name lookups with empty-id fallbacks, no writes) + 3 buttons with descriptions; emits `decided(choice)` and self-closes. Static `choices()` table for headless test (conventions §27 "testable without a SceneTree").
+- **SessionRunner** (`session_runner.gd`): connects `siege_decision_required` -> `_on_siege_decision_required` (pauses, opens the panel, one-shot-connects `decided`); `_on_siege_decision_made` routes the choice via the router (with the live `get_scheduler()`), emits `siege_decision_resolved`, resumes. Panel instantiated in `load_session` (sibling under Main, like FieldBattlePanel); flags reset + panel hidden + `decided` disconnected in `end_session`.
+- **GameLog** (`game_log.gd`): subscribes `siege_decision_resolved` -> a `combat` line (besiege/encamp/march_on phrases).
+**Decisions made:**
+- **The auto-pause is a HANDOFF from the battle pause, not a competing pause.** `siege_decision_required` fires inside `FieldBattleResolver._run_aftermath` BEFORE the caller emits `battle_concluded`, and a player-victor battle is always interactive (already paused) — so the emit order is siege_decision_required -> battle_concluded. `_on_siege_decision_required` inherits `_scheduler_paused_before_battle` while `_battle_pause_active`, takes over the pause, and `_on_battle_concluded_for_scheduler` early-returns its resume when `_siege_decision_active`. The clock stays stopped continuously battle -> decision -> resolve; resume still respects a manual pre-battle pause. (conventions §99.)
+- **Player-choice dispatch lives in `BattleRetreatSiegeRouter`, not the panel or SessionRunner.** Keeps all retreat->siege routing in one headless-testable static class beside the NPC heuristic; the modal stays UI-only (emits `decided`), SessionRunner supplies the live scheduler (the §27 modal-tier split — the modal never does DB writes or scheduler work).
+- **Encamp and March-on share the encamped end-state in v1.** The victor is already `encamped` post-battle (FieldBattleResolver sets it on victory), and a real March-on destination can't be picked from the modal, so both decline the siege and leave the army encamped; March-on differs only in intent + the guidance to order the march from the map. Distinct `decision` return for logging. Flagged as a v1 simplification.
+- **Modal, not sub-tab action** — unlike the same-day hostile_extraction resist/concede surface (which used a threats-sub-tab action, no auto-pause), Jedidiah explicitly approved the auto-pause modal for THIS case (the Phase-F deferred item).
+**Interfaces defined or changed:**
+- `EventBus.siege_decision_resolved(stronghold_id: String, choice: String)`.
+- `BattleRetreatSiegeRouter.resolve_player_decision(choice: String, victor_army_id: String, stronghold_id: String, defeated_army_id: String, calendar_day: int = -1, scheduler = null) -> Dictionary` ({decision, victor, stronghold_id, + siege_id/mode on besiege, + error on failure}). Constants `CHOICE_BESIEGE="besiege"` / `CHOICE_ENCAMP="encamp"` / `CHOICE_MARCH_ON="march_on"`.
+- `SiegeDecisionPanel.open_for_decision(victor_army_id, stronghold_id, defeated_army_id)` / `close()`; signal `decided(choice: String)`; static `choices() -> Array`.
+- SessionRunner new handlers `_on_siege_decision_required` / `_on_siege_decision_made`; new state `_siege_decision_panel` / `_siege_decision_active` / `_scheduler_paused_before_siege_decision` / `_siege_decision_{stronghold,victor,defeated}_id`.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_phase_f_npc_siege.gd` (+5): besiege -> dispatches a full player-involved siege; encamp -> no siege + victor encamped; march_on -> no siege + victor encamped; unknown choice -> safe no-op (decision "none", no siege); panel `choices()` returns exactly the 3 ids (Besiege/Encamp/March-on).
+**MCP smoke:** Throwaway harness scene (created + deleted) instantiated the real panel and `open_for_decision("","","")`; a godot-ai game screenshot confirmed the header, situation body, and all 3 buttons + descriptions render; a simulated left-click on Besiege fired `[SMOKE] decided: besiege` and the panel closed (visible=false). Verifies the in-engine layout + interaction path the headless suite never loads (`scenes/` scripts).
+**Two-run net-zero:** runs 1 and 2 both **492 suites passed / 16 failed**, byte-identical failing-assertion set (40 pre-existing assertions across 16 carry-forward suites — proficiency / tactical-grid LOS-ZoC / party-split / encounter-transition, none feature-related). PhaseFNpcSiege all-pass on both runs. Matches the same-day 492/16 baseline exactly.
+**Known issues:**
+- Save mid-decision is not persisted (the modal + its pause are transient — no pending-decision row). On reload the prompt won't reappear; the victor stays `encamped` (the safe hold state) and the player can still besiege via the existing threats/siege UI. Same transient-decision limitation the shipped battle pause carries; documented, not a regression.
+- Encamp vs March-on are mechanically identical in v1 (both leave the army encamped) until a modal march-destination picker exists; the distinction is intent + guidance.
+**Next session should:**
+- Standing next-action remains: resume the LLM-integration build plan (Phase L-0) per the 2026-07-06 spec.
+
+
+## Session 2026-07-06 — Interactive mustered-army (resistance-levy) leak fix (migration 186)
+
+**Task:** Investigate + fix whether temporary mustered armies leak when a PLAYER-involved battle resolves. Silent NPC-vs-NPC extraction-resistance battles demobilise their one-off defender levy inline (`_demobilize_defender`); a player-involved battle cannot await the outcome inside the synchronous `should_proceed` hook, so it returned false WITHOUT demobilising — the interactive levy persisted post-battle. Trace extraction-resistance levies AND call_to_arms lord armies; determine whether a shared post-battle cleanup hook is needed; confirm it doesn't wrongly disband standing armies or siege garrisons.
+**Model used:** Opus 4.8 (full session: recon, root-cause trace, design, implementation, tests, docs).
+**Completed:**
+- **Root-cause confirmed.** Interactive resistance levy (both the NPC-owner branch `_decide` and the player-resist branch `_player_resist`) dispatches an interactive `BattleDispatcher.dispatch_collision` and returns without teardown. `FieldBattleResolver._resolve_post_battle_state` only transitions the levy (WIN -> `encamped`; LOSS -> `withdrawing` -> retreat; annihilation -> `disbanded`); on WIN/open-field-retreat the levy PERSISTED with its garrison stranded `on_campaign` (domain permanently stripped) + a phantom army on the map. No `battle_concluded`/aftermath code demobilised it.
+- **Call-to-arms is NOT the same leak (design finding).** A `CallToArmsMuster` lord army is a STANDING body: it may fight many battles and its teardown is revocation-driven (`resolve_revocation`, fired from `FavorsDutiesResolver`). Auto-disbanding it on `battle_concluded` would be a bug. So it is tagged (identifiable) but deliberately EXCLUDED from the levy demob path.
+- **Migration 186** (`186_armies_provenance.sql`): `ALTER TABLE armies ADD COLUMN provenance TEXT NOT NULL DEFAULT 'standing'` (no CHECK, code-validated — the §184 ALTER style). Mirrored in `db/schema.sql`. Values: `standing` | `resistance_levy` | `call_to_arms`.
+- **`ArmyRepository`**: added `PROVENANCE_STANDING/RESISTANCE_LEVY/CALL_TO_ARMS` constants; threaded `provenance` through `create_army`'s INSERT (default `standing`) + added to `_ARMY_UPDATE_FIELDS`.
+- **`ExtractionResistanceRouter`**: `_materialize_defender` tags the levy `provenance='resistance_levy'`. New `register_battle_conclusion_listener()` / `unregister_...()` (sibling of `BattleRetreatSiegeRouter.register_listener`) attaching an `EventBus.battle_concluded` handler `_on_battle_concluded` -> `_demobilize_if_spent_levy` on both participants -> reuses the existing `_demobilize_defender` teardown. Guard `_levy_reason_still_active` skips a levy with a non-empty `garrison_stronghold_id` (holed up -> siege defender) or named in an active `sieges` row.
+- **`CallToArmsMuster._create_lord_call_army`**: tags the lord army `provenance='call_to_arms'` (identified, not battle-demobbed).
+- **`SessionRunner.load_session` / teardown**: register + unregister the new listener beside the existing collision / retreat-siege listeners.
+**Decisions made:**
+- **Persistent tag, not a static pending-map keyed by battle_id.** The tag survives save/load mid-interactive-battle (same discipline as the `_episodes` session-reset, conventions §97). A static map would leak on reload.
+- **`garrison_stronghold_id` is the single siege guard proxy.** It is stamped ONLY by `RetreatResolver` when a defeated levy retreats into a co-located stronghold; it therefore catches BOTH siege timings uniformly — the NPC victor dispatches the siege synchronously in the aftermath (BEFORE `battle_concluded`); a player victor's siege is deferred to the pause-handoff modal (AFTER `battle_concluded`). Belt-and-suspenders: also skip if named in a non-`concluded` `sieges` row.
+- **Keep the silent-path inline `_demobilize_defender` call.** It is idempotent (listener no-ops on an already-`disbanded` army) and keeps subsystem tests that don't boot SessionRunner correct. In-game a silent levy is torn down by whichever fires first.
+- **Scope-limited to the levy.** The holed-up-levy teardown (once its siege ends) is a still-open follow-up belonging to the siege lifecycle, NOT the field-battle aftermath — this fix only ensures the siege garrison is not stripped.
+**Interfaces defined or changed:**
+- `armies.provenance` column (migration 186); `ArmyRepository.PROVENANCE_STANDING/RESISTANCE_LEVY/CALL_TO_ARMS`.
+- `ExtractionResistanceRouter.register_battle_conclusion_listener()` / `unregister_battle_conclusion_listener()` (SessionRunner-owned, `EventBus.battle_concluded` listener).
+- `create_army` now accepts a `provenance` key (defaults `standing`); all existing callers unaffected.
+**Database changes:**
+- Migration 186 — additive `armies.provenance` column, non-destructive, DEFAULT `standing` preserves all prior rows/behavior.
+**Tests added/updated:**
+- `test_extraction_resistance_router.gd` (+4): `test_interactive_levy_demobilizes_after_battle_concludes` (end-to-end: PC extractor -> NPC resist -> interactive battle -> `resolve_silently` emits `battle_concluded` -> levy disbanded, zero units stranded `on_campaign`); `test_holed_up_levy_preserved_when_battle_concludes` (siege guard: `garrison_stronghold_id` set -> NOT demobbed, units stay committed); `test_levy_reason_still_active_signals` (proxy + null-safety); `test_call_to_arms_body_not_demobilized_by_levy_listener` (provenance gate / design finding). All pass.
+**Two-run net-zero:** runs 1 and 2 both 492 passed / 16 failed with an IDENTICAL 16 carry-forward failing suites (proficiency UI, encounter tables, LOS/ZoC, familiars, specialists, clanhold, armor — none army/extraction/siege related). `ExtractionResistanceRouter: all tests passed.` on both runs.
+**Known issues:**
+- Residual (narrow, pre-existing shape): a levy that holes up in a stronghold but is NEVER besieged (NPC victor declines / player chooses Encamp/March-on) stays un-demobbed with units `on_campaign` — the same gap as any army that retreats into a stronghold without a siege. Deferred: belongs to a siege/retreat-aftermath teardown pass, not this fix.
+**Next session should:**
+- (Optional) Add a siege-conclusion / no-siege-formed teardown for a holed-up levy so the residual case closes; and consider whether call_to_arms bodies want an analogous end-of-campaign/obligation-expiry sweep beyond `resolve_revocation`.

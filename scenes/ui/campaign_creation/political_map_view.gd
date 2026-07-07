@@ -37,6 +37,7 @@ const _BIOME_TAIGA := Color(0.36, 0.47, 0.42)          # woods + forest_taiga �
 const _BIOME_TUNDRA := Color(0.78, 0.80, 0.82)         # clear + clear_tundra — pale grey-blue
 const _BIOME_SAVANNA := Color(0.80, 0.72, 0.34)        # clear + clear_savanna — dry gold
 const _BIOME_GLACIAL := Color(0.88, 0.92, 0.96)        # desert + mountains_glacial — ice
+const _BIOME_VOLCANIC := Color(0.34, 0.16, 0.15)       # mountains_volcanic — dark basalt/ember
 
 # Pointillist dapple: a per-forest-type speckle drawn over the base fill so the
 # green family (forest / taiga / jungle / dense forest) reads apart at a glance.
@@ -76,11 +77,14 @@ var _hexes: Array = []          # full setting_hexes rows (SELECT *)
 var _rivers: Array = []         # setting_river_edges rows (drawn as edge segments)
 var _colors: Dictionary = {}    # polity_id -> Color (replay palette)
 var _owner_override: Dictionary = {}   # Vector2i -> polity_id (replay frame); empty = use hex.owner
+var _culture_override: Dictionary = {} # Vector2i -> culture_id (replay frame); empty = present-day
+var _territory_override: Dictionary = {} # Vector2i -> territory_class (replay frame); empty = present-day
 var _settlements: Array = []
 var _settle_by_hex: Dictionary = {}    # Vector2i -> settlement row (tooltip)
 var _polity_names: Dictionary = {}     # polity_id -> realm name (tooltip + legend)
 var _polity_lieges: Dictionary = {}    # polity_id -> liege_id (sovereign resolution)
 var _polity_tiers: Dictionary = {}     # polity_id -> tier_index (border weight by rank)
+var _polity_seed_labels: Dictionary = {}  # polity_id -> culture-seed label ("Vallican_01"), replay
 var _culture_colors: Dictionary = {}   # culture_id -> Color (lazy, deterministic)
 var _mode: int = Mode.POLITICAL
 var _sovereign_view: bool = false      # political mode: colour by top-of-liege-chain
@@ -149,6 +153,9 @@ func bind(hexes: Array, palette: Array) -> void:
 	for row in palette:
 		_colors[str(row.get("polity_id", ""))] = Color.html(str(row.get("color", "#888888")))
 	_culture_colors = {}
+	_owner_override = {}
+	_culture_override = {}
+	_territory_override = {}
 	queue_redraw()
 
 
@@ -156,6 +163,44 @@ func bind(hexes: Array, palette: Array) -> void:
 func show_owners(owner_map: Dictionary) -> void:
 	_owner_override = owner_map
 	queue_redraw()
+
+
+## Replay drives per-frame dominant-culture per hex (Vector2i -> culture_id, '' = none).
+## When non-empty the Culture layer reads THIS frame instead of the present-day map, so
+## cultures are watched spreading over the ages. Cleared by bind().
+func show_cultures(culture_map: Dictionary) -> void:
+	_culture_override = culture_map
+	queue_redraw()
+
+
+## Replay drives per-frame territory class per hex (Vector2i -> civ/borderlands/wilderness).
+## When non-empty the Territory layer animates the civilization frontier over the ages.
+func show_territories(territory_map: Dictionary) -> void:
+	_territory_override = territory_map
+	queue_redraw()
+
+
+## Replay: per-polity culture-seed labels ("Vallican_01") for the frame-aware tooltip,
+## so a realm that never earned a proper name reads as its seed culture, not a bare id.
+func set_seed_labels(labels: Dictionary) -> void:
+	_polity_seed_labels = labels
+
+
+## Replay: pre-seed the culture→colour map from the FULL set of cultures seen across the
+## whole history (not just present-day), so a culture that spreads and then dies out still
+## draws in its own colour while scrubbing. Deterministic over sorted culture ids; a no-op
+## if colours were already assigned. `ids` should be the union of every frame's cultures.
+func seed_culture_colors(ids: Array) -> void:
+	if not _culture_colors.is_empty():
+		return
+	var sorted_ids := ids.duplicate()
+	sorted_ids.sort()
+	var i := 0
+	for c in sorted_ids:
+		if str(c) == "":
+			continue
+		_culture_colors[str(c)] = WorldPalette.color_at(i)
+		i += 1
 
 
 func set_mode(mode: int) -> void:
@@ -199,6 +244,7 @@ func legend_entries(polity_names: Dictionary = {}) -> Array:
 				{"label": "Desert", "color": _BIOME["desert"]},
 				{"label": "Tundra", "color": _BIOME_TUNDRA},
 				{"label": "Glacier", "color": _BIOME_GLACIAL},
+				{"label": "Volcanic", "color": _BIOME_VOLCANIC},
 				{"label": "Water", "color": _WATER},
 			]
 		Mode.ELEVATION:
@@ -392,11 +438,29 @@ func _hex_color(h: Dictionary) -> Color:
 		Mode.ELEVATION:
 			return _ELEV.get(str(h.get("elevation", "")), _ELEV["flat"])
 		Mode.TERRITORY:
-			return _TERR.get(str(h.get("territory_class", "")), _UNOWNED)
+			return _TERR.get(_territory_of(h), _UNOWNED)
 		Mode.CULTURE:
-			var c := _dominant_culture(h)
+			var c := _culture_of(h)
 			return _culture_colors.get(c, _UNOWNED) if c != "" else _UNOWNED
 	return _UNOWNED
+
+
+## Dominant culture for the current view: the replay frame's value when a per-frame
+## override is loaded (Culture layer animates), else the present-day hex substrate.
+func _culture_of(h: Dictionary) -> String:
+	if not _culture_override.is_empty():
+		return str(_culture_override.get(Vector2i(int(h["q"]), int(h["r"])), ""))
+	return _dominant_culture(h)
+
+
+## Territory class for the current view: the replay frame's value when a per-frame
+## override is loaded (Territory layer animates), else the present-day hex class.
+func _territory_of(h: Dictionary) -> String:
+	if not _territory_override.is_empty():
+		var tc := str(_territory_override.get(Vector2i(int(h["q"]), int(h["r"])), ""))
+		if tc != "":
+			return tc
+	return str(h.get("territory_class", ""))
 
 
 ## Biome fill colour, resolving the meaningful subtypes (tundra/taiga/savanna/
@@ -408,6 +472,7 @@ func _biome_color(h: Dictionary) -> Color:
 		"clear_tundra": return _BIOME_TUNDRA
 		"clear_savanna": return _BIOME_SAVANNA
 		"mountains_glacial": return _BIOME_GLACIAL
+		"mountains_volcanic": return _BIOME_VOLCANIC
 	return _BIOME.get(str(h.get("biome", "")), _UNOWNED)
 
 
@@ -691,6 +756,8 @@ func _tooltip_for(h: Dictionary) -> String:
 	var head := "Hex (%d, %d)" % [int(h["q"]), int(h["r"])]
 	if str(h.get("water", "")) != "":
 		return "%s\n%s" % [head, "Ocean" if str(h["water"]) == "ocean" else "Lake"]
+	if _replay_mode:
+		return _replay_tooltip(h, head)
 	match _mode:
 		Mode.BIOME:
 			return "%s\nBiome: %s" % [head, _biome_label(h)]
@@ -703,6 +770,40 @@ func _tooltip_for(h: Dictionary) -> String:
 			return _realm_tooltip(h, head)
 
 
+## Replay hover: every layer reports THIS epoch's frame data, never the present-day
+## substrate. Political leads with the culture-seed label so cultures read at a glance;
+## Culture and Territory report the frame's dominant culture / advancing frontier.
+func _replay_tooltip(h: Dictionary, head: String) -> String:
+	var owner := _hex_owner(h)
+	match _mode:
+		Mode.TERRITORY:
+			var tc := _territory_of(h)
+			return "%s\nTerritory: %s" % [head, tc.capitalize() if tc != "" else "—"]
+		Mode.CULTURE:
+			var c := _culture_of(h)
+			var lines: Array = [head]
+			lines.append("Culture: %s" % (c.capitalize() if c != "" else "None"))
+			if owner != "":
+				lines.append("Realm: %s" % _owner_label(owner))
+			return "\n".join(lines)
+		_:   # POLITICAL — per-frame ownership, seed-labelled
+			return "%s\nRealm: %s" % [head, _owner_label(owner)] if owner != "" \
+				else "%s\nUnclaimed this epoch" % head
+
+
+## The replay owner label: the culture-seed identity ("Vallican_01") first, with the
+## realm's eventual proper name in parentheses when it earned one — so the seed culture
+## is always legible while scrubbing, without falling back to a bare pol id.
+func _owner_label(pid: String) -> String:
+	var seed := str(_polity_seed_labels.get(pid, ""))
+	var nm := str(_polity_names.get(pid, ""))
+	if seed == "":
+		return nm if nm != "" else pid
+	if nm != "" and nm != pid:
+		return "%s (%s)" % [seed, nm]
+	return seed
+
+
 func _biome_label(h: Dictionary) -> String:
 	match str(h.get("biome_subtype", "")):
 		"forest_dense": return "Dense forest"
@@ -711,6 +812,7 @@ func _biome_label(h: Dictionary) -> String:
 		"clear_savanna": return "Savanna"
 		"clear_grassland": return "Grassland"
 		"mountains_glacial": return "Glacier"
+		"mountains_volcanic": return "Volcanic mountains"
 	match str(h.get("biome", "clear")):
 		"woods": return "Forest"
 		"jungle": return "Jungle"

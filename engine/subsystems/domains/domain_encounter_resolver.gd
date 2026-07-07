@@ -155,7 +155,15 @@ static func roll_monthly_encounters_for_domain(
 	# Phase 9C polish round 4 2026-05-09: dungeon-presence detection drives
 	# the 2× linger boost in _generate_encounter (RAW L349). Computed once
 	# per monthly tick — dungeon presence is stable over the throw cycle.
-	var has_dungeon: bool = _domain_has_dungeon(domain_id, String(domain_data.get("location_map_id", "")))
+	# location_map_id is nullable: domains created without a recorded location
+	# carry SQL NULL here, which godot-sqlite returns as a null Variant. The
+	# String() constructor THROWS on null (and str(null) yields the literal
+	# "<null>", which would wrongly trip the map filter in _domain_has_dungeon).
+	# Coerce null -> "" so the dungeon check falls back to cross-map detection,
+	# matching its "restrict only when supplied" contract.
+	var raw_map_id: Variant = domain_data.get("location_map_id")
+	var location_map_id: String = "" if raw_map_id == null else str(raw_map_id)
+	var has_dungeon: bool = _domain_has_dungeon(domain_id, location_map_id)
 	var lookup: Dictionary = look_up_die_target(hex_count, terrain_band)
 	var die_sides: int = int(lookup.get("die_sides", 100))
 	var target: int = int(lookup.get("target", 100))
@@ -594,8 +602,16 @@ static func _generate_encounter(dice, modal_terrain_key: String = "",
 				[picked_category, normalized_terrain, domain_id]
 			)
 		filtered = ids
-	# Step 2c: uniform pick from filtered list.
-	var creature_id: String = String(filtered[randi() % filtered.size()])
+	# Step 2c: uniform pick from filtered list. Route through the dice
+	# abstraction (matching DragonVariantResolver's `_roll_die(pool.size(),
+	# dice) - 1` pattern) so a mocked/seeded dice fully determines the
+	# encounter — the whole reason this function takes a `dice`. Distribution-
+	# identical in production: `dice` is null there, so `_roll_die` falls back
+	# to `randi_range(1, size)` and the `- 1` yields a uniform 0..size-1 index,
+	# exactly like the prior `randi() % size`. `filtered.size()` is guaranteed
+	# >= 1 here (the empty-ids early-returns and the fallback both ensure it).
+	var pick_idx: int = _roll_die(filtered.size(), dice) - 1
+	var creature_id: String = String(filtered[pick_idx])
 	# Step 3: look up domain_encounter block via MonsterRegistry.
 	var entry: Dictionary = _monster_registry.get_monster(creature_id)
 	if entry.is_empty():

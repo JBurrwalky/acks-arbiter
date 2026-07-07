@@ -16,6 +16,7 @@ extends "res://tests/test_suite_base.gd"
 
 var _campaign_id: String = ""
 var _character_id: String = ""
+var _domain_id: String = ""
 var _catalog: ActivityCatalog = null
 var _registry: ActivityHandlerRegistry = null
 var _executor: ActivityTimeCostExecutor = null
@@ -32,6 +33,8 @@ func run_all_tests() -> void:
 	test_ongoing_absence_increments_when_away()
 	test_ongoing_tick_tolerance_forfeits_when_absence_exceeds_ticks()
 	test_ongoing_completion_after_required_ticks()
+	test_oversee_investment_launch_debits_treasury_exactly_once()
+	test_oversee_investment_launch_blocked_when_insufficient_funds()
 	test_calendar_day_uses_thirteen_month_year()
 	test_domain_handlers_calendar_day_from_date_thirteen_months()
 	if not has_failures():
@@ -46,6 +49,12 @@ func _setup() -> void:
 	randomize()
 	_campaign_id = CampaignRepository.create_campaign("Test Activity Executor", "TestWorld")
 	_character_id = _create_character()
+	_domain_id = CampaignRepository.create_domain({
+		"campaign_id": _campaign_id,
+		"name": "Test Domain",
+		"owner_character_id": _character_id,
+	})
+	DomainTreasury.deposit(_domain_id, 100_000 * 100, 1, "revenue", "test_seed", "seed treasury")
 	_catalog = ActivityCatalog.new()
 	_registry = ActivityHandlerRegistry.new()
 	_register_test_handlers()
@@ -242,6 +251,64 @@ func test_ongoing_completion_after_required_ticks() -> void:
 	var state := CampaignRepository.get_activity_state(state_id)
 	check(String(state.get("status", "")) == "completed",
 		"oversee_investment with 1 required tick should complete on first session, got status=%s" % state.get("status", "?"))
+
+
+# ---------------------------------------------------------------------------
+# Launch-time treasury debit (§91 launcher-debits contract)
+# ---------------------------------------------------------------------------
+
+## oversee_investment's handler assumes "the treasury was already debited at
+## launch" — regression for the hole where the player launch path never
+## actually performed that debit (task_aea5086f), letting a committed
+## investment grow the domain's families for free. The debit must happen
+## exactly once, at launch, for the committed cp amount.
+func test_oversee_investment_launch_debits_treasury_exactly_once() -> void:
+	var prior_balance: int = DomainTreasury.get_balance(_domain_id)
+	var prior_ledger_count: int = CampaignRepository.list_ledger_entries(_domain_id).size()
+	var result := _executor.launch(
+		_character_id, "oversee_investment", "anywhere", "",
+		{"gp_committed": 1000, "domain_id": _domain_id}, _scheduler)
+	check(bool(result.get("success", false)), "launch should succeed with sufficient funds")
+	var new_balance: int = DomainTreasury.get_balance(_domain_id)
+	check(new_balance == prior_balance - 1000 * 100,
+		"treasury should be debited exactly 1000gp (100,000cp), got prior=%d new=%d" % [prior_balance, new_balance])
+	var ledger: Array = CampaignRepository.list_ledger_entries(_domain_id)
+	check(ledger.size() == prior_ledger_count + 1,
+		"exactly one new ledger row should be written at launch, got %d new rows" \
+			% (ledger.size() - prior_ledger_count))
+	var debit_row: Dictionary = ledger[-1]
+	check(String(debit_row.get("category", "")) == "expense",
+		"launch-time debit should be categorized as an expense, got %s" % debit_row.get("category", "?"))
+	check(String(debit_row.get("subcategory", "")) == "oversee_investment_committed",
+		"launch-time debit subcategory should be oversee_investment_committed, got %s" \
+			% debit_row.get("subcategory", "?"))
+	check(int(debit_row.get("cp_amount", 0)) == -1000 * 100,
+		"ledger debit should be negative cp_amount, got %d" % int(debit_row.get("cp_amount", 0)))
+
+
+## A committed amount the domain can't afford must block the launch outright
+## — no activity_state created, no scheduled event, and the treasury left
+## untouched (fail closed, not a silent short-fall).
+func test_oversee_investment_launch_blocked_when_insufficient_funds() -> void:
+	var poor_character_id: String = _create_character()
+	var poor_domain_id: String = CampaignRepository.create_domain({
+		"campaign_id": _campaign_id,
+		"name": "Poor Domain",
+		"owner_character_id": poor_character_id,
+	})
+	check(DomainTreasury.get_balance(poor_domain_id) == 0,
+		"fixture sanity: poor domain should start with 0 treasury")
+	var result := _executor.launch(
+		poor_character_id, "oversee_investment", "anywhere", "",
+		{"gp_committed": 1000, "domain_id": poor_domain_id}, _scheduler)
+	check(not bool(result.get("success", false)),
+		"launch should fail when the domain cannot afford the commitment")
+	check(String(result.get("error", "")) == "insufficient_funds",
+		"error should be insufficient_funds, got %s" % result.get("error", "?"))
+	check(String(result.get("activity_state_id", "")).is_empty(),
+		"no activity_state should be persisted on a blocked launch")
+	check(DomainTreasury.get_balance(poor_domain_id) == 0,
+		"treasury should remain untouched after a blocked launch")
 
 
 # ---------------------------------------------------------------------------

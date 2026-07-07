@@ -1,0 +1,377 @@
+{
+  "kit_id": "vallica",
+  "tier": "culture",
+  "inherits": [
+    "classical"
+  ],
+  "_schema": "gdd-naming-conventions.md 2.6 (BASE culture kit; single-source, seeded directly)",
+  "csv_id": "BASE_06",
+  "catalog_number": null,
+  "_numbering_note": "(BASE culture; csv_id authoritative)",
+  "sub_palette": "classical (latinate)",
+  "government": "feudal",
+  "civ_or_clan": "civ",
+  "alignment_allowed": [
+    "Lawful",
+    "Neutral",
+    "Chaotic"
+  ],
+  "_note": "Generic Roman base (BASE_06): the family-level Latinate base culture under the base/hybrid emergence model (gdd-culture-emergence-and-territory.md). Single-language Latinate, seeded directly (no blend, no fusion_rules, no synthesis_sources). The consul/rex/imperator register, the urbs and the via, the marching legions. The phonology, lexicon, morphology, deities and seed name-stock are carried from culture_agrippan.json (kept SEPARATELY as the Agrippan canon's home register - Agrippa remains the reference culture other cultures rename their deities FROM); Vallica is the generic, un-named Roman base from which Latinate hybrids may emerge. CIV/CLAN: Civilized (feudal) - a centralized Roman-style state. Common-word lexicon and rank titles use the real Latin register (allowed, culture-catalog 5.3); DEITY names are the canon's home forms (canon-morphs), never real gods. Ruler/domain DISPLAY titles are ENGLISH (or an approved foreign term); the Latin titles are carried in ruler_native/domain_native for NPC dialogue. APPROVED FOREIGN TERM: the empire ruler displays as Imperator (the commonly-known Roman term).",
+  "phonology": {
+    "palette": "Latinate: a e i o u; p t c(=k) b d g f s v l r m n; endings -us/-a/-um/-ius/-or; penultimate stress.",
+    "phonotactics": "CV / CVC; vowel-final common; clusters st/tr/pr/cl/sp; geminates ll/ss/tt allowed.",
+    "transparent_ratio": 0.45
+  },
+  "lexicon": {
+    "_note": "Single Latin tongue (no slashes, no fusion); Latinate land/civic/kin words seeded directly from the Agrippan canon's home register.",
+    "feature_words": {
+      "river": "amnis",
+      "stream": "rivus",
+      "lake": "lacus",
+      "sea": "mare",
+      "bay": "sinus",
+      "cape": "prom",
+      "isle": "insa",
+      "mountain": "mons",
+      "hill": "collis",
+      "ridge": "juga",
+      "forest": "silva",
+      "wood": "nemus",
+      "plain": "campus",
+      "marsh": "palus",
+      "ford": "vada",
+      "pass": "clusa",
+      "vale": "vallis",
+      "coast": "ora",
+      "neck": "collum",
+      "narrows": "fauces",
+      "waste": "vasta",
+      "road": "via",
+      "way": "iter",
+      "track": "semita"
+    },
+    "settlement_words": {
+      "hamlet": "vicellus",
+      "village": "vicus",
+      "town": "oppidum",
+      "city": "urbs",
+      "fort": "castra",
+      "port": "ostia",
+      "market": "forum",
+      "colony": "colonia",
+      "citadel": "arx"
+    },
+    "kinship": {
+      "son": "filius",
+      "daughter": "filia",
+      "house": "gens",
+      "ancestor": "avus"
+    },
+    "adjectives": {
+      "great": "magnus",
+      "little": "parvus",
+      "old": "vetus",
+      "new": "novus",
+      "black": "ater",
+      "white": "albus",
+      "red": "rufus",
+      "golden": "aureus",
+      "iron": "ferrus",
+      "high": "altus",
+      "low": "imus",
+      "far": "ultra",
+      "sacred": "sacer",
+      "fair": "pulcher"
+    },
+    "resources": {
+      "salt": "salis",
+      "iron": "ferrum",
+      "silver": "argentum",
+      "gold": "aurum",
+      "wine": "vinum",
+      "oil": "oleum",
+      "grain": "frumen",
+      "marble": "marmor",
+      "fish": "piscis",
+      "purple_dye": "purpura"
+    },
+    "directional": {
+      "upper": "superus",
+      "lower": "inferus",
+      "north": "borus",
+      "south": "auster",
+      "inner": "intra",
+      "outer": "extra",
+      "near": "propus",
+      "far": "longus"
+    }
+  },
+  "morphology": {
+    "toponymic_suffixes": [
+      "-um",
+      "-ia",
+      "-ium",
+      "-pola",
+      "-castra",
+      "-forum"
+    ],
+    "patronymic_form": "inherited gens (clan) name as middle element, e.g. Marcus VALERIUS.",
+    "gendered_endings": {
+      "male": "-us / -ius / -or",
+      "female": "-a / -ia"
+    },
+    "diminutive_form": "-ulus / -illa (Marcus -> Marculus)",
+    "compounding_rule": "[adjective|resource](stem) + feature-word, eliding final vowel before a vowel (ater + silva -> Atrasilva); or feature + civic suffix (vada -> Atravada)."
+  },
+  "title_ladder": {
+    "government": "feudal (a centralized Roman-style state: the rex or imperator at the crown, the dux and comes over the provinces, the castellanus over the frontier holding; the legions and the via bind the realm)",
+    "tiers": {
+      "barony": {
+        "ruler": "Baron",
+        "domain": "Barony",
+        "ruler_native": "Castellanus",
+        "domain_native": "Castellania"
+      },
+      "march": {
+        "ruler": "Marquis",
+        "domain": "March",
+        "ruler_native": "Limitanus",
+        "domain_native": "Limitania"
+      },
+      "county": {
+        "ruler": "Count",
+        "domain": "County",
+        "ruler_native": "Comes",
+        "domain_native": "Comitatus"
+      },
+      "duchy": {
+        "ruler": "Duke",
+        "domain": "Duchy",
+        "ruler_native": "Dux",
+        "domain_native": "Ducatus"
+      },
+      "principality": {
+        "ruler": "Prince",
+        "domain": "Principality",
+        "ruler_native": "Princeps",
+        "domain_native": "Principatus"
+      },
+      "kingdom": {
+        "ruler": "King",
+        "domain": "Kingdom",
+        "ruler_native": "Rex",
+        "domain_native": "Regnum"
+      },
+      "empire": {
+        "ruler": "Imperator",
+        "domain": "Empire",
+        "ruler_native": "Imperator",
+        "domain_native": "Imperium"
+      }
+    },
+    "_tiers_note": "Seven ACKS domain tiers, ascending by size (barony, march, county, duchy, principality, kingdom, empire) per RAW; the march is a small frontier holding between barony and county. DISPLAY titles are English; the empire ruler displays as the approved foreign term Imperator. The Latinate ruler_native/domain_native pairs (all rhyming on a shared stem) are for NPC dialogue only. The march (frontier) native title is Limitanus/Limitania (from Roman limes/limitanei), leaving Dux/Ducatus for its proper meaning, the duchy. Per-tier family/realm size thresholds come from the ACKS domain rules (acore_axioms_strongholds_and_domains.xml); not reproduced here for IP.",
+    "approved_foreign_terms_used": [
+      "Imperator (empire)"
+    ],
+    "heir": "Caesar (heir-designate to the Imperator)",
+    "display_policy": "Ruler/domain titles shown in setting-gen, domain lists and vassal trees are ENGLISH (or an approved commonly-known foreign term where set in 'ruler', here Imperator for the empire tier). The *_native conlang (Latin) forms are for NPC DIALOGUE ONLY, never for structural/UI displays.",
+    "female_forms_native": {
+      "Imperator": "Imperatrix",
+      "Rex": "Regina",
+      "Princeps": "Principissa",
+      "Dux": "Ducissa",
+      "Comes": "Comitissa",
+      "Limitanus": "Limitana",
+      "Castellanus": "Castellana"
+    },
+    "female_forms_display": {
+      "Baron": "Baroness",
+      "Marquis": "Marquise",
+      "Count": "Countess",
+      "Duke": "Duchess",
+      "Prince": "Princess",
+      "King": "Queen",
+      "Imperator": "Imperatrix"
+    },
+    "honorifics": {
+      "lord": "Dominus",
+      "lady": "Domina",
+      "knight": "Eques",
+      "your_grace": "Eminentia",
+      "your_majesty": "Maiestas"
+    },
+    "vassalage": {
+      "liege": "Patronus",
+      "vassal": "Cliens",
+      "fealty": "Fides",
+      "tribute": "Tributum"
+    }
+  },
+  "people_name_convention": {
+    "order": "praenomen (personal) + nomen (gens/clan, inherited) + cognomen (earned agnomen, optional)",
+    "surname_source": [
+      "inherited_family_clan (gens)",
+      "deed_or_physical_agnomen (cognomen)"
+    ],
+    "dual_register": "patricians use the full tripartite gens; commoners often praenomen + occupational/patronymic byname.",
+    "theophoric": "praenomina derived from the canonical deities: Tulrian, Orlandus, Argentius, Realtus, Numenius, Delorius, Numian, Noctilus (m); Realta, Lietia, Numia, Noctila (f).",
+    "diminutive": "informal -ulus / -illa"
+  },
+  "religion": {
+    "_note": "Deity-names are the canonical pantheon's home forms (canon-morphs), seeded from the Agrippan canon (Agrippa is the reference culture other cultures rename their deities FROM; gdd-religion-system 5.2); never real gods. As a base culture allowing all three alignments, worship_by_alignment is given below.",
+    "lawful_powers_canonical": [
+      "Tulrius",
+      "Argentus",
+      "Realta",
+      "Numeno",
+      "Lieta",
+      "Ventalius",
+      "Delorum",
+      "Numia",
+      "Fullus",
+      "Gaiandus",
+      "Orlandus",
+      "Noctiluna"
+    ],
+    "the_one": "Aeternus (the One / True God; honored in liturgy, not petitioned)",
+    "worship_by_alignment": {
+      "Lawful": "venerates the Lawful powers of the canon - Aeternus honored above all, Tulrius the just sun, Orlandus of the iron oath, Argentus of fair measure, Realta the merciful - and names the Chaotic powers daemones, warded and unworshipped; the sworn legion and the just rex are the social ideal.",
+      "Neutral": "the ancestral dead (the di manes of the gens) and the local powers - the lares of the hearth and the genii of place; the great powers of the canon invoked situationally at the forum-temple rather than worshipped wholesale.",
+      "Chaotic": "Venerates the Chaotic powers of the canon, and names the Lawful powers - and Aeternus - as the tyrant-gods to be defied."
+    },
+    "demon_epithets_for_chaotic": {
+      "Maraxus": "the Tyrant-Flame",
+      "Lusento": "the Coin-Serpent",
+      "Hirelia": "the Briar-Temptress",
+      "Dementus": "the Storm-Mad",
+      "Metensia": "the Blight-Mother",
+      "Raptis": "the Red Hunter",
+      "Irantius": "the Grave-Wrath",
+      "Desoria": "the Drowner",
+      "Gerontinus": "the Famine-Hand",
+      "Hestratus": "the Summit-Folly",
+      "Inculcus": "the Oathrot",
+      "Caecida": "the Blinding Slanderer",
+      "Vacidus": "the Unmaker"
+    },
+    "clergy_ladder": {
+      "1": "Cultor (Acolyte)",
+      "3": "Sacerdos (Priest)",
+      "5": "Flamen",
+      "7": "Pontifex (High Priest)",
+      "9": "Pontifex Maximus"
+    },
+    "religious_orders_pattern": "Collegium of [domain]: Collegium of the Dawn Throne (Tulrius), Order of the Iron Oath (Orlandus).",
+    "saints_pattern": "Divus/Diva [name] (deified founders and heroes), e.g. Divus Quirinus the Founder.",
+    "holy_symbol_motifs": {
+      "Tulrius": "rayed sun-disc above a balance",
+      "Orlandus": "iron oath-ring on a tower",
+      "Argentus": "scales over a coin"
+    }
+  },
+  "banks_patterns": {
+    "_note": "Settlement/region names assemble from lexicon+morphology; other categories follow these patterns (full lists assembled by the build step).",
+    "ships": "virtue/eagle/dawn names: Victrix, Aquila, Dawn of Vallica",
+    "military_units": "Legio [ordinal] [cognomen]: Legio Prima Ferrata (the Iron Legion)",
+    "taverns": "The [Adjective] [Noun]: The Gilded Amphora, The Iron Eagle",
+    "dungeons_ruins": "[Tomb/Vault/Catacomb] of [name]: the Catacombs of Divus Aurelius"
+  },
+  "seed_names": {
+    "personal_m": [
+      "Marcus",
+      "Lucius",
+      "Gaius",
+      "Titus",
+      "Quintus",
+      "Aulus",
+      "Servius",
+      "Decius",
+      "Valerian",
+      "Cassian",
+      "Aurelian",
+      "Tullius",
+      "Caelius",
+      "Florian",
+      "Vitus",
+      "Severus",
+      "Octavian",
+      "Maxen",
+      "Drusus",
+      "Tiberian",
+      "Albinus",
+      "Cornel",
+      "Fabius",
+      "Rufus"
+    ],
+    "personal_f": [
+      "Aurelia",
+      "Valeria",
+      "Cornelia",
+      "Livia",
+      "Octavia",
+      "Drusilla",
+      "Severina",
+      "Tullia",
+      "Caelia",
+      "Marcia",
+      "Fabia",
+      "Antonia",
+      "Pomponia",
+      "Vitia",
+      "Lucilla",
+      "Florentia",
+      "Sabina",
+      "Aemilia",
+      "Junia",
+      "Portia",
+      "Cassia",
+      "Verania",
+      "Albina",
+      "Maxima"
+    ],
+    "clan_gens": [
+      "Valerius",
+      "Cornelius",
+      "Fabius",
+      "Aurelius",
+      "Tullius",
+      "Caelius",
+      "Aemilius",
+      "Junius",
+      "Pomponius",
+      "Severus",
+      "Octavius",
+      "Drusus",
+      "Albinus",
+      "Florius",
+      "Vitellius",
+      "Maxentius",
+      "Cassius",
+      "Antonius",
+      "Veranius",
+      "Portius"
+    ],
+    "epithets_cognomina": [
+      "Ferrus the Iron",
+      "Magnus the Great",
+      "Pius the Dutiful",
+      "Severus the Stern",
+      "Aquila the Eagle",
+      "Rufus the Red",
+      "Maximus the Greatest",
+      "Vetus the Elder",
+      "Justus the Just",
+      "Audax the Bold",
+      "Sapiens the Wise",
+      "Victor"
+    ],
+    "flagship_settlements": [
+      "Vallica the capital",
+      "Aurelium",
+      "Castra Ferrata",
+      "Portus Magnus",
+      "Marmorea",
+      "Atravada"
+    ]
+  }
+}

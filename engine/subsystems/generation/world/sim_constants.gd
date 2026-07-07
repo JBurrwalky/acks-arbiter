@@ -340,6 +340,25 @@ var settlement_min_urban_families: int = 75
 # fills its class"; 0.60 is a [PROVISIONAL] balance proxy for "mostly settled".)
 var classification_advance_fraction: float = 0.60
 
+# --- Graduated deforestation (§5.4 — timed cost) ----------------------------
+# A forest/jungle hex being developed past its §4 biome cap accrues
+# clearing_progress per tick; on reaching the step threshold the biome steps down
+# (dense forest → forest → clear; jungle → clear) and the counter resets, raising
+# the hex's TerritoryCap so it can civilize. [PROVISIONAL]
+# SIM-TIME NOTE: the §5.4 "+2/tick adjacent to a market class III+ settlement"
+# accelerator is a RUNTIME-phase feature (market class is assigned at Layer 6,
+# after the history sim) — the sim uses the uniform base rate.
+var clear_ticks_step: int = 20        # Dense Forest → Forest, Forest → Clear, and Clear → Forest regrowth
+var clear_ticks_jungle: int = 30      # Jungle → Clear (slower)
+var clear_rate_base: int = 1          # clearing_progress accrued per tick (sim-time, uniform)
+# Reforestation (§5.4). Natural runs on depopulated (pop-0) hexes; elven on
+# elf-held hexes. SIM-TIME NOTE: the §5.4 "+3/tick adjacent to an elven settlement"
+# uses the runtime settlement set — the sim uses the uniform elf rate. [PROVISIONAL]
+var reforest_rate_natural: int = 1    # +1/tick on a depopulated was-forest hex
+var reforest_rate_elf: int = 2        # +2/tick on an elf-held hex
+var reforest_rate_elf_adj: int = 3    # +3/tick next to an elven settlement (RUNTIME phase)
+var reforest_ticks_jungle: int = 15   # Clear → Jungle regrowth (faster than it cleared)
+
 # --- Migration (§8) ---------------------------------------------------------
 var migrant_fraction: float = 0.30
 var migration_pressure_base: float = 0.3
@@ -364,6 +383,103 @@ var terrain_mult_seed: float = 1.5    # seed_biomes
 var terrain_mult_secondary: float = 1.15
 var terrain_mult_neutral: float = 1.0
 var terrain_mult_avoided: float = 0.5
+
+# --- Expansion terrain preference (§5.1 / §4.6 — PEACEFUL expansion only) ----
+# A cap-aware frontier-scoring bias: a polity expands toward terrain its RACE can
+# develop (TerritoryCap) first, in the §4.6 biome→elevation order, avoiding its hard
+# exclusions. War (_phase_war) ignores all of this. Multiplies the §4.1 terrain mult
+# in _compute_frontier. [PROVISIONAL]
+# A GENTLE ordering nudge, not a near-prohibition: most terrain is wilderness-capped
+# for humans, and forest/mountain IS the path to civilization (deforestation), so a
+# harsh wilderness penalty makes realms refuse developable-via-clearing land and the
+# map collapses to mostly-unowned. The §4.6 terrain_rank carries the finer biome
+# order; these weights just tilt toward higher-cap land. [PROVISIONAL — tuned for sim health]
+var expansion_pref_civilized: float = 1.0
+var expansion_pref_borderlands: float = 0.8
+var expansion_pref_wilderness: float = 0.55    # penalized but still freely expanded into
+var expansion_pref_excluded: float = 0.1       # §4.6 hard exclusion; nonzero = boxed-in escape valve
+# Boxed-in escape valve: ONLY when the best frontier hex is a §4.6 HARD EXCLUSION
+# (pref ≈ expansion_pref_excluded) does a polity throttle — it is truly hemmed by
+# terrain its race cannot take. Set just above the excluded weight so ordinary
+# wilderness-capped frontier (forest/jungle/mountain) still expands at full rate
+# (it civilizes via deforestation). A higher threshold death-spirals: throttled
+# realms stay small, and expansion budget scales with size.
+var expansion_boxed_in_threshold: float = 0.11
+var expansion_boxed_in_rate: float = 0.5       # fraction of budget a boxed-in polity spends
+
+# --- §5.2 Natural borders + consolidate-before-expand (PEACEFUL expansion only) ---
+# Rivers (ANY width at the 24-mi scale — all are "major" enough there) are natural borders
+# realm boundaries prefer to settle onto. A frontier hex reachable only by CROSSING a river
+# edge has its expansion score damped by natural_border_resistance_river — but ONLY when
+# CONTESTING an enemy-owned hex, NOT when claiming EMPTY land. (Damping empty-land
+# settlement across rivers strands trans-river wilderness unclaimed on the finite-tick sim
+# and regressed the §17 coverage target ~4pts; the contest-only scope keeps coverage at the
+# 3a baseline while mature realm borders still settle onto rivers via stabilization —
+# Jedidiah 2026-06-29.) Coast needs no multiplier (land can't cross ocean — automatic);
+# mountain spines are left to the §4.6 elevation preferencing (handoff §5.2 OMITs explicit
+# mountain gating). War (_phase_war) ignores all of this. [PROVISIONAL]
+var natural_border_resistance_river: float = 0.5
+# Consolidate-before-expand: a realm whose only open frontier is across a natural border
+# (every river-free, developable settle target is taken) and that has NOT yet filled its
+# interior redirects expansion into internal growth — it spends only consolidate_rate of
+# its budget until saturated, then spills across. Kept > 0 (a SOFTENING of the spec's
+# "redirect all budget") so a river is never a HARD border and the map still fills across
+# it slowly. COVERAGE NOTE (Jedidiah 2026-06-29): this throttle lowers civilization
+# coverage on the fixed-tick history sim; that is accepted — if maps come out too wild we
+# raise ascendant-polity pop growth to compensate, NOT weaken this gate. [PROVISIONAL]
+var consolidate_rate: float = 0.5
+# Saturation = ≥ saturation_hex_fraction of a polity's POPULATED land hexes at
+# ≥ saturation_pop_fraction of their CURRENT-biome cap (cap_for(effective_cap) — the
+# present biome's ceiling, NOT the post-deforestation one: a realm does not wait to clear
+# forest before seeking new space). [PROVISIONAL]
+var saturation_hex_fraction: float = 0.75
+var saturation_pop_fraction: float = 0.50
+
+# --- §5.3 Overseas expansion (PEACEFUL colonization of empty coastal land) ------
+# A coastal polity (owns a POPULATED coastal hex) may colonize an EMPTY coastal hex
+# reachable by SEA LANE — within `sea_lane_range` (the SAME 10-hex limit §7.4d contiguity
+# uses). Reusing that one distance keeps colonization, contiguity, and the war-split rule
+# in lockstep: a colony stays bridged to the realm while linked, and AUTO-SECEDES via
+# `_phase_contiguity` the moment war stretches its nearest sea link past the range (ancient
+# realms can't govern across more open water than that — Jedidiah 2026-06-29). No stored
+# sea-link marker is needed; connectivity is recomputed live from geometry every tick.
+# A soft, distance-scaled SEA_CROSS_COST keeps it sane: near colonies are preferred and
+# overseas is generally dispreferred vs contiguous land. No amphibious CONTEST of enemy
+# hexes here (that is war, _phase_war). [PROVISIONAL]
+var sea_cross_base: float = 0.6     # expansion-mult factor at the nearest (1-hex) sea hop
+var sea_cross_decay: float = 0.92   # × per extra hex of sea distance: 0.6·0.92^(d-1)
+
+# --- §4c Hybrid emergence — border merge (substrate only; NO polity flip) ----
+# GDD §3.3 (merge-vs-displace) + §3.6 (static hybrid kits). At a substrate SEAM —
+# a hex where two DISTINCT human BASE cultures each hold >= hybrid_seam_threshold
+# in its culture_weights — a per-BASE-PAIR merge-vs-displace decision fires once
+# and LOCKS (a property of the seed, revealed on first contact). On MERGE the
+# pair's seam hexes grow the static hybrid HYB(A,B) (looked up by parent pair) at
+# hybrid_merge_rate, at the expense of both parents (via _lerp_toward). SUBSTRATE
+# ONLY — the polity keeps its identity; a hybrid never seeds and never flips a
+# polity here (adoption/persistence is §4d). SCOPE (Jedidiah 2026-06-30): only
+# SAME-CLASS pairs blend at a peaceful border — civ x civ (Peer) and clan x clan
+# (Confederated); clan x civ (Conquest) hybrids emerge from CONQUEST in §4d (they
+# model a conqueror over a subject, which a peaceful border lacks). The merge
+# probability is PROVISIONAL engineering (base x shared-language-family; parity /
+# alignment drivers deferred to the §4e calibration pass). [PROVISIONAL]
+var hybrid_seam_threshold: float = 0.2   # each base's min hex weight for a real seam
+var hybrid_merge_base_p: float = 0.2     # base per-pair merge-vs-displace probability
+var hybrid_merge_family_bonus: float = 1.6  # x when the two bases share a language family
+var hybrid_merge_rate: float = 0.08      # per-tick lerp of a locked seam hex toward the hybrid
+
+# --- §4d Hybrid emergence — conquest merge + finalize relabel ----------------
+# CONQUEST merge (dynamic, substrate): on a conqueror's held hex carrying a
+# foreign BASE substrate, if the (owner, subject) pair merges — §6.4 gated
+# (clan x civ ONLY when the OWNER is the clan; civ-over-clan displaces; same-class
+# symmetric; reuses the §4c per-pair lock) — _assimilate_held_hexes converts the
+# hex toward HYB(A,B) instead of toward the owner, so conquered/contested zones
+# become the hybrid. NO mid-sim polity-identity flip (Jedidiah): the sim runs on
+# base ids and only the SUBSTRATE goes hybrid. FINALIZE relabel: a realm whose
+# populated substrate is dominantly a hybrid (>= hybrid_adopt_min_share) has its
+# present-day culture_id relabeled to that hybrid + culture_synthesis_parents
+# persisted (setting_polities). [PROVISIONAL]
+var hybrid_adopt_min_share: float = 0.35  # a hybrid's mass share of a realm to relabel it at finalize (plurality, not majority — the base core is entrenched, so a hybrid rarely reaches an outright majority; the relabel already requires the hybrid to be the realm's LARGEST culture)
 
 # --- Present-day handoff (§11.3, §12) — Stage 4g ----------------------------
 var conversion_morale_recent_ticks: int = 2  # conquered ≤ this ago

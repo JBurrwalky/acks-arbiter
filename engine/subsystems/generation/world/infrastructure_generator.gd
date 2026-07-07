@@ -974,7 +974,7 @@ func _culture_of_settlement(s: Dictionary) -> String:
 
 func _fallback_culture() -> String:
 	var ids := CultureCatalogLoader.ids_by_tier("human")
-	return str(ids[0]) if ids.size() > 0 else "agrippan"
+	return str(ids[0]) if ids.size() > 0 else "albawyn"
 
 
 func _hex_dist(a: Vector2i, b: Vector2i) -> int:

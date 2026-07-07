@@ -38,6 +38,18 @@ func run_all_tests() -> void:
 	test_find_path_routes_around_river()
 	test_find_path_river_encircled_hex_unreachable()
 	test_find_path_reaches_hex_through_bridge_in_river_ring()
+	# Cliff-edge crossing gate (2026-06-26 — cliffs block normal routing; Phase 4a)
+	test_cliff_edge_between_finds_cliff()
+	test_can_cross_edge_blocked_by_cliff()
+	test_can_cross_river_edge_ignores_cliff()
+	test_find_path_routes_around_cliff()
+	test_find_path_cliff_encircled_hex_unreachable()
+	test_climb_party_across_moves_over_cliff()
+	test_climb_party_across_rejects_non_cliff_edge()
+	test_climb_party_across_rejects_non_adjacent()
+	# Rolling frontier (2026-06-26): adopting a grown map preserves fog + party position
+	test_adopt_grown_map_preserves_fog_and_party()
+	test_frontier_growth_direction_geometry()
 	# Roads imply crossings (2026-06-08 Jedidiah ruling)
 	test_road_on_owner_side_implies_crossing()
 	test_road_on_neighbor_side_implies_crossing()
@@ -474,6 +486,192 @@ func test_find_path_reaches_hex_through_bridge_in_river_ring() -> void:
 	check(not path.is_empty(), "the bridge in the river ring makes (2,0) reachable")
 	check(path[path.size() - 1] == Vector2i(2, 0), "path ends at the bridged hex")
 	controller.free()
+
+
+# ---------------------------------------------------------------------------
+# Cliff-edge crossing gate (added 2026-06-26 — gdd-cliffs-canyons.md §6)
+# ---------------------------------------------------------------------------
+#
+# Cliffs/canyons run along hex EDGES, same per-edge model as rivers. A cliff edge
+# is impassable to NORMAL routing in every case — the party routes around it, and
+# crossing one is only ever a deliberate climb action (Phase 4b). So unlike a
+# river, a cliff has no "crossing" that opens it for pathfinding. Edge index 2
+# (SE) from (0,0) is the neighbour (1,0).
+
+func _add_cliff_edge(map: HexMapData, q: int, r: int, edge: int,
+		height_ft: int = 800, cliff_type: String = HexCliffEdgeData.CLIFF) -> void:
+	var e := HexCliffEdgeData.new()
+	e.hex_q = q
+	e.hex_r = r
+	e.edge = edge
+	e.height_ft = height_ft
+	e.cliff_type = cliff_type
+	map.cliff_edges.append(e)
+
+
+func test_cliff_edge_between_finds_cliff() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2, 1200)  # (0,0)-(1,0)
+	controller.load_map(map)
+	var here := controller.cliff_edge_between(Vector2i(0, 0), Vector2i(1, 0))
+	check(here != null, "a cliff on the shared edge is found")
+	check(here != null and here.height_ft == 1200, "the returned cliff carries its height_ft")
+	check(controller.cliff_edge_between(Vector2i(1, 0), Vector2i(0, 0)) != null,
+		"...found in the reverse orientation too (canonical lookup)")
+	check(controller.cliff_edge_between(Vector2i(0, 0), Vector2i(0, 1)) == null,
+		"no cliff on a different edge → null")
+	controller.free()
+
+
+func test_can_cross_edge_blocked_by_cliff() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(not controller.can_cross_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a cliff edge blocks normal crossing")
+	check(not controller.can_cross_edge(Vector2i(1, 0), Vector2i(0, 0)),
+		"...in both orientations")
+	check(not controller.can_move_to(Vector2i(1, 0)),
+		"can_move_to rejects a step across a cliff")
+	controller.free()
+
+
+func test_can_cross_river_edge_ignores_cliff() -> void:
+	# Separation of concerns: a cliff with no river must NOT register as a river
+	# block — can_cross_river_edge stays river-only; the cliff block lives in
+	# can_cross_edge / cliff_edge_between.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)
+	controller.load_map(map)
+	check(controller.can_cross_river_edge(Vector2i(0, 0), Vector2i(1, 0)),
+		"a cliff-only edge does not block the river gate")
+	controller.free()
+
+
+func test_find_path_routes_around_cliff() -> void:
+	# A single cliff edge between (0,0) and (1,0) must not strand the party — the
+	# pathfinder reaches (1,0) by a non-cliff edge and never takes the blocked step.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # height irrelevant to routing; default applies
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(not path.is_empty(), "a detour around one cliff edge should exist")
+	for i in range(path.size() - 1):
+		var blocked := path[i] == Vector2i(0, 0) and path[i + 1] == Vector2i(1, 0)
+		check(not blocked, "path must not cross the (0,0)-(1,0) cliff edge directly: %s" % str(path))
+	controller.free()
+
+
+func test_find_path_cliff_encircled_hex_unreachable() -> void:
+	# Surround (2,0) with cliff edges on all six sides → no land path in (cliffs
+	# never auto-open, so there is no climb-free route — Phase 4b adds deliberate
+	# climbing, which is not pathfinding).
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	for edge in range(6):
+		_add_cliff_edge(map, 2, 0, edge)
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(path.is_empty(),
+		"a hex ringed by cliffs is unreachable by normal travel; got %s" % str(path))
+	controller.free()
+
+
+func test_climb_party_across_moves_over_cliff() -> void:
+	# After the climb gate is cleared upstream, climb_party_across moves the party over
+	# a cliff edge that normal move_party would refuse.
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)  # (0,0)-(1,0)
+	controller.load_map(map)
+	check(not controller.move_party(Vector2i(1, 0)),
+		"sanity: normal move_party refuses the cliff crossing")
+	check(map.party_hex == Vector2i(0, 0), "...party stayed put")
+	check(controller.climb_party_across(Vector2i(1, 0)),
+		"climb_party_across crosses the cliff edge")
+	check(map.party_hex == Vector2i(1, 0), "party is now across the cliff")
+	controller.free()
+
+
+func test_climb_party_across_rejects_non_cliff_edge() -> void:
+	# Guard: the bypass only works where a real cliff edge exists, so it can't be used
+	# to skip the crossing gate on an ordinary edge.
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())  # no cliffs
+	check(not controller.climb_party_across(Vector2i(1, 0)),
+		"climb_party_across refuses a non-cliff neighbour")
+	check(controller.get_map().party_hex == Vector2i(0, 0), "party stayed put")
+	controller.free()
+
+
+func test_climb_party_across_rejects_non_adjacent() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	_add_cliff_edge(map, 0, 0, 2)
+	controller.load_map(map)
+	check(not controller.climb_party_across(Vector2i(2, 0)),
+		"climb_party_across refuses a non-adjacent target")
+	check(map.party_hex == Vector2i(0, 0), "party stayed put")
+	controller.free()
+
+
+func test_adopt_grown_map_preserves_fog_and_party() -> void:
+	# Frontier growth swaps in an enlarged map; explored fog must NOT be re-hidden, the party
+	# position is carried forward, and the new frontier hexes stay hidden/unexplored.
+	var controller := HexMapController.new()
+	var orig := _make_test_map()
+	controller.load_map(orig)
+	orig.fog[Vector2i(1, 0)] = HexMapData.FogState.EXPLORED   # already explored
+	orig.fog[Vector2i(0, 0)] = HexMapData.FogState.VISIBLE    # current vicinity
+
+	var grown := _make_test_map()
+	grown.hexes[Vector2i(9, 0)] = HexTerrainData.new()        # a newly materialized frontier hex
+	grown.fog[Vector2i(9, 0)] = HexMapData.FogState.HIDDEN
+
+	var fired := [false]
+	controller.frontier_grown.connect(func(_id): fired[0] = true)
+	controller.adopt_grown_map(grown)
+
+	check(fired[0], "adopt_grown_map emits frontier_grown")
+	check(controller.get_map() == grown, "controller adopted the grown map")
+	check(grown.fog.get(Vector2i(1, 0)) == HexMapData.FogState.EXPLORED,
+		"explored fog carried forward (not re-hidden)")
+	check(grown.fog.get(Vector2i(0, 0)) == HexMapData.FogState.VISIBLE,
+		"visible vicinity carried forward")
+	check(grown.fog.get(Vector2i(9, 0)) == HexMapData.FogState.HIDDEN,
+		"the new frontier hex stays hidden/unexplored")
+	check(grown.party_hex == Vector2i(0, 0), "party position carried forward")
+	controller.free()
+
+
+func test_frontier_growth_direction_geometry() -> void:
+	# WildernessHandlers._frontier_growth_direction: which side of the play-map frontier the
+	# party is nearest within the trigger band (FRONTIER_TRIGGER_HEXES = 6). The play map's
+	# child extent is the footprint parent box (offset [0..9]x[0..7] here) x 4 = child offset
+	# [0..39]x[0..31]. Pure offset geometry — no runner needed.
+	var handlers := WildernessHandlers.new(null)
+	var m := HexMapData.new()
+	m.id = "fg_geom"
+	var fp: Array = []
+	for col in range(0, 10):
+		for row in range(0, 8):
+			fp.append(WorldGrid.offset_to_axial(col, row))
+	m.parent_hex_footprint = fp
+	# Near each edge (1 hex in) → grow that way; dead center → no growth.
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(38, 15), m) == Vector2i(1, 0),
+		"near the east frontier → grow east")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(1, 15), m) == Vector2i(-1, 0),
+		"near the west frontier → grow west")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 1), m) == Vector2i(0, -1),
+		"near the north frontier → grow north")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 30), m) == Vector2i(0, 1),
+		"near the south frontier → grow south")
+	check(handlers._frontier_growth_direction(WorldGrid.offset_to_axial(20, 15), m) == Vector2i.ZERO,
+		"dead center (far from every edge) → no growth")
 
 
 # ---------------------------------------------------------------------------

@@ -504,7 +504,7 @@ Reading the record: high `aggression` (0.85) but modest `defense` (0.5) and a po
 {
   "schema_version": 1,
   "mechanical": {
-    "identity": { "culture_id": "shidhean", "catalog_number": 29, "demonym": "Shidhean", "toponym": "Shidhe-Kyo",
+    "identity": { "culture_id": "shidean", "catalog_number": 29, "demonym": "Shidean", "toponym": "Shidhe-Kyo",
       "tier": "human", "race": "human", "civ_or_clan": "clan", "synthesis_sources": [7, 10] },
     "alignment": { "allowed": ["Lawful", "Chaotic"], "rigidity": 0.7 },
     "terrain": { "seed_biomes": ["forest", "hills", "mountains"], "affinity_secondary": ["dense_forest"],
@@ -519,7 +519,7 @@ Reading the record: high `aggression` (0.85) but modest `defense` (0.5) and a po
     "npc": { "personality_weight_biases": "societal_orthodoxy +1.0, self_interest +0.5, civility +1.0, expressiveness -1.0" }
   },
   "flavor": {
-    "name_bank_key": "shidhean",
+    "name_bank_key": "shidean",
     "phonemic_palette": "AUTHORED BLEND of Celtic + Japanese: Celtic lenition and -dh/-gh clusters fused with Japanese open CV syllables and vowel runs (e.g. 'Shidhe', 'Aodhka', 'Rhynjo')",
     "phenotype_notes": "BLEND RULE per setting-lore §5.3: Celtic hair (blonde/red), light eyes, and Celtic stature; Japanese skin tone, epicanthic folds, and broader/flatter facial structure. EXCLUDE the inverse (Japanese hair/eyes/stature + Celtic facial structure).",
     "language": { "language_name": "Shidhe", "language_family": "Sylvan-Thanic creole", "script": "own_script" },

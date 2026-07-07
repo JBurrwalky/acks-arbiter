@@ -263,6 +263,9 @@ static func materialize_swarm_as_army(threat_id: String) -> String:
 	})
 	if army_id.is_empty():
 		return ""
+	# 3b. Field the actual brigands (was a Phase-9B stub — the count only lived in the army name,
+	# leaving the swarm a BR-0 phantom). ThreatForceComposer creates real troop_units.
+	ThreatForceComposer.field_bandit_force(army_id, campaign_id, captain_id, bandit_count, calendar_day)
 	# 4. Update the threat row.
 	var payload: Dictionary = _parse_payload(String(threat.get("payload_json", "{}")))
 	payload["bandit_captain_id"] = captain_id

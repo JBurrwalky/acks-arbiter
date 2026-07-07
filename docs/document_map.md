@@ -180,6 +180,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | File | Contents | Status | Key Dependencies |
 |------|----------|--------|------------------|
 | `gdd-npc-personality.md` | NPC personality, motivation, and behavioral generation for narration and AI | Draft | `acore-setting-construction-rules`, `ax_henchmen_recruitment_expanded`, `acore_equipment`, `gdd-setting-generation`, `gdd-settlement-layout` |
+| `gdd-ruler-ai.md` | NPC ruler behavior planner (consumes `gdd-npc-personality` §8): builds StrategicDisposition, deterministic score-by-weight monthly decision loop, crisis/defense response, Regional-LOD autonomy, determinative-AI→LLM contract. v1 scope = manage-and-defend (no offensive war/expansion/diplomacy); incl. `manage_stronghold` build/upgrade/repair | Draft v0.3 | `ax_campaign_play`, `acore_axioms_strongholds_and_domains`, `acore_equipment`, `daw_campaigning_armies`, `gdd-npc-personality`, `gdd-army-warfare`, `gdd-realtime-scheduler`, `gdd-setting-runtime-materialization` |
 | `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
 | `gdd-quest-rumor-system.md` | Quest generation, rumor distribution, reward valuation, and completion tracking. Mechanics layer; surfaced by `gdd-quests-tab.md` (stub until upstream systems land) | Draft | `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation` |
@@ -197,6 +198,12 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | File | Contents | Status | Key Dependencies |
 |------|----------|--------|------------------|
 | `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
+
+### LLM Integration
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-live-llm-integration.md` | Live LLM integration layer: provider-agnostic service behind the `LLMManager` autoload — await-based `generate()` request model, `LLMProvider` adapter interface with capability flags, v1 Ollama provider (cloud `https://ollama.com` + local via one adapter, model-agnostic), request queue/QoS/circuit-breaker, prompt assembly (`llm_context/`), validation (prose caps + strict-JSON re-prompt path), settings + setup wizard, usage tracking, NarrativeUpgrader backfill, normative task-type registry, BYOM provider matrix (OpenAI-compatible / Anthropic deferred adapters), and the authoritative prerequisite-systems blocker list (§18). Resolves `gdd-unified-log-panel.md` O-L5 | Draft v1.1 — approval items A1-A7 all ruled 2026-07-06; build unblocked (only Seam-B §13 thresholds remain a pending Jedidiah call) | `acks_arbiter_design_brief_v11` §9, `gdd-npc-dialogue`, `gdd-npc-personality`, `gdd-ruler-ai`, `gdd-faction-framework`, `gdd-quest-rumor-system`, `gdd-setting-generation`, `gdd-realtime-scheduler`, `gdd-unified-log-panel`, `gdd-campaign-creation-ui` |
 
 ### Persistence & Save System
 
@@ -255,6 +262,8 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `spell_system_map.md` | Maps spells to game system hooks — modifier types, flag systems, and effect patterns each system must support |
 | `proficiency_system_map.md` | Maps proficiencies to game system hooks — modifier types, flag systems, enabler patterns, and effect shapes each system must support |
 | `monster_system_map.md` | Maps monster stat-block fields and special abilities to the systems that must expose mechanical hooks |
+| `npc-domain-systems-stock-take-2026-06-27.md` | NPC domain/ruler subsystem audit: per-item status (built / designed / gap) across the 11-item full system, dependency chain, unlisted gaps, recommended build sequence. Identifies `gdd-ruler-ai.md` as the keystone |
+| `handoff-ruler-ai-build.md` | Phased build handoff for Claude Code implementing `gdd-ruler-ai.md` v0.3 — shared preamble + Phase 0–4 paste-ready prompts (StrategicDisposition → action catalog + `manage_stronghold` → scorer/monthly-tick → crisis/LOD → LLM contract), with file lists, interfaces, acceptance bars, and model guidance |
 
 ---
 
@@ -266,15 +275,15 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 39 files
+- **GDDs:** 40 files
   - World, setting, environment generation: 7
   - Settlement, dungeon, stronghold generation: 7
-  - NPCs, character systems, quests: 4
+  - NPCs, character systems, quests: 5
   - Combat & tactical: 3
   - Realtime & scheduling: 1
   - UI architecture & shared services: 2
   - UI Management Notebook (8 tabs + container): 9
   - UI HUD & surfaces: 4
   - Art & visual identity: 2
-- **Architecture and planning docs:** 8 files
-- **Grand total indexed:** 117 files
+- **Architecture and planning docs:** 10 files
+- **Grand total indexed:** 120 files

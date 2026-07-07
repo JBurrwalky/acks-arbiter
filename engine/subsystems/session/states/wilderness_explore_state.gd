@@ -12,6 +12,9 @@ const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const EncounterDecisionScene := preload("res://scenes/ui/dialogs/encounter_decision_prompt.gd")
 const AbandonVehicleScene := preload("res://scenes/ui/dialogs/abandon_vehicle_prompt.gd")
 const HexInfoModalScene := preload("res://scenes/ui/dev/hex_info_modal.gd")
+const ArmyMenuBuilder := preload("res://scenes/ui/troops/army_marching_context_menu.gd")
+const ArmyDetailPanelScene := preload("res://scenes/ui/notebook/troops/army_detail_panel.gd")
+const ArmySupplyGaugeScene := preload("res://scenes/ui/components/army_supply_gauge.gd")
 
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
@@ -25,14 +28,27 @@ var _pending_encounter_party: String = ""
 var _abandon_prompt = null
 var _pending_travel: Dictionary = {}
 
+# Army selection on the wilderness map (gdd-army-warfare.md §7.3). Left-click a
+# player army token to select it (highlight + path overlay + supply gauge); then
+# right-click a destination hex for its order menu. NPC armies open a read-only
+# inspect panel and are never orderable.
+var _selected_army_id: String = ""
+var _army_gauge = null
+var _army_inspect = null
+
 
 func enter(runner, context: Dictionary) -> void:
 	_runner = runner
 	var renderer: Node = runner.get_hex_map_renderer()
 
-	# Show hex map
+	# Show hex map. The map lives inside the WorldViewport SubViewport frame —
+	# show the whole frame, not just the renderer, so the wilderness surface is
+	# visible above the status bar.
 	renderer.visible = true
 	renderer.process_mode = Node.PROCESS_MODE_INHERIT
+	var world_viewport: Node = runner.get_world_viewport()
+	if world_viewport != null:
+		world_viewport.visible = true
 	_show_hex_hud(renderer, true)
 
 	# Connect renderer signals (safe: _connect checks for existing connections).
@@ -42,6 +58,11 @@ func enter(runner, context: Dictionary) -> void:
 	_connect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_connect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_connect(renderer, "settlement_entry_requested", _on_settlement_entry)
+	# Army map layer (gdd-army-warfare.md §7.3): select on token click, deselect on
+	# empty-hex click.
+	if renderer.has_signal("army_token_clicked"):
+		_connect(renderer, "army_token_clicked", _on_army_token_clicked)
+	_connect(renderer, "hex_clicked", _on_hex_clicked)
 
 	# Connect status bar action buttons
 	if not EventBus.camp_requested.is_connected(_on_camp_requested):
@@ -118,6 +139,9 @@ func exit(runner) -> void:
 	_disconnect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_disconnect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_disconnect(renderer, "settlement_entry_requested", _on_settlement_entry)
+	if renderer.has_signal("army_token_clicked"):
+		_disconnect(renderer, "army_token_clicked", _on_army_token_clicked)
+	_disconnect(renderer, "hex_clicked", _on_hex_clicked)
 
 	# Disconnect status bar action buttons
 	if EventBus.camp_requested.is_connected(_on_camp_requested):
@@ -136,6 +160,7 @@ func exit(runner) -> void:
 	_close_context_menu()
 	_close_encounter_prompt()
 	_close_abandon_prompt()
+	_clear_army_selection()
 
 	# Handlers stay globally registered (SessionRunner owns the lifetime) —
 	# background parties' travel/activity chains keep resolving after the
@@ -143,9 +168,15 @@ func exit(runner) -> void:
 	_handlers = null
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
-	# but safe to always do — re-shown on enter)
+	# but safe to always do — re-shown on enter). Hide the WorldViewport frame
+	# too: hiding only the renderer leaves the SubViewportContainer drawing an
+	# opaque (cleared) rectangle that would cover 3D world content rendered
+	# behind it — e.g. the dungeon map in SceneContainer.
 	renderer.visible = false
 	renderer.process_mode = Node.PROCESS_MODE_DISABLED
+	var world_viewport: Node = runner.get_world_viewport()
+	if world_viewport != null:
+		world_viewport.visible = false
 	_show_hex_hud(renderer, false)
 
 	_runner = null
@@ -195,6 +226,12 @@ func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> voi
 	if _runner == null:
 		return
 
+	# Army orders take precedence when a player army is selected — the right-clicked
+	# hex is the march destination / current-hex action target (gdd §7.3).
+	if not _selected_army_id.is_empty() and ArmyMapPresence.is_player_owned_id(_selected_army_id):
+		_open_army_context_menu(_selected_army_id, coord, screen_pos)
+		return
+
 	var party_id: String = _resolve_active_party_id()
 	if party_id.is_empty():
 		return
@@ -233,6 +270,11 @@ func _on_context_action(action_data: Dictionary) -> void:
 	if action_type == "" or action_type == "cancel":
 		return
 
+	# Army orders (gdd §7.3) dispatch through ArmyMarchingContextMenu.
+	if action_type == "army_order":
+		_dispatch_army_order(action_data)
+		return
+
 	# Get Hex Info (dev tool, Jedidiah 2026-06-23): a self-contained UI action — open a modal
 	# dump of all stored data for the hex. No travel, works on any hex (impassable included),
 	# so it returns BEFORE the passable-target / active-party resolution below.
@@ -245,6 +287,15 @@ func _on_context_action(action_data: Dictionary) -> void:
 	# subsystem — surface the placeholder rather than a broken transition.
 	if action_type == "wilderness_enter_lair":
 		_on_enter_lair_requested(str(action_data.get("lair_id", "")))
+		return
+
+	# Climb Here (gdd-cliffs-canyons.md §5/§6). A deliberate cliff crossing — runs the
+	# SHEER_SURFACE_CLIMB gate + per-climber throws and schedules the gate-bypassing
+	# arrival itself, so it returns BEFORE the normal passable-target / pathfind flow
+	# (find_path can't route across a cliff and would just report "No Route").
+	if action_type == "wilderness_climb_cliff":
+		_on_climb_cliff_requested(Vector2i(
+			int(action_data.get("hex_q", 0)), int(action_data.get("hex_r", 0))))
 		return
 
 	var target_hex := Vector2i(
@@ -417,6 +468,190 @@ func _close_context_menu() -> void:
 	_context_menu = null
 
 
+# ---------------------------------------------------------------------------
+# Army map layer (gdd-army-warfare.md §7.3)
+# ---------------------------------------------------------------------------
+
+## Left-click on an army token. Player-orderable armies are selected (highlight +
+## path overlay + supply gauge); NPC armies open a read-only inspect panel.
+func _on_army_token_clicked(army_id: String, _coord: Vector2i) -> void:
+	if _runner == null or army_id.is_empty():
+		return
+	if ArmyMapPresence.is_player_owned_id(army_id):
+		_select_army(army_id)
+	else:
+		_clear_army_selection()
+		_open_army_inspect(army_id)
+
+
+## Left-click on empty terrain clears any army selection.
+func _on_hex_clicked(_coord: Vector2i) -> void:
+	_clear_army_selection()
+
+
+func _select_army(army_id: String) -> void:
+	# Tear down any open NPC inspect panel when switching to an orderable army.
+	_close_army_inspect()
+	_selected_army_id = army_id
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if renderer != null and renderer.has_method("set_selected_army"):
+		renderer.set_selected_army(army_id)
+	_refresh_army_path(army_id)
+	_show_army_gauge(army_id)
+
+
+func _clear_army_selection() -> void:
+	_selected_army_id = ""
+	if _runner != null:
+		var renderer: Node = _runner.get_hex_map_renderer()
+		if renderer != null:
+			if renderer.has_method("set_selected_army"):
+				renderer.set_selected_army("")
+			if renderer.has_method("clear_army_path_overlay"):
+				renderer.clear_army_path_overlay()
+	_hide_army_gauge()
+	_close_army_inspect()
+
+
+## Draw the army's single pending travel leg as the dashed path overlay (armies
+## pre-schedule one leg at a time — the overlay is a single segment).
+func _refresh_army_path(army_id: String) -> void:
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if renderer == null or not renderer.has_method("set_army_path_overlay"):
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	if scheduler != null:
+		for ev in scheduler.get_events_for_owner(army_id):
+			if ev.event_type == ArmyMarcher.EVENT_ARMY_TRAVEL_LEG:
+				var from_hex := Vector2i(
+					int(ev.data.get("from_hex_q", 0)), int(ev.data.get("from_hex_r", 0)))
+				var to_hex := Vector2i(
+					int(ev.data.get("to_hex_q", 0)), int(ev.data.get("to_hex_r", 0)))
+				renderer.set_army_path_overlay(from_hex, to_hex)
+				return
+	if renderer.has_method("clear_army_path_overlay"):
+		renderer.clear_army_path_overlay()
+
+
+## Right-click order menu for the selected player army, targeting [param coord].
+func _open_army_context_menu(army_id: String, coord: Vector2i, screen_pos: Vector2) -> void:
+	var options: Array = ArmyMenuBuilder.build_menu_options(army_id, coord.x, coord.y)
+	if options.is_empty():
+		return
+	_close_context_menu()
+	_context_menu = ContextMenuScene.new()
+	var layer := CanvasLayer.new()
+	layer.layer = 24
+	layer.add_child(_context_menu)
+	_runner.get_hex_map_renderer().add_child(layer)
+	_context_menu.option_selected.connect(_on_context_action)
+	_context_menu.cancelled.connect(_close_context_menu)
+	_context_menu.show_at(screen_pos, options, _runner.get_scheduler_loop())
+
+
+## Dispatch an army context-menu order via ArmyMarchingContextMenu.
+func _dispatch_army_order(action_data: Dictionary) -> void:
+	if _runner == null:
+		return
+	var army_id := str(action_data.get("army_id", ""))
+	var army_action := str(action_data.get("army_action", ""))
+	if army_id.is_empty() or army_action.is_empty():
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	# Phase B: encamped requisition/loot orders launch via the session's ExtractionScheduler.
+	var extraction_scheduler = _runner.get_extraction_scheduler() \
+		if _runner.has_method("get_extraction_scheduler") else null
+	var result: Dictionary = ArmyMenuBuilder.execute_action(
+		army_action, army_id,
+		int(action_data.get("hex_q", 0)), int(action_data.get("hex_r", 0)),
+		Timekeeping.get_total_rounds(), scheduler, extraction_scheduler)
+	if not bool(result.get("success", false)):
+		var err := str(result.get("error", ""))
+		if err != "" and err != "phase_b_pending" and err != "unknown_action":
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "armies",
+				"title": "Order Failed",
+				"body": "Could not issue that order (%s)." % err,
+				"duration": 3.0,
+			})
+		return
+	# Reflect the new state at once + resume so the leg (or disband) resolves.
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if army_action == ArmyMenuBuilder.ACTION_DISBAND:
+		_clear_army_selection()
+	else:
+		if renderer != null and renderer.has_method("refresh_armies"):
+			renderer.refresh_armies()
+		_refresh_army_path(army_id)
+		_show_army_gauge(army_id)
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused() and _runner.get_clock_lock_reason().is_empty():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+func _show_army_gauge(army_id: String) -> void:
+	_hide_army_gauge()
+	_army_gauge = ArmySupplyGaugeScene.new()
+	var layer := CanvasLayer.new()
+	layer.layer = 12   # above HexHUD (10), below the context menu (24)
+	layer.add_child(_army_gauge)
+	_runner.get_hex_map_renderer().add_child(layer)
+	if _army_gauge.has_method("set_army"):
+		_army_gauge.set_army(army_id)
+
+
+func _hide_army_gauge() -> void:
+	if _army_gauge == null:
+		return
+	var parent: Node = _army_gauge.get_parent()
+	if is_instance_valid(parent):
+		parent.queue_free()
+	_army_gauge = null
+
+
+## Open the army detail panel in read-only (inspect) mode for an NPC army, centered
+## over the map. Parented to the renderer; queue_free()s on close.
+func _open_army_inspect(army_id: String) -> void:
+	_close_army_inspect()
+	if _runner == null:
+		return
+	var army: Dictionary = ArmyRepository.get_army(army_id)
+	var layer := CanvasLayer.new()
+	layer.layer = 26
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	UiSurfaceStyles.apply_textured_panel(panel)
+	panel.custom_minimum_size = Vector2(360, 0)
+	center.add_child(panel)
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+	var header := HBoxContainer.new()
+	var title := Label.new()
+	title.text = String(army.get("name", "Army"))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var close := Button.new()
+	close.text = "✕"
+	close.pressed.connect(_close_army_inspect)
+	header.add_child(close)
+	vbox.add_child(header)
+	var detail := ArmyDetailPanelScene.new()
+	vbox.add_child(detail)
+	_runner.get_hex_map_renderer().add_child(layer)   # tree entry -> panels' _ready runs
+	detail.display(army_id, true)
+	_army_inspect = layer
+
+
+func _close_army_inspect() -> void:
+	if _army_inspect == null:
+		return
+	if is_instance_valid(_army_inspect):
+		_army_inspect.queue_free()
+	_army_inspect = null
+
+
 ## Dev tool (Jedidiah 2026-06-23): open the Get Hex Info modal for [param hex] — a scrollable
 ## dump of every stored datum (terrain/ownership/realm/population/culture/settlement/dungeon/
 ## POI/stronghold/lairs/setting/history/occupants). News up a fresh modal parented to the
@@ -465,6 +700,179 @@ func _on_enter_lair_requested(lair_id: String) -> void:
 		"title": "%s Lair" % type_label,
 		"body": "Lair interiors arrive with the Lair Generator — entering is not yet implemented.",
 		"duration": 4.0,
+	})
+
+
+# ---------------------------------------------------------------------------
+# Cliff climbing (SHEER_SURFACE_CLIMB — gdd-cliffs-canyons.md §5/§6)
+# ---------------------------------------------------------------------------
+
+## Handle a deliberate "Climb Here" order onto an across-a-cliff neighbour. Runs the
+## ClimbResolver gate (Mountaineering + per-climber gear; refuse if mercenaries present),
+## blocks with a shortfall toast when short, otherwise resolves each climber's throws,
+## applies + persists any fall damage, and schedules the gate-bypassing crossing at ¼
+## movement speed. The climb math/gate is the pure ClimbResolver; this is the wiring.
+func _on_climb_cliff_requested(target_hex: Vector2i) -> void:
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null:
+		return
+	var map_data: HexMapData = controller.get_map()
+	if map_data == null:
+		return
+	var party_id: String = _resolve_active_party_id()
+	if party_id.is_empty():
+		return
+	var party_data: PartyData = _resolve_party_data(party_id)
+	if party_data == null:
+		return
+	var current_hex: Vector2i = _resolve_party_hex(party_id, map_data)
+	var cliff: HexCliffEdgeData = controller.cliff_edge_between(current_hex, target_hex)
+	if cliff == null or not controller.is_hex_passable(target_hex):
+		return
+
+	var climbers: Array = _load_climbers(party_id)
+	var pooled_gear: Dictionary = _pooled_climb_gear(party_id, climbers)
+	var gate: Dictionary = ClimbResolver.evaluate_gate(
+		climbers, pooled_gear, cliff.height_ft, _party_has_mercenaries(party_id))
+	if not bool(gate.get("allowed", false)):
+		_notify_climb_blocked(gate)
+		return
+
+	# Gate satisfied → resolve each climber's ascent and apply + persist any falls.
+	var falls: Array = _resolve_and_apply_falls(climbers, cliff.height_ft)
+
+	# The climb supersedes any in-flight travel/activity (mirrors Move Here).
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_EVENT)
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_COMPLETE_EVENT)
+	if cancelled > 0:
+		EventBus.order_cancelled.emit(party_id, "travel_leg")
+
+	# Climb time = ¼ normal movement (acore_core_classes.xml:1450) → 4× a normal hex
+	# crossing. Schedule a single is_climb travel_leg; _handle_travel_leg crosses it with
+	# the gate-bypassing climb_party_across, and path_index 0 of 1 auto-pauses on arrival.
+	var terrain: HexTerrainData = map_data.get_hex(target_hex)
+	var terrain_cat: String = terrain.movement_cost_category() if terrain != null else "clear"
+	var base_rounds: int = TravelSpeedCalculator.hex_crossing_rounds(party_data, terrain_cat, false, null)
+	var arrival_time: int = Timekeeping.get_total_rounds() + maxi(1, base_rounds * 4)
+	scheduler.schedule_at(
+		arrival_time, "travel_leg", party_id,
+		{
+			"hex_q": target_hex.x, "hex_r": target_hex.y, "is_climb": true,
+			"path_index": 0, "path_total": 1, "terrain_category": terrain_cat,
+		},
+		ScheduledEvent.PRIORITY_ARRIVAL)
+	EventBus.order_queued.emit(party_id, "travel_leg", arrival_time)
+	_notify_climb_started(cliff, falls)
+
+	# Resume the clock so the climb leg fires (mirrors _proceed_with_travel).
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused() and _runner.get_clock_lock_reason().is_empty():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+## Every climber = each PC + henchman in the travelling party (list_party_characters spans
+## both), loaded as a damageable CharacterData with proficiencies hydrated — has_proficiency
+## reads c.proficiencies, which the bare character-row load does NOT populate.
+func _load_climbers(party_id: String) -> Array:
+	var out: Array = []
+	for row in CampaignRepository.list_party_characters(party_id):
+		var c := CharacterData.from_dict(row)
+		c.proficiencies = CampaignRepository.get_character_proficiencies(c.id)
+		out.append(c)
+	return out
+
+
+## Pooled climbing gear (individual units) across every climber's inventory + the shared
+## party pool, bucketed to ClimbResolver's GEAR_* keys. iron_spikes_12 is a bundle of 12, so
+## its quantity is multiplied; a mallet drives wooden stakes only and does NOT count as a
+## spike-driving hammer (base_equipment.json:100).
+func _pooled_climb_gear(party_id: String, climbers: Array) -> Dictionary:
+	var rope := 0
+	var spikes := 0
+	var hammer := 0
+	var grapple := 0
+	var rows: Array = []
+	for c in climbers:
+		rows.append_array(CampaignRepository.get_inventory_items(c.id))
+	rows.append_array(CampaignRepository.get_party_inventory(party_id))
+	for it in rows:
+		var key := str(it.get("item_key", ""))
+		var qty := int(it.get("quantity", 1))
+		match key:
+			"rope_50ft": rope += qty
+			"iron_spikes_12": spikes += qty * 12
+			"hammer_small", "warhammer": hammer += qty
+			"grappling_hook": grapple += qty
+	return {
+		ClimbResolver.GEAR_ROPE: rope,
+		ClimbResolver.GEAR_SPIKES: spikes,
+		ClimbResolver.GEAR_HAMMER: hammer,
+		ClimbResolver.GEAR_GRAPPLE: grapple,
+	}
+
+
+## Mercenaries are troop units with no party-travel association yet (gdd-cliffs-canyons.md
+## §2a; recon 2026-06-26), so they can't travel as individual climbers — always false for
+## now. When war-band travel lands, detect mercenary troop units on the party here.
+func _party_has_mercenaries(_party_id: String) -> bool:
+	return false
+
+
+## Resolve each climber's ascent; for any who fall, apply + persist the fall damage and emit
+## the same damage/hp signals the sustenance system uses. Returns per-faller summaries.
+func _resolve_and_apply_falls(climbers: Array, height_ft: int) -> Array:
+	var summaries: Array = []
+	for c in climbers:
+		var res: Dictionary = ClimbResolver.resolve_climb(c, height_ft)
+		if not bool(res.get("fell", false)):
+			continue
+		var dmg: int = int(res.get("damage", 0))
+		var before: int = c.hp_current
+		var outcome: Dictionary = c.apply_damage(dmg, "physical")
+		CampaignRepository.update_character_hp(c.id, c.hp_current)
+		EventBus.damage_dealt.emit(c.id, dmg, "fall", "")
+		EventBus.hp_changed.emit(c.id, before, c.hp_current)
+		summaries.append({
+			"name": c.name, "damage": dmg, "fall_ft": int(res.get("fall_ft", 0)),
+			"downed": bool(outcome.get("is_downed", c.hp_current <= 0)),
+		})
+	return summaries
+
+
+func _notify_climb_blocked(gate: Dictionary) -> void:
+	var body := ""
+	match str(gate.get("reason", "")):
+		ClimbResolver.REASON_MERCENARIES:
+			body = "The party's mercenaries can't make this climb. Send them around, or travel without them."
+		ClimbResolver.REASON_NO_MOUNTAINEERING:
+			body = "No one has the Mountaineering proficiency — this cliff can't be climbed. Route around it."
+		ClimbResolver.REASON_INSUFFICIENT_GEAR:
+			body = ClimbResolver.shortfall_message(gate.get("shortfall", {}))
+		_:
+			body = "The cliff can't be climbed right now."
+	EventBus.notification_requested.emit({
+		"type": "warning", "category": "exploration",
+		"title": "Cannot Climb", "body": body, "duration": 5.0,
+	})
+
+
+func _notify_climb_started(cliff: HexCliffEdgeData, falls: Array) -> void:
+	var kind := "canyon wall" if cliff.cliff_type == HexCliffEdgeData.CANYON else "cliff"
+	var body := "The party scales the %d-ft %s." % [cliff.height_ft, kind]
+	if not falls.is_empty():
+		var parts: Array[String] = []
+		for f in falls:
+			var tag := " (down!)" if bool(f.get("downed", false)) else ""
+			parts.append("%s fell %d ft for %d damage%s" % [
+				str(f.get("name", "A climber")), int(f.get("fall_ft", 0)),
+				int(f.get("damage", 0)), tag])
+		body += " " + "; ".join(parts) + "."
+	EventBus.notification_requested.emit({
+		"type": "warning" if not falls.is_empty() else "info",
+		"category": "exploration", "title": "Climbing",
+		"body": body, "duration": 6.0,
 	})
 
 

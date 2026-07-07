@@ -17,6 +17,14 @@ extends RefCounted
 ## create_*. update_* whitelists field names. Lookups are read-only and return
 ## duplicated Dictionaries so callers cannot accidentally mutate the cache.
 
+# armies.provenance (migration 186) — one-off vs standing muster tag driving post-battle
+# teardown. Code-validated here (the column has no CHECK). A 'resistance_levy' is demobilised
+# on battle_concluded (ExtractionResistanceRouter); a 'call_to_arms' body is identified but its
+# teardown is revocation-driven (CallToArmsMuster.resolve_revocation), NOT battle-driven.
+const PROVENANCE_STANDING := "standing"
+const PROVENANCE_RESISTANCE_LEVY := "resistance_levy"
+const PROVENANCE_CALL_TO_ARMS := "call_to_arms"
+
 const _ARMY_UPDATE_FIELDS := [
 	"name", "political_owner_id", "command_character_id", "state",
 	"map_id", "hex_q", "hex_r", "garrison_stronghold_id",
@@ -24,7 +32,7 @@ const _ARMY_UPDATE_FIELDS := [
 	"unit_scale", "strategic_stance",
 	"forced_march_bonus_expires_leg_id", "consecutive_marching_days",
 	"last_returned_to_garrison_day_index", "daily_penalty_state",
-	"rng_seed_stream", "notes",
+	"rng_seed_stream", "notes", "provenance",
 ]
 
 const _OFFICER_UPDATE_FIELDS := [
@@ -65,8 +73,8 @@ static func create_army(data: Dictionary) -> String:
 			 unit_scale, strategic_stance,
 			 forced_march_bonus_expires_leg_id, consecutive_marching_days,
 			 last_returned_to_garrison_day_index, daily_penalty_state,
-			 rng_seed_stream, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 rng_seed_stream, notes, provenance)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		str(data.get("campaign_id", "")),
@@ -88,6 +96,7 @@ static func create_army(data: Dictionary) -> String:
 		str(data.get("daily_penalty_state", "{}")),
 		int(data.get("rng_seed_stream", 0)),
 		str(data.get("notes", "")),
+		str(data.get("provenance", PROVENANCE_STANDING)),
 	]):
 		push_error("ArmyRepository.create_army failed: name=%s" % data.get("name", "?"))
 		return ""

@@ -643,7 +643,7 @@ def validate_all():
 
 def spot_check_report(cultures, families, per_culture=5, per_category=10):
     """Markdown spot-check: per_category names per category for per_culture kits."""
-    sample = ["agrippan", "vargari", "jinxian", "khordurn", "orc"]
+    sample = ["albawyn", "arjungs", "khordurn", "orc", "vallica"]
     sample = [c for c in sample if c in cultures][:per_culture]
     if len(sample) < per_culture:
         for c in sorted(cultures):
