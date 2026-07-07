@@ -19,9 +19,15 @@ const BUTTON_HEIGHT := 44
 const BUTTON_SPACING := 14
 
 
+const SETTINGS_PATH := "user://settings.cfg"
+const LLM_WIZARD_SCENE := "res://scenes/ui/settings/llm_setup_wizard.tscn"
+
+
 func _ready() -> void:
 	layer = 50
 	_build_ui()
+	# --- Live LLM L-2: first-run "narration can be AI-enhanced" banner (§12.4). ---
+	_maybe_show_llm_first_run_banner()
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +97,85 @@ func _build_ui() -> void:
 	version.add_theme_color_override("font_color", Color(0.35, 0.30, 0.22, 1.0))
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center.add_child(version)
+
+
+# ---------------------------------------------------------------------------
+# Live LLM L-2: first-run banner (gdd-live-llm-integration.md §12.4)
+# ---------------------------------------------------------------------------
+
+## Shows a one-time, dismissible banner when settings.cfg has NO [llm] section
+## (a fresh install predating any LLM configuration). Choosing to set up pushes
+## the wizard; dismissing (either button) writes an [llm] section with
+## offline_mode=false / provider="" so the banner never repeats.
+func _maybe_show_llm_first_run_banner() -> void:
+	if _llm_section_present():
+		return
+
+	var banner := PanelContainer.new()
+	banner.name = "LlmFirstRunBanner"
+	banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	banner.offset_top = 12
+	banner.offset_left = 12
+	banner.offset_right = -12
+	UiSurfaceStyles.apply_framed_window_chrome(banner)
+	add_child(banner)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	banner.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	margin.add_child(row)
+
+	var msg := Label.new()
+	msg.text = "Narration can be AI-enhanced — set up a provider in Settings."
+	msg.add_theme_font_size_override("font_size", 13)
+	msg.add_theme_color_override("font_color", HEADING_COLOR)
+	msg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	row.add_child(msg)
+
+	var setup_btn := Button.new()
+	setup_btn.text = "Set up"
+	setup_btn.add_theme_font_size_override("font_size", 13)
+	setup_btn.pressed.connect(func():
+		_dismiss_llm_banner(banner)
+		if NavigationStack.instance != null:
+			NavigationStack.instance.push(LLM_WIZARD_SCENE)
+	)
+	row.add_child(setup_btn)
+
+	var dismiss_btn := Button.new()
+	dismiss_btn.text = "Dismiss"
+	dismiss_btn.add_theme_font_size_override("font_size", 13)
+	dismiss_btn.pressed.connect(func(): _dismiss_llm_banner(banner))
+	row.add_child(dismiss_btn)
+
+
+func _dismiss_llm_banner(banner: Node) -> void:
+	# Write an [llm] section so the banner never repeats. offline_mode=false /
+	# provider="" is the documented "not-yet-configured but seen" marker (§12.4).
+	# GameState.save_settings() persists the current LLMManager.settings (which
+	# already defaults to provider="" / offline_mode=false on a fresh install),
+	# so a plain save is enough to materialize the [llm] section on disk.
+	GameState.save_settings()
+	if is_instance_valid(banner):
+		banner.queue_free()
+
+
+## True if user://settings.cfg exists AND already has an [llm] section.
+func _llm_section_present() -> bool:
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return false
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return false
+	return config.has_section("llm")
 
 
 func _add_button(parent: Control, text: String, callback: Callable) -> void:
