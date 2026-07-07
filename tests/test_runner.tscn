@@ -18,6 +18,11 @@
 [ext_resource type="Script" path="res://tests/test_quest_registry.gd" id="510_quest_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_rumor_registry.gd" id="511_rumor_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_rumor_persistence.gd" id="512_quest_rumor_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff3_loyalty.gd" id="520_faction_ff3_loyalty_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff3_treaties.gd" id="521_faction_ff3_treaties_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff3_diplomacy.gd" id="522_faction_ff3_diplomacy_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff3_rebellion.gd" id="523_faction_ff3_rebellion_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff3_orso_capstone.gd" id="524_faction_ff3_orso_capstone_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2104,3 +2109,18 @@ script = ExtResource("511_rumor_registry_tests")
 
 [node name="QuestRumorPersistenceTests" type="Node" parent="."]
 script = ExtResource("512_quest_rumor_persistence_tests")
+
+[node name="FactionFF3LoyaltyTests" type="Node" parent="."]
+script = ExtResource("520_faction_ff3_loyalty_tests")
+
+[node name="FactionFF3TreatiesTests" type="Node" parent="."]
+script = ExtResource("521_faction_ff3_treaties_tests")
+
+[node name="FactionFF3DiplomacyTests" type="Node" parent="."]
+script = ExtResource("522_faction_ff3_diplomacy_tests")
+
+[node name="FactionFF3RebellionTests" type="Node" parent="."]
+script = ExtResource("523_faction_ff3_rebellion_tests")
+
+[node name="FactionFF3OrsoCapstoneTests" type="Node" parent="."]
+script = ExtResource("524_faction_ff3_orso_capstone_tests")

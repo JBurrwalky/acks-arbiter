@@ -151,11 +151,24 @@ static func _take_turn(ruler: Dictionary, domain: Dictionary,
 	# §7: classify the threat set once; it drives the catalog's world_state,
 	# the §6.2 threat modifiers, and the §7.1/§7.2/§7.4 crisis biases.
 	var threats: Dictionary = RulerCrisisResponder.detect_threats(domain, month_result)
+	# --- Faction FF-3 (§5.6/§11.2): is_sovereign gates the diplomacy action set
+	#     (the war-ceiling raise is for active-LOD SOVEREIGNS only). A ruler is
+	#     sovereign when their personal domain is a realm apex (no liege_domain_id).
+	var is_sovereign: bool = _is_sovereign_domain(domain)
 	var world_state: Dictionary = {
 		"threat_present": bool(threats.get("threat_present", false)),
 		"extraction_underway": bool(threats.get("hostile_army", false)),
 		"besieged": bool(threats.get("besieged", false)),
+		"is_sovereign": is_sovereign,
 	}
+	# --- Faction FF-3 (§5.4): the realm-politics step runs INSIDE the sovereign's
+	#     turn (reactive treaties/petitions/plots), BEFORE scoring the planner
+	#     actions this month. Vassals get no separate step (they act through
+	#     loyalty/compliance — keeps cost linear). Deterministic; seeded dice.
+	if is_sovereign:
+		var politics_dice := SeededDice.for_monthly(ruler_id, calendar_day, "realm_politics")
+		report["realm_politics"] = RealmPolitics.process_sovereign(
+			ruler_id, calendar_day, politics_dice)
 	var candidates: Array = RulerActionCatalog.available_for(ruler, domain, world_state)
 	if candidates.is_empty():
 		report["skipped_reason"] = "no_candidates"
@@ -286,6 +299,15 @@ static func _execute(ruler_id: String, candidate: Dictionary, domain_id: String,
 			return _dispatch_call_to_arms(ruler_id, domain_id, calendar_day, scheduler)
 		"withstand_siege":
 			return _dispatch_withstand_siege(ruler_id, domain_id, calendar_day, scheduler)
+		# --- Faction FF-3 (§5.6): realm diplomacy actions (active-LOD sovereigns
+		#     only — the candidate is only offered when world_state.is_sovereign).
+		#     Target selection + resolution live in RealmDiplomacyActions; a
+		#     per-(ruler, month) SeededDice keeps the proposal/peace throws
+		#     deterministic. declare_war emits the invasion via army-warfare.
+		"propose_treaty", "denounce", "issue_ultimatum", "declare_war", "sue_for_peace":
+			var diplo_dice := SeededDice.for_monthly(ruler_id, calendar_day, "realm_diplomacy")
+			return RealmDiplomacyActions.execute(
+				ruler_id, action_id, params, calendar_day, diplo_dice)
 	return {"summary": "%s: no dispatch mapping" % action_id, "dispatched": false}
 
 
@@ -421,6 +443,14 @@ static func _personal_domain_for_ruler(ruler_id: String) -> Dictionary:
 			"abandoned", "salted_to_ruin", "succession_pending"]:
 		return {}
 	return domain
+
+
+# --- Faction FF-3 (§5.6/§11.2): a ruler is sovereign when their personal domain
+#     is a realm apex (no liege_domain_id). Only sovereigns get the diplomacy
+#     action set + the realm-politics step (the war-ceiling raise). ---
+static func _is_sovereign_domain(domain: Dictionary) -> bool:
+	var liege_v: Variant = domain.get("liege_domain_id")
+	return liege_v == null or String(liege_v) == ""
 
 
 static func _scoring_context(domain: Dictionary, world_state: Dictionary) -> Dictionary:
