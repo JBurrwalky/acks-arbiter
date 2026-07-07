@@ -225,7 +225,7 @@ The gods of Law are the stewards and guardians of all creation, created by the O
 | name | virtues | professions | action | socio-politcal | natural world | element | clerics' weapons | symbols |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Tulrius | Justice | Judges and Rulers | Ruling, Judgment | Laws, Courts, Judgment of Chaos-cults | Sun | Fire and Light | Axe, Mace, Hammer | Griffin |
-| Argentus | Prudence | Merchants, Jewelers | Trade | Contracts, Markets, Money | Precious Metals and Gems | Earth | Quarterstaff, Dagger, Hammer, Short Sword, Sling | Bull, Clam | 
+| Argentus | Prudence | Merchants, Jewelers | Trade | Contracts, Markets, Money | Precious Metals and Gems | Earth | Quarterstaff, Dagger, Hammer, Short Sword, Sling | Bull, Clam, Coins,  | 
 | Realta | Mercy, Love, Chastity | Healers and Clergy | Healing, Weddings, Childbirth | Marriages, Motherhood, Almsgiving | Spring, Gardens | Water | Bludgeoning only | Rabbits, Hollyhock, Swan, Orchid |
 | Numeno | Wisdom | Magi, Scholars and Scribes | Knowledge, Writing | The Old, Archives, Memory | Time, History | Air and Lightning | Bludgeoning Only | 
 | Lieta | Patience | Farmers | Growth, Crop Fertility | Agriculture, Harvests | Plants, Trees, Crops | Earth and Water | Axe, 

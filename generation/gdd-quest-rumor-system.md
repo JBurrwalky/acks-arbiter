@@ -34,7 +34,7 @@ Rumors and quests are **views into the same underlying world data**. A dungeon t
 | Dimension | Rumor | Quest |
 |---|---|---|
 | Source | Any qualifying NPC, carousing, notice board, venturer contacts, overheard | A specific questgiver: a named NPC **or** a faction acting through an NPC front |
-| Veracity | true / exaggerated / misleading / false — with a source-reliability signal | Always factually accurate about *its own threat* (the questgiver knows the situation) |
+| Veracity | true / exaggerated / understated / misleading / false — accuracy hidden, discoverable only by verification (§4.4) | Always factually accurate about *its own threat* (the questgiver knows the situation) |
 | Reward | None — points to content that has its own treasure | Explicit, tracked reward (gold, item, land, political favor, mixed) |
 | Obligation | None — ignore freely | Soft — declining is fine; the questgiver *remembers* (dialogue memory + reputation) |
 | Completion | Untracked — verified by visiting the source | Tracked — a specific completion condition triggers the reward flow |
@@ -72,7 +72,7 @@ ACKS calibrates lair treasure to roughly **4× the total XP value of the lair's 
 
 - **Domain income** derives from land revenue and taxes per `acore_axioms_strongholds_and_domains.xml`; a ruler's spendable wealth is a fraction of monthly income. A questgiver cannot post a bounty larger than they can plausibly afford (§8.6 caps gold at a fraction of annual discretionary income for ongoing rulers).
 - **Tithes** are a standing domain expense of **1gp/family/month** (`acore_axioms_strongholds_and_domains.xml`), the stream that funds temple factions (faction §6.6) — relevant because temple questgivers pay from that stream.
-- **Land grants** (domain rewards) are governed by the vassal ladder: only rulers of sufficient rank (Count+ in practice, since only rulers with vassals grant sub-domains) may grant land; **a domain requires a level-9+ holder** (`acore_axioms_strongholds_and_domains.xml`); accepting a grant makes the recipient a **vassal** with tribute/Favors-&-Duties obligations. Domain-grant quests (§7.7) are constrained by all of this.
+- **Land grants** (domain rewards) are governed by the vassal ladder: only rulers of sufficient rank (Count+ in practice, since only rulers with vassals grant sub-domains) may grant land; accepting a grant makes the recipient a **vassal** with tribute/Favors-&-Duties obligations. **Domain ownership is not level-gated** (Jedidiah, 2026-07-07): any character may hold a domain — most NPC lords are below name level — and the level-9 "name level" threshold gates only the *effects* (attracting free **followers**; avoiding early **domain-morale penalties**), not the *possibility* of owning land or building a stronghold. Domain-grant quests (§7.7) are constrained by the vassal ladder, not by recipient level.
 - **Titles of nobility** are bound to land — a title is conferred only *with* a domain grant and its vassalage (§2.4 land grants, §8.8), never as a standalone landless rank. (A landless rank/title is deliberately excluded — it confuses the vassalage system; Jedidiah, 2026-07-07.)
 
 ### 2.5 The encounter/threat substrate
@@ -88,8 +88,8 @@ ACKS calibrates lair treasure to roughly **4× the total XP value of the lair's 
 | A "rumor per reaction band" table | PROJECT mapping over the sacred attitude semantics | §4.3 |
 | A quest *generation* system (what quests exist, when) | This GDD, §6–§8 | §6–§8 |
 | Reward *valuation* for quests | PROJECT formula anchored on monster-XP and the treasure economy | §8 |
-| Whether quest gold grants XP (RAW "wages/business" exclusion) | Default treasure-equivalent + `xp_eligible` flag; **Jedidiah ruling needed** | §8.4, §16 O-Q1 |
-| Rumor truth/falsity and source reliability | PROJECT accuracy tiers + reliability signal (reuses PoI-seed `accuracy`) | §4.2, §4.4 |
+| Whether quest gold grants XP (RAW "wages/business" exclusion) | **RESOLVED** (Jedidiah 2026-07-07): rewards grant XP = their GP value; domains XP-exempt | §8.2, §16 O-Q1 |
+| Rumor truth/falsity | PROJECT accuracy tiers (reuses PoI-seed `accuracy`); no shown reliability cue — verification only | §4.2, §4.4 |
 | Rumor propagation/decay | PROJECT freshness lifecycle over settlement-range | §4.5, §4.6 |
 | Completion *detection* for tasks | PROJECT engine monitor over existing subsystem signals | §9.4 |
 
@@ -200,9 +200,8 @@ Rumor:
   content_hint        # frozen mechanical fact for the LLM to narrate
                       #   (matches the PoI-seed "text_hint"; e.g. "dungeon at 0812: undead, L3-5")
   narrated_text       # LLM/template NPC-voice version (placeholder until Layer-7/live pass)
-  accuracy            # "true" | "exaggerated" | "misleading" | "false"   (§4.2)
+  accuracy            # "true" | "exaggerated" | "understated" | "misleading" | "false"   (§4.2)
   accuracy_detail     # what specifically is wrong, when not true
-  reliability         # source-reliability signal shown to the player (§4.4)
   knowledge_category  # "local"|"professional"|"political"|"criminal"|"religious"|
                       #   "military"|"dungeon"|"personal"|"historical"   (gdd-npc-personality §6.2)
   origin_hex          # hex where the subject sits
@@ -272,21 +271,9 @@ When a channel selects "one rumor from the pool," weight by:
 - **Target value** — rumors pointing at higher-treasure/higher-XP targets weigh more (proportional to the target's estimated monster-XP, capped).
 - **Freshness** — `current` slightly over `persistent` for `political`/`settlement` (topicality), never `stale` (excluded by §4.7).
 
-### 4.4 Truth, falsity, and source reliability
+### 4.4 Truth, falsity, and verification
 
-Accuracy (§4.2) is a hidden property until the party **verifies** the rumor by visiting its source. But the player is not flying blind: each rumor carries a **`reliability`** signal derived deterministically from *how it was heard and from whom* — a project-designed proxy for "would I trust this source?" that never reveals the underlying `accuracy`:
-
-```
-reliability = base_by_channel + source_credibility + corroboration
-  base_by_channel:  spying +2, venturer-contacts +1, notice-board(posted) +1,
-                    reaction-share(Friendly) +1, reaction-share(Neutral) 0, carousing 0
-  source_credibility: NPC's relevant knowledge_category match +1;
-                      NPC Tier A +1; drunk/tavern context −1
-  corroboration:    +1 per independent already-heard rumor with the same source_id
-band → "dubious" | "plausible" | "credible" | "corroborated"   (display only)
-```
-
-Reliability is **shown** (Quests-tab Rumors sub-tab, `gdd-quests-tab.md` §5) as a soft cue; **accuracy** is revealed only on verification. A `false` rumor can be `credible` (a confident, well-placed liar) and a `true` rumor can be `dubious` (a drunk who happens to be right) — the gap between reliability and truth is the deduction game, and it dovetails with the dialogue lie system (`gdd-npc-dialogue.md` §9.4): a rumor traced to an NPC's deliberate lie writes a `deception_suffered` memory and drops that NPC's reliability contribution thereafter.
+Accuracy (§4.2) is a **hidden property, discoverable only by verification** (Jedidiah, 2026-07-07). The player sees a rumor's content and where/from whom they heard it, but **no reliability or trust cue** — a rumor's truth is learned only by going to its source and resolving its content. This is the harder, more paranoid design: a confident, well-placed source may be wrong and a tavern drunk may be right, and the party finds out only by acting on it. (The engine still records each rumor's source, so a rumor that proves `false`/`misleading` and traces to a specific NPC feeds that NPC's reputation and the dialogue lie system, `gdd-npc-dialogue.md` §9.4 — *after the fact*, as a consequence of being deceived, never as a pre-emptive cue.)
 
 **Verification** sets `verified = true` when the party enters the source hex and resolves its content (clears/scouts the PoI, fights the lair, learns the political truth). On verification the UI reveals `accuracy` + `accuracy_detail`, and — if the rumor was `false`/`misleading` and sourced to a specific NPC — the discrepancy is available to reputation/dialogue.
 
@@ -488,7 +475,7 @@ The per-type templates (trigger, questgiver, completion, reward formula, example
 
 ### 7.9 Faction-goal quests (the faction bridge)
 
-When a faction org turn selects `post_job` (faction §6.5), the faction mints a quest through **this system**, with `questgiver_faction_id` set and a front NPC as `questgiver_id`. The quest's `threat_type`/`completion_type` are chosen from the resolvable set above to match the faction's `goal_primary` (faction §6.3): `grow_membership`→a `recovery`/`escort` errand that recruits; `accumulate_wealth`→`escort`/`delivery`/`recovery` of goods; `suppress_rival`→a `creature_bounty`/`clear_lair` against the rival's assets; `defend_patron`→`hold_territory`/`clear_lair` on the patron's border. The `faction_goal` completion type is used when the job's success is a **faction predicate** (e.g., "a rival's syndicate territory is disrupted") rather than a world-object condition — in that case the completion watcher consults the faction layer's own state (faction §6.6) via a `faction_goal_id`. Rewards may be gold (from the org treasury, faction §6.6), membership/rank (faction §8.2), a political favor (faction patronage), or a hijink-market commission (faction §6.7). **The org's treasury gates the reward** exactly as §8.6 gates a ruler's income.
+When a faction org turn selects `post_job` (faction §6.5), the faction mints a quest through **this system**, with `questgiver_faction_id` set and a front NPC as `questgiver_id`. The quest's `threat_type`/`completion_type` are chosen from the resolvable set above to match the faction's `goal_primary` (faction §6.3): `grow_membership`→a `recovery`/`escort` errand that recruits; `accumulate_wealth`→`escort`/`delivery`/`recovery` of goods; `suppress_rival`→a `creature_bounty`/`clear_lair` against the rival's assets; `defend_patron`→`hold_territory`/`clear_lair` on the patron's border. The `faction_goal` completion type is used when the job's success is a **faction predicate** (e.g., "a rival's syndicate territory is disrupted") rather than a world-object condition — in that case the completion watcher consults the faction layer's own state (faction §6.6) via a `faction_goal_id`. Rewards are **gold** (from the org treasury, faction §6.6) — plus magic treasure once faction treasuries/inventories are built (gold only for now) — or a non-membership political favor (faction patronage) or a hijink-market commission (faction §6.7). **Not** faction membership/rank: that is per-character and level/class-gated, so it stays out of the per-party quest reward system (O-Q12/O-Q13). Improved standing with the faction is a **separate** turn-in side-effect (§11.2 ledger), additive to — never in place of — the material reward. **The org's treasury gates the reward** exactly as §8.6 gates a ruler's income.
 
 ---
 
@@ -542,7 +529,7 @@ The multiplier is nudged by the questgiver's Motivation (§6.2), within ±20%: d
 
 ### 8.4 Reward types and mixed rewards
 
-`reward_type ∈ {gold, item, domain, political, mixed}`; `total_gp_value` is the summed GP-equivalent of all components (for sorting/display only). Mixed examples and the political-favor catalog (guild membership, military alliance, trade rights per the RAW Charter of Monopoly, legal immunity, recruitment access, an intelligence gift = a free high-value true rumor) are reproduced in **Appendix B**.
+`reward_type ∈ {gold, item, domain, political, mixed}`; `total_gp_value` is the summed GP-equivalent of all components (for sorting/display only). Mixed examples and the political-favor catalog (military alliance, trade rights per the RAW Charter of Monopoly, legal immunity, recruitment access, an intelligence gift = a free high-value true rumor) are reproduced in **Appendix B**. **Guild/faction membership is not a quest reward** (per-character, level/class-gated; O-Q12/O-Q13) — the sole exception is realm-faction "membership," which happens only as the vassalage of a **domain grant** (§2.4).
 
 ### 8.5 Recovery item valuation
 
@@ -577,7 +564,7 @@ expires_day = created_day + 3d6 months     (most quests don't wait forever;
 ```
 domain_gp_equivalent = stronghold_value + (estimated_families × monthly_income_per_family × 12)
 ```
-Conditions (RAW-bound, §2.4): the quest must secure the territory; the giver must legitimately hold it; acceptance makes the PC a **vassal** (tribute/Favors-&-Duties); the recipient PC **must be level 9+** or the grant is **held in trust** until one qualifies. Full `DomainGrant` shape in Appendix B.
+Conditions (RAW-bound, §2.4): the quest must secure the territory; the giver must legitimately hold it; acceptance makes the recipient a **vassal** (tribute/Favors-&-Duties). **No level gate on ownership** (Jedidiah, 2026-07-07): any PC may take the domain — a sub-9 owner simply forgoes name-level **follower bonuses** and may suffer temporary **domain-morale penalties**; the level-9 threshold gates those *effects*, not the *possibility*. The player **must assign a single owner** (a domain has one owner — §9.6). **Never grants quest XP** — a held domain generates its own passive XP through domain play, so counting its gp-equivalent as reward XP would double-count (§8.2). Full `DomainGrant` shape in Appendix B.
 
 ---
 
@@ -589,7 +576,7 @@ The player encounters a quest via (a) notice board (§5), (b) dialogue `quest_as
 
 ### 9.2 Acceptance
 
-Formal acceptance is **optional**: `quest_accept` (dialogue) or "Accept" in the UI moves the quest `available→accepted`, stamps `accepting_pc_id` + `accepted_day`, emits `quest_accepted`. The party may pursue and complete *without* accepting and still claim the reward if the questgiver is satisfied (§9.5). Declining (`quest_decline`) is fine but is remembered (dialogue memory; PROJECT CALL whether declined quests reappear — §16 O-Q7).
+Formal acceptance is **optional**: `quest_accept` (dialogue) or "Accept" in the UI moves the quest `available→accepted`, stamps `accepting_pc_id` + `accepted_day`, emits `quest_accepted`. The party may pursue and complete *without* accepting and still claim the reward if the questgiver is satisfied (§9.5). Declining (`quest_decline`) is fine and is remembered (dialogue memory); a declined quest **remains re-offerable** on a later visit as long as the questgiver's attitude toward the party is **non-Hostile** (Jedidiah, 2026-07-07; §16 O-Q7).
 
 ### 9.3 Active tracking
 
@@ -624,7 +611,7 @@ On the condition being met: set `is_complete=true`, emit **`quest_completion_rea
      gold    → add to PC; award 1 XP/gp on disbursement (§8.2 ruling)
      item    → to PC inventory; award XP = item GP-equivalent on disbursement (§8.2; no sold-unused double-count)
      political→ recorded on the sheet; award XP = its GP-equivalent (§8.2)
-     domain  → vassalage flow (§9.6, level-9 gate); XP-EXEMPT (§8.8)
+     domain  → vassalage flow (§9.6, single owner, no level gate); XP-EXEMPT (§8.8)
 5. status → "completed"; completed_day set; quest-sourced rumors → stale (§4.6);
    emit quest_turned_in(quest_id, recipient_pc_id, reward_summary).
 ```
@@ -635,12 +622,12 @@ The **unaccepted-completion path** ("you're the ones who cleared the ogre? here 
 
 - **Gold:** player picks one PC to receive it (then may redistribute manually — identical to treasure division; no forced split). XP per §8.2.
 - **Item:** player picks one PC; item to inventory; transferable afterward; XP = item GP-equivalent on disbursement (§8.2 ruling).
-- **Domain:** player picks one PC who **must be level 9+** (else held in trust, §8.8); confirmation dialog states the vassalage terms; **not** freely transferable between PCs.
-- **Political favor:** player picks one PC; recorded on the sheet; some favors (guild membership, alliance) benefit the party indirectly; not transferable.
+- **Domain:** the player **must assign a single owner** — a domain has exactly one owner (no multi-grant). **No level gate** (§8.8): a sub-9 owner forgoes name-level follower bonuses and may face temporary domain-morale penalties, but may own. Confirmation dialog states the vassalage terms; **not** freely transferable between PCs.
+- **Political favor:** player picks one PC; recorded on the sheet; some favors (military alliance, trade rights) benefit the party indirectly; not transferable. (Guild/faction membership is never a favor reward — §8.4.)
 
 ### 9.7 Failure and expiry
 
-- **`expired`** — `expires_day` passed before completion (decay pass, §10.1): status→`expired`, `quest_expired` emitted, quest-sourced rumors→stale. Some may reappear (§16 O-Q7).
+- **`expired`** — `expires_day` passed before completion (decay pass, §10.1): status→`expired`, `quest_expired` emitted, quest-sourced rumors→stale. An expired quest **re-mints if its threat persists** (Jedidiah, 2026-07-07; §16 O-Q7).
 - **`failed`** — the objective became impossible: escorted NPC died, retrieval item destroyed, target already eliminated by others, questgiver dead (a dead questgiver's quests fail through the dead-NPC filter — dialogue §12.3 guarantees no session opens with a dead giver). Emits `quest_failed(quest_id, reason)`; possible reputation consequence per the questgiver's personality (dialogue memory).
 - **`abandoned`** — the player abandons via the UI (Quests-tab): status→`abandoned`; may cost reputation with the questgiver (PROJECT CALL by their Motivation).
 
@@ -732,12 +719,12 @@ SQLite is ground truth; migrations are sequential/versioned/non-destructive (aut
 
 **Seed layer (setting-gen DB; frozen after Layer-8 lock except prose):**
 - `setting_quests` — `id (quest_NNNN)`, `questgiver_npc_id`, `questgiver_faction_id?`, `threat_type`, `threat_source_id`, `threat_hex`, `completion_type`, `completion_target_id`, `reward` (JSON), `posting_type`, `posting_range`, `expires_day?`, `description_placeholder`, `questgiver_dialogue_placeholder`, `completion_dialogue_placeholder`, `title_placeholder`.
-- `setting_rumors` — `id (rum_NNNN)`, `source_type`, `source_id`, `source_quest_id?`, `content_hint`, `accuracy`, `accuracy_detail?`, `reliability_base`, `knowledge_category`, `origin_hex`, `settlement_range`, `min_npc_tier`, `freshness`, `narrated_placeholder`.
+- `setting_rumors` — `id (rum_NNNN)`, `source_type`, `source_id`, `source_quest_id?`, `content_hint`, `accuracy` (incl. `understated`, §4.2), `accuracy_detail?`, `knowledge_category`, `origin_hex`, `settlement_range`, `min_npc_tier`, `freshness`, `narrated_placeholder`. *(No `reliability` field — accuracy is verification-only, §4.4.)*
 
 **Runtime layer (campaign DB):**
 - `quests` — all §6.6 fields + `campaign_id`. Indexed by `status`, `questgiver_settlement_id`, `threat_hex`, `threat_type`, `questgiver_faction_id`.
 - `quest_rewards` — `reward_type`, `gold_value`, `item_id?`, `item_description?`, `domain_grant_id?`, `political_favor?`, `total_gp_value`, `xp_eligible`, `variance_applied`; FK `quest_id`.
-- `domain_grants` — `hex_ids` (JSON), `territory_class`, `estimated_families`, `stronghold_present`, `stronghold_value`, `vassal_obligations`, `title_granted`, `held_in_trust`; FK `quest_reward_id`.
+- `domain_grants` — `hex_ids` (JSON), `territory_class`, `estimated_families`, `stronghold_present`, `stronghold_value`, `vassal_obligations`, `title_granted`, `single_owner_pc_id` (the one assigned owner — no level gate, §8.8/O-Q14); FK `quest_reward_id`.
 - `rumors` — all §4.1 runtime fields + `campaign_id`. Indexed by `source_id`, `origin_hex`, `knowledge_category`, `freshness`, `source_quest_id`.
 - `rumor_settlement_pool` — junction `(rumor_id, settlement_id)`; precomputed at distribution for fast pool queries; refreshed by the decay pass.
 
@@ -772,9 +759,9 @@ No player-facing tuning parameters. Quest density and reward scaling are functio
 Every subsystem gets focused unit tests; boundaries get integration tests; **the entire system must pass on the mock provider**; hand-authored content is tested before procedural generation.
 
 **Unit (deterministic, no I/O):**
-- `RewardValuator`: each `threat_type` formula; variance bounds (±10%); rounding (banker's, 25/100 buckets); affordability clamp for ruler/personal/faction givers; Motivation tone nudge; `xp_eligible` default and flip; domain-grant gp-equivalent.
+- `RewardValuator`: each `threat_type` formula — treasure-bearing = pre-estimated treasure × multiplier, **creature bounty = 2× monster XP** (§8.1); expected-treasure estimation from ACKS treasure types; variance bounds (±10%); rounding (banker's, 25/100 buckets); affordability clamp for ruler/personal/faction givers; Motivation tone nudge; reward XP = `total_gp_value` on disbursement, domain XP-exempt (§8.2); domain-grant gp-equivalent.
 - Accuracy assignment: distribution over 10k seeded rolls per source type matches §4.2 within tolerance; quest-sourced always `true`; PoI rumors pass `accuracy` through verbatim.
-- Reliability computation: each channel base; corroboration accrual; reliability⊥accuracy (a `false`-but-`credible` and a `true`-but-`dubious` case).
+- Accuracy is hidden until verification (no reliability cue); the five-tier distribution incl. `understated` matches §4.2; a carousing draw applies the +5%/carouser-level accuracy bonus (§4.3a) and a 20th-level carouser always resolves `true`.
 - Weighting: unheard ×3, quest ×2, target-value proportionality.
 - Freshness/decay: `current` → `stale` after 1d6 months (seeded); persistent never decays; invalidation on source destruction.
 
@@ -782,7 +769,7 @@ Every subsystem gets focused unit tests; boundaries get integration tests; **the
 - **Seeding:** a fixture region with 2 dungeons + 3 lairs + 1 brigand-held town + N PoIs + minted questgivers → 3–8 quests, each with a valid questgiver who can afford it, a resolvable completion, and a quest-sourced rumor; determinism (same seed → identical set, byte-equal mechanical columns).
 - **Seed→materialize:** `setting_quests`/`setting_rumors` copy to runtime `quests`/`rumors` verbatim (mechanical columns), placeholders intact.
 - **Completion watcher:** fire each signal (`lair_cleared`, `combat_ended` with dead target, inventory-add, escort-arrival, hex-scout, hold-territory-monthly, faction-goal-satisfied) → `is_complete` flips exactly once; idempotent re-fire; backdrop quests ignored.
-- **Turn-in:** accepted path and unaccepted path; reward disbursement per type; XP awarded per `xp_eligible`; domain-grant level-9 gate + held-in-trust; quest-sourced rumor → stale on completion.
+- **Turn-in:** accepted path and unaccepted path (incl. the high-honesty/low-self-interest giver paying unless Hostile, §9.5); reward disbursement per type; XP = reward GP value, domain XP-exempt; domain-grant forces single-owner selection with **no level gate**; quest-sourced rumor → stale on completion.
 - **Dialogue seam (mock):** `quest_ask` attitude gating (Friendly vs. Neutral posting classes); `ask_rumor` per-band share; `quest_turn_in` end-to-end on templates.
 - **Faction seam (mock):** `post_job` mints a faction quest against org treasury; `faction_goal` completion polls faction state; `quest_turned_in` writes the faction ledger.
 - **Persistence:** save/load mid-quest (accepted, is_complete-but-not-turned-in, expired) restores exact state; dead-questgiver → quest fails via the dead-NPC filter.
@@ -794,25 +781,27 @@ Every subsystem gets focused unit tests; boundaries get integration tests; **the
 
 Ordered by build impact. Each is either a design decision deferred to you or a rule I could not cite in the corpus.
 
-1. **O-Q1 — Does quest gold grant XP? — RESOLVED (Jedidiah, 2026-07-07): YES.** Quest rewards grant XP equal to their monetary (GP) value on disbursement (gold at face; item/favor at GP-equivalent). Domain grants remain XP-exempt (a domain is land, not coin — §8.8). Specced in §2.2/§8.2/§9.5.
-2. **O-Q2 — Reward multipliers and the treasure-ratio target.** The multipliers (lair 0.50 / dungeon 0.25 / brigand 0.75 / bounty 1.00 / time-based 0.50/0.25) and the daily rate (avg-level × 25 gp) are PROJECT CALL, calibrated to the §13.1 bands. Confirm the bands (10–25% dungeon, 25–50% lair, 50–100% bounty) are the feel you want, or retune.
-3. **O-Q3 — Accuracy distributions and the reliability signal.** Are the §4.2 tables right (esp. `npc` at 40/20/20/20 and `historical` at 30/30/25/15)? And do you want the **reliability** cue (§4.4) shown to the player at all, or should truth be discoverable only by verification (harder, more paranoid)?
-4. **O-Q4 — Unaccepted-completion honoring.** Should a satisfied questgiver pay for a deed the party never formally accepted (the "you're the ones who cleared the ogre?" path, §9.5)? Default: yes if Friendly/Indifferent, no if Unfriendly. Confirm, or require formal acceptance for any reward.
-5. **O-Q5 — Gather Information as a distinct verb.** The corpus has **no** generic Gather-Information mechanic (only carousing/spying/venturer). This GDD models the settlement "Gather Information" activity as a project verb reducing to a reaction-share (§4.3c). Confirm that's acceptable, or should "Gather Information" simply *be* carousing (a Hear-Noise throw) with no separate reaction-share path?
-6. **O-Q6 — Carousing rumor-vs-gold.** RAW lets carousing yield either 3d12×5gp×level **or** a campaign-relevant rumor (Judge's choice, `acore-campaign-hijinks.xml:137`). This GDD defaults carousing to delivering the **rumor** (adventuring value). Should the player choose per-carouse, or is rumor-always correct?
-7. **O-Q7 — Do declined/expired quests reappear?** Default: expired quests may re-mint if their threat persists; declined quests stay declined for that questgiver. Confirm, or make declines re-offerable / expiries permanent.
-8. **O-Q8 — Multi-stage quests.** The taxonomy is single-condition. Do you want true multi-stage quests ("find the artifact → return it → then defend the temple") as one quest with sequential `progress`, or as a chain of single quests? Default: single-condition only in v1; chains via quest-sourced follow-ups. *(gdd-quests-tab O-Q lists this too.)*
-9. **O-Q9 — `build_structure`/construction quests.** Deferred to v2 (depends on stronghold-construction resolution). Confirm deferral, or specify the completion condition if you want it in v1.
-10. **O-Q10 — Determinism-hash treatment.** Should `setting_quests`/`setting_rumors` mechanical columns be included in the `SettingDatasetHasher` (canonical) with prose columns excluded, mirroring the `setting_narrative` lock/hasher ruling (`gdd-live-llm-integration.md` §13.2 A3)? This is the clean parallel; confirm.
-11. **O-Q11 — Questgiver abundance vs. sparseness.** The "~1 quest per 4 eligible threats" and probability gate (50/25/10 by distance) target 3–8 initial quests/region. Is that the density you want at world start, or denser/sparser?
-12. **O-Q12 — Faction-goal reward forms.** For `post_job` faction quests, which reward forms should factions favor (gold from treasury / membership+rank / political favor / hijink commission)? Default lets the goal type pick (§7.9); confirm or constrain (e.g., syndicates never pay in rank).
-13. **O-Q13 — Political-favor GP-equivalents.** Political favors are estimated at 1,000–5,000 gp by giver tier for sorting only (Appendix B). Confirm the band, or supply tier-specific values.
-14. **O-Q14 — Domain-grant "held in trust."** When no PC is level-9+, a domain grant is reserved until one qualifies (§8.8). Is "reserved but inert" acceptable, or should a sub-9 party be unable to accept such quests at all (removing them from the pool)?
+1. **O-Q1 — Does quest gold grant XP? — RESOLVED (Jedidiah, 2026-07-07): YES.** Quest rewards grant XP equal to their monetary (GP) value on disbursement (gold at face; item/favor at GP-equivalent). Domain grants remain XP-exempt — a domain generates its own passive XP through domain play, so counting its gp-equivalent would double-count (§8.8; confirmed Jedidiah 2026-07-07). Specced in §2.2/§8.2/§9.5.
+2. **O-Q2 — Reward multipliers and the treasure-ratio target — RESOLVED (Jedidiah, 2026-07-07).** Bands accepted, with two specced changes (§8.1, §13.1): (a) treasure-bearing rewards are a percentage of **pre-estimated** on-site treasure (a new estimation from the threat's ACKS treasure types), so the multipliers are true treasure-percentages; (b) **creature bounties pay 2× monster XP** (not a treasure %), since lone monsters carry little/no treasure and a %-of-treasure reward would drop to ~0. Residual (tunable at playtest): the exact treasure-estimation valuation and any band retune.
+3. **O-Q3 — Accuracy distributions — RESOLVED (Jedidiah, 2026-07-07).** Bands roughly correct, plus a new **`understated`** tier (rumors that undersell): the former `exaggerated` share is split 50/50 into `exaggerated` and `understated` for every source (§4.2). **Reliability cue: not shown** (Jedidiah, 2026-07-07) — a rumor's accuracy is discoverable **only by verification** (the harder, more paranoid option); §4.4 rewritten accordingly.
+4. **O-Q4 — Unaccepted-completion honoring — RESOLVED (Jedidiah, 2026-07-07).** Pay if Friendly/Indifferent, not if Unfriendly — **except** questgivers with high `honesty` and/or low `self_interest` pay regardless of a cool attitude, refusing only when Hostile. Specced in §9.5.
+5. **O-Q5 — Gather Information as a distinct verb — RESOLVED (Jedidiah, 2026-07-07).** It is a distinct **1-hour** settlement activity (not carousing): a reaction roll against a district's public NPCs; on success a rumor surfaces to an "I heard…" modal + session log + Quests-tab tracker; **no gp reward, no criminal-charge risk**. Built now on the §4.3c reaction-share, hooked for the future nested settlement District/POI menu (public spaces). Specced in §4.3c.
+6. **O-Q6 — Carousing rumor-vs-gold — RESOLVED (Jedidiah, 2026-07-07).** Emit both: for PCs and their henchmen/hirelings/followers, roll **60% cash / 40% rumor** per carouse. Carousing rumors get a **+5%-per-carouser-level accuracy bonus** (a high-level carouser sorts truth from lies — 20th level always hears true). "Campaign-relevant" = actionable faction/ruler drama or a dungeon/treasure location (the cash figure is a syndicate abstraction). Build note: carousing is a **long** activity — read `ax_campaign_play.xml` for duration. Specced in §4.3a.
+7. **O-Q7 — Do declined/expired quests reappear? — RESOLVED (Jedidiah, 2026-07-07).** Declined quests remain **re-offerable** while the questgiver's attitude toward the party is non-Hostile; expired quests **re-mint if their threat persists**. Specced §9.2/§9.7.
+8. **O-Q8 — Multi-stage quests — RESOLVED (Jedidiah, 2026-07-07): defer.** v1 stays single-condition; chains are handled via quest-sourced follow-ups. Revisit true multi-stage only if playtest shows too much friction.
+9. **O-Q9 — `build_structure`/construction quests — RESOLVED (Jedidiah, 2026-07-07): deferred to v2** (depends on stronghold-construction resolution).
+10. **O-Q10 — Determinism-hash treatment — RESOLVED (Jedidiah, 2026-07-07): confirmed.** `setting_quests`/`setting_rumors` mechanical columns are canonical in `SettingDatasetHasher`; prose columns excluded, mirroring the `setting_narrative` treatment (§10.3, `gdd-live-llm-integration.md` §13.2 A3).
+11. **O-Q11 — Questgiver abundance vs. sparseness — RESOLVED (Jedidiah, 2026-07-07): accepted** as a decent starting density (~1 quest per 4 eligible threats; 3–8/region). Tunable at playtest.
+12. **O-Q12 — Faction-goal reward forms — RESOLVED (Jedidiah, 2026-07-07).** Reward **gold** (magic treasure once faction treasuries/inventories exist — gold only for now); **never** faction membership/rank (per-character, level/class-gated — out of the per-party quest system). The goal type picks the form, but the valuator must never grant the functionally impossible: no party-wide faction membership (the Chaotic thief can't join the Temple of Tulras), no multi-owner domain (one owner, forced pick — §9.6). Improved faction standing is a separate turn-in side-effect (§11.2), additive to the reward. Specced §7.9.
+13. **O-Q13 — Political-favor forms & GP-equivalents — RESOLVED (Jedidiah, 2026-07-07).** The 1,000–5,000 gp band stands. **Guild/faction membership is removed from quest rewards** (realm-faction membership comes only via a domain grant's vassalage, §2.4); the remaining favors (military alliance, trade rights, legal immunity, recruitment access, intelligence gift) stay (§8.4, Appendix B.1).
+14. **O-Q14 — Domain-grant level gate — RESOLVED (Jedidiah, 2026-07-07): no level gate.** Any PC may own a domain (most NPC lords are below name level); a sub-9 owner forgoes name-level follower bonuses and may suffer temporary domain-morale penalties. Level 9 gates the *effects*, not the *possibility*, of domain ownership or stronghold-building. The player assigns one owner (§8.8/§9.6). The "held in trust until level 9" mechanic is removed.
 
 ---
 
 ## 17. Revision History
 
+- **v1.0c, 2026-07-07** — Folded Jedidiah's O-Q7–O-Q14 rulings + O-Q1/O-Q3 follow-ups, closing all 14 opens: **no level gate on domain ownership** — level gates effects (follower bonuses, morale), not possibility (§2.4/§8.8/§9.6; retires "held in trust"); **reliability cue removed** — accuracy discoverable only by verification (§4.4); declines re-offerable while non-Hostile, expiries re-mint if the threat persists (§9.2/§9.7); faction-goal rewards gold-only for now (magic treasure later), never membership/rank, with impossibility guards — no party-wide membership, single domain owner (§7.9/§8.8/§9.6); guild/faction membership removed from the political-favor catalog (§8.4/Appendix B); domain XP-exempt because it grants passive XP anyway (§8.8); multi-stage deferred (chains via follow-ups), construction deferred, hasher confirmed, density accepted.
+- **v1.0b, 2026-07-07** — Folded Jedidiah's O-Q1–O-Q6 rulings: quest rewards grant XP = their GP value (§2.2/§8.2/§9.5; domain grants exempt); creature bounties pay 2× monster XP and treasure-bearing rewards use pre-estimated treasure (§8.1/§13.1); added the `understated` accuracy tier, splitting `exaggerated` 50/50 (§4.2); unaccepted-completion honored by high-honesty/low-self-interest givers unless Hostile (§9.5); Gather Information specced as a distinct 1-hour district activity, no gp/no criminal charge (§4.3c); carousing rolls 60/40 cash/rumor with a +5%/carouser-level accuracy bonus and a duration-check note (§4.3a). Worked example updated to the bounty basis (Appendix C). O-Q1–O-Q6 marked resolved (§16); O-Q7–O-Q14 remain open.
 - **v1.0a, 2026-07-07** — Per Jedidiah, removed the landless title/rank political-favor reward (§2.4, Appendix B): titles/ranks are conferred only bound to a domain grant, never awarded landless ("confuses the system too much"). Deduplicated the file (a §6.8–Appendix C block had been written twice). The `title_granted` field on `DomainGrant` — a title that comes *with* the land — is unaffected.
 - **v1.0, 2026-07-07** — Matured the 2026-03-28 draft into a build-ready GDD for the social/LLM stack's Wave 2. Added: the modern architecture (`QuestRegistry`/`RumorRegistry`/`QuestSeeder`/`QuestCompletionWatcher`/`RewardValuator`; no new autoload); the seed→materialize two-phase model aligned to the existing pipeline; the questgiver-minting prerequisite (Motivation + income) that closes the `_seed_quests_DEFERRED` blocker; DB schema adopting the stub's `setting_quests`/`setting_rumors` names + runtime `quests`/`rumors`; the RAW-grounded rumor channels (carousing/spying/venturer/reaction-share) with the corpus fact that **no generic Gather-Information mechanic exists**; the source-reliability model; a taxonomy restricted to engine-resolvable completions (+`delivery`, +`faction_goal`); explicit integration contracts and EventBus signals for Dialogue/Faction/Settlement/Journal/Quests-tab/LLM; scheduling/LOD on the monthly tick; determinism (seeded RNG, banker's rounding, hasher treatment); a full test plan; Build Phasing Q-1…Q-6 (§18); and a 14-item Open-Questions section capturing the RAW tension on quest-gold XP (`:596`) and every deferred design call. Reward formulas, quest templates, and the worked example preserved from v0.x (Appendices A–C).
 - **v0.x, 2026-03-28** — Initial draft: rumor sources/accuracy/distribution/acquisition/lifecycle; quest generation conditions/timing/record; reward valuation (monster-XP-anchored) incl. recovery/domain/political; quest-type templates; quest–rumor integration; scaling/balance; worked example.
@@ -827,8 +816,8 @@ Sequenced to slot into `docs/master-build-plan-social-llm-stack.md` Wave 2. Each
 |---|---|---|---|---|---|
 | **Q-1 — Schema + registries** | Migrations for `quests`/`quest_rewards`/`domain_grants`/`rumors`/`rumor_settlement_pool` (+ `setting_quests`/`setting_rumors` seed tables); `QuestRegistry` + `RumorRegistry` CRUD/queries; `RewardValuator` (pure). Unit tests §15. | FF-1 schema *if* `questgiver_faction_id` FK is enforced (else nullable-no-FK) | yes | Sonnet | Foundation; zero LLM. Adopt the stub table names. Land the EventBus signal declarations (§11.6). |
 | **Q-2 — Questgiver minting + seeding** | `QuestSeeder` setting-gen pass replacing `_seed_quests_DEFERRED`; questgiver minting (§6.2) over the stock-take population; quest-sourced rumor emission; seed→materialize wiring; PoI-rumor-seed ingestion. | Q-1; settlement stocking (built); PoI rumor_seeds (built); `sim_polities` income (built) | yes | **Opus** (generation calibration, questgiver economics) then Sonnet | Closes the master-plan long-pole blocker. Determinism tests are the gate. |
-| **Q-3 — Rumor delivery** | Reaction-share (`RumorRegistry.share_for_npc`), carousing-pool hook, venturer-rumormonger hook, notice-board read, reliability signal, decay pass on the monthly tick, invalidation. | Q-2; hijink system (carousing, built); dialogue P1 for `ask_rumor` (or standalone Gather-Information verb) | yes | Sonnet | The retail + wholesale rumor channels. Gather-Information settlement verb wired here. |
-| **Q-4 — Completion + turn-in + lifecycle** | `QuestCompletionWatcher` over existing signals; turn-in + reward disbursement (all types, XP per `xp_eligible`, domain level-9 gate); failure/expiry/abandon; Unified-Log `quest` entries. | Q-1; combat/lair/exploration signals (built) | yes | Sonnet (Opus for the domain-grant/vassalage disbursement path) | The lifecycle spine. Save/load tests mandatory. |
+| **Q-3 — Rumor delivery** | Reaction-share (`RumorRegistry.share_for_npc`), carousing hook (**60/40 cash/rumor + 5%/level accuracy bonus**, §4.3a), venturer-rumormonger hook, notice-board read, monthly decay + invalidation. **No reliability cue** — accuracy verification-only (§4.4). | Q-2; hijink system (carousing, built — check `ax_campaign_play.xml` duration); dialogue P1 for `ask_rumor` (or the standalone Gather-Information verb) | yes | Sonnet | The retail + wholesale channels. **Gather Information = a distinct 1-hour district activity** (reaction roll vs. public NPCs; no gp / no criminal charge; §4.3c), hooked for the future nested settlement menu. |
+| **Q-4 — Completion + turn-in + lifecycle** | `QuestCompletionWatcher` over existing signals; turn-in + reward disbursement (all types, **XP = reward GP value** §8.2, domain **single-owner, no level gate** §8.8); failure/expiry/abandon (expiries re-mint if the threat persists, §9.7); Unified-Log `quest` entries. | Q-1; combat/lair/exploration signals (built) | yes | Sonnet (Opus for the domain-grant/vassalage disbursement path) | The lifecycle spine. Save/load tests mandatory. |
 | **Q-5 — Dialogue quest adapters** | Wire the five dialogue moves (§11.1) to the registries; attitude-gated `offerable_quests`; `quest_turn_in` reward-recipient flow in dialogue; performs placeholder text. | Q-2, Q-4; **Dialogue P2** (the adapter slot) | yes | Sonnet | This is the Dialogue-P2 quest-adapter slice the master plan defers until quest-rumor lands. |
 | **Q-6 — Faction post_job bridge + LLM narration** | `create_faction_quest` + `faction_goal` completion polling + faction-ledger write on turn-in + `advances_faction_goal` accessor; `NarrativeGenerator._wrap("quest"/"rumor")` prose (setting-gen) + dialogue-performed runtime prose; Quests-tab data binding. | Q-4, Q-5; **Faction FF-2** (`post_job`, org treasury); Live-LLM L-1 (narration, optional — mock suffices) | mostly | Sonnet (Opus for faction-goal predicate mapping) | Completes both downstream slices (FF-2 `post_job`, Dialogue quest prose) and lights the reserved `setting_narrative:quest/rumor` blocks. |
 
@@ -852,15 +841,15 @@ Sequenced to slot into `docs/master-build-plan-social-llm-stack.md` Wave 2. Each
 
 ## Appendix B — Reward Component Shapes (preserved)
 
-- **B.1 Political favors** (non-tradeable): guild membership; military alliance; trade rights (RAW Charter of Monopoly); legal immunity; recruitment access; intelligence gift (= a free high-value true rumor). GP-equivalent 1,000–5,000 by giver tier, **display/sort only** (see §16 O-Q13).
+- **B.1 Political favors** (non-tradeable): military alliance; trade rights (RAW Charter of Monopoly); legal immunity; recruitment access; intelligence gift (= a free high-value true rumor). GP-equivalent 1,000–5,000 by giver tier, **display/sort only** (see §16 O-Q13). *(Guild/faction membership is NOT a quest reward — O-Q13; realm-faction membership comes only via a domain grant's vassalage, §2.4.)*
 - **B.2 Mixed** examples: "500 gp + healing potion" → gold 500, item potion, total ~1,000. "Barony of Valetown + 200 gp" → gold 200, domain, total ~30,000. "A trade charter + 1,000 gp" → gold 1,000, favor, total ~4,000.
-- **B.3 `DomainGrant`** — `hex_ids`, `territory_class`, `estimated_families`, `stronghold_present`, `stronghold_value`, `vassal_obligations`, `title_granted`, `held_in_trust`. Conditions per §2.4/§8.8 (secure the territory; legitimate giver; vassalage; level-9+ recipient or held in trust).
+- **B.3 `DomainGrant`** — `hex_ids`, `territory_class`, `estimated_families`, `stronghold_present`, `stronghold_value`, `vassal_obligations`, `title_granted`, `single_owner_pc_id`. Conditions per §2.4/§8.8 (secure the territory; legitimate giver; vassalage; **one chosen owner — no level gate**, a sub-9 owner just forgoes follower bonuses and may face temporary morale penalties). *(The former `held_in_trust` / level-9 field is retired per O-Q14.)*
 
 ## Appendix C — Worked Example (preserved; verifies §13.1 band)
 
 Setup: medium undead dungeon (0812, L3-5, 3 hex S of the Innford–Stonehaven road); ogre lair (0809, 1 creature, 2 hex S); Baron Morson rules Stonehaven (1010, Class V, 120 families, borderlands, income 720 gp/mo, garrison committed to road patrols; Motivation duty+security).
 
 - **Rumors (setting gen):** dungeon rumor `content_hint`="old silver mine 0812 undead L3-5", accuracy `true`, category `dungeon`, range 8. Ogre-lair rumor accuracy `exaggerated` ("a pair of ogres" — actually one), category `local`, range 5.
-- **Ogre quest:** lair within 3 hex of Morson → prob 50% pass → `creature_bounty` (lone ogre). Ogre XP = 200 (4+1 HD) → base 200 × 1.00 = 200 → variance → 210 → round → **200 gp**. Affordability: 200 < 10%×(720×12)=864 ✓. `posted`, range 8. Quest-sourced rumor (`true`, `local`, range 8) emitted.
+- **Ogre quest:** lair within 3 hex of Morson → prob 50% pass → `creature_bounty` (lone ogre). Bounty basis = **2× monster XP**: ogre XP = 200 (4+1 HD) → base 200 × 2.0 = 400 → variance → 410 → round → **400 gp**. Affordability: 400 < 10%×(720×12)=864 ✓. `posted`, range 8. Quest-sourced rumor (`true`, `local`, range 8) emitted.
 - **Dungeon quest:** 4-8 hex → prob 25% → fails this seed → no dungeon quest at setting gen (may mint later if undead emerge).
-- **Play:** party carouses in Innford (Hear Noise success) → weighted pool (quest rumor ×2) selects the quest rumor → *"Baron Morson offers two hundred gold for anyone who deals with an ogre on the south road."* Notice board (Innford, Class V) shows the posted ogre quest + a spring rumor. Party travels, kills the ogre (proof: head), finds its cache 350 gp (rolled from the ogre's treasure type). Returns to Stonehaven → `kill_target` complete → turn in → fighter chosen → 200 gp (+200 XP if `xp_eligible`, §16 O-Q1) + ogre monster XP. **Quest reward = 200 / (350+200) ≈ 36%** — inside the 25–50% lair-quest band (§13.1). ✓
+- **Play:** party carouses in Innford (Hear Noise success) → weighted pool (quest rumor ×2) selects the quest rumor → *"Baron Morson offers two hundred gold for anyone who deals with an ogre on the south road."* Notice board (Innford, Class V) shows the posted ogre quest + a spring rumor. Party travels, kills the ogre (proof: head), finds its cache 350 gp (rolled from the ogre's treasure type). Returns to Stonehaven → `kill_target` complete → turn in → fighter chosen → 400 gp (**+400 XP**, the reward's GP value, §8.2) + ogre monster XP. **Quest reward = 400 / (350+400) ≈ 53%** — inside the 50–100% creature-bounty band (§13.1). ✓

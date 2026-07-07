@@ -162,11 +162,13 @@ After siege damage, repair is a construction project. Wooden construction repair
 
 ### 2.5 Class-Specific Stronghold Types
 
-Different classes unlock different stronghold types at level 9 (ACKS):
+**No level gate on construction.** Any character (PC or NPC) may commission a stronghold at any level, provided they can pay the construction cost — building is a cash-and-labor transaction (§2.2), not a level-gated privilege. What *is* gated to level 9 ("name level") per `acore_core_classes.xml` §<class>.stronghold_and_followers is the **class-specific follower-attraction bundle**: a sub-9 owner's structure still secures the domain and counts toward the minimum-stronghold-value threshold (§2.3), but does not yet trigger the class's named follower type. See `gdd-domain-tab.md` §7.1/§19.2 for the sub-9 UI treatment.
 
-- **Fighters, clerics, bladedancers, dwarven classes:** Standard stronghold (fortress, castle, vault, fastness). Attracts peasant families and domain followers.
-- **Thieves, assassins, elven nightblades:** Hideout. Attracts syndicate followers (2d6 1st-level characters of the boss's class, +1d6 per level beyond 9th).
-- **Mages:** Sanctum (often a tower). Attracts 1d6 apprentices and 2d6 normal men. May also build a dungeon beneath/near the sanctum to attract monsters for arcane power.
+Each class's stronghold type (which unlocks its class-flavored follower type at level 9):
+
+- **Fighters, clerics, bladedancers, dwarven classes:** Standard stronghold (fortress, castle, vault, fastness). Attracts peasant families and domain followers once level 9+.
+- **Thieves, assassins, elven nightblades:** Hideout. Attracts syndicate followers (2d6 1st-level characters of the boss's class, +1d6 per level beyond 9th) once level 9+.
+- **Mages:** Sanctum (often a tower). Attracts 1d6 apprentices and 2d6 normal men once level 9+. May also build a dungeon beneath/near the sanctum to attract monsters for arcane power.
 - **Explorers:** May only build in borderlands or wilderness.
 - **Elven fastnesses and dwarven vaults:** May only be built in wilderness, or in civilized/borderlands areas of their own race.
 

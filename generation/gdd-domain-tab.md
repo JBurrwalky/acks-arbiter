@@ -369,7 +369,7 @@ Per O-D10 resolution:
 
 ### 7.2 Class-specific stronghold notes
 
-The Stronghold sub-tab content is structurally identical across classes — every class has *some* structure unlocking at level 9 — but the **type** of structure varies per the matrix in §12.1. The Stronghold sub-tab labels and visuals adapt: a Mage's tab shows a sanctum / tower icon; a Cleric's a fortified church; a Thief's a hideout; etc.
+The Stronghold sub-tab content is structurally identical across classes — every class may commission *some* structure at any level — but the **type** of structure varies per the matrix in §12.1. Level 9 does not gate the ability to build; it gates whether that structure attracts the class's named follower type (per `acore_core_classes.xml` §<class>.stronghold_and_followers) — see §6.4/§19.2. The Stronghold sub-tab labels and visuals adapt: a Mage's tab shows a sanctum / tower icon; a Cleric's a fortified church; a Thief's a hideout; etc.
 
 For **Explorer** specifically: the stronghold is a border fort, and per `acore_axioms_strongholds_and_domains.xml` §classification *"Explorers may only build strongholds in borderlands or wilderness domains."* The "Commission new construction" button for an Explorer gates the structure-build flow to borderlands/wilderness territory; civilized territory shows a tooltip explaining the class restriction.
 
@@ -1403,7 +1403,9 @@ The notebook itself is openable in PC_AWAITING_INPUT combat sub-states per `gdd-
 
 The Domain tab has multiple empty-state variants based on active entity status. All variants follow the per-Q7 tailored-by-class principle.
 
-### 19.1 Active entity does not yet hold a domain (level 9+)
+### 19.1 Active entity does not yet hold a domain
+
+This variant applies at any level — domain ownership is not level-gated (see §19.2). It is titled separately from §19.2 only because the pre-9 case adds a banner on top of this same content.
 
 Full-tab empty-state with class-tailored acquisition guidance. The page area shows:
 - Headline: *"You have not yet established a domain."*
