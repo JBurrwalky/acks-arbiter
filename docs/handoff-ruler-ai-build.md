@@ -215,3 +215,59 @@ Run the **Build Session Protocol** from `CLAUDE.md`:
 - Realm AI: `RealmRepository.get_relation/set_relation`, `RealmAggregator.aggregate`, `RealmGraph.apex_for_domain/is_allied`, `VassalRepository`, `ExtractionResistanceHeuristic.evaluate` (to be generalized), `NPCChallengerEmergence.process_monthly_tick`.
 - Strongholds: `CommissionPipeline.start_commission` (timed path), `CampaignRepository.create_stronghold/update_stronghold`, `StrongholdRepository.recompute_sufficiency_after_change`, `LifecycleHandler.restore_from_ruin/mark_stronghold_collapsed`, `DomainStocker.stock_stronghold`.
 - Personality/LLM: `NpcPersonality` (`characters.personality` JSON; `axes`, `motivation_*`, `deviant_axes()`), `PersonalityAxes`, `ResponseEnvelope` (`ok/fail/fallback`, `is_fallback`), `LLMManager.request_narration(context)` (stub: reads `task_type`, returns `fallback`).
+
+---
+
+## 10. Post-arc follow-ons (added 2026-07-02, Phases 0–4 complete at suite 484/16)
+
+The five-phase arc is DONE (build_log entries 2026-07-01 → 2026-07-02; conventions §89–§93; migrations 181–182). What remains splits into four independent pick-up tasks and one decision item. Each begins with the §1 shared preamble.
+
+**Update 2026-07-03 (build_log 2026-07-03):** 10.1 and 10.2 are DONE. Remaining: 10.3 (BLOCKED), 10.4 (army-warfare session), 10.5 (Jedidiah decisions).
+
+### 10.1 Opus review pass — close the [NEEDS-OPUS-REVIEW] flags — ✅ DONE 2026-07-03
+
+**Model:** Opus (or Fable). **Status:** COMPLETE. Reviewed all five flags (Opus 4.8): flags 1-4 (scorer integration, §7.3 extraction-resistance, auto_pause gate, repression reset) CONFIRMED correct against the GDD + RAW — no change. Flag 5 (run_tests.sh nonzero-exit) was a real defect — FIXED (captures Godot's RID-leak exit as data so `set -e` no longer aborts run 2; parity with .ps1). §8 definition-of-done confirmed (suites 484/486/487 green; full suite 484/16, net-zero). Original flag list retained below for reference.
+
+Five flags were outstanding (retrieve with `acks-build-log --needs-review`):
+1. **Phase-2 scorer integration** — `RulerAI.process_campaign_month` placement inside `domain_handlers._handle_monthly_tick` (after economic resolution, with `domain_results` threading).
+2. **Phase-3 extraction-resistance replacement** — the §7.3 generalization of `ExtractionResistanceHeuristic.evaluate` (null-disposition = exact 0.50 anchor; federation/loyalty untouched).
+3. **auto_pause player-side gate** — monthly tick pauses only when a player-side domain exists (PCs + PC-employed henchmen).
+4. **Repression monthly reset** — `_save_domain` resets `is_repressed_this_month` + `repression_cp_per_family_this_month` (repression = monthly stance).
+5. **run_tests.sh nonzero-exit tolerance** — Godot's nonzero shutdown exit on this machine trips the bash runner (from the 2026-07-01 chip session; the .ps1 runner is unaffected).
+
+> Paste-ready prompt: *Run the Build Session Protocol. Retrieve all outstanding `[NEEDS-OPUS-REVIEW]` flags via acks-build-log --needs-review and review each against gdd-ruler-ai.md and the RAW citations in the code (acks-raw-lookup for any rule). For each: confirm (note the confirmation in a build_log entry and remove nothing), or identify the defect and fix it with tests, net-zero new failures vs 484/16. Also confirm the §8 global definition of done: mixed-campaign monthly tick — no NPC auto_pause, no LLM, active rulers act, backdrop stabilizes (suites 484 RulerAiMonthly / 486 RulerCrisisLod / 487 RulerNarrationState already assert this; verify coverage rather than rebuilding).*
+
+### 10.2 Seam A production caller — narrated ruler actions in the HUD event log — ✅ DONE 2026-07-03
+
+**Model:** Opus 4.8. **Status:** COMPLETE. **Surface decision (Jedidiah):** the narration is case (a) — a retroactive, cosmetic one-line summary of an action the engine already took (NOT a conversation layer; the LLM only polishes prose later) — so it lives in the **event log box in the session status bar**, needs no LLM, and needs no new screen. There was in fact no domain-monthly-report screen to wire into (`domain_monthly_report` presentation payload / `ruler_reports` have no UI consumer); the report-iteration path in the original plan below was moot.
+
+**Implementation:** wired via the `GameLog` autoload's existing signal pipeline (`EventBus.log_entry_added` → embedded `UnifiedLog` in `SessionStatusBar`), the same path every other subsystem uses. `game_log.gd::_on_ruler_action_taken` calls `RulerActionNarrator.narrate_action(...)` with `Timekeeping.get_calendar_day()` and `outcome.decree_kind` as variant_key, filing a `domain`/`ruler_action` entry. Anti-spam is free: `ruler_action_taken` only fires for ACTIVE-LOD rulers (6-mile window), so backdrop rulers never reach the log. `issue_decree.gd` outcome now carries `decree_kind` so same-day decree kinds don't alias the narration cache. Tests: `test_seam_a_game_log_caller` + `test_seam_a_decree_variants_not_aliased` (suite 487). Net-zero (484/16).
+
+<details><summary>Original plan (superseded — kept for reference)</summary>
+
+- Everything needed is in the monthly tick's return: `ruler_reports` (per-ruler `{ruler_id, domain_id, actions: [{action_id, params, utility, outcome}]}`) rides the `domain_monthly_report` presentation payload; `EventBus.ruler_action_taken(ruler_npc_id, domain_id, action_id, outcome)` also fires per action.
+- The UI (domain monthly report screen / a future ruler-observation view) calls `RulerActionNarrator.narrate_action(ruler_npc_id, domain_id, action_id, outcome, calendar_day, variant_key)` — **pass `params.decree_kind` as `variant_key` for `issue_decree`** (same-day decree variants must not alias the cache) and the tick's calendar_day so the `ruler_ai_state.narration_cache` is used.
+- Acceptance: viewing the same action twice renders identical text (cache hit, no re-generation); no LLM call under mock; `is_fallback` text renders cleanly.
+</details>
+
+### 10.3 Seam B triggers — BLOCKED on two prerequisites
+
+**Status:** the full pipeline (validate → one-turn pending → scorer nudge → `ruler_strategy_reassessed`) is built and tested; it is deliberately caller-less.
+
+Prerequisites, in order:
+1. **A real LLMManager provider** (separate Tier-1 build item, `docs/acks_arbiter_build_plan.md` — provider architecture, retry, token budgeting). Under the stub, `reassess()` is a designed no-op; wiring triggers now would be dead code.
+2. **Significance thresholds from Jedidiah/playtest** (gdd-ruler-ai.md §13 PROJECT CALL): which player actions trigger a reassess (attack the ruler's domain/army, take a vassal, collapse morale ≤ −3, seize a stronghold?) and the cooldown.
+
+When both exist, the wiring task is small: call `RulerStrategyReassessor.reassess(ruler_npc_id, trigger, situation)` from the significance sites. Do NOT relax validation — the bare `issue_decree` bias key stays rejected (conventions §93: it would ride the scorer's ungated fallback past the raise-tax direction gate).
+
+### 10.4 Army-warfare wiring (belongs to that subsystem's next session, not a ruler-AI session)
+
+Three documented placeholders, all with their planner-side halves already built:
+1. **Marcher extraction → resistance decision:** `army_marcher._apply_marching_extraction` still credits extraction instantly. Wire it to the §7.3 decision (`ExtractionResistanceHeuristic.evaluate` with opts `{disposition, defending_own_stronghold}`, or `DefensiveResistanceHandler`) and create the field battle on resist. The 50%-BR regression anchor (null disposition) must keep `test_extraction_resistance_heuristic` / `..._realm_ai` green.
+2. **call_to_arms routing:** `RulerAI._execute` records but does not dispatch. Route through `CallToArmsMuster.issue_call(obligation_id, lord_id, vassal_id, calendar_day, magnitude_pct, scheduler, override)` (obligation/vassal resolution is the missing piece).
+3. **§8.1 conflict hook:** pass the rulers party to a player-relevant conflict as `extra_ruler_ids` into `RulerLodManager.sync(...)` from the army-warfare conflict sites. The full-tier gate is enforced inside sync — never bypass it.
+
+### 10.5 Decision items for Jedidiah (not build tasks) — ✅ ALL RESOLVED 2026-07-06
+
+- ~~Two gdd-ruler-ai.md §5.2 corrections … `[NEEDS-JEDIDIAH-REVIEW]`~~ — **CONFIRMED 2026-07-06** (gdd-ruler-ai.md §13 + revision history). Repress precondition: Jedidiah's precise reading = mustered militia gp value is invisible to the repression gp/family calc; verified the code already honors it (bonus from the declared repression expense only, never garrison gp value; `RulerActionCatalog._has_non_militia_force` bars militia-only domains) → no code change. `raise_garrison` composition + wilderness-4gp target: confirmed.
+- ~~Seam-B significance thresholds + cooldown (§13, feeds 10.3)~~ — **RESOLVED 2026-07-06** ("good enough for now"): fire on {attack on ruler/stronghold, vassal seizure, or domain morale ≤ Turbulent (−2)}, cooldown 1 game-month per ruler; playtest-tunable, inert until a real LLM provider lands (10.3).

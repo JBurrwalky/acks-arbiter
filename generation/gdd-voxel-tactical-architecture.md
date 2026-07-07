@@ -1,11 +1,11 @@
 # GDD: Voxel Tactical Architecture (3D Cube-Cell Migration)
 
 **Authority:** PROJECT-DESIGNED — the voxel grid design, camera/occlusion strategy, and data schema are engineering decisions. ACKS Constraints sections below mark where the rules are sacred.
-**Status:** Draft v1.1 — resolves open questions from v1.0 review. Ready for implementation planning.
+**Status:** v1.2 — built and live (migration sessions 1-12b, 2026-04). 2026-07-06 companion edit from [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md): fog reveal corrected to the room-agnostic light+LOS model (Jedidiah ruling; matches the built `FogRevealEngine`), `stairs_spiral` feature added, §10.4's StairData dissolution realized by the contiguous generator.
 **Depends on ACKS rules:** `acore_combat_and_wounds.xml` (falling damage, charge rules), `acore_adventures_and_encounters.xml` (air travel, encounter distance), `acore-setting-construction-rules.xml` (pit trap depth per dungeon level), `daw_equipment_and_construction.xml` (structure heights, stories, wall dimensions), `le_wilderness_lair_rules.xml` (burrowing), `acore_proficiencies_rules_and_catalog.xml` (Climbing, Cat Burglary, Mountaineering).
 **Depends on project GDDs:** `gdd-combat-map-generation.md` (the current diamond grid / cell / elevation model this replaces), `gdd-dungeon-layout.md` (multi-level generation, stairs), `gdd-stronghold-construction.md` (cell-based walls, interior auto-generation), `gdd-dungeon-map-ui.md` (fog of war, party UI), `gdd-combat-ui.md`, `gdd-trap-generation.md`, `gdd-realtime-scheduler.md` (clock, pause, adjacency timing), `gdd-party-inventory.md` (carrier model, adjacency transfers).
 **Modifiable by Claude Code:** Yes — all tables, probabilities, thresholds, shader details, and UI layouts are engineering decisions. The core voxel cell model (§6), the falling damage formula (§11.5), the engagement/adjacency rule (§16.9), and ACKS-sourced heights (§2) are sacred.
-**Last updated:** 2026-04-18
+**Last updated:** 2026-07-06
 
 ---
 
@@ -361,6 +361,7 @@ func blocks_burrow() -> bool:
 | `"wall_wood"` | solid | none | wooden structure wall |
 | `"pillar"` | solid | none | single-cell columnar support |
 | `"stairs_up_N"` ... `"stairs_down_SW"` | air | stone | stair cell, connects to adjacent cell at level±1 per direction suffix (§9) |
+| `"stairs_spiral"` | air | stone | spiral-stair shaft cell (added 2026-07-06); permits ±1 level movement within the same column at normal cost, no climb throw (§10.5) |
 | `"ramp_N"` ... | air | dirt | gradual slope cell, connects adjacent cell at level±1 |
 | `"ladder"` | air | none | vertical ladder, allows climbing without a proficiency throw |
 | `"window"` | solid | none | wall cell allowing LOS & ranged attacks but not movement |
@@ -478,6 +479,12 @@ No cost multiplier for slopes. No "difficult terrain." If a surface is treachero
 
 The existing `stairs: Array[StairData]` in the multi-level dungeon JSON format dissolves. Stairs are now just cells with stair `feature` values, and the party moves to them and through them like any other adjacent cells. The `DungeonMapController.use_stairs(pos)` method becomes a general "move to adjacent cell at different level" operation, which is the same as any movement, so the special-case method goes away.
 
+> **Realized 2026-07-06.** The dungeon generator finally produces this natively per [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md): real carved stair runs replace `stair_target_*` teleport overlays, which are deprecated and removed. The logical grouping object is `StairwellData` (that GDD §9.3) — a generation/UI convenience, not a movement mechanism.
+
+### 10.5 Spiral Stairs (added 2026-07-06)
+
+A spiral stair is a 1-cell (5') or 2×2 (10') shaft whose cells carry `feature: "stairs_spiral"` with `floor_type: stone` at each walk level and floor openings through intervening slabs. Movement rule: a creature occupying a spiral cell may move ±1 level within the shaft column per step, at normal movement cost, with no climb throw — it is a staircase, not a ladder (contrast §11.4's half-rate ladders). All other rules (LOS, adjacency, engagement per §16.9) apply unchanged. Produced by the dungeon generator per `gdd-dungeon-contiguous-3d.md` §6.3; also available to stronghold interiors (§13).
+
 ---
 
 ## 11. Movement Modes
@@ -576,7 +583,7 @@ A dungeon is a single `VoxelMapData` containing cells indexed by `Vector3i(col, 
 
 ### 12.4 Fog of War Per Level
 
-Fog state stays per-cell (already the model). Room-scoped reveal from `gdd-dungeon-map-ui.md` §6.2 still applies: entering a room on level 2 reveals level-2 cells in that room. Level 1's fog is unaffected.
+Fog state stays per-cell (already the model). Reveal is **room-agnostic** (corrected 2026-07-06 per Jedidiah's ruling; matches the built `FogRevealEngine` and `gdd-dungeon-map-ui.md` §8.2): a cell becomes visible when it lies within some party member's light radius AND has unobstructed 3D LOS from that member — room boundaries play no part.
 
 Consequence: a party split across levels has DIFFERENT fog visibility on DIFFERENT levels. The camera needs to show this correctly (§16.5).
 
@@ -684,13 +691,13 @@ Performance: for a 100×100×20 voxel map, worst-case LOS between opposite corne
 
 Flyers see over walls naturally because their source cell is elevated. This is the reason the data model needs a true 3D LOS and not a 2D-with-elevation-peek approximation — a flyer at level 6 (30' up) looking at a ground target behind a 20' wall should have LOS, and the straightforward 3D raycast makes this automatic.
 
-### 15.2 Fog of War Reveal
+### 15.2 Fog of War Reveal (corrected 2026-07-06 — room-agnostic)
 
-A creature at (c, r, L) with a light radius R reveals cells within R cells (3D Chebyshev — simpler and already consistent with existing movement reach). Room-scoped reveal on entering a dungeon room still applies, scoped to the room's `room_id` across all cells belonging to that room regardless of their level.
+A cell is revealed to VISIBLE when it lies within a party member's effective light radius (light source + darkvision bonus, 3D Chebyshev) AND has unobstructed 3D LOS from that member (the §15 DDA raycast). **Room boundaries play no part in reveal** — per Jedidiah's ruling 2026-07-06, and per the built `FogRevealEngine.compute_visible_cells` (which replaced the earlier room-scoped reveal in Batch 3; see `gdd-dungeon-map-ui.md` §8.2, including VISIBLE→EXPLORED demotion when cells leave light+LOS coverage). The room-scoped reveal previously described here was stale prose, not built behavior.
 
 ### 15.3 Multi-Level Fog
 
-A multi-story room (cells across multiple levels sharing a `room_id`) can have different fog states on different levels. In practice: if the party enters level 0 of a great hall, level-0 cells in that room go from HIDDEN to VISIBLE. Level-1 cells (the empty airspace above) stay HIDDEN unless the party actively flies or is seen from above. This matters for balcony/gallery layouts — you can see into a room from a balcony without revealing the balcony itself.
+A multi-story room (cells across multiple levels sharing a `room_id`) can have different fog states on different levels — because reveal follows each party member's light and sightlines, not room membership. In practice: entering the floor of a great hall reveals what the torchlight reaches; a gallery overlooking the hall reveals only where light + LOS reach it, and an observer on the gallery likewise reveals only what they can see below. Balcony ambushes work in both directions on equal optical terms.
 
 ---
 
@@ -1062,7 +1069,7 @@ Integration test scenarios that exercise the full stack:
 2. **"Pit trap" test dungeon.** Character walks into a concealed pit, falls 10' (=2 cells), takes 1d6 damage. Floor transition from `pit_cover` → `none` persists after the fall.
 3. **"Flying combat" test combat map.** Outdoor map, party on ground, roc flying at altitude 6 (30'). Verify the roc is rendered at the correct Y, can dive-attack, and is correctly targetable when a ground archer shoots at it.
 4. **"Burrower tunnel" test.** Ankheg burrows from air under a wall into an air cell. Solid cells on the ankheg's path convert to `burrow_tunnel` air cells and are newly walkable by the party.
-5. **"Multi-level fog" test.** Party enters level 2 through a door; level-2 cells of the room reveal to VISIBLE but level-1 cells of the same room (directly below, different `room_id`) stay in their previous fog state.
+5. **"Multi-level fog" test.** Party enters a level-2 room through a door; cells within light radius + LOS on level 2 reveal to VISIBLE, while cells outside light/LOS coverage — including cells of the *same* room behind a pillar, and cells on level 1 below — stay in their previous fog state. (Updated 2026-07-06 for the room-agnostic reveal model, §15.2.)
 6. **"Lost in darkness prevention" test.** With only levels 0-2 explored, attempt PgDn to level -1 (unexplored). Confirm the focus level clamps. Enable Free Camera dev mode; confirm PgDn now works.
 7. **"Cross-floor inventory lockout" test.** John on floor 0 holds a healing potion. Gary on floor 4 needs it. Attempt transfer: fails with "carriers not adjacent." Move Gary to floor 0 adjacent to John. Attempt transfer: succeeds. Move Gary back to floor 4 holding the potion. Verify John's filtered inventory view no longer shows the potion; Gary's shows it.
 8. **"Combat adjacency across levels" test.** A flying wyvern 1 level (5') above a ground fighter: confirm melee engagement fires on both sides. Move the wyvern to 2 levels (10') above: confirm engagement drops (unless the fighter has a reach weapon, in which case engagement persists).
@@ -1072,4 +1079,5 @@ Integration test scenarios that exercise the full stack:
 ## 22. Revision History
 
 - **2026-04-18 (v1.0):** Initial draft. 2D-grid-with-elevation-score to true 3D voxel grid of 5' cube cells. Floor-as-cell-property, wall-as-stack-of-solid-cells, all five movement modes, vertical traps, multi-level camera with dithered transparency, focus-level UI inspired by XCOM / Jagged Alliance 3 / BG3.
+- **2026-07-06 (v1.2):** Companion edit from [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md). Fog reveal corrected to room-agnostic light+LOS (Jedidiah ruling; §12.4, §15.2, §15.3, §21.5 aligned with the built `FogRevealEngine` — the room-scoped prose was stale). Added `stairs_spiral` feature (§7.1) and §10.5 spiral-stair movement clause. §10.4 marked realized: the contiguous generator produces real stair geometry; `stair_target_*` teleport overlays deprecated and removed.
 - **2026-04-18 (v1.1):** Resolved seven open questions from v1.0 review. Set wilderness airspace cap at ±20 levels. Eliminated slope movement cost (ACKS has no difficult-terrain concept). Committed to sparse cell storage. Committed to diamond basis (zero pathfinding friction; `AStar3D` is basis-agnostic). Replaced "shared inventory pool" assumption with carriers-with-adjacency model (§5), adapted to real-time-with-pause timing. Added 3D Chebyshev adjacency as the single source of truth (§16.9) shared across melee engagement, inventory, and area effects. Added explicit pathfinding guidance (§17.2). Added inventory-related test scenarios (§21.7-8).

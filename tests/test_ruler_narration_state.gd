@@ -20,6 +20,8 @@ func run_all_tests() -> void:
 	test_narration_degrades_without_personality()
 	test_narration_covers_all_action_ids()
 	test_narration_cache_hits_and_prunes()
+	test_seam_a_game_log_caller()
+	test_seam_a_decree_variants_not_aliased()
 	test_reassess_is_noop_under_mock()
 	test_validation_rejects_malformed()
 	test_validation_normalizes_valid()
@@ -195,6 +197,69 @@ func test_narration_context_shape() -> void:
 		"trend defaults to stable (no live tracking yet)")
 	check(String(ctx.get("motivation_primary", "")) == "power",
 		"motivation from the personality record")
+
+
+## Seam A production caller (handoff §10.2): the GameLog autoload narrates
+## ruler_action_taken into a live "domain"/"ruler_action" log entry. The entry
+## text is the deterministic narrator output for the same inputs (proving both
+## that the caller threads calendar_day/variant through, and cache reuse — the
+## post-emit direct call hits the freshly-written narration_cache).
+func test_seam_a_game_log_caller() -> void:
+	var fx := _make_ruler_with_domain("gamelog",
+		{"personality": _rich_personality().to_json()})
+	var captured: Array = []
+	var cb := func(entry: Dictionary) -> void:
+		if String(entry.get("type", "")) == "ruler_action":
+			captured.append(entry)
+	EventBus.log_entry_added.connect(cb)
+	var outcome := {"summary": "Garrison raised to 2 gp/family"}
+	EventBus.ruler_action_taken.emit(fx.ruler_id, fx.domain_id, "raise_garrison", outcome)
+	# Re-emit the same action same day: the second entry must be byte-identical
+	# (narration-cache hit, no re-generation / no variance).
+	EventBus.ruler_action_taken.emit(fx.ruler_id, fx.domain_id, "raise_garrison", outcome)
+	EventBus.log_entry_added.disconnect(cb)
+	var expected: ResponseEnvelope = RulerActionNarrator.narrate_action(
+		fx.ruler_id, fx.domain_id, "raise_garrison", outcome,
+		Timekeeping.get_calendar_day(), "")
+	check(captured.size() == 2, "each ruler_action_taken files one log entry")
+	if captured.size() == 2:
+		check(not String(captured[0].get("summary", "")).strip_edges().is_empty(),
+			"narrated log text is non-empty")
+		check(String(captured[0].get("summary", "")) == expected.text,
+			"log text == deterministic narrator output")
+		check(String(captured[0].get("summary", "")) == String(captured[1].get("summary", "")),
+			"re-emit yields identical text (cache reuse, no variance)")
+		check(String(captured[0].get("actor_id", "")) == fx.ruler_id,
+			"log entry actor is the ruler")
+		check(String(captured[0].get("category", "")) == "domain",
+			"ruler actions file under the domain category")
+
+
+## Two decrees of different kinds issued the same day both surface as
+## action_id "issue_decree"; without the decree-kind variant_key they would
+## alias one narration-cache slot (the second would render the first's text).
+## The wiring passes outcome.decree_kind as variant_key, keeping them distinct.
+func test_seam_a_decree_variants_not_aliased() -> void:
+	var fx := _make_ruler_with_domain("decree",
+		{"personality": _rich_personality().to_json()})
+	var captured: Array = []
+	var cb := func(entry: Dictionary) -> void:
+		if String(entry.get("type", "")) == "ruler_action":
+			captured.append(entry)
+	EventBus.log_entry_added.connect(cb)
+	EventBus.ruler_action_taken.emit(fx.ruler_id, fx.domain_id, "issue_decree",
+		{"summary": "Tax rate set to 2 gp/family", "decree_kind": "tax"})
+	EventBus.ruler_action_taken.emit(fx.ruler_id, fx.domain_id, "issue_decree",
+		{"summary": "Liturgy rate set to 1 gp/family", "decree_kind": "liturgy"})
+	EventBus.log_entry_added.disconnect(cb)
+	check(captured.size() == 2, "both decrees file a log entry")
+	if captured.size() == 2:
+		check(String(captured[0].get("summary", "")) != String(captured[1].get("summary", "")),
+			"tax and liturgy narrations are distinct (no same-day cache alias)")
+		check(String(captured[0].get("summary", "")).contains("Tax rate set to 2 gp/family"),
+			"first entry carries the tax outcome summary")
+		check(String(captured[1].get("summary", "")).contains("Liturgy rate set to 1 gp/family"),
+			"second entry carries the liturgy outcome summary")
 
 
 func test_narration_degrades_without_personality() -> void:

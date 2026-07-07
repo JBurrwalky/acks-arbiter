@@ -38,7 +38,7 @@ Every session: follow the CLAUDE.md Build Session Protocol (build-log navigator 
 | 8 | `generation/gdd-campaign-creation-ui.md` | v0.1 | The player front door (Stage 10) |
 | 9 | `generation/gdd-dungeon-layout.md`, `gdd-poi-generation.md`, `gdd-quest-rumor-system.md` | Mar–May drafts | Layer-6 consumers — **do a consistency skim against §7.2 before Stage 7** (they predate the rework) |
 
-Superseded — do not implement from: `gdd-name-generation.md` (→ naming-conventions), `gdd-cultural-religious-generation.md` §3–§4 (→ religion simplification), `gdd-religion-system.md` **§7 only** (banner; rest of that GDD is runtime material, not this build), `docs/acks-arbiter-build-plan.md` phase labels (deprecated).
+Superseded — do not implement from: `gdd-name-generation.md` (→ naming-conventions), `gdd-cultural-religious-generation.md` §3–§4 (→ religion simplification), `gdd-religion-system.md` **§7 only** (banner; rest of that GDD is runtime material, not this build), `docs/acks_arbiter_build_plan.md` phase labels (deprecated).
 
 ---
 

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  acore_henchmen_monthly_fee_table.xml
+  SOURCE: ACKS 1e Core rulebook, "Henchmen Monthly Fee" table (hirelings/henchmen rules).
+  PROVENANCE: transcribed from the printed table supplied by Jedidiah on 2026-07-06;
+  authored into rules/ at Jedidiah's explicit direction (advisor session, 2026-07-06).
+  This file supplies the table that acore_equipment.xml (henchmen > pay > monthly_fee:
+  "Based on level.") summarizes without listing.
+  ENGINE NOTE: these values already exist at data/equipment/provisions_services.json
+  (henchman_monthly_gp); L9-14 are mirrored in NpcSyndicateMonthlyResolver.
+-->
+<henchmen_monthly_fee_table>
+  <context>
+    <rule>Henchmen are paid a monthly fee based on class level, in addition to a treasure share of at least 15% of the employer's income (see acore_equipment.xml, henchmen).</rule>
+  </context>
+  <table id="henchmen_monthly_fee">
+    <columns>
+      <column>class_level</column>
+      <column>monthly_wage_gp</column>
+    </columns>
+    <row class_level="0" monthly_wage_gp="12"/>
+    <row class_level="1" monthly_wage_gp="25"/>
+    <row class_level="2" monthly_wage_gp="50"/>
+    <row class_level="3" monthly_wage_gp="100"/>
+    <row class_level="4" monthly_wage_gp="200"/>
+    <row class_level="5" monthly_wage_gp="400"/>
+    <row class_level="6" monthly_wage_gp="800"/>
+    <row class_level="7" monthly_wage_gp="1600"/>
+    <row class_level="8" monthly_wage_gp="3000"/>
+    <row class_level="9" monthly_wage_gp="7250"/>
+    <row class_level="10" monthly_wage_gp="12000"/>
+    <row class_level="11" monthly_wage_gp="32000"/>
+    <row class_level="12" monthly_wage_gp="50000"/>
+    <row class_level="13" monthly_wage_gp="135000"/>
+    <row class_level="14" monthly_wage_gp="350000"/>
+  </table>
+</henchmen_monthly_fee_table>

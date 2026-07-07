@@ -12,6 +12,9 @@ const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const EncounterDecisionScene := preload("res://scenes/ui/dialogs/encounter_decision_prompt.gd")
 const AbandonVehicleScene := preload("res://scenes/ui/dialogs/abandon_vehicle_prompt.gd")
 const HexInfoModalScene := preload("res://scenes/ui/dev/hex_info_modal.gd")
+const ArmyMenuBuilder := preload("res://scenes/ui/troops/army_marching_context_menu.gd")
+const ArmyDetailPanelScene := preload("res://scenes/ui/notebook/troops/army_detail_panel.gd")
+const ArmySupplyGaugeScene := preload("res://scenes/ui/components/army_supply_gauge.gd")
 
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
@@ -24,6 +27,14 @@ var _pending_encounter_party: String = ""
 # here until the player decides.
 var _abandon_prompt = null
 var _pending_travel: Dictionary = {}
+
+# Army selection on the wilderness map (gdd-army-warfare.md §7.3). Left-click a
+# player army token to select it (highlight + path overlay + supply gauge); then
+# right-click a destination hex for its order menu. NPC armies open a read-only
+# inspect panel and are never orderable.
+var _selected_army_id: String = ""
+var _army_gauge = null
+var _army_inspect = null
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -47,6 +58,11 @@ func enter(runner, context: Dictionary) -> void:
 	_connect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_connect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_connect(renderer, "settlement_entry_requested", _on_settlement_entry)
+	# Army map layer (gdd-army-warfare.md §7.3): select on token click, deselect on
+	# empty-hex click.
+	if renderer.has_signal("army_token_clicked"):
+		_connect(renderer, "army_token_clicked", _on_army_token_clicked)
+	_connect(renderer, "hex_clicked", _on_hex_clicked)
 
 	# Connect status bar action buttons
 	if not EventBus.camp_requested.is_connected(_on_camp_requested):
@@ -123,6 +139,9 @@ func exit(runner) -> void:
 	_disconnect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_disconnect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_disconnect(renderer, "settlement_entry_requested", _on_settlement_entry)
+	if renderer.has_signal("army_token_clicked"):
+		_disconnect(renderer, "army_token_clicked", _on_army_token_clicked)
+	_disconnect(renderer, "hex_clicked", _on_hex_clicked)
 
 	# Disconnect status bar action buttons
 	if EventBus.camp_requested.is_connected(_on_camp_requested):
@@ -141,6 +160,7 @@ func exit(runner) -> void:
 	_close_context_menu()
 	_close_encounter_prompt()
 	_close_abandon_prompt()
+	_clear_army_selection()
 
 	# Handlers stay globally registered (SessionRunner owns the lifetime) —
 	# background parties' travel/activity chains keep resolving after the
@@ -206,6 +226,12 @@ func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> voi
 	if _runner == null:
 		return
 
+	# Army orders take precedence when a player army is selected — the right-clicked
+	# hex is the march destination / current-hex action target (gdd §7.3).
+	if not _selected_army_id.is_empty() and ArmyMapPresence.is_player_owned_id(_selected_army_id):
+		_open_army_context_menu(_selected_army_id, coord, screen_pos)
+		return
+
 	var party_id: String = _resolve_active_party_id()
 	if party_id.is_empty():
 		return
@@ -242,6 +268,11 @@ func _on_context_action(action_data: Dictionary) -> void:
 
 	var action_type: String = str(action_data.get("action_type", ""))
 	if action_type == "" or action_type == "cancel":
+		return
+
+	# Army orders (gdd §7.3) dispatch through ArmyMarchingContextMenu.
+	if action_type == "army_order":
+		_dispatch_army_order(action_data)
 		return
 
 	# Get Hex Info (dev tool, Jedidiah 2026-06-23): a self-contained UI action — open a modal
@@ -435,6 +466,190 @@ func _close_context_menu() -> void:
 	if is_instance_valid(parent):
 		parent.queue_free()
 	_context_menu = null
+
+
+# ---------------------------------------------------------------------------
+# Army map layer (gdd-army-warfare.md §7.3)
+# ---------------------------------------------------------------------------
+
+## Left-click on an army token. Player-orderable armies are selected (highlight +
+## path overlay + supply gauge); NPC armies open a read-only inspect panel.
+func _on_army_token_clicked(army_id: String, _coord: Vector2i) -> void:
+	if _runner == null or army_id.is_empty():
+		return
+	if ArmyMapPresence.is_player_owned_id(army_id):
+		_select_army(army_id)
+	else:
+		_clear_army_selection()
+		_open_army_inspect(army_id)
+
+
+## Left-click on empty terrain clears any army selection.
+func _on_hex_clicked(_coord: Vector2i) -> void:
+	_clear_army_selection()
+
+
+func _select_army(army_id: String) -> void:
+	# Tear down any open NPC inspect panel when switching to an orderable army.
+	_close_army_inspect()
+	_selected_army_id = army_id
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if renderer != null and renderer.has_method("set_selected_army"):
+		renderer.set_selected_army(army_id)
+	_refresh_army_path(army_id)
+	_show_army_gauge(army_id)
+
+
+func _clear_army_selection() -> void:
+	_selected_army_id = ""
+	if _runner != null:
+		var renderer: Node = _runner.get_hex_map_renderer()
+		if renderer != null:
+			if renderer.has_method("set_selected_army"):
+				renderer.set_selected_army("")
+			if renderer.has_method("clear_army_path_overlay"):
+				renderer.clear_army_path_overlay()
+	_hide_army_gauge()
+	_close_army_inspect()
+
+
+## Draw the army's single pending travel leg as the dashed path overlay (armies
+## pre-schedule one leg at a time — the overlay is a single segment).
+func _refresh_army_path(army_id: String) -> void:
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if renderer == null or not renderer.has_method("set_army_path_overlay"):
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	if scheduler != null:
+		for ev in scheduler.get_events_for_owner(army_id):
+			if ev.event_type == ArmyMarcher.EVENT_ARMY_TRAVEL_LEG:
+				var from_hex := Vector2i(
+					int(ev.data.get("from_hex_q", 0)), int(ev.data.get("from_hex_r", 0)))
+				var to_hex := Vector2i(
+					int(ev.data.get("to_hex_q", 0)), int(ev.data.get("to_hex_r", 0)))
+				renderer.set_army_path_overlay(from_hex, to_hex)
+				return
+	if renderer.has_method("clear_army_path_overlay"):
+		renderer.clear_army_path_overlay()
+
+
+## Right-click order menu for the selected player army, targeting [param coord].
+func _open_army_context_menu(army_id: String, coord: Vector2i, screen_pos: Vector2) -> void:
+	var options: Array = ArmyMenuBuilder.build_menu_options(army_id, coord.x, coord.y)
+	if options.is_empty():
+		return
+	_close_context_menu()
+	_context_menu = ContextMenuScene.new()
+	var layer := CanvasLayer.new()
+	layer.layer = 24
+	layer.add_child(_context_menu)
+	_runner.get_hex_map_renderer().add_child(layer)
+	_context_menu.option_selected.connect(_on_context_action)
+	_context_menu.cancelled.connect(_close_context_menu)
+	_context_menu.show_at(screen_pos, options, _runner.get_scheduler_loop())
+
+
+## Dispatch an army context-menu order via ArmyMarchingContextMenu.
+func _dispatch_army_order(action_data: Dictionary) -> void:
+	if _runner == null:
+		return
+	var army_id := str(action_data.get("army_id", ""))
+	var army_action := str(action_data.get("army_action", ""))
+	if army_id.is_empty() or army_action.is_empty():
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	# Phase B: encamped requisition/loot orders launch via the session's ExtractionScheduler.
+	var extraction_scheduler = _runner.get_extraction_scheduler() \
+		if _runner.has_method("get_extraction_scheduler") else null
+	var result: Dictionary = ArmyMenuBuilder.execute_action(
+		army_action, army_id,
+		int(action_data.get("hex_q", 0)), int(action_data.get("hex_r", 0)),
+		Timekeeping.get_total_rounds(), scheduler, extraction_scheduler)
+	if not bool(result.get("success", false)):
+		var err := str(result.get("error", ""))
+		if err != "" and err != "phase_b_pending" and err != "unknown_action":
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "armies",
+				"title": "Order Failed",
+				"body": "Could not issue that order (%s)." % err,
+				"duration": 3.0,
+			})
+		return
+	# Reflect the new state at once + resume so the leg (or disband) resolves.
+	var renderer: Node = _runner.get_hex_map_renderer()
+	if army_action == ArmyMenuBuilder.ACTION_DISBAND:
+		_clear_army_selection()
+	else:
+		if renderer != null and renderer.has_method("refresh_armies"):
+			renderer.refresh_armies()
+		_refresh_army_path(army_id)
+		_show_army_gauge(army_id)
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused() and _runner.get_clock_lock_reason().is_empty():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+func _show_army_gauge(army_id: String) -> void:
+	_hide_army_gauge()
+	_army_gauge = ArmySupplyGaugeScene.new()
+	var layer := CanvasLayer.new()
+	layer.layer = 12   # above HexHUD (10), below the context menu (24)
+	layer.add_child(_army_gauge)
+	_runner.get_hex_map_renderer().add_child(layer)
+	if _army_gauge.has_method("set_army"):
+		_army_gauge.set_army(army_id)
+
+
+func _hide_army_gauge() -> void:
+	if _army_gauge == null:
+		return
+	var parent: Node = _army_gauge.get_parent()
+	if is_instance_valid(parent):
+		parent.queue_free()
+	_army_gauge = null
+
+
+## Open the army detail panel in read-only (inspect) mode for an NPC army, centered
+## over the map. Parented to the renderer; queue_free()s on close.
+func _open_army_inspect(army_id: String) -> void:
+	_close_army_inspect()
+	if _runner == null:
+		return
+	var army: Dictionary = ArmyRepository.get_army(army_id)
+	var layer := CanvasLayer.new()
+	layer.layer = 26
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	UiSurfaceStyles.apply_textured_panel(panel)
+	panel.custom_minimum_size = Vector2(360, 0)
+	center.add_child(panel)
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+	var header := HBoxContainer.new()
+	var title := Label.new()
+	title.text = String(army.get("name", "Army"))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var close := Button.new()
+	close.text = "✕"
+	close.pressed.connect(_close_army_inspect)
+	header.add_child(close)
+	vbox.add_child(header)
+	var detail := ArmyDetailPanelScene.new()
+	vbox.add_child(detail)
+	_runner.get_hex_map_renderer().add_child(layer)   # tree entry -> panels' _ready runs
+	detail.display(army_id, true)
+	_army_inspect = layer
+
+
+func _close_army_inspect() -> void:
+	if _army_inspect == null:
+		return
+	if is_instance_valid(_army_inspect):
+		_army_inspect.queue_free()
+	_army_inspect = null
 
 
 ## Dev tool (Jedidiah 2026-06-23): open the Get Hex Info modal for [param hex] — a scrollable

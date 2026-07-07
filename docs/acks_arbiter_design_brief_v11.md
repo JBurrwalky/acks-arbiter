@@ -274,7 +274,7 @@ The engine exposes typed actions (attack, move, cast spell, etc.) that grow as s
 | **Tier 0** | Token-substituted templates | Routine narration (movement, attack results, supply updates) |
 | **Tier 1** | Cached LLM generation | First-visit descriptions, loot descriptions, new creature types. Generated once, stored, re-served on return with Tier 0 contextual modifications. |
 | **Tier 1.5** | Batch pre-generation | Pre-generate Tier 1 content for likely-next locations during idle time |
-| **Tier 2** | Live LLM call | NPC conversations, uncertain encounters, complex narrative moments, boss tactical AI, information gathering |
+| **Tier 2** | Live LLM call | NPC conversations, uncertain encounters, complex narrative moments, information gathering |
 
 ### 9.3 LLM Service
 
@@ -537,7 +537,6 @@ Engine fundamentals that must work before anything else:
 - Tier 1 cached LLM narration
 - Tier 2 live LLM NPC interaction
 - Campaign memory / narrative continuity
-- Boss encounter tactical AI
 - Batch pre-generation (Tier 1.5)
 - Procedural battle map generation
 - NPC domain simulation (§11.3)

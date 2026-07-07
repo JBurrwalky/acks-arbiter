@@ -90,10 +90,14 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	else:
 		summary = "Garrison raised but still short of its target"
 
+	# category MUST be one of the ledger CHECK enum (revenue/expense/tribute_in/
+	# tribute_out/investment/other) — 'other' is the record-only bucket (cp_amount 0;
+	# the underlying troop-hire cp lines are logged by their own handlers). subcategory
+	# carries the tag.
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": _calendar_day(),
-		"category": "garrison",
+		"category": "other",
 		"subcategory": "raise_garrison_composite",
 		"cp_amount": 0,
 		"description": summary,
@@ -122,10 +126,11 @@ static func _levy_tribal_into_garrison(delegate_state: Dictionary, domain_id: St
 		if not unit_id.is_empty():
 			TroopUnitRepository.update_unit(unit_id, {"assignment_kind": "garrison"})
 	if not unit_ids.is_empty():
+		# 'other' = record-only bucket (cp_amount 0); see the CHECK-enum note above.
 		CampaignRepository.add_ledger_entry({
 			"domain_id": domain_id,
 			"calendar_day": _calendar_day(),
-			"category": "garrison",
+			"category": "other",
 			"subcategory": "tribal_warriors_garrisoned",
 			"cp_amount": 0,
 			"description": "Levied tribal warriors assigned to the garrison",

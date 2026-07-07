@@ -85,7 +85,7 @@ C:/Users/jttau/acks-arbiter/
 │   ├── gdd-settlement-exploration-ui.md  # Menu-driven settlement PoI navigation
 │   ├── gdd-combat-ui.md                  # Turn-based combat UI (shares grid with dungeon UI)
 │   ├── gdd-proficiency-specializations.md
-│   └── combat_behavior_tags.md
+│   └── gdd_combat_behavior_tags.md
 ├── engine/                       # Godot project (you build this)
 ├── data/                         # Runtime data files
 └── test/                         # Test content and scenarios
@@ -113,7 +113,7 @@ Every session that modifies application code:
 3. Read `docs/acks_arbiter_design_brief_v11.md`.
 4. Read `docs/document_map.md` and `docs/rule_system_map.md` (when they exist).
 5. Consult `acks-conventions` before writing code: run `--for-task "<today's work>"` to surface applicable conventions, including ones you might not know to look for. Use `--section N` to drill into specific sections. Do NOT read the full `docs/coding_conventions.md` directly — the navigator surfaces just the relevant sections. After creating or modifying conventions, update the file directly per the conventions-maintenance section below.
-6. Read `docs/proficiency_system_map.md`, `docs/spell_system_map.md` as needed to understand how spells and proficiencies relate to game systems during planning. Read `docs/acks-arbiter-build-plan.md` for context surrounding the current build phase task.
+6. Read `docs/proficiency_system_map.md`, `docs/spell_system_map.md` as needed to understand how spells and proficiencies relate to game systems during planning. Read `docs/acks_arbiter_build_plan.md` for context surrounding the current build phase task.
 7. For ACKS rule references, use `acks-raw-lookup` — its bundled `scripts/lookup.py` retrieves the right rule with citation and respects source precedence. Never read the entire rules corpus. For GDDs, load the specific files relevant to the current task.
    - For exploration, session runner, or UI work: also load `gdd-realtime-scheduler.md`, `gdd-dungeon-map-ui.md`, and/or `gdd-settlement-exploration-ui.md` as relevant.
 8. If persistence is involved, inspect the current database schema.

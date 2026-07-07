@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  rulings_living_expenses_and_social_status.xml
+  AUTHORITY: Judge ruling by Jedidiah (project owner), 2026-07-06. NOT a published-book
+  extract. This interprets "living expenses" in the monthly expense-payment phase
+  (ax_campaign_play.xml:96-123, "Pay PC and NPC living expenses"), for which the
+  published corpus gives no per-level amounts. Authored into rules/ at Jedidiah's
+  explicit direction (advisor session, 2026-07-06). If the published corpus is later
+  found to cover this topic, the published text governs and this file must be revisited.
+  Ruling text below preserves Jedidiah's wording as closely as possible.
+  LOOKUP NOTE: scripts/lookup.py has no precedence tier for the rulings_ prefix (it will
+  sort below ACore); flagged for a future build session to add a top-rank "Rulings" tier.
+-->
+<rulings_living_expenses_and_social_status>
+
+  <ruling id="living_expenses_meaning" date="2026-07-06">
+    <rule>"Living expenses" in the monthly cycle is, in the general case, a synonym for the character's level-equivalent monthly wage per the Henchmen Monthly Fee table (acore_henchmen_monthly_fee_table.xml).</rule>
+    <rule>NPCs are assumed to pay their level-equivalent wage as living expenses by default.</rule>
+  </ruling>
+
+  <ruling id="optional_player_living_fee" date="2026-07-06">
+    <rule>Optional player rule: rather than paying for food, lodging, clothing, and similar upkeep per item, a character may pay a monthly living-expenses fee.</rule>
+    <rule>The fee paid feeds the character's social status (see social_status_from_expenditure).</rule>
+  </ruling>
+
+  <ruling id="social_status_from_expenditure" date="2026-07-06">
+    <rule>A character who is not paying their level-equivalent henchman wage in living expenses per month will be treated as being of lower level/social rank than they are.</rule>
+    <rule>A character who pays more will be regarded as being above their true level/rank.</rule>
+    <rule>Social status can be roughly estimated by comparing the expected ruler levels to henchman levels and wages: a person spending like a duke will be treated like a duke, even if he is not a duke.</rule>
+  </ruling>
+
+</rulings_living_expenses_and_social_status>

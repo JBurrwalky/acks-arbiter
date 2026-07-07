@@ -22,8 +22,12 @@ extends RefCounted
 ##
 ## Dispatch is the §5 contract: `state.character_id = ruler_npc_id`, params as
 ## params_json; handlers resolve owner_character_id -> domain themselves.
-## `hold` executes as a no-op by design (§5.2 — no handler); `withstand_siege`
-## is recorded but not dispatched until the Phase-3 siege path.
+## `hold` executes as a no-op by design (§5.2 — no handler). `call_to_arms` and
+## `withstand_siege` dispatch for real as of Phase D (army-warfare-seams §6):
+## call_to_arms routes each vassal through FavorsDutiesResolver.trigger_call_to_arms
+## into CallToArmsMuster; withstand_siege sets the defender posture on the active siege
+## and holds the ruler's armies at the hex. Both need the EventScheduler (threaded from
+## the caller as `scheduler`) for tranche / march events.
 ##
 ## LOD: the ACTIVE SET is a caller-supplied Array of ruler character_ids.
 ## Phase 3's RulerLodManager computes the real §8.1 set (6-mile window +
@@ -32,7 +36,14 @@ extends RefCounted
 ## absent from the set — their domains get RulerBackdropStabilizer instead.
 
 ## Actions the planner records but must not dispatch (no handler yet / ever).
-const _NO_DISPATCH := ["hold", "withstand_siege"]
+## `hold` is a deliberate §5.2 no-op; every other action now dispatches for real.
+const _NO_DISPATCH := ["hold"]
+
+## Phase D default call-to-arms magnitude: RAW minimum half the realm garrison
+## (daw_armies_recruitment.xml:658-660 / acore_axioms §353-356). Crisis-posture scaling of the
+## magnitude (aggressive rulers calling the full garrison = a second duty) is a documented future
+## refinement; v1 defensive muster stays at the RAW-safe 50%.
+const CALL_TO_ARMS_DEFENSIVE_MAGNITUDE_PCT := 50
 
 
 ## Decide + execute for every active-set NPC ruler. [param active_set] is an
@@ -41,7 +52,7 @@ const _NO_DISPATCH := ["hold", "withstand_siege"]
 ## context comes from THIS month's resolution (§3.2). Returns an Array of
 ## per-ruler-per-domain reports.
 static func process_campaign_month(campaign_id: String, calendar_day: int,
-		active_set: Array, domain_results: Array = []) -> Array:
+		active_set: Array, domain_results: Array = [], scheduler = null) -> Array:
 	var reports: Array = []
 	if campaign_id.is_empty() or active_set.is_empty():
 		return reports
@@ -76,7 +87,7 @@ static func process_campaign_month(campaign_id: String, calendar_day: int,
 			continue
 		var report: Dictionary = _take_turn(
 			ruler, domain, disposition, calendar_day,
-			results_by_domain.get(String(domain.get("id", "")), {}))
+			results_by_domain.get(String(domain.get("id", "")), {}), scheduler)
 		reports.append(report)
 		_record_turn_state(campaign_id, ruler_id, calendar_day, report)
 	return reports
@@ -128,7 +139,7 @@ static func _record_turn_state(campaign_id: String, ruler_id: String,
 
 static func _take_turn(ruler: Dictionary, domain: Dictionary,
 		disposition: StrategicDisposition, calendar_day: int,
-		month_result: Dictionary) -> Dictionary:
+		month_result: Dictionary, scheduler = null) -> Dictionary:
 	var ruler_id: String = String(ruler.get("id", ""))
 	var domain_id: String = String(domain.get("id", ""))
 	var report: Dictionary = {
@@ -195,7 +206,7 @@ static func _take_turn(ruler: Dictionary, domain: Dictionary,
 			enriched["defending_own_stronghold"] = bool(threats.get("besieged", false))
 			cand = cand.duplicate()
 			cand["params"] = enriched
-		var outcome: Dictionary = _execute(ruler_id, cand, domain_id, calendar_day)
+		var outcome: Dictionary = _execute(ruler_id, cand, domain_id, calendar_day, scheduler)
 		(report["actions"] as Array).append({
 			"action_id": action_id,
 			"params": cand.get("params", {}),
@@ -215,14 +226,12 @@ static func _take_turn(ruler: Dictionary, domain: Dictionary,
 ## gets it as an explicit param, and the planner (as the LAUNCHER) owns the
 ## oversee_investment treasury debit per the handler's launch-debit contract.
 static func _execute(ruler_id: String, candidate: Dictionary, domain_id: String,
-		calendar_day: int) -> Dictionary:
+		calendar_day: int, scheduler = null) -> Dictionary:
 	var action_id: String = String(candidate.get("action_id", ""))
 	if _NO_DISPATCH.has(action_id):
+		# Only `hold` remains a deliberate §5.2 no-op.
 		return {
-			"summary": "%s: recorded without dispatch (%s)" % [
-				action_id,
-				"deliberate no-op" if action_id == "hold" else "Phase-3 siege path",
-			],
+			"summary": "%s: recorded without dispatch (deliberate no-op)" % action_id,
 			"dispatched": false,
 		}
 	var state: Dictionary = {"character_id": ruler_id}
@@ -274,10 +283,119 @@ static func _execute(ruler_id: String, candidate: Dictionary, domain_id: String,
 		"defensive_resistance":
 			return DefensiveResistanceHandler.on_complete(state, null)
 		"call_to_arms":
-			# The §5.3 composite muster is Phase-3 crisis work (CallToArmsMuster
-			# needs obligation/vassal routing); recorded until then.
-			return {"summary": "call_to_arms: routing lands with Phase 3", "dispatched": false}
+			return _dispatch_call_to_arms(ruler_id, domain_id, calendar_day, scheduler)
+		"withstand_siege":
+			return _dispatch_withstand_siege(ruler_id, domain_id, calendar_day, scheduler)
 	return {"summary": "%s: no dispatch mapping" % action_id, "dispatched": false}
+
+
+# ---------------------------------------------------------------------------
+# Phase D dispatch handlers (army-warfare-seams §6)
+# ---------------------------------------------------------------------------
+
+## call_to_arms (§5.3): route each of the ruler's vassals through the favors-and-duties layer
+## into CallToArmsMuster. The loyalty machinery (cumulative safe-total checks + vassal_revolted)
+## lives inside FavorsDutiesResolver.trigger_call_to_arms — the planner only triggers the duties.
+## The mustered troops merge into one lord army (an existing ruler army when present, else the
+## first call's auto-created army). scheduler=null (tests) still persists the call_to_arms_state
+## rows; only the tranche EVENTS require a real scheduler.
+static func _dispatch_call_to_arms(ruler_id: String, domain_id: String,
+		calendar_day: int, scheduler) -> Dictionary:
+	var vassals: Array = VassalRepository.list_active_for_liege(ruler_id)
+	if vassals.is_empty():
+		return {"summary": "call_to_arms: no vassals to call", "dispatched": false,
+			"blocked_reason": "no_vassals"}
+	var merge_army: String = _find_ruler_merge_army(ruler_id)
+	var called: int = 0
+	var revolted: int = 0
+	var loyalty_rolls: int = 0
+	for assn in vassals:
+		var res: Dictionary = FavorsDutiesResolver.trigger_call_to_arms(
+			assn, calendar_day, CALL_TO_ARMS_DEFENSIVE_MAGNITUDE_PCT, scheduler, null, merge_army)
+		if not String(res.get("loyalty_outcome", "")).is_empty():
+			loyalty_rolls += 1
+		if bool(res.get("revolted", false)):
+			revolted += 1
+		if bool(res.get("success", false)):
+			called += 1
+			# Merge every subsequent vassal into the first-mustered lord army.
+			if merge_army.is_empty():
+				merge_army = String(res.get("lord_army_id", ""))
+	# A call that fired loyalty rolls / provoked revolts is still a real dispatch — the ruler
+	# issued the call and the machinery ran; the summary carries the outcome.
+	var summary: String = "Called %d vassal(s) to muster in defence" % called
+	if revolted > 0:
+		summary += " (%d refused)" % revolted
+	return {
+		"summary": summary, "dispatched": true,
+		"vassals_called": called, "vassals_revolted": revolted,
+		"loyalty_rolls": loyalty_rolls, "lord_army_id": merge_army,
+	}
+
+
+## withstand_siege (§5.3, minimal per army-warfare-seams §6): commit the garrison to hold the
+## besieged stronghold from inside (defender_posture='hold_fast' — the siege resolver's voluntary
+## sally branch reads it) and cancel any marching orders for the ruler's own armies at the siege
+## hex so they hold. No new siege mechanics — the existing resolver runs unchanged.
+static func _dispatch_withstand_siege(ruler_id: String, domain_id: String,
+		calendar_day: int, scheduler) -> Dictionary:
+	var sieges: Array = SiegeRepository.list_active_sieges_for_domain(domain_id)
+	if sieges.is_empty():
+		return {"summary": "withstand_siege: no active siege on the domain", "dispatched": false,
+			"blocked_reason": "no_active_siege"}
+	# A domain may hold several strongholds and be under several sieges at once — hold ALL of
+	# them (don't silently pick one), setting the posture and cancelling marches per siege.
+	var siege_ids: Array = []
+	var armies_held: int = 0
+	for s in sieges:
+		var siege: Dictionary = s
+		var siege_id: String = String(siege.get("id", ""))
+		SiegeRepository.update(siege_id, {"defender_posture": "hold_fast"})
+		siege_ids.append(siege_id)
+		armies_held += _hold_ruler_armies_at_siege(ruler_id, siege, scheduler)
+	var noun: String = "stronghold" if siege_ids.size() == 1 else "%d strongholds" % siege_ids.size()
+	return {
+		"summary": "Held the garrison to defend the %s (no sortie)" % noun,
+		"dispatched": true, "siege_id": String(siege_ids[0]), "siege_ids": siege_ids,
+		"armies_held": armies_held,
+	}
+
+
+## The ruler's existing non-disbanded army the call-to-arms troops should merge into (a Phase-C
+## defender levy or a standing garrison army), preferring one already at the domain. "" when the
+## ruler fields no army yet (the first issue_call then auto-creates the lord army).
+static func _find_ruler_merge_army(ruler_id: String) -> String:
+	var armies: Array = ArmyRepository.list_armies_for_owner(ruler_id)
+	for a in armies:
+		# Only staged armies — NEVER an actively-battling one (the field-battle resolver
+		# assumes a fixed roster; mid-combat reinforcement would corrupt battle state, and
+		# CallToArmsMuster's own garrison lookup excludes 'battling' for the same reason).
+		if String((a as Dictionary).get("state", "")) in ["encamped", "assembling"]:
+			return String((a as Dictionary).get("id", ""))
+	return ""
+
+
+## Cancel marching orders for the ruler's own armies standing at the siege hex so they hold to
+## defend rather than march off. Returns the count of armies whose march was cancelled.
+static func _hold_ruler_armies_at_siege(ruler_id: String, siege: Dictionary, scheduler) -> int:
+	if scheduler == null:
+		return 0
+	var map_v: Variant = siege.get("map_id")
+	if map_v == null:
+		return 0
+	var map_id: String = String(map_v)
+	var hex_q: int = int(siege.get("hex_q", 0))
+	var hex_r: int = int(siege.get("hex_r", 0))
+	var marcher := ArmyMarcher.new()
+	var held: int = 0
+	for a in ArmyRepository.list_armies_at_hex(map_id, hex_q, hex_r):
+		var army: Dictionary = a
+		if String(army.get("political_owner_id", "")) != ruler_id \
+				and String(army.get("command_character_id", "")) != ruler_id:
+			continue
+		if marcher.cancel_march(String(army.get("id", "")), scheduler) > 0:
+			held += 1
+	return held
 
 
 # ---------------------------------------------------------------------------

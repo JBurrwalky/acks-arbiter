@@ -199,6 +199,12 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 |------|----------|--------|------------------|
 | `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
 
+### LLM Integration
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-live-llm-integration.md` | Live LLM integration layer: provider-agnostic service behind the `LLMManager` autoload — await-based `generate()` request model, `LLMProvider` adapter interface with capability flags, v1 Ollama provider (cloud `https://ollama.com` + local via one adapter, model-agnostic), request queue/QoS/circuit-breaker, prompt assembly (`llm_context/`), validation (prose caps + strict-JSON re-prompt path), settings + setup wizard, usage tracking, NarrativeUpgrader backfill, normative task-type registry, BYOM provider matrix (OpenAI-compatible / Anthropic deferred adapters), and the authoritative prerequisite-systems blocker list (§18). Resolves `gdd-unified-log-panel.md` O-L5 | Draft v1.1 — approval items A1-A7 all ruled 2026-07-06; build unblocked (only Seam-B §13 thresholds remain a pending Jedidiah call) | `acks_arbiter_design_brief_v11` §9, `gdd-npc-dialogue`, `gdd-npc-personality`, `gdd-ruler-ai`, `gdd-faction-framework`, `gdd-quest-rumor-system`, `gdd-setting-generation`, `gdd-realtime-scheduler`, `gdd-unified-log-panel`, `gdd-campaign-creation-ui` |
+
 ### Persistence & Save System
 
 | File | Contents | Status | Key Dependencies |

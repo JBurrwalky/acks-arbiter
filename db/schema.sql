@@ -916,6 +916,24 @@ CREATE INDEX IF NOT EXISTS idx_domain_hexes_domain_id
 CREATE INDEX IF NOT EXISTS idx_domain_hexes_map_id
     ON domain_hexes (map_id);
 
+-- Migration 183: per-domain requisition/loot accounting (army-warfare Phase B,
+-- gdd-army-warfare.md §4.3 / daw_campaigning_armies.xml L324-347). Cross-army,
+-- per-domain: 6-month requisition cooldown + 60 gp/family combined ceiling +
+-- families lost. Ceiling resets each 6-month period (population-recovery proxy).
+CREATE TABLE IF NOT EXISTS domain_extraction_ledger (
+    campaign_id                        TEXT    NOT NULL REFERENCES campaigns(id),
+    domain_id                          TEXT    NOT NULL REFERENCES domains(id),
+    period_anchor_calendar_day         INTEGER NOT NULL DEFAULT 0,
+    last_requisition_calendar_day      INTEGER NOT NULL DEFAULT -1,
+    cumulative_extracted_gp_per_family REAL    NOT NULL DEFAULT 0.0,
+    families_lost                      INTEGER NOT NULL DEFAULT 0,
+    created_at                         TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at                         TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (campaign_id, domain_id)
+);
+CREATE INDEX IF NOT EXISTS idx_domain_extraction_ledger_campaign
+    ON domain_extraction_ledger(campaign_id);
+
 -- Migration 057: Domain followers roster (Domain Phase 0 schema only;
 -- Phase 5 ships the follower_arrival_resolver that writes here).
 CREATE TABLE IF NOT EXISTS domain_followers (
@@ -1899,6 +1917,10 @@ CREATE TABLE IF NOT EXISTS armies (
     daily_penalty_state             TEXT    NOT NULL DEFAULT '{}',
     rng_seed_stream                 INTEGER NOT NULL DEFAULT 0,
     notes                           TEXT    NOT NULL DEFAULT '',
+    -- Migration 186: one-off vs standing muster tag driving post-battle teardown.
+    -- Code-validated (no CHECK) against ArmyRepository.PROVENANCE_*:
+    -- 'standing' | 'resistance_levy' | 'call_to_arms'.
+    provenance                      TEXT    NOT NULL DEFAULT 'standing',
     created_at                      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_armies_campaign ON armies(campaign_id);
@@ -2186,15 +2208,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_call_to_arms_state_unique_active
 
 -- Migration 082: domain_threats — Phase 9A active-threat tracking per
 -- ax_domain_level_encounters.xml + acore_axioms §bandits L611-630.
--- Kinds: encounter / bandit_swarm / npc_challenger / settled_lair.
+-- Kinds: encounter / bandit_swarm / npc_challenger / settled_lair /
+--   hostile_extraction (migration 185 — an NPC army looting/requisitioning
+--   the player's domain; the player Resists or Concedes from the threats sub-tab).
 -- Partial unique indexes ensure at most one active bandit_swarm and
--- npc_challenger per domain.
+-- npc_challenger per domain, and at most one active hostile_extraction per
+-- (domain, raider army).
 CREATE TABLE IF NOT EXISTS domain_threats (
     id                          TEXT    PRIMARY KEY,
     campaign_id                 TEXT    NOT NULL REFERENCES campaigns(id),
     domain_id                   TEXT    NOT NULL REFERENCES domains(id),
     kind                        TEXT    NOT NULL
-        CHECK(kind IN ('encounter', 'bandit_swarm', 'npc_challenger', 'settled_lair')),
+        CHECK(kind IN ('encounter', 'bandit_swarm', 'npc_challenger', 'settled_lair', 'hostile_extraction')),
     status                      TEXT    NOT NULL DEFAULT 'active'
         CHECK(status IN ('active', 'defeated', 'negotiated', 'departed')),
     creature_key                TEXT    NOT NULL DEFAULT '',
@@ -2227,6 +2252,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_bandit_swarm
     ON domain_threats(domain_id) WHERE kind = 'bandit_swarm' AND status = 'active';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_challenger
     ON domain_threats(domain_id) WHERE kind = 'npc_challenger' AND status = 'active';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_threats_unique_active_hostile_extraction
+    ON domain_threats(domain_id, linked_army_id) WHERE kind = 'hostile_extraction' AND status = 'active';
 
 -- Migration 083: market_class_modifiers — Phase 9A temporary market-class
 -- shifts driven by Vagaries-of-Recruitment commerce_disrupted/commerce_improves
@@ -2304,6 +2331,10 @@ CREATE TABLE IF NOT EXISTS sieges (
     outcome                     TEXT    NOT NULL DEFAULT ''
         CHECK(outcome IN ('', 'captured', 'liberated', 'destroyed', 'surrendered',
                           'departed', 'sallied_won', 'sallied_lost')),
+    -- Phase D (migration 184): defender posture. 'undecided' = pre-Phase-D behavior; the
+    -- withstand_siege action sets 'hold_fast' (garrison holds inside, no sortie). Read ONLY in
+    -- the voluntary 'sally' branch of siege_resolver.apply_method.
+    defender_posture            TEXT    NOT NULL DEFAULT 'undecided',
     payload_json                TEXT    NOT NULL DEFAULT '{}',
     created_at                  TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at                  TEXT    NOT NULL DEFAULT (datetime('now'))

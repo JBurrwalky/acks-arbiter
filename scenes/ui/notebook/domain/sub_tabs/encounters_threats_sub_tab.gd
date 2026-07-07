@@ -55,6 +55,9 @@ func _ready() -> void:
 	_build_settled_lairs_card()
 	_build_bandit_card()
 	_build_challenger_card()
+	# Migration 185: an NPC army looting/requisitioning THIS domain (the player's). Sits after the
+	# challenger card so the player-facing "resist or concede" choice is prominent among the threats.
+	_build_hostile_extraction_card()
 	_build_market_card()
 	_build_siege_card()
 	# Listen for live siege state updates so the card refreshes mid-tick.
@@ -81,6 +84,7 @@ func display(domain_data: Dictionary) -> void:
 	_render_settled_lairs()
 	_render_bandit()
 	_render_challenger()
+	_render_hostile_extraction()
 	_render_market()
 	_render_siege()
 
@@ -108,7 +112,10 @@ func _render_summary() -> void:
 	if _domain_id.is_empty():
 		return
 	var threats: Array = DomainThreatRepository.list_active_threats_for_domain(_domain_id)
-	var counts: Dictionary = {"encounter": 0, "bandit_swarm": 0, "npc_challenger": 0, "settled_lair": 0}
+	var counts: Dictionary = {
+		"encounter": 0, "bandit_swarm": 0, "npc_challenger": 0,
+		"settled_lair": 0, "hostile_extraction": 0,
+	}
 	for t in threats:
 		var k: String = String(t.get("kind", ""))
 		counts[k] = int(counts.get(k, 0)) + 1
@@ -116,6 +123,7 @@ func _render_summary() -> void:
 	_add_summary_kv("Encounters", str(int(counts["encounter"])))
 	_add_summary_kv("Bandit swarm", "Yes" if counts["bandit_swarm"] > 0 else "No")
 	_add_summary_kv("NPC challenger", "Yes" if counts["npc_challenger"] > 0 else "No")
+	_add_summary_kv("Hostile extractions", str(int(counts["hostile_extraction"])))
 	_add_summary_kv("Settled monster lairs", str(int(counts["settled_lair"])))
 
 
@@ -369,6 +377,114 @@ func _render_challenger() -> void:
 		_on_refuse_battle_with_challenger_pressed(threat_id)
 	)
 	_challenger_actions.add_child(refuse_btn)
+
+
+# ---------------------------------------------------------------------------
+# Section 4b: Hostile extraction (migration 185) — an NPC army looting / requisitioning
+# THIS (player) domain. The player Resists (garrison levy → field battle) or Concedes
+# (allow the yield). Multiple raiders can be active at once, so this renders a list.
+# ---------------------------------------------------------------------------
+
+var _hostile_extraction_card: VBoxContainer = null
+var _hostile_extraction_body: VBoxContainer = null
+
+func _build_hostile_extraction_card() -> void:
+	_hostile_extraction_card = _make_card("Hostile Extraction")
+	add_child(_hostile_extraction_card)
+	_hostile_extraction_body = VBoxContainer.new()
+	_hostile_extraction_body.add_theme_constant_override("separation", 6)
+	_hostile_extraction_card.add_child(_hostile_extraction_body)
+
+
+func _render_hostile_extraction() -> void:
+	if _hostile_extraction_body == null:
+		return
+	for child in _hostile_extraction_body.get_children():
+		_hostile_extraction_body.remove_child(child)
+		child.queue_free()
+	if _domain_id.is_empty():
+		_add_dim_label(_hostile_extraction_body, "(no domain)")
+		return
+	var raids: Array = []
+	for t in DomainThreatRepository.list_active_threats_for_domain(_domain_id):
+		if String(t.get("kind", "")) == "hostile_extraction":
+			raids.append(t)
+	if raids.is_empty():
+		_add_dim_label(_hostile_extraction_body, "(no enemy army is extracting from this domain)")
+		return
+	for raid in raids:
+		_hostile_extraction_body.add_child(_build_hostile_extraction_row(raid))
+
+
+func _build_hostile_extraction_row(threat: Dictionary) -> Control:
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 3)
+	var threat_id: String = String(threat.get("id", ""))
+	var payload: Dictionary = _parse_threat_payload(threat)
+	var mode: String = String(payload.get("mode", "loot"))
+	var verb: String = "looting" if mode == "loot" else "requisitioning from"
+
+	var headline := Label.new()
+	headline.text = "%s is %s your domain." % [String(threat.get("creature_key", "An enemy army")), verb]
+	headline.modulate = Color(1.0, 0.5, 0.5)
+	vbox.add_child(headline)
+
+	var detail := Label.new()
+	detail.text = "Raider strength: BR %.1f    (RAW: the domain's leader may resist by giving battle)" % \
+		float(threat.get("platoon_br", 0.0))
+	detail.modulate = Color(0.78, 0.78, 0.78)
+	vbox.add_child(detail)
+
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 6)
+	var resist_btn := Button.new()
+	resist_btn.text = "Resist"
+	resist_btn.tooltip_text = "Muster this domain's garrison as a levy and give battle to the raiders."
+	resist_btn.pressed.connect(func() -> void: _on_resist_extraction_pressed(threat_id))
+	actions.add_child(resist_btn)
+	var concede_btn := Button.new()
+	concede_btn.text = "Concede"
+	concede_btn.tooltip_text = "Let the raiders take their spoils (families are lost to a loot). No battle."
+	concede_btn.pressed.connect(func() -> void: _on_concede_extraction_pressed(threat_id))
+	actions.add_child(concede_btn)
+	vbox.add_child(actions)
+	return vbox
+
+
+func _on_resist_extraction_pressed(threat_id: String) -> void:
+	if threat_id.is_empty():
+		return
+	var res: Dictionary = ExtractionResistanceRouter.resolve_player_choice(
+		threat_id, "resist", _calendar_day_today())
+	if not bool(res.get("ok", false)) and EventBus.has_signal("notification_requested"):
+		var msg: String = "No garrison could be mustered to resist — you may still concede."
+		if String(res.get("error", "")) != "no_levy_available":
+			msg = "Could not resist this raid (%s)." % String(res.get("error", "?"))
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "threat", "title": "Resistance failed", "body": msg,
+			"duration": 6.0})
+	_render_hostile_extraction()
+	_render_summary()
+
+
+func _on_concede_extraction_pressed(threat_id: String) -> void:
+	if threat_id.is_empty():
+		return
+	ExtractionResistanceRouter.resolve_player_choice(threat_id, "concede", _calendar_day_today())
+	_render_hostile_extraction()
+	_render_summary()
+
+
+func _add_dim_label(parent: Node, text: String) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.modulate = Color(0.6, 0.6, 0.6)
+	parent.add_child(lbl)
+
+
+func _parse_threat_payload(threat: Dictionary) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(String(threat.get("payload_json", "{}")))
+	return parsed if parsed is Dictionary else {}
 
 
 # ---------------------------------------------------------------------------

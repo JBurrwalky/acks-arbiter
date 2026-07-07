@@ -132,8 +132,19 @@ func test_march_army_forced_doubles_speed_via_multiplier() -> void:
 
 func test_marching_extraction_credits_supply_on_arrival() -> void:
 	var army_id := _make_army_with_units(["Heavy Infantry", "Heavy Infantry"])
-	var initial_supply := ArmyRepository.get_supply_state(army_id)
-	var initial_stockpile := int(initial_supply.get("current_stockpile_cp", 0))
+	# Phase B: marching extraction is domain-driven (RAW 40 gp/family). Seed a FRIENDLY
+	# domain (same owner as the army) at the destination hex so requisition yields.
+	var domain_id := CampaignRepository.create_domain({
+		"campaign_id": _campaign_id, "name": "Marcher Domain",
+		"owner_character_id": _ruler_id, "location_map_id": _map_id,
+		"location_hex_q": 7, "location_hex_r": 5, "territory_type": "civilized",
+	})
+	CampaignRepository.update_domain_monthly_state(domain_id, {"peasant_families": 50})
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO domain_hexes (id, domain_id, map_id, hex_q, hex_r, land_value, families)
+		VALUES (?, ?, ?, 7, 5, 5, 0)
+	""", [CampaignRepository.generate_id(), domain_id, _map_id])
+	var initial_stockpile := int(ArmyRepository.get_supply_state(army_id).get("current_stockpile_cp", 0))
 
 	# Build a fake travel_leg event payload and call _handle_army_travel_leg directly.
 	var marcher := ArmyMarcher.new()
@@ -147,7 +158,7 @@ func test_marching_extraction_credits_supply_on_arrival() -> void:
 	check(not result.is_empty(), "event handler returned result")
 	var final_supply := ArmyRepository.get_supply_state(army_id)
 	check(int(final_supply.get("current_stockpile_cp", 0)) > initial_stockpile,
-		"stockpile increased after marching extraction; before=%d after=%d" % [
+		"stockpile increased after marching requisition of a friendly domain; before=%d after=%d" % [
 			initial_stockpile, final_supply.get("current_stockpile_cp", 0)
 		])
 	# Army state transitioned to encamped at destination.

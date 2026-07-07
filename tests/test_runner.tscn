@@ -501,6 +501,14 @@
 [ext_resource type="Script" path="res://tests/test_issue_decree_handler.gd" id="485_issue_decree_handler_tests"]
 [ext_resource type="Script" path="res://tests/test_ruler_crisis_lod.gd" id="486_ruler_crisis_lod_tests"]
 [ext_resource type="Script" path="res://tests/test_ruler_narration_state.gd" id="487_ruler_narration_state_tests"]
+[ext_resource type="Script" path="res://tests/test_army_map_presence.gd" id="488_army_map_presence_tests"]
+[ext_resource type="Script" path="res://tests/test_battle_routing.gd" id="489_battle_routing_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resolver.gd" id="490_extraction_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resistance_router.gd" id="491_extraction_resistance_router_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_dispatch_phase_d.gd" id="492_ruler_dispatch_phase_d_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_f_npc_siege.gd" id="493_phase_f_npc_siege_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_ai_capstone.gd" id="494_ruler_ai_capstone_tests"]
+[ext_resource type="Script" path="res://tests/test_militia_casualty_persistence.gd" id="495_militia_casualty_persistence_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2004,3 +2012,27 @@ script = ExtResource("486_ruler_crisis_lod_tests")
 
 [node name="RulerNarrationStateTests" type="Node" parent="."]
 script = ExtResource("487_ruler_narration_state_tests")
+
+[node name="ArmyMapPresenceTests" type="Node" parent="."]
+script = ExtResource("488_army_map_presence_tests")
+
+[node name="BattleRoutingTests" type="Node" parent="."]
+script = ExtResource("489_battle_routing_tests")
+
+[node name="ExtractionResolverTests" type="Node" parent="."]
+script = ExtResource("490_extraction_resolver_tests")
+
+[node name="ExtractionResistanceRouterTests" type="Node" parent="."]
+script = ExtResource("491_extraction_resistance_router_tests")
+
+[node name="RulerDispatchPhaseDTests" type="Node" parent="."]
+script = ExtResource("492_ruler_dispatch_phase_d_tests")
+
+[node name="PhaseFNpcSiegeTests" type="Node" parent="."]
+script = ExtResource("493_phase_f_npc_siege_tests")
+
+[node name="RulerAiCapstoneTests" type="Node" parent="."]
+script = ExtResource("494_ruler_ai_capstone_tests")
+
+[node name="MilitiaCasualtyPersistenceTests" type="Node" parent="."]
+script = ExtResource("495_militia_casualty_persistence_tests")

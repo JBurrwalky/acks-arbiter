@@ -18,6 +18,9 @@ signal party_token_clicked(party_id: String, coord: Vector2i)
 signal hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)
 signal dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)
 signal settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)
+## Left-click on an army token (gdd-army-warfare.md §7.3). Consumed by
+## WildernessExploreState to select the army for orders / inspection.
+signal army_token_clicked(army_id: String, coord: Vector2i)
 
 # WildernessHexMath is a global class_name (axial<->world helpers).
 
@@ -52,6 +55,21 @@ const ZOOM_MAX := 120.0          # most zoomed-OUT ortho size
 const ZOOM_FACTOR := 1.12        # multiplicative size change per wheel tick
 const EDGE_MARGIN := 24.0        # px from a viewport edge that triggers edge-pan
 const EDGE_PAN_RATE := 0.85      # fraction of the view height panned per second
+
+# --- Army-token tunables (gdd-army-warfare.md §7.3) ---
+const ARMY_TOKEN_RADIUS := 0.26     # ~40px feel vs the party capsule's 0.18 (~28px)
+const ARMY_TOKEN_HEIGHT := 0.5
+const ARMY_BORDER_WIDTH := 0.08     # state-colour ring extends this past the body radius
+const ARMY_LIFT := 0.4              # world-Y lift above the hex surface (matches party token)
+const ARMY_SELECTED_SCALE := 1.3    # selected army marker scale-up
+const ARMY_STACK_OFFSET := 0.22     # XZ fan-out per extra army sharing a hex (so stacks are visible)
+const ARMY_PLAYER_COLOR := Color(0.45, 0.65, 0.95)   # body tint for player-orderable armies
+const ARMY_NPC_COLOR := Color(0.85, 0.45, 0.40)      # body tint for NPC armies
+const ARMY_PATH_DASH_LEN := 0.18
+const ARMY_PATH_GAP_LEN := 0.12
+const ARMY_PATH_WIDTH := 0.06
+const ARMY_PATH_SPEED := 0.6        # dash scroll speed (real-time; decoupled from game speed)
+const ARMY_PATH_COLOR := Color(0.98, 0.92, 0.5)
 
 # Terrain-class -> Texture2DArray layer index. Order fixed; the array is built
 # from res://assets/wilderness_textures/<name>.png in this order. Toon floor set
@@ -211,6 +229,20 @@ var _region_overlay_enabled := false   # driven by EventBus.region_overlay_toggl
 var _region_label_root: Node3D = null
 var _city_label_root: Node3D = null
 var _token_root: Node3D = null
+## Army tokens (gdd-army-warfare.md §7.3): one marker per non-disbanded, positioned
+## army on this map — always visible (no fog gate, Jedidiah 2026-07-04). Rebuilt on
+## army-lifecycle EventBus signals; _army_hex_index resolves clicks to army ids.
+var _army_root: Node3D = null
+var _army_markers := {}        # army_id -> Node3D marker
+var _army_hex_index := {}      # Vector2i -> Array[army_id] (co-located armies share a hex)
+var _army_pick_cycle := {}     # Vector2i -> next index to pick (cycles stacked armies)
+var _selected_army_id := ""
+## Selected army's in-flight travel-leg overlay (animated dashed segment).
+var _path_root: Node3D = null
+var _path_from := Vector2i.ZERO
+var _path_to := Vector2i.ZERO
+var _path_visible := false
+var _dash_phase := 0.0
 ## "Enter Settlement" / "Enter Dungeon" HUD buttons — shown when the party stands on a
 ## settlement/dungeon entrance hex; emit the entry signals the session state consumes.
 ## (Ported from the 2D hex_map_renderer, which the 3D swap left behind.)
@@ -270,11 +302,27 @@ func _ready() -> void:
 	_token_root = Node3D.new()
 	_token_root.name = "Tokens"
 	add_child(_token_root)
+	# Army tokens draw above the terrain layers, alongside the party token.
+	_army_root = Node3D.new()
+	_army_root.name = "Armies"
+	add_child(_army_root)
+	_path_root = Node3D.new()
+	_path_root.name = "ArmyPath"
+	add_child(_path_root)
 	_build_environment()
 	_build_camera()
 	_build_splat_material()
 	_build_entry_hud()
 	EventBus.region_overlay_toggled.connect(_on_region_overlay_toggled)
+	# Army lifecycle -> token refresh (signal-driven, no polling). Every army signal
+	# carries an army_id and a full rebuild is cheap (a handful of armies per map).
+	EventBus.army_formed.connect(_on_army_roster_changed)
+	EventBus.army_disbanded.connect(_on_army_roster_changed)
+	EventBus.battle_concluded.connect(_on_army_roster_changed)
+	EventBus.armies_collided.connect(_on_army_roster_changed)
+	EventBus.army_supply_cut.connect(_on_army_roster_changed)
+	EventBus.army_arrived_at_hex.connect(_on_army_arrived)
+	EventBus.order_queued.connect(_on_order_queued)
 
 
 # ---------------------------------------------------------------------------
@@ -318,6 +366,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_build_landmarks()
 	_build_regions()          # named-region colour overlay + region name labels (static geography)
 	_rebuild_tokens()
+	_rebuild_armies()
 	_update_enter_dungeon_button()
 	_update_enter_settlement_button()
 	_fit_camera()
@@ -360,6 +409,7 @@ func _on_frontier_grown(_map_id: String) -> void:
 	_build_landmarks()
 	_build_regions()          # reproject region overlay/labels over the enlarged window
 	_rebuild_tokens()
+	_rebuild_armies()
 	call_deferred("_build_scatter")
 	call_deferred("_build_farmland")
 
@@ -2315,6 +2365,212 @@ func _make_party_marker() -> Node3D:
 
 
 # ---------------------------------------------------------------------------
+# Army tokens (gdd-army-warfare.md §7.3) — always-visible on-map presence
+# ---------------------------------------------------------------------------
+
+## Rebuild every army token for the current map from ArmyMapPresence (non-disbanded,
+## positioned armies; fog is deliberately ignored). Cheap enough to run wholesale on
+## any army-lifecycle signal. Re-applies the selection highlight afterwards.
+func _rebuild_armies() -> void:
+	if _army_root == null:
+		return
+	for child in _army_root.get_children():
+		child.queue_free()
+	_army_markers.clear()
+	_army_hex_index.clear()
+	if _map_data == null:
+		return
+	for token in ArmyMapPresence.list_tokens_for_map(_map_data.id):
+		var coord := Vector2i(int(token.get("hex_q", 0)), int(token.get("hex_r", 0)))
+		var stack: Array = _army_hex_index.get(coord, [])
+		var marker := _make_army_marker(token)
+		var xz := WildernessHexMath.axial_to_world(coord)
+		# Fan out armies sharing a hex so each token is visible; picking is hex-based,
+		# so co-located armies are cycled through on repeated clicks (see _next_army_at).
+		var off := float(stack.size()) * ARMY_STACK_OFFSET
+		marker.position = Vector3(xz.x + off, _hex_height(coord) + ARMY_LIFT, xz.y)
+		_army_root.add_child(marker)
+		var army_id := String(token.get("army_id", ""))
+		_army_markers[army_id] = marker
+		stack.append(army_id)
+		_army_hex_index[coord] = stack
+	_army_pick_cycle.clear()
+	_apply_army_highlight()
+
+
+## One army marker: a state-colour border disc + an owner-tinted body cylinder + a
+## billboarded unit-count badge. Larger than the party capsule per §7.3.
+func _make_army_marker(token: Dictionary) -> Node3D:
+	var root := Node3D.new()
+	var border: Color = ArmyMapPresence.border_color_for_state(String(token.get("state", "")))
+	var is_player: bool = bool(token.get("is_player_owned", false))
+	# State-colour border: a thin disc slightly wider than the body.
+	var ring := MeshInstance3D.new()
+	var ring_mesh := CylinderMesh.new()
+	ring_mesh.top_radius = ARMY_TOKEN_RADIUS + ARMY_BORDER_WIDTH
+	ring_mesh.bottom_radius = ARMY_TOKEN_RADIUS + ARMY_BORDER_WIDTH
+	ring_mesh.height = 0.06
+	ring.mesh = ring_mesh
+	ring.material_override = _army_mat(border, 0.7)
+	root.add_child(ring)
+	# Body: owner-tinted cylinder standing on the border disc.
+	var body := MeshInstance3D.new()
+	var body_mesh := CylinderMesh.new()
+	body_mesh.top_radius = ARMY_TOKEN_RADIUS
+	body_mesh.bottom_radius = ARMY_TOKEN_RADIUS
+	body_mesh.height = ARMY_TOKEN_HEIGHT
+	body.mesh = body_mesh
+	body.position = Vector3(0.0, ARMY_TOKEN_HEIGHT * 0.5, 0.0)
+	body.material_override = _army_mat(ARMY_PLAYER_COLOR if is_player else ARMY_NPC_COLOR, 0.3)
+	root.add_child(body)
+	# Unit-count badge above the token (billboarded so it always faces the camera).
+	var badge := Label3D.new()
+	badge.text = str(int(token.get("unit_count", 0)))
+	badge.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	badge.no_depth_test = true
+	badge.fixed_size = true
+	badge.pixel_size = 0.0016
+	badge.font_size = 64
+	badge.outline_size = 16
+	badge.modulate = Color.WHITE
+	badge.outline_modulate = Color.BLACK
+	badge.position = Vector3(0.0, ARMY_TOKEN_HEIGHT + 0.4, 0.0)
+	root.add_child(badge)
+	return root
+
+
+func _army_mat(color: Color, energy: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = energy
+	return mat
+
+
+## Force an immediate army-token rebuild — for player orders that have no dedicated
+## lifecycle signal (Encamp/cancel), so the token's state colour updates at once.
+func refresh_armies() -> void:
+	_rebuild_armies()
+
+
+## Select (or clear, with "") the army highlighted on the map. Scale-up marks the
+## selection; the path overlay + supply gauge are driven separately by the state.
+func set_selected_army(army_id: String) -> void:
+	_selected_army_id = army_id
+	_apply_army_highlight()
+
+
+func _apply_army_highlight() -> void:
+	for army_id in _army_markers:
+		var marker = _army_markers[army_id]
+		if not is_instance_valid(marker):
+			continue
+		var s := ARMY_SELECTED_SCALE if army_id == _selected_army_id else 1.0
+		marker.scale = Vector3(s, s, s)
+
+
+## The first army id occupying [param coord], or "" if none (used by the state to
+## resolve a right-click on an army token).
+func army_id_at_hex(coord: Vector2i) -> String:
+	var stack: Array = _army_hex_index.get(coord, [])
+	return String(stack[0]) if not stack.is_empty() else ""
+
+
+## Pick the army at [param coord], cycling through co-located armies on repeated
+## clicks at the same hex (picking is hex-based, so stacked armies share a coord).
+func _next_army_at(coord: Vector2i) -> String:
+	var stack: Array = _army_hex_index.get(coord, [])
+	if stack.is_empty():
+		return ""
+	var idx: int = int(_army_pick_cycle.get(coord, 0)) % stack.size()
+	_army_pick_cycle[coord] = idx + 1
+	return String(stack[idx])
+
+
+# ---------------------------------------------------------------------------
+# Army path overlay — animated dashed segment along the pending travel leg
+# ---------------------------------------------------------------------------
+
+## Show the selected army's planned move as a dashed segment from -> to (one 6-mile
+## leg; armies pre-schedule a single leg at a time). Driven by the state from the
+## scheduler's pending army_travel_leg.
+func set_army_path_overlay(from_hex: Vector2i, to_hex: Vector2i) -> void:
+	_path_from = from_hex
+	_path_to = to_hex
+	_path_visible = true
+	_rebuild_path_dashes()
+
+
+func clear_army_path_overlay() -> void:
+	_path_visible = false
+	if _path_root == null:
+		return
+	for c in _path_root.get_children():
+		c.queue_free()
+
+
+func _rebuild_path_dashes() -> void:
+	if _path_root == null:
+		return
+	for c in _path_root.get_children():
+		c.queue_free()
+	if not _path_visible or _map_data == null:
+		return
+	var a := WildernessHexMath.axial_to_world(_path_from)
+	var b := WildernessHexMath.axial_to_world(_path_to)
+	var pa := Vector3(a.x, _hex_height(_path_from) + ARMY_LIFT * 0.5, a.y)
+	var pb := Vector3(b.x, _hex_height(_path_to) + ARMY_LIFT * 0.5, b.y)
+	var total := pa.distance_to(pb)
+	if total < 0.001:
+		return
+	var dir := (pb - pa) / total
+	var period := ARMY_PATH_DASH_LEN + ARMY_PATH_GAP_LEN
+	# Scroll the dashes toward the destination; start one period behind the origin so
+	# a dash animates in at the near end rather than popping.
+	var d := fmod(_dash_phase, period) - period
+	while d < total:
+		var seg_start := maxf(d, 0.0)
+		var seg_end := minf(d + ARMY_PATH_DASH_LEN, total)
+		if seg_end > seg_start:
+			var mid := (seg_start + seg_end) * 0.5
+			var dash := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(ARMY_PATH_WIDTH, 0.04, seg_end - seg_start)
+			dash.mesh = bm
+			dash.material_override = _army_mat(ARMY_PATH_COLOR, 0.9)
+			dash.position = pa + dir * mid
+			# Orient the box's local -Z along the travel direction.
+			if absf(dir.y) < 0.999:
+				dash.look_at(dash.position + dir, Vector3.UP)
+			_path_root.add_child(dash)
+		d += period
+
+
+# ---------------------------------------------------------------------------
+# Army-signal handlers (signal-driven refresh; no polling)
+# ---------------------------------------------------------------------------
+
+func _on_army_roster_changed(_a = null, _b = null, _c = null) -> void:
+	_rebuild_armies()
+
+
+func _on_army_arrived(army_id: String, _hex_q: int, _hex_r: int, map_id: String) -> void:
+	if _map_data == null or map_id != _map_data.id:
+		return
+	# The leg is consumed on arrival — drop a stale path overlay for the selected army.
+	if army_id == _selected_army_id:
+		clear_army_path_overlay()
+	_rebuild_armies()
+
+
+func _on_order_queued(_entity_id: String, event_type: String, _fire_time: int) -> void:
+	# order_queued is generic; only army marches change a token's state colour.
+	if event_type == "army_travel_leg":
+		_rebuild_armies()
+
+
+# ---------------------------------------------------------------------------
 # Input: pan / zoom / pick
 # ---------------------------------------------------------------------------
 
@@ -2349,6 +2605,11 @@ func _process(delta: float) -> void:
 		var step := _zoom * EDGE_PAN_RATE * delta
 		_cam_target += Vector3(pan.x, 0.0, pan.y).normalized() * step
 		_apply_camera()
+	# Animate the selected army's dashed path (marching-ants). Real-time so the dash
+	# scroll is independent of game speed (conventions §25).
+	if _path_visible:
+		_dash_phase += delta * ARMY_PATH_SPEED
+		_rebuild_path_dashes()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -2411,5 +2672,7 @@ func _pick(is_context: bool) -> void:
 		hex_context_menu_requested.emit(coord, screen_pos)
 	elif coord == _map_data.party_hex:
 		party_token_clicked.emit("party", coord)
+	elif _army_hex_index.has(coord):
+		army_token_clicked.emit(_next_army_at(coord), coord)
 	else:
 		hex_clicked.emit(coord)

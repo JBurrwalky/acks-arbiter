@@ -149,8 +149,13 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	# before demoting.
 	var lod_scheduler = _runner.get_scheduler() \
 		if _runner != null and _runner.has_method("get_scheduler") else null
+	# Regional-LOD conflict hook (gdd-ruler-ai.md §8.1-8.2, handoff-army-warfare-seams.md §3):
+	# NPC rulers party to a live player-involved battle/siege join the active set regardless
+	# of map distance. The full-tier gate inside sync drops any named-tier opponent
+	# (bandit captain / NPC challenger), so this only ever promotes real full-tier rulers.
 	var active_ruler_ids: Array = RulerLodManager.sync(
-		_campaign_id, lod_scheduler, [], calendar_day).get("active", [])
+		_campaign_id, lod_scheduler,
+		ConflictParticipants.active_ruler_ids(_campaign_id), calendar_day).get("active", [])
 	var has_player_domain := false
 
 	var domain_results: Array = []
@@ -191,8 +196,27 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	# monthly turns AFTER the economic resolution, with the post-resolution
 	# result dicts in hand for threat context. Batch, no UI interrupt, no LLM;
 	# handler mutations persist through the handlers' own repository writes.
+	# Phase D: thread the runner's EventScheduler so call_to_arms tranche events + withstand_siege
+	# march cancellations actually schedule (null in headless tests — the state rows still persist).
+	var ruler_scheduler = _runner.get_scheduler() \
+		if _runner != null and _runner.has_method("get_scheduler") else null
 	var ruler_reports: Array = RulerAI.process_campaign_month(
-		_campaign_id, calendar_day, active_ruler_ids, domain_results)
+		_campaign_id, calendar_day, active_ruler_ids, domain_results, ruler_scheduler)
+
+	# Phase F (gdd-army-warfare.md §4.10.2): NPC challenger escalation runs AFTER RulerAI, only
+	# for active-LOD NPC domains — fields unfielded challengers, routes the §7.3 accept/refuse,
+	# and dispatches a siege/battle (accept) or stamps the RAW -4 pillage penalty (refuse). The
+	# ruler-planner never initiates a siege (§4.10.1); this acts on threat artifacts.
+	ThreatEscalationDriver.process_campaign_month(
+		_campaign_id, calendar_day, active_ruler_ids, ruler_scheduler)
+
+	# Minimal frontier-raid escalation (handoff §5 step 4; Jedidiah 2026-07-06): an aggressive
+	# active-LOD NPC ruler bordering a PLAYER domain fields a raider war-band that loot-marches the
+	# frontier hex — the in-play trigger for the hostile_extraction "resist or concede" surface.
+	# Like ThreatEscalationDriver this is a driver over disposition+geography, NOT a ruler-planner
+	# action, so the ruler-AI "defense-only" invariant (§4.10.1) holds.
+	NpcRaidDriver.process_campaign_month(
+		_campaign_id, calendar_day, active_ruler_ids, ruler_scheduler)
 
 	# gdd-ruler-ai.md §3.2: no auto_pause for NPC rulers — the monthly-report
 	# modal pauses the clock only when the PLAYER owns a domain in the

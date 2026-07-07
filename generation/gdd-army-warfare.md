@@ -170,7 +170,7 @@ CREATE TABLE army_officers (
   strategic_ability    INTEGER NOT NULL,             -- -3 to +6 per §officer_characteristics.strategic_ability L764-773
   morale_modifier      INTEGER NOT NULL,             -- per §officer_characteristics.morale_modifier L774-782
   derivation_source    TEXT NOT NULL,                -- 'pc' | 'henchman' | 'mercenary_officer' | 'monster' | 'named_npc'; controls how the three abilities are computed
-  monthly_wage_gp      INTEGER NOT NULL DEFAULT 0,   -- 0 for PC/henchman/follower; non-zero for mercenary officers per the cost-per-month table at daw_armies_recruitment.xml §mercenary_officer_characteristics L993-1006
+  monthly_wage_cp      INTEGER NOT NULL DEFAULT 0,   -- stored in cp (unified-cp convention); 0 for PC/henchman/follower; non-zero for mercenary officers per the cost-per-month gp table at daw_armies_recruitment.xml §mercenary_officer_characteristics L993-1006, converted to cp at the boundary
   appointed_day        INTEGER NOT NULL,
   removed_day          INTEGER,                      -- nullable; set when officer leaves the army
   FOREIGN KEY (army_id) REFERENCES armies(army_id) ON DELETE CASCADE,
@@ -249,8 +249,8 @@ CREATE TABLE army_supply_state (
   army_id                    INTEGER PRIMARY KEY,    -- 1:1 with armies
   supply_base_stronghold_id  INTEGER,                -- nullable; primary supply base per daw_campaigning_armies.xml §supply_base L273-292
   supply_line_status         TEXT NOT NULL,          -- 'in_supply' | 'out_of_supply_blocked' | 'out_of_supply_overextended' | 'out_of_supply_no_base' | 'simplified'
-  weekly_supply_cost_gp      INTEGER NOT NULL,       -- recomputed when composition changes per §supply_cost L233-241
-  current_stockpile_gp       INTEGER NOT NULL,       -- supplies on hand from requisition, loot, or carried wagon train
+  weekly_supply_cost_cp      INTEGER NOT NULL,       -- stored in cp; recomputed when composition changes per §supply_cost L233-241
+  current_stockpile_cp       INTEGER NOT NULL,       -- stored in cp; supplies on hand from requisition, loot, or carried wagon train
   supply_line_weighted_hexes INTEGER,                -- weighted-length per §overextended_supply.weighted_length_rules L307-320; recomputed on movement
   last_supply_check_day      INTEGER NOT NULL,       -- last weekly procedure step 3 evaluation
   consecutive_unsupplied_weeks INTEGER NOT NULL DEFAULT 0,  -- for cumulative -1 attack/damage and weekly calamity per §lack_of_supply L350-369
@@ -262,7 +262,7 @@ CREATE TABLE army_supply_state (
 
 **Computed columns refreshed by `engine/subsystems/army_warfare/supply_calculator.gd`:**
 
-- `weekly_supply_cost_gp` = sum over each assigned unit of (60gp infantry / 240gp cavalry / per-creature-type rate from `daw_campaigns_troop_tables_summary.xml`) × (2× if no quartermaster, 4× if carnivorous), scaled by unit-scale multiplier per `daw_campaigning_armies.xml` §supply_cost.tables.supply_cost_by_unit_scale L243-255.
+- `weekly_supply_cost_cp` = sum over each assigned unit of (60gp infantry / 240gp cavalry / per-creature-type rate from `daw_campaigns_troop_tables_summary.xml`) × (2× if no quartermaster, 4× if carnivorous), scaled by unit-scale multiplier per `daw_campaigning_armies.xml` §supply_cost.tables.supply_cost_by_unit_scale L243-255, converted to cp for storage.
 - `supply_line_weighted_hexes` = path length from `armies.hex_q`/`hex_r` to `supply_base_stronghold_id`'s hex, weighted per the rules table at §overextended_supply.weighted_length_rules:
   - barren / desert × 4
   - jungle / mountain / swamp × 2
@@ -280,7 +280,7 @@ CREATE TABLE army_supply_state (
 
 **Supply value of a base** = monthly income after expenses of the base + monthly income after expenses of friendly domains in the same 24-mile hex + chained-base values per §supply_base.value_calculation L279-283.
 
-**Resupply triggers:** entering a friendly settlement or stronghold sets `current_stockpile_gp += supply_value(that_settlement)` capped at one month of supply cost; entering an out-of-supply state for ≥1 week makes each unit roll on `unit_loyalty` per §lack_of_supply.psychological_effects L359-362; consecutive unsupplied weeks accumulate to apply −1 cumulative attack/damage and HP loss per §lack_of_supply.physical_effects L350-357.
+**Resupply triggers:** entering a friendly settlement or stronghold sets `current_stockpile_cp += supply_value(that_settlement)` capped at one month of supply cost; entering an out-of-supply state for ≥1 week makes each unit roll on `unit_loyalty` per §lack_of_supply.psychological_effects L359-362; consecutive unsupplied weeks accumulate to apply −1 cumulative attack/damage and HP loss per §lack_of_supply.physical_effects L350-357.
 
 ### 2.5 Battle state
 
@@ -575,7 +575,7 @@ The marching activity in the EventScheduler per `gdd-realtime-scheduler.md` §4.
 - Carnivorous troops/mounts → ×4 per §supply_cost.special_cases.carnivorous_troops L257-263 (battle casualties or prisoners may be fed instead per the same section)
 - Hungerless troops (specific creature type tag) → 0 cost; no supply line needed; never out of supply per §hungerless_troops L265-269
 
-**Supply consumption mechanic** — the supply weekly tick (every 7 game-days; the EventScheduler fires a `weekly_supply_check` event for each army's `army_supply_state.last_supply_check_day + 7`) deducts `weekly_supply_cost_gp` from `current_stockpile_gp`. If the stockpile drops below cost, the army is partially supplied or unsupplied per §4.4 and §lack_of_supply.
+**Supply consumption mechanic** — the supply weekly tick (every 7 game-days; the EventScheduler fires a `weekly_supply_check` event for each army's `army_supply_state.last_supply_check_day + 7`) deducts `weekly_supply_cost_cp` from `current_stockpile_cp`. If the stockpile drops below cost, the army is partially supplied or unsupplied per §4.4 and §lack_of_supply.
 
 **Strategic-Ability effect on supply efficiency.** RAW does not mention a Strategic-Ability supply-cost reduction; this v1.0 spec keeps RAW. The closest RAW touch is the Strategic-Ability bonus to BR per `daw_axioms_pitching_battle.xml` §battle_ratings.strategic_ability L198-201, which is purely a battle effect.
 
@@ -606,7 +606,15 @@ The marching activity in the EventScheduler per `gdd-realtime-scheduler.md` §4.
 
 The domain's leader may resist requisition or loot by fighting a battle per RAW §requisition_and_looting.operational_rules L341-342. The decision and resistance-force composition are AI logic driven by the domain owner's NPC personality and available forces — **out of scope for this GDD**; defer to the Realm AI subsystem (Phase 7+).
 
-**v1 placeholder heuristic** (until Realm AI is built): the domain owner attacks the requisitioning / looting army if and only if he can bring at least 50% of the offending army's BR to bear from his own personal-domain garrison + any vassal forces within muster range. If multiple sub-vassals are within range, the owner consolidates their garrisons into a single response army subject to the standard Call-to-Arms muster delay (per §8.1). Lord-vassal cases (a lord's army looting a vassal's domain) follow the same heuristic but trigger an additional henchman-morale roll on the vassal per `acore_axioms_strongholds_and_domains.xml` favors-and-duties before the response is committed. The placeholder lives in `engine/subsystems/army_warfare/extraction_resistance_heuristic.gd` and is replaced wholesale when the Realm AI subsystem lands.
+**v1 placeholder heuristic** (until Realm AI is built): the domain owner attacks the requisitioning / looting army if and only if he can bring at least 50% of the offending army's BR to bear from his own personal-domain garrison + any vassal forces within muster range. If multiple sub-vassals are within range, the owner consolidates their garrisons into a single response army subject to the standard Call-to-Arms muster delay (per §8.1). Lord-vassal cases (a lord's army looting his own vassal's friendly domain) follow the same heuristic. The placeholder lives in `engine/subsystems/army_warfare/extraction_resistance_heuristic.gd` and is replaced wholesale when the Realm AI subsystem lands.
+
+> **RAW correction (2026-07, `acks-raw-lookup` sweep):** an earlier version of this note asserted the lord-vassal loot case triggers "an additional henchman-morale roll on the vassal per favors-and-duties." That premise is **NOT RAW-grounded**. The Henchman / Henchman-Loyalty roll is a favors-&-duties mechanic that fires on *demanding duties or changing tribute* — `acore_axioms_strongholds_and_domains.xml:289` ("Changing a vassal's tribute always triggers a Henchman Loyalty roll") and `:352-355` (duties beyond the safe limit); call-to-arms full-garrison = two duties (`daw_armies_recruitment.xml:660`); taxing vassals (`:707-708`). It does **not** attach to requisition/looting. RAW's requisition/loot rules (`daw_campaigning_armies.xml:324-346`) draw no friendly/hostile distinction and give exactly one lever: the domain leader "may resist requisition or looting by fighting a battle" (`:342`, universal — even a vassal against his liege). Army-presence domain-morale penalties are enemy-scoped only (`acore_axioms_strongholds_and_domains.xml:487-488`); pillage's −4 (`daw_campaigning_armies.xml:812`) is conquest-gated and unreachable by merely looting an un-conquered friendly vassal. So the router's friendly-domain short-circuit (`extraction_resistance_router.gd`) is **RAW-faithful, not an omission**.
+>
+> **Jedidiah design call — RESOLVED 2026-07-06: NO bespoke consequence.** Looting a friendly vassal's domain stays unopposed and self-punishing (the liege destroys his own realm's families + revenue, which is cost enough); no henchman-morale roll, no alignment tick, and no special vassal-resistance path is added. The RAW-faithful friendly short-circuit in `extraction_resistance_router.gd` is the final, intended behavior. (The narrowed options considered and declined: an alignment shift by analogy to enslaving-own-families → realm alignment change `daw_armies_recruitment.xml:586`, or honoring the vassal's `:342` battle-resistance right even against his liege.)
+
+**Status (2026-07-04):** the Realm AI replacement is BUILT — `gdd-ruler-ai.md` §7.3's disposition-modulated threshold now lives inside `ExtractionResistanceHeuristic.evaluate` (a neutral/absent disposition reproduces the 50% anchor exactly; federation + loyalty machinery unchanged). What remains is wiring the extraction *flow* to actually call it and route the resulting battle — sequenced as Phases B–C of `docs/handoff-army-warfare-seams.md`.
+
+**Status (2026-07-06) — player-as-defender surface BUILT.** When the domain being extracted is the *player's*, there is no NPC heuristic — the player decides. The Phase-C notification-only guard is replaced by a persistent `hostile_extraction` `domain_threats` row (migration 185) + a **Resist / Concede** action in the Encounters & Threats sub-tab (Resist musters the garrison levy → `BattleDispatcher.dispatch_collision`; Concede credits the yield and the raider disperses). The in-play trigger — an NPC actually marching-extraction against the player — is the **minimal frontier-raid driver `NpcRaidDriver` (§4.10.6)**, brought forward from the Phase-7+ raid deferral by Jedidiah's 2026-07-06 call, without changing the ruler-AI defense-only invariant.
 
 #### 4.3.4 UI surface
 
@@ -630,7 +638,7 @@ Already specified in §2.4 supply_calculator. Quick reference:
 - **Overextended** — `out_of_supply_overextended`; weighted length > 16 per §overextended_supply L303-306.
 - **No base** — `out_of_supply_no_base`; orphaned army (e.g., supply base captured).
 
-**Resupply on entering a friendly settlement / stronghold:** the engine fires a `supply_resupplied` event that adds `min(supply_value(stronghold), weekly_supply_cost_gp × 4)` to `current_stockpile_gp` (i.e., up to a month of cost; capped to keep the simplified-supply rule comparable).
+**Resupply on entering a friendly settlement / stronghold:** the engine fires a `supply_resupplied` event that adds `min(supply_value(stronghold), weekly_supply_cost_cp × 4)` to `current_stockpile_cp` (i.e., up to a month of cost; capped to keep the simplified-supply rule comparable).
 
 **Border fort construction** (§supply_base.construction_and_change_rules L285-291): an army may construct a small border fort as a 10,000 gp construction project (Phase 9 stronghold integration). Once built, it functions as a Class VI market for supply purposes.
 
@@ -707,7 +715,7 @@ Sub-subsection citations point to the original RAW lines being translated; PROJE
 
 When an army's weekly cadence fires, the engine resolves the RAW weekly steps (`daw_campaigning_armies.xml` §weekly_procedure L18-64) in this fixed deterministic order:
 
-1. **Supply check** — compute weekly_supply_cost_gp (per §2.4); resolve supply line status (intact / blocked / overextended); deduct gold and clear `weeks_unsupplied` if in supply, else increment.
+1. **Supply check** — compute weekly_supply_cost_cp (per §2.4); resolve supply line status (intact / blocked / overextended); deduct the cost from the stockpile and clear `weeks_unsupplied` if in supply, else increment.
 2. **Lack-of-supply effects** — apply the lazily-accumulated daily penalties (per §4.9.7) for the prior 7 days; fire calamity loyalty rolls per RAW §lack_of_supply L350-362.
 3. **Vagary-of-war check** — fire if eligible per §4.9.5; roll on `daw_vagaries.xml` §vagaries_of_war L196-228 (twice with worse-result during sieges per RAW L191-193).
 4. **Vagary-of-war effect** — apply the rolled result. If the result is `supply_problems` (RAW L525-528), it ADDS to this week's lack-of-supply accounting that already fired in step 2 — the engine re-flags `weeks_unsupplied` as if step 1 had failed AND adds the calamity loyalty roll for this week. The `supply_problems` vagary is treated as a calamity stacking on top of the natural supply-state result, not replacing it.
@@ -844,6 +852,54 @@ When two events fire at the same scheduler tick (literal timestamp collision aft
 7. **Background events (weather, world simulation)** — last.
 
 This ordering ensures that, for example, a hostile collision blocks a victim army's next weekly supply tick from firing first (since the supply state may change as a result of the resulting battle).
+
+### 4.10 NPC siege initiation and hostile-army escalation (PROJECT-DESIGNED, RAW-anchored — added 2026-07-04)
+
+**Problem this section closes.** `SiegeDispatcher` and the threat→army materialization path (`NPCChallengerEmergence.materialize_challenger_as_army`, `BanditSpawner.materialize_swarm_as_army`) are reachable only from the player's Encounters & Threats sub-tab. For NPC-owned domains no one makes those choices: challenger threat rows emerge on the monthly tick and sit unfielded forever, and no NPC army has any organic route into a siege. This section specifies the deterministic escalation driver that closes the gap.
+
+**RAW anchors.**
+- **The challenger's script is RAW:** "If an NPC challenger emerges from the bandits, that NPC offers battle at the first opportunity. If the ruler refuses battle, the NPC begins pillaging the domain, imposing a -4 penalty on morale rolls." (`acore_axioms_strongholds_and_domains.xml:623-634`.)
+- **Post-battle siege initiation is RAW:** a defeated army may retreat into a friendly stronghold or urban settlement in the same hex, and "the victorious army may then begin a siege under the normal siege rules." (`daw_axioms_pitching_battle.xml:563-575`.)
+- **The motive for reducing strongholds is RAW:** a domain is conquered when all its strongholds fall (`daw_campaigning_armies.xml:764-776`).
+
+#### 4.10.1 Scope guard — this is threat escalation, not ruler offense
+
+NPC ruler AI v1 is manage-and-defend (`gdd-ruler-ai.md` §1.3): **no planner action initiates a siege or offensive campaign.** The escalation driver below acts only on *threat artifacts* (emerged challengers; post-battle victors with live hostile intent), which are products of the domain-morale substrate, not planner decisions. When a future offense/diplomacy GDD lights up `expansion_weight`, ruler-initiated sieges become a planner action with its own spec; nothing here forecloses that.
+
+#### 4.10.2 Route 1 — Challenger escalation (active-LOD NPC domains)
+
+Player-owned domains are unchanged (the threats sub-tab choice stands). For **NPC-owned domains in the ruler-AI active-LOD set**, a new deterministic driver (suggested: `engine/subsystems/domains/threat_escalation_driver.gd`, static, seeded per (threat, calendar_month)) runs inside the monthly tick **after** `RulerAI.process_campaign_month`:
+
+1. **Field the challenger.** An active `npc_challenger` threat row with no `linked_army_id` is materialized via the existing `materialize_challenger_as_army` — RAW's "offers battle at the first opportunity."
+2. **The defender answers via the existing resistance decision.** The domain ruler's accept/refuse choice routes through the §7.3-generalized `ExtractionResistanceHeuristic.evaluate` with the ruler's disposition (the same machinery as `defensive_resistance` — no new decision logic). Accept → mirror the threats-sub-tab dispatch exactly: stronghold present → `SiegeDispatcher.dispatch_new_siege(challenger_army, stronghold, garrison, day, scheduler)`; no stronghold → `BattleDispatcher.dispatch_collision(garrison, challenger_army, hex, day)`. NPC-vs-NPC resolves silently by the dispatchers' existing decision trees.
+3. **Refusal is RAW pillage.** Stamp `morale_penalty = 4` on the threat row (the existing refuse-path mechanism; consumed by `domain_handlers._event_modifiers_sum`). The pillage pressure persists monthly until the ruler accepts battle (the driver re-offers each month and the §6.2/§7.2 morale spiral biases push acceptance), the challenger is defeated, or the domain's lifecycle resolves it.
+
+Escalation bookkeeping (offer made / refused / dispatched, with days) lives in the threat row's `payload_json` — no migration required; the build agent may promote it to a column if querying demands it.
+
+#### 4.10.3 Route 2 — Post-battle retreat into stronghold (all NPC victors)
+
+When a field battle's loser retreats into a friendly stronghold or settlement in the battle hex (RAW `daw_axioms_pitching_battle.xml:563-575`), the victor **may** begin a siege:
+
+- **Player victor:** decision-required prompt (auto-pause per §4.9.3) offering Besiege / Encamp / March on.
+- **NPC victor:** deterministic heuristic (PROJECT CALL, tunable): besiege iff the victor retains live hostile intent against that domain (an active threat row naming it, or an in-progress extraction episode against it) AND its supply stockpile covers ≥ 2 weeks at current cost. Otherwise it encamps. Wire this into the battle-outcome handling (`BattleDispatcher` / `FieldBattleResolver` conclusion path), calling `SiegeDispatcher.dispatch_new_siege` so player-involvement routing stays centralized.
+
+#### 4.10.4 What deliberately does NOT besiege in v1
+
+- **Bandit swarms** stay raiders: RAW gives bandits no siege behavior; NPC-domain swarms apply their existing pressure and may be fielded for battle by Route 2 circumstances, but the driver never initiates a bandit siege. **CONFIRMED 2026-07-06 (Jedidiah): stays "no" — bandits need a leader to besiege.** A raw swarm has no command to conduct a siege; only an *emerged challenger* (which supplies leadership) escalates to siege/pillage. This is now a settled design rule, not a deferred call: a leaderless bandit swarm never initiates a siege, even for an NPC domain, and even where the player threats sub-tab would let a human resolve a swarm-at-a-stronghold as a siege.
+- **Extracting armies** (§4.3) do not besiege to extract — extraction is field-level. If resistance produces a battle and the loser holes up, Route 2 governs.
+- **Backdrop domains** (outside the ruler-AI LOD set) never run the driver: unfielded challengers remain §7.2 stability pressure, consistent with `gdd-ruler-ai.md` §8.4 (no off-camera drama from neglect; auto-stabilize keeps neglect from reaching challenger-spawning tiers in the first place).
+
+#### 4.10.5 Signals and integration
+
+New EventBus signal `threat_escalated(threat_id, domain_id, stage)` (stage ∈ `fielded`, `battle_offered`, `battle_refused`, `siege_started`; plus the §4.10.6 raid stages `raid_launched`, `extraction_threatened`, `extraction_resisted`, `extraction_conceded`) for the unified log and the threats UI. Sieges and battles created here feed the §8.1 conflict hook (`ConflictParticipants` → `RulerLodManager.sync` `extra_ruler_ids`) exactly like any other conflict. Save/load: the driver is stateless between ticks (re-derives from threat rows + `payload_json`); no scheduler events of its own.
+
+#### 4.10.6 Route 3 — Frontier raid on a player domain (minimal v1; the "resist or concede" trigger) — added 2026-07-06
+
+**Why this exists.** §4.3.3's player-as-defender path (an NPC army looting/requisitioning the *player's* domain) was built as a notification-only guard in Phase C because no NPC ever issued a marching-extraction order against a player domain — the ruler-AI is defense-only (§4.10.1) and a full raid mechanic was deferred (§4.3.3 / line ~702, "Phase 7+"). To make the approved player-facing **resist-or-concede surface** (migration 185; the `hostile_extraction` `domain_threats.kind`) reachable in play, a deliberately-minimal raid trigger was brought forward. **Jedidiah 2026-07-06: build the minimal raid driver.**
+
+**Mechanism (`engine/subsystems/domains/npc_raid_driver.gd`, static).** Runs in the monthly tick after `ThreatEscalationDriver`, over the same active-LOD NPC ruler set. For an **aggressive-disposition** (`crisis_response == "aggressive"`) active-LOD NPC ruler whose personal domain **borders a player-owned domain** (hex adjacency), it fields a small brigand raider war-band (`ThreatForceComposer.field_bandit_force`) at the contested frontier hex and issues a **loot leg** against it (`ArmyMarcher.march_army(..., extraction_mode="loot")`). On arrival the marcher's marching-extraction calls `ExtractionResolver.resolve` → `ExtractionResistanceRouter`, which (player-owned target) raises the persistent `hostile_extraction` threat + alert. The player answers from the threats sub-tab: **Resist** (muster the domain garrison as a levy → `BattleDispatcher.dispatch_collision`, mirroring the NPC branch; player-involved → interactive `FieldBattlePanel`) or **Concede** (credit the raider's yield, then the war-band disperses — `ArmyDisbander` `raid_concluded`).
+
+**Scope guard — still not ruler offense (§4.10.1 holds).** Like Routes 1–2, this is a *driver over disposition + geography*, **not** a ruler-planner action; the ruler-AI action catalog is untouched, so the "defense-only v1" invariant stands. This is the minimal bring-forward, not the full raid/vassalage/harassment mechanic (still Phase 7+): v1 gates purely on aggressive disposition + adjacency (no realm-relations war-state — the raid *is* the aggression), fields the raider already at the frontier hex (no cross-map approach march; a same-hex loot leg so only the player hex is looted), and spaces raids per (target domain, aggressor) by `RAID_COOLDOWN_DAYS` read from the most recent `hostile_extraction` row's `payload_json`. When realm-relations lands, war-state can replace/augment the disposition gate.
 
 ---
 
@@ -1183,7 +1239,7 @@ Extension to `gdd-troops-tab.md`. Adds a new "Armies" sub-section below the exis
   - **Composition summary** — `<unit_count> units · BR <total> · <troop_count> troops`
   - **State badge** — color-coded chip: `assembling` (gray), `encamped` (blue), `marching` (amber), `requisitioning` (green), `looting` (dark-red), `besieging` (purple), `battling` (red), `withdrawing` (orange), `disbanded` (strikethrough)
   - **Location** — `at <hex_label>` or `marching to <destination>` or `besieging <stronghold>`
-  - **Supply gauge** — horizontal bar showing `current_stockpile_gp / weekly_supply_cost_gp` weeks of supply remaining; color-coded green / amber / red; threatened-supply-line amber-stripe overlay
+  - **Supply gauge** — horizontal bar showing `current_stockpile_cp / weekly_supply_cost_cp` weeks of supply remaining (displayed in gp at the UI boundary); color-coded green / amber / red; threatened-supply-line amber-stripe overlay
 - **Click row** → expands to **army detail panel** (full-width):
   - **Officer hierarchy tree** — interactive tree view of `army_officers` rows (army leader at top, division commanders below, lieutenants below those); each node shows name, rank, three abilities; right-click → Reassign / Remove
   - **Unit roster** — table of `army_unit_assignments`, columns: unit name, type (e.g., Heavy Infantry A), troops alive, BR, AC, monthly wage, current zone (during battles), commander (which division)
@@ -1463,6 +1519,10 @@ Completed during this v1.0 drafting session:
 ---
 
 ## 11. Revision History
+
+- **v1.0 NPC siege initiation, 2026-07-04** — Added §4.10 (NPC siege initiation and hostile-army escalation) per Jedidiah's direction, closing the gap where `SiegeDispatcher` was reachable only from the player threats UI. Two RAW-anchored routes: challenger escalation for active-LOD NPC domains (RAW challenger script `acore_axioms_strongholds_and_domains.xml:623-634` — offer battle, refusal → pillage −4; acceptance decided by the existing §7.3-generalized resistance heuristic; dispatch mirrors the threats-sub-tab pattern) and post-battle retreat-into-stronghold (`daw_axioms_pitching_battle.xml:563-575` — victor may besiege; NPC victor uses a deterministic intent+supply heuristic, player victor gets a decision prompt). Scope-guarded: threat escalation only, never ruler-planner offense (ruler-AI v1 stays manage-and-defend); backdrop domains never run the driver; bandit swarms deliberately do not besiege (flagged for Jedidiah). New signal `threat_escalated`; no schema change (bookkeeping in `payload_json`). Also added a status note to §4.3.3 (the disposition-modulated resistance replacement is built; flow wiring is handoff Phases B–C). Build sequencing: Phase F of `docs/handoff-army-warfare-seams.md`. (Advisor session.)
+
+- **v1.0 unified-cp alignment, 2026-07-04** — Money column names updated to match the live schema after the migration-114+ unified-cp sweep (this GDD predated it): `monthly_wage_gp` → `monthly_wage_cp`, `weekly_supply_cost_gp` → `weekly_supply_cost_cp`, `current_stockpile_gp` → `current_stockpile_cp` (§2.2, §2.4, §4.2, §4.4, §4.8, §7.1). All persisted money is cp; RAW gp values (60gp/week infantry, 40gp/family requisition, etc.) are unchanged as rules and convert to cp at the boundary with banker's rounding. Textual alignment only — no rule, schema-shape, or interface change. (Advisor session, per Jedidiah's direction.)
 
 - **v1.0, 2026-05-07** — **Specification complete.** Full v1.0 spec produced from the v0 (scaffold) version per Jedidiah's drafting prompt. Every `> **Drafting prompt:**` block in §1 through §8 replaced with full specification text. **§2 Data Model** specifies the canonical Phase 6A schema for tables 065 (`armies` with state machine), 066 (`army_officers` with derivation_source typing), 067 (`army_unit_assignments` with unique-active-assignment partial index), 068 (`army_supply_state` with weighted-line geometry), 070 (`field_battles`), 071 (`battle_unit_states`), 072 (`battle_log` with full event-type enumeration). **§3 Army Composition** specifies the formation flow, add/remove/disband mechanics, multi-army semantics, RAW officer-derivation formulas. **§4 Campaigning** specifies marching speed (terrain × column-length × forced-march math), supply consumption, foraging, supply-line geometry, weather effects, encounter scaling, army-army collision, and encampment. **§5 Recruitment Vagaries** specifies the full 19-row dispatch table for the recruitment vagaries roll. **§6 Field Battle Resolution** specifies the eleven-step phase loop, missile/skirmish/melee post-choice BPC matrices, heroic forays (qualifying heroes, BR stake, hero-vs-hero, unopposed, vagaries integration), redeployment, terrain-advantage rules, end states (annihilation/voluntary withdrawal/morale collapse), pursuit, casualty resolution, spoils, and XP. The §6.11 `BattleResolver` interface is committed to as the pluggable replacement target for v1.1+ mapped battles. **§7 UI Integration** specifies the Troops tab Armies sub-section card layout + detail panel; the army formation 5-step wizard; the wilderness hex map army token + right-click context menu; the field battle interactive panel with the Inspect-math affordance and save/load persistence; Active Projects integration on the Character tab; world log integration including the pause-with-notification rule for player-allied vassal armies. **§8 Cross-System Integration** specifies the vassal-army composition derivation; the Call to Arms decree's `command_authority` field; the siege-assault overrides dictionary contract; the `travel_leg` and `forage_leg` integration with the EventScheduler. **§9 O-A-N open questions**: O-A-1 through O-A-15 enumerated and resolved. RAW-resolvable (O-A-1, O-A-4, O-A-6, O-A-7, O-A-12, O-A-13, O-A-15) cite exact RAW with line numbers. Project-designed defaults committed (O-A-2, O-A-3, O-A-8). Substantive design decisions flagged for Jedidiah confirmation: O-A-5 (multi-faction battle pair-off semantics), O-A-9 (forage resistance probability), O-A-10 (army-vs-monster encounter scaling threshold), O-A-11 (encamped supply cost reduction; XML may be ambiguous and a Jedidiah-supplied full-source version of *DaW: Campaigns* would settle the question), O-A-14 (apex-commander-mid-march death grace period). Status updated from "SCAFFOLD ONLY" to "v1.0 — Specification Complete." Cross-doc obligations enumerated in §10 for downstream session intake. The scaffold's mention of a "Logistics Ability" was identified as apocryphal: DaW: Campaigns RAW defines only Leadership Ability, Strategic Ability, and Morale Modifier; v1.0 drops Logistics Ability from the data model and relies on the quartermaster requirement to handle logistics mechanically.
 - **v1.0 forage-terminology purge, 2026-05-07** — Eliminated all uses of "forage" / "foraging" as army-activity prose, per Jedidiah's clarification that armies do not forage (the verb is RAW-reserved for adventuring parties; armies Requisition or Loot). Changes:

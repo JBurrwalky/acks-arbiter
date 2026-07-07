@@ -94,7 +94,7 @@ When drafting (either mode), watch for and flag:
 
 - **Overlap with an existing GDD.** If the new GDD's scope intersects another GDD's scope, name the overlap. Don't quietly assume the user wants a split or a merger — flag and let the user decide.
 - **Conflict with the design brief.** `docs/acks_arbiter_design_brief_v11.md` is architectural ground truth. If the draft requires deviating from it, name the deviation. Per `CLAUDE.md`: "you may NOT restructure interfaces, rename autoloads, change data models, or modify cross-system contracts without explicit approval from Jedidiah."
-- **Dependencies on systems that don't exist yet.** Note the dependency and any assumed-interface contracts. The acks-arbiter-build-plan is deprecated as a phase index, but un-built dependencies are still worth flagging.
+- **Dependencies on systems that don't exist yet.** Note the dependency and any assumed-interface contracts. The acks_arbiter_build_plan is deprecated as a phase index, but un-built dependencies are still worth flagging.
 - **Implicit ACKS Constraints not surfaced.** If the body references RAW rules without surfacing them in an ACKS Constraints section, propose moving them there.
 - **Banker's rounding violations.** If the design uses rounding, confirm it's banker's rounding (round half to even). Other rounding modes are a project-wide convention violation.
 - **ACKS 1e terminology drift.** Watch for the bleed-through traps from `acks-raw-lookup`'s `references/bleed_through.md` (rebuke vs turn, crusader, outlands, etc.). Don't let one slip in just because it didn't come up in a lookup.

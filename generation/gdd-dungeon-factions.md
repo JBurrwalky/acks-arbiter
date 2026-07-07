@@ -5,6 +5,7 @@
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (stocking procedure, room contents), `le_monster_characteristics_stats.xml` and `acore_monster_catalog_*.xml` (monster intelligence, alignment, organization), `acore_adventures_and_encounters.xml` (wandering monster tables, encounter frequency)
 **Depends on project GDDs:** `gdd-dungeon-layout.md` (room graph, corridor connectivity, doors, chokepoints), `gdd-npc-personality.md` (faction leader personality for intelligent factions)
 **Modifiable by Claude Code:** Yes — all grouping rules, territory algorithms, and relationship generation are engineering decisions.
+**Pending amendment:** [gdd-faction-framework.md](gdd-faction-framework.md) §9 (approved data model) adds `parent_faction_id` + `allegiance_kind` external-faction links, parent-accountable replenishment, and conflict passes — apply to this GDD at that framework's phase FF-5 build. Dungeon-internal mechanics are unchanged by it.
 **Last updated:** 2026-06-08
 
 ---

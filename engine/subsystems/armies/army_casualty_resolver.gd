@@ -55,12 +55,76 @@ static func resolve_battle_casualties(battle_id: String, calendar_day: int) -> D
 	var attacker_summary: Dictionary = _resolve_side(attacker_states, attacker_won, is_mutual_draw, calendar_day)
 	var defender_summary: Dictionary = _resolve_side(defender_states, defender_won, is_mutual_draw, calendar_day)
 
+	# Militia are a LIMITED domain resource: their deaths are a PERMANENT population + morale loss
+	# to the source domain (RAW daw_armies_recruitment.xml:429-432). Merge both sides (a domain's
+	# militia can be attacking OR defending) and apply the permanent loss once per domain here, at
+	# the single battle-resolution point, so it survives the army being disbanded afterward.
+	var militia_deaths: Dictionary = {}
+	for side_summary in [attacker_summary, defender_summary]:
+		for dom_id in side_summary.get("militia_deaths_by_domain", {}):
+			var n: int = int(side_summary["militia_deaths_by_domain"][dom_id])
+			militia_deaths[dom_id] = int(militia_deaths.get(dom_id, 0)) + n
+	var militia_pop_loss: Dictionary = {}
+	for dom_id in militia_deaths:
+		militia_pop_loss[dom_id] = _apply_militia_population_loss(String(dom_id), int(militia_deaths[dom_id]), calendar_day)
+
 	return {
 		"battle_id": battle_id,
 		"outcome": outcome,
 		"attacker_summary": attacker_summary,
 		"defender_summary": defender_summary,
+		"militia_population_loss": militia_pop_loss,
 		"calendar_day": calendar_day,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Militia deaths → permanent domain population + morale loss (RAW L429-432)
+# ---------------------------------------------------------------------------
+
+## Applies the permanent consequence of `killed` militia deaths to `domain_id`:
+##   - peasant_families -= killed  (RAW L429 "for each peasant levied, domain revenue is reduced
+##     by one family" made permanent by L432 "if militia are killed … permanent"), floored at 0;
+##   - domain morale -= 1 (below the 2-per-10 levy density) or -2 (at/above it), per RAW L430,
+##     clamped to the [-4, +4] domain-morale range (domain_morale_resolver CURRENT_MORALE_MIN/MAX).
+## Returns a small summary dict for the caller / tests. A domain that lost militia can only re-levy
+## up toward its now-SHRUNKEN cap (peasant_families fell), which is what makes militia limited.
+static func _apply_militia_population_loss(domain_id: String, killed: int, calendar_day: int) -> Dictionary:
+	if domain_id.is_empty() or killed <= 0:
+		return {}
+	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
+	if domain.is_empty():
+		return {}
+	var families: int = int(domain.get("peasant_families", 0))
+	var morale: int = int(domain.get("morale", 0))
+	var new_families: int = maxi(0, families - killed)
+	# Morale loss scaled to the killed levy-density (killed peasants per 10 families). RAW ties the
+	# levy morale penalty to density (≤1/10 → 1, 2/10 → 2); the same scale governs the permanent
+	# loss when they die. Any death costs at least 1; the RAW maximum is 2.
+	var morale_loss: int = 1
+	if families > 0 and float(killed) * 10.0 / float(families) >= 2.0:
+		morale_loss = 2
+	var new_morale: int = clampi(morale - morale_loss, -4, 4)
+	CampaignRepository.update_domain_monthly_state(domain_id, {
+		"peasant_families": new_families,
+		"morale": new_morale,
+	})
+	# category MUST be one of the ledger CHECK enum (revenue/expense/tribute_in/tribute_out/
+	# investment/other) — 'other' is the record-only bucket (cp_amount 0; this is a family/morale
+	# loss, not a cp transaction). subcategory carries the semantic tag.
+	CampaignRepository.add_ledger_entry({
+		"domain_id": domain_id,
+		"calendar_day": calendar_day,
+		"category": "other",
+		"subcategory": "militia_casualties",
+		"cp_amount": 0,
+		"description": "%d militia killed in battle — permanent loss of %d peasant families and %d domain morale (RAW daw_armies_recruitment L432)" \
+			% [killed, families - new_families, morale - new_morale],
+	})
+	return {
+		"killed": killed,
+		"families_before": families, "families_after": new_families,
+		"morale_before": morale, "morale_after": new_morale,
 	}
 
 
@@ -76,6 +140,11 @@ static func _resolve_side(unit_states: Array, side_won: bool, is_mutual_draw: bo
 	var returns_in_week: int = 0
 	var veterans_promoted: Array = []
 	var units_destroyed_permanently: Array = []
+	# Militia deaths are a PERMANENT population + morale loss to the source domain (RAW
+	# daw_armies_recruitment.xml:432 — "the loss of domain morale and family revenue is
+	# permanent"; not return-to-farms). Accumulate the crippled/dead per domain here; the caller
+	# reduces peasant_families + morale once per domain. domain_id -> dead-militia count.
+	var militia_deaths_by_domain: Dictionary = {}
 
 	for unit_state in unit_states:
 		var status: String = String(unit_state.get("status", "engaged"))
@@ -111,6 +180,14 @@ static func _resolve_side(unit_states: Array, side_won: bool, is_mutual_draw: bo
 		var wounded: int = int(per_unit.get("wounded", 0))
 		crippled_total += crippled
 		wounded_total += wounded
+
+		# Militia deaths (crippled/dead — NOT the wounded who may return) permanently deplete the
+		# domain's population, per RAW. assigned_domain_id is on the troop_unit itself.
+		if crippled > 0 and String(unit.get("source_type", "")) == "militia":
+			var mdom_v: Variant = unit.get("assigned_domain_id")
+			var mdom: String = "" if mdom_v == null else String(mdom_v)
+			if not mdom.is_empty():
+				militia_deaths_by_domain[mdom] = int(militia_deaths_by_domain.get(mdom, 0)) + crippled
 
 		var disposition: Dictionary = _wounded_disposition(side_won, status, is_mutual_draw, wounded)
 		prisoners += int(disposition.get("prisoners", 0))
@@ -157,6 +234,7 @@ static func _resolve_side(unit_states: Array, side_won: bool, is_mutual_draw: bo
 		"returns_in_week": returns_in_week,
 		"veterans_promoted": veterans_promoted,
 		"units_destroyed_permanently": units_destroyed_permanently,
+		"militia_deaths_by_domain": militia_deaths_by_domain,
 	}
 
 

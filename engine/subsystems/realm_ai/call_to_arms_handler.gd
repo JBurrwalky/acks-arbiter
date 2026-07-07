@@ -365,6 +365,10 @@ static func _create_lord_call_army(lord_id: String, vassal_id: String, calendar_
 		"command_character_id": lord_id,
 		"state": "assembling",
 		"formed_calendar_day": calendar_day,
+		# Tag (migration 186) so the muster is identifiable, but note this is a STANDING body: its
+		# teardown is revocation-driven (resolve_revocation), NOT battle-driven. The battle_concluded
+		# levy-demob listener deliberately skips 'call_to_arms' — a call army may fight many battles.
+		"provenance": ArmyRepository.PROVENANCE_CALL_TO_ARMS,
 	})
 
 

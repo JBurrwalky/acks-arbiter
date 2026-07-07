@@ -36,10 +36,13 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		})
 		bumped += 1
 
+	# category MUST be one of the ledger CHECK enum (revenue/expense/tribute_in/
+	# tribute_out/investment/other) — 'other' is the record-only bucket (cp_amount 0;
+	# an inspection is a record, not a cp transaction). subcategory carries the tag.
 	CampaignRepository.add_ledger_entry({
 		"domain_id": domain_id,
 		"calendar_day": _calendar_day(),
-		"category": "garrison",
+		"category": "other",
 		"subcategory": "inspect_troops",
 		"cp_amount": 0,
 		"description": "Inspected %d garrison units (+1 morale each)" % bumped,

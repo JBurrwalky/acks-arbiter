@@ -135,8 +135,8 @@ func march_army(
 	if current_state != "encamped" and current_state != "assembling":
 		return {"success": false, "error": "army_must_be_encamped_or_assembling", "current_state": current_state}
 
-	# Compute leg duration.
-	var daily_miles: int = compute_army_daily_miles(army_id, march_mode)
+	# Compute leg duration (extraction legs halve movement per RAW L344).
+	var daily_miles: int = compute_army_daily_miles(army_id, march_mode, extraction_mode)
 	if daily_miles <= 0:
 		return {"success": false, "error": "no_movement_data"}
 
@@ -199,11 +199,13 @@ func cancel_march(army_id: String, scheduler: EventScheduler) -> int:
 # Movement math
 # ---------------------------------------------------------------------------
 
-func compute_army_daily_miles(army_id: String, march_mode: String = "normal") -> int:
+func compute_army_daily_miles(army_id: String, march_mode: String = "normal",
+		extraction_mode: String = "none") -> int:
 	## Returns army's daily march distance (miles) — slowest unit's daily speed
 	## with terrain multiplier from current hex (default 1.0 if hex is empty)
 	## and column-length penalty by total troop count, with forced-march ×1.5
-	## if march_mode == 'forced'.
+	## if march_mode == 'forced', and an extra ×0.5 when the leg extracts
+	## (requisition/loot) per RAW §requisition_and_looting L344 (halves movement).
 	var assignments: Array = ArmyRepository.list_active_assignments_for_army(army_id)
 	if assignments.is_empty():
 		return DEFAULT_DAILY_MILES
@@ -241,9 +243,11 @@ func compute_army_daily_miles(army_id: String, march_mode: String = "normal") ->
 	elif march_mode == "cautious":
 		march_mult = 0.5
 
-	# Marching-extraction halves movement per RAW §requisition_and_looting L344.
-	# (Caller-applied via march_mode='cautious' or via marching_extraction_mode
-	# on the event payload — handled in the leg fire path.)
+	# Marching-extraction halves movement per RAW §requisition_and_looting L344 — a
+	# real ×0.5 on the leg's daily miles, stacking multiplicatively with march_mode
+	# (extraction alone = ×0.5; the leg thus takes twice as long).
+	if extraction_mode == "requisition" or extraction_mode == "loot":
+		march_mult *= 0.5
 
 	var result: float = float(slowest) * terrain_mult * column_mult * march_mult
 	return max(1, int(round(result)))
@@ -288,11 +292,15 @@ func _handle_army_travel_leg(event: ScheduledEvent) -> Dictionary:
 		update_fields["last_returned_to_garrison_day_index"] = calendar_day
 	ArmyRepository.update_army(army_id, update_fields)
 
-	# 2. Marching-extraction credit (v1 placeholder: instant credit at the
-	# leg's destination; resistance check deferred to Phase 7 Realm AI).
+	# 2. Marching-extraction credit — RAW per-domain yield via ExtractionResolver, pro-rated
+	#    across the leg's {from,to} hexes' distinct domains. (Resistance is Phase C, inside
+	#    ExtractionResolver's stubbed hook.)
 	var extraction_log: Dictionary = {}
 	if extraction_mode == "requisition" or extraction_mode == "loot":
-		extraction_log = _apply_marching_extraction(army_id, to_q, to_r, extraction_mode, calendar_day)
+		var from_q: int = int(data.get("from_hex_q", to_q))
+		var from_r: int = int(data.get("from_hex_r", to_r))
+		extraction_log = _apply_marching_extraction(
+			army_id, map_id, from_q, from_r, to_q, to_r, extraction_mode, calendar_day)
 
 	# 3. Emit arrival.
 	if EventBus.has_signal("army_arrived_at_hex"):
@@ -315,39 +323,50 @@ func _handle_army_travel_leg(event: ScheduledEvent) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# Marching extraction (v1 placeholder)
+# Marching extraction (gdd-army-warfare.md §4.3; RAW L343 single-hex-or-pro-rated)
 # ---------------------------------------------------------------------------
 
+## Delegates to ExtractionResolver per domain. A leg spans {from_hex, to_hex}; the
+## extraction pro-rates across the DISTINCT eligible domains those hexes belong to
+## (requisition: friendly only; loot: any). ExtractionResolver credits the army stockpile
+## and enforces the per-domain 6-month cooldown + 60 gp/family ceiling; this aggregates the
+## per-domain results. cp is credited inside the resolver (the gp-into-cp unit bug is fixed
+## there via XPAwardCalculator.bankers_round(gp * families * 100)).
 func _apply_marching_extraction(
-	army_id: String, hex_q: int, hex_r: int, mode: String, calendar_day: int
+	army_id: String, map_id: String, from_q: int, from_r: int,
+	to_q: int, to_r: int, mode: String, calendar_day: int
 ) -> Dictionary:
-	## v1: credit a flat per-hex amount based on mode. Phase 7 Realm AI replaces
-	## this with the proper RAW per-domain extraction (40 gp/family for
-	## requisition with 6-month cooldown; 20 gp/family + 1 family lost per 20 gp
-	## for loot).
-	var supply: Dictionary = ArmyRepository.get_supply_state(army_id)
-	if supply.is_empty():
+	if map_id.is_empty():
 		return {}
-	var extracted_gp: int = 0
+	var domain_ids: Array = []
+	for coord in [Vector2i(from_q, from_r), Vector2i(to_q, to_r)]:
+		var did: String = ExtractionResolver.domain_for_hex(map_id, coord.x, coord.y)
+		if did.is_empty() or domain_ids.has(did):
+			continue
+		if mode == "requisition" and not ExtractionResolver.is_friendly_domain(army_id, did):
+			continue
+		domain_ids.append(did)
+	if domain_ids.is_empty():
+		return {}
+	var divisor: int = domain_ids.size()   # pro-rate the base rate across the leg's domains
+	var total_cp: int = 0
+	var total_families_lost: int = 0
+	var results: Array = []
+	for did in domain_ids:
+		var res: Dictionary = ExtractionResolver.resolve(army_id, did, mode, calendar_day, divisor)
+		if bool(res.get("success", false)):
+			total_cp += int(res.get("gp_yield_cp", 0))
+			total_families_lost += int(res.get("families_lost", 0))
+			results.append(res)
+	var first_domain: String = String(results[0].get("domain_id", "")) if not results.is_empty() else ""
 	if mode == "requisition":
-		# Placeholder: 100 gp per leg-hex.
-		extracted_gp = 100
-	elif mode == "loot":
-		# Placeholder: 50 gp per leg-hex (lower yield reflects 1 family lost
-		# per 20 gp tradeoff; full RAW comes with Phase 7).
-		extracted_gp = 50
-	if extracted_gp <= 0:
-		return {}
-	var current: int = int(supply.get("current_stockpile_cp", 0))
-	ArmyRepository.update_supply_state(army_id, {
-		"current_stockpile_cp": current + extracted_gp,
-	})
+		if EventBus.has_signal("army_requisition_completed"):
+			EventBus.emit_signal("army_requisition_completed", army_id, first_domain, total_cp)
+	elif EventBus.has_signal("army_loot_completed"):
+		EventBus.emit_signal("army_loot_completed", army_id, first_domain, total_cp, total_families_lost)
 	return {
-		"mode": mode,
-		"extracted_gp": extracted_gp,
-		"hex_q": hex_q,
-		"hex_r": hex_r,
-		"calendar_day": calendar_day,
+		"mode": mode, "map_id": map_id, "gp_yield_cp": total_cp,
+		"families_lost": total_families_lost, "domains": domain_ids, "results": results,
 	}
 
 

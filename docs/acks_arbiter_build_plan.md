@@ -333,7 +333,7 @@ Complexity 4 because: every proficiency hook, every spell effect hook, every mod
 - Test suite: ~40+ tests.
 
 **Monster Behavior AI**
-The combat manager needs to resolve monster turns, which means: select action (attack, special ability, flee), select target (nearest, most wounded, random — simple heuristics), execute via the same attack/damage pipeline PCs use, check morale at triggers (first death, half casualties, leader killed). The gdd_combat_behavior_tags.md already classifies monster behaviors — F-1 implements the basic tags, O-2 implements the advanced ones.
+The combat manager needs to resolve monster turns, which means: select action (attack, special ability, flee), select target (nearest, most wounded, random — simple heuristics), execute via the same attack/damage pipeline PCs use, check morale at triggers (first death, half casualties, leader killed). The gdd_combat_behavior_tags.md already classifies monster behaviors — F-1 implements the basic tags.
 
 **Depends on:** E-2 (session runner for combat entry/exit), D-4 (dungeon grid for tactical movement), spell hook infrastructure, proficiency registry.
 **Blocks:** G-2 (henchman morale in combat), H-1 (domain military), I-1 (integration test needs combat).
@@ -788,16 +788,6 @@ Implements gdd-combat-map-generation.md. Generates tactical combat maps from ter
 
 ---
 
-#### O-2: Boss Encounter Tactical AI
-
-**Complexity: 4**
-
-Intelligent monster behavior for significant encounters. Uses gdd_combat_behavior_tags.md for behavior classification. Must handle: spellcasting monsters (spell selection, target priority), retreat triggers, minion coordination, environmental interaction. This is the hardest AI problem in the project.
-
-**Depends on:** F-1 (combat system), O-1 (battle maps for tactical positioning).
-
----
-
 #### O-3: Batch Pre-Generation (Tier 1.5)
 
 **Complexity: 2**
@@ -888,10 +878,9 @@ Character language list, language requirements for reading/writing (INT-based li
 | N-3 | Live NPC Interaction | Real-time LLM dialogue | 3 | ☐ |
 | N-4 | Campaign Memory | Persistent narrative state | 3 | ☐ |
 | O-1 | Battle Map Gen | Procedural tactical maps | 3 | ☐ |
-| O-2 | Boss Tactical AI | Intelligent monster combat behavior | 4 | ☐ |
 | O-3 | Batch Pre-Gen | Background content generation | 2 | ☐ |
 | O-4 | NPC Domain Sim | Simulated NPC domain turns | 3 | ☐ |
 | O-5 | Homebrew System | Class/monster/spell builder | 3 | ☐ |
 | O-6 | Language System | Language list, literacy, barriers | 1 | ☐ |
 
-**Complexity distribution:** 3× complexity 1, 14× complexity 2, 21× complexity 3, 7× complexity 4.
+**Complexity distribution:** 3× complexity 1, 14× complexity 2, 21× complexity 3, 6× complexity 4.

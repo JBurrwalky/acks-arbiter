@@ -70,6 +70,12 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	})
 	return {
 		"summary": summary,
+		# decree_kind rides the structured outcome so downstream consumers can
+		# disambiguate same-day decree variants without re-parsing params — the
+		# Seam-A narrator (RulerActionNarrator) passes it as the cache variant_key
+		# so a tax decree and a liturgy decree issued the same day by the same
+		# ruler do not alias one narration-cache slot.
+		"decree_kind": kind,
 		"presentation": {"type": "toast", "text": summary},
 	}
 

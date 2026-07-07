@@ -1240,6 +1240,14 @@ signal army_supply_threatened(army_id: String, cause: String)
 ## status string for downstream display.
 signal army_supply_cut(army_id: String, cause: String)
 
+## An army finished a requisition (gdd-army-warfare.md §4.3; RAW L328). gp_yield is
+## the cp credited to the army stockpile; domain_id is the (first) domain requisitioned.
+signal army_requisition_completed(army_id: String, domain_id: String, gp_yield: int)
+
+## An army finished looting (§4.3; RAW L335-336). gp_yield is the cp credited; families_lost
+## is the peasant families destroyed (1 per 20 gp looted).
+signal army_loot_completed(army_id: String, domain_id: String, gp_yield: int, families_lost: int)
+
 ## Emitted by RecruitmentVagariesResolver.resolve() for the monthly recruitment
 ## roll per daw_vagaries.xml §vagaries_of_recruitment L24-185. Consumers:
 ## domain notification surface, unified log, and per-result handlers (Phase 7
@@ -1405,6 +1413,24 @@ signal market_class_modifier_applied(settlement_id: String, delta: int, expires_
 
 ## Emitted when a new siege begins (either resolution mode).
 signal siege_started(siege_id: String, stronghold_id: String, besieging_army_id: String)
+
+## Phase F (gdd-army-warfare.md §4.10.5): an NPC-domain threat escalates. stage ∈
+## {fielded, battle_offered, battle_refused, siege_started}. For the unified log + threats UI.
+signal threat_escalated(threat_id: String, domain_id: String, stage: String)
+
+## Phase F (§4.10.3): a defeated field-battle army retreated into a friendly stronghold in the
+## battle hex — the victor MAY begin a siege. Emitted from the battle-aftermath path; a
+## SessionRunner-owned BattleRetreatSiegeRouter (which holds the live scheduler) decides.
+signal battle_loser_retreated_into_stronghold(victor_army_id: String, stronghold_id: String, defeated_army_id: String, battle_id: String)
+
+## Phase F (§4.10.3): a player army won a field battle whose loser retreated into a friendly
+## stronghold in the hex — the player may begin a siege (Besiege / Encamp / March-on).
+signal siege_decision_required(victor_army_id: String, stronghold_id: String, defeated_army_id: String)
+
+## Phase F (§4.10.3): the player resolved the post-victory siege-decision prompt.
+## choice ∈ {besiege, encamp, march_on}. Emitted by SessionRunner after routing the choice
+## (siege dispatch / encamp order); the unified log surfaces it.
+signal siege_decision_resolved(stronghold_id: String, choice: String)
 
 ## Emitted on every daily tick where a measurable state change occurred
 ## (shp damage, breach added, repair, blockade flip). UI listens to refresh

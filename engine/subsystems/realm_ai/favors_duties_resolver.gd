@@ -167,6 +167,50 @@ static func roll_monthly(
 
 
 # ---------------------------------------------------------------------------
+# Deliberate call-to-arms trigger (ruler-AI Phase D — gdd-ruler-ai.md §5.3)
+# ---------------------------------------------------------------------------
+
+## Deliberately impose a call_to_arms DUTY on ONE vassal — the ruler-AI planner's crisis muster
+## (distinct from the random monthly favors-and-duties roll). Reuses the SAME obligation-creation
+## + cumulative safe-total loyalty machinery as the monthly roll via _apply_obligation, so the
+## planner triggers a duty without re-implementing the table (docs/handoff-army-warfare-seams.md
+## §6 step 1). `magnitude_pct` (RAW: minimum 50 = half the realm garrison; clamped 50-100).
+## `lord_army_id_override` merges the mustered troops into an existing lord army when set.
+## Returns the _apply_obligation dict enriched with `success` + `lord_army_id` (the army the
+## tranches will arrive into — so the caller can merge subsequent vassals into it).
+static func trigger_call_to_arms(assignment: Dictionary, calendar_day: int,
+		magnitude_pct: int = 50, scheduler = null, dice = null,
+		lord_army_id_override: String = "") -> Dictionary:
+	if String(assignment.get("id", "")).is_empty() \
+			or String(assignment.get("liege_character_id", "")).is_empty() \
+			or String(assignment.get("vassal_character_id", "")).is_empty():
+		return {"success": false, "error": "bad_assignment", "revolted": false}
+	var classification := {
+		"kind": "duty", "type": "call_to_arms",
+		"result_key": "call_to_arms", "is_one_time": false,
+	}
+	var outcome: Dictionary = _apply_obligation(
+		assignment, classification, calendar_day, dice, scheduler,
+		lord_army_id_override, magnitude_pct)
+	var state_id: String = String(outcome.get("call_to_arms_state_id", ""))
+	outcome["success"] = not bool(outcome.get("revolted", false)) and not state_id.is_empty()
+	outcome["lord_army_id"] = _lord_army_for_call(state_id)
+	return outcome
+
+
+## The lord army a call_to_arms_state row musters into (so the planner can merge subsequent
+## vassals into the same army). "" for an empty / missing state id.
+static func _lord_army_for_call(call_to_arms_state_id: String) -> String:
+	if call_to_arms_state_id.is_empty():
+		return ""
+	if not CampaignRepository.db.query_with_bindings(
+		"SELECT lord_army_id FROM call_to_arms_state WHERE id = ?", [call_to_arms_state_id]):
+		return ""
+	var rows: Array = CampaignRepository.db.query_result
+	return String((rows[0] as Dictionary).get("lord_army_id", "")) if not rows.is_empty() else ""
+
+
+# ---------------------------------------------------------------------------
 # Obligation issuance (favors + duties)
 # ---------------------------------------------------------------------------
 
@@ -175,7 +219,9 @@ static func _apply_obligation(
 	classification: Dictionary,
 	calendar_day: int,
 	dice,
-	scheduler = null
+	scheduler = null,
+	lord_army_id_override: String = "",
+	magnitude_pct_override: int = 50
 ) -> Dictionary:
 	var assn_id: String = String(assignment.get("id", ""))
 	var kind: String = String(classification["kind"])
@@ -225,7 +271,10 @@ static func _apply_obligation(
 	# garrison). Future UI work may surface a slider for the lord to choose
 	# 50%-100% with the ≥100% case adding the second-duty cost.
 	var obligation_id: String = ""
-	var call_to_arms_magnitude_pct: int = 50
+	# Phase 9C default 50 (RAW minimum half garrison); the ruler-AI planner (Phase D) may pass a
+	# higher magnitude via magnitude_pct_override (clamped to the RAW 50-100 band; >=100 costs a
+	# second duty per CallToArmsMuster.compute_duty_count).
+	var call_to_arms_magnitude_pct: int = clampi(magnitude_pct_override, 50, 100)
 	if not revolted or kind == "favor":
 		obligation_id = VassalObligationsRepository.create({
 			"vassal_assignment_id": assn_id,
@@ -269,7 +318,8 @@ static func _apply_obligation(
 				String(assignment.get("vassal_character_id", "")),
 				calendar_day,
 				call_to_arms_magnitude_pct,
-				scheduler  # Phase 9C polish: real scheduler from caller; null in tests.
+				scheduler,  # Phase 9C polish: real scheduler from caller; null in tests.
+				lord_army_id_override  # Phase D: merge vassals into one lord army when set.
 			)
 
 	# Mechanical effects. Treasury columns are cp (Migration 111), so pass cp.
