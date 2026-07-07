@@ -61,8 +61,8 @@ There is **no generic "Gather Information" skill or table in ACKS 1e** (corpus-v
 
 - **Characters gain 1 XP per 1 gp of coin, gems, jewelry, and special treasure recovered on adventures** (`acore_adventures_and_encounters.xml:585`), **but only once brought back to civilization** (nearest friendly town or stronghold, `:581-582`; also `acore_treasure_and_magic_items_rules.xml:5`).
 - **Magic items** sold *without being used* grant 1 XP per 1 gp of sale value (`:592`); used items grant none.
-- **"Wages and business transactions do not grant treasure XP"** (`:596`). **This is the load-bearing constraint for quest gold rewards.** A quest bounty paid by an NPC looks a great deal like a "business transaction," not treasure recovered from a dungeon. Whether a quest gold reward grants XP is therefore **not settled by RAW and must be ruled** — see §16 O-Q1. This GDD's default (§8.4) treats quest gold as **treasure-equivalent for XP** (it is a reward for adventuring, disbursed to a PC), but the reward record carries an `xp_eligible` flag so the ruling can flip it globally without touching the reward math.
-- **Monster XP** is computed from the Monster Experience Points table (base XP by HD + bonus per special ability, `acore_adventures_and_encounters.xml:601-660`); a dungeon/lair's total monster XP is the sum over its monsters (`ax_domain_level_encounters.xml:324`). This total is the **base for reward scaling** (§8.1) — it is the calibrated measure of "how dangerous is this threat."
+- **"Wages and business transactions do not grant treasure XP"** (`:596`). A quest bounty paid by an NPC looks a great deal like a "business transaction," not treasure recovered from a dungeon, so RAW does not settle whether it grants XP. **Ruled (Jedidiah, 2026-07-07): quest rewards grant XP equal to their GP monetary value** on disbursement — quest rewards are adventuring rewards, not the "business transaction" exclusion (specced §8.2). Domain grants remain XP-exempt (§8.8).
+- **Monster XP** is computed from the Monster Experience Points table (base XP by HD + bonus per special ability, `acore_adventures_and_encounters.xml:601-660`); a dungeon/lair's total monster XP is the sum over its monsters (`ax_domain_level_encounters.xml:324`). This total is the **base for creature-bounty reward scaling** (§8.1: bounties pay 2× monster XP) and the calibrated measure of "how dangerous is this threat"; treasure-bearing rewards (lair/dungeon/brigand) scale off **pre-estimated treasure** instead (§8.1).
 
 ### 2.3 The treasure economy the reward must not break
 
@@ -221,20 +221,21 @@ Rumor:
 
 Not all rumors are true. Accuracy is rolled at generation by source type. **PoI rumors already carry an `accuracy` field from `poi_generator.gd` (`true`/`exaggerated`/`misleading`)** — the runtime layer consumes that verbatim; the table below governs the *other* sources.
 
-| `source_type` | true | exaggerated | misleading | false |
-|---|---|---|---|---|
-| poi | (as emitted by poi_generator) | | | |
-| dungeon | 40% | 30% | 20% | 10% |
-| lair | 50% | 25% | 15% | 10% |
-| political | 60% | 20% | 15% | 5% |
-| settlement | 70% | 15% | 10% | 5% |
-| npc | 40% | 20% | 20% | 20% |
-| quest | 100% | — | — | — |
-| historical | 30% | 30% | 25% | 15% |
+| `source_type` | true | exaggerated | understated | misleading | false |
+|---|---|---|---|---|---|
+| poi | (as emitted by `poi_generator`; no `understated`) | | | | |
+| dungeon | 40% | 15% | 15% | 20% | 10% |
+| lair | 50% | 12.5% | 12.5% | 15% | 10% |
+| political | 60% | 10% | 10% | 15% | 5% |
+| settlement | 70% | 7.5% | 7.5% | 10% | 5% |
+| npc | 40% | 10% | 10% | 20% | 20% |
+| quest | 100% | — | — | — | — |
+| historical | 30% | 15% | 15% | 25% | 15% |
 
 Definitions:
 - **true** — all material facts correct (location, creature, treasure, danger).
 - **exaggerated** — core facts correct, magnitude inflated (treasure ×2, monster stronger, danger overstated). Following it works; expectations are too high.
+- **understated** — core facts correct, magnitude **deflated** (treasure ×½, monster weaker, danger downplayed). Following it works; the party under-prepares — or is pleasantly surprised. The mirror of `exaggerated` (Jedidiah, 2026-07-07); the former `exaggerated` share is split 50/50 between the two.
 - **misleading** — location/target correct, a key detail wrong (wrong creature, wrong treasure type, wrong faction). Right place, wrong preparation.
 - **false** — fabricated or garbled beyond use (wrong location, threat gone, treasure already taken). Still points at a *real* hex; what the party finds won't match.
 
@@ -244,7 +245,7 @@ Definitions:
 
 Four channels deliver rumors to the party. Each is a *skin* over the sacred mechanics of §2.1.
 
-**(a) Carousing (RAW hijink — sacred; the "wholesale" channel).** A character assigned to carousing makes a **Hear Noise throw** (`acore-campaign-hijinks.xml:134`, with class/proficiency modifiers per RAW). On success the engine builds the eligible rumor pool for this settlement (§4.7 filters), weights it (§4.3.1), selects one, marks it `known_to_party`, and — per the sacred hook `:137` — **delivers the rumor as the reward** (the "campaign-relevant valuable rumor instead of money" branch). The gp figure `3d12×5×level` (`:136`) is still computed and available if the player instead wants the cash outcome (Judge's/engine's option; the game defaults to the rumor for adventuring value). Failure by 14+ / natural 1 → caught, per the RAW capture table. Carousing lives in the hijink system; this GDD supplies the *pool* it draws from.
+**(a) Carousing (RAW hijink — sacred; the "wholesale" channel).** A character assigned to carousing makes a **Hear Noise throw** (`acore-campaign-hijinks.xml:134`, with class/proficiency modifiers per RAW). On success the engine rolls the outcome — **60% a cash windfall (`3d12×5×level` gp, `:136`), 40% a campaign-relevant rumor** (the `:137` "valuable rumor instead of money" branch) — ruled for PCs and their henchmen/hirelings/followers (Jedidiah, 2026-07-07; both outcomes are valuable and both are emitted — the cash figure is chiefly a syndicate-play abstraction). On the rumor branch the engine builds the settlement's eligible pool (§4.7), weights it (§4.3.1), selects one, and marks it `known_to_party`. A **campaign-relevant rumor** here means actionable drama — faction/ruler intrigue — or the location of a dungeon/treasure, *not* the cash abstraction. **Carousing-heard rumors gain a +5%-per-carouser-level accuracy bonus** (Jedidiah, 2026-07-07): roll `5% × carouser_level`; on success the rumor is delivered at its true accuracy (`true`), representing the carouser sorting signal from noise — so a very high-level carouser hears very (at 20th level, perfectly) accurate info. Failure by 14+ / natural 1 → caught, per the RAW capture table. **Carousing is a long activity** — the build agent must read `ax_campaign_play.xml` for its duration before wiring it. Carousing lives in the hijink system; this GDD supplies the *pool* it draws from and the 60/40 outcome roll.
 
 **(b) Spying (RAW hijink — sacred; the class-gated, high-value channel).** Assassins/nightblades/thieves only (`:175`). On success the perpetrator learns a **secret** worth `2d12×100gp×level` (`:179`), or, per `:180`, a campaign-relevant secret instead. In this system a spying success draws from the **high-value / low-`min_npc_tier`-restricted** end of the pool: `criminal`, `political`, and `military` category rumors, and rumors pointing at the richest targets, with a strong weight toward `min_npc_tier` A/B secrets a caroused rumor would never surface (plot existence, a questgiver's hidden motive, a dungeon's true depth).
 
@@ -257,7 +258,7 @@ Four channels deliver rumors to the party. Each is a *skin* over the sacred mech
 | Neutral | shares only with a successful influence check that turn (roll ≥ 9), else deflects |
 | Unfriendly / Hostile / Fearful | never volunteers (may *lie* per dialogue §9.4 if pressed) |
 
-Selection then runs §4.7 (NPC-eligible pool) → §4.3.1 (weighting) → mark `known_to_party` → emit `rumor_heard`. **This is the retail channel; "Gather Information" (the settlement verb) is its menu-level quick-resolve** — a 6-hour major activity (`gdd-settlement-exploration-ui.md:266`) that resolves one reaction-share against a generated Tier-C interlocutor without opening a full dialogue.
+Selection then runs §4.7 (NPC-eligible pool) → §4.3.1 (weighting) → mark `known_to_party` → emit `rumor_heard`. **"Gather Information" is a distinct settlement activity built on this reaction-share** (Jedidiah, 2026-07-07): a dedicated **1-hour** activity (not carousing) in a district's public spaces — a reaction roll against the ambient public NPCs to see whether anyone is friendly enough to chat and share a rumor. On success the rumor surfaces in an "I heard…" modal, the session status-bar log, and the Quests-tab rumor tracker. Unlike carousing it yields **no gp reward and carries no criminal-charge risk on failure**. Build the mechanic and its hooks **now**; it is wired for a future consumer — settlement menus will nest (travel to a **District** → land among public-interaction options plus a POI sub-menu; some POIs sub-nest to individual rooms/NPCs), and Gather Information will live in the District's public-space options. That settlement-menu reorganization is TBD; wire the surface when it lands.
 
 **(d) Venturer rumormongering (RAW — sacred).** A level-4+ venturer party member revisiting an urban settlement where they've done business auto-learns **1d4 rumors** (`ax_venturer_class.xml:172-177`), once/month, 6-hour activity. The engine grants 1d4 draws from that settlement's eligible pool, weighted as below, no throw required (RAW says "automatically").
 
@@ -500,17 +501,26 @@ When a faction org turn selects `post_job` (faction §6.5), the faction mints a 
 **Principle (from §2.3):** the reward is a *premium on top of* the threat's own treasure, not a replacement. It is calibrated *below* on-site treasure.
 
 ```
-base_reward = estimated_threat_xp × reward_multiplier
-  estimated_threat_xp = Σ monster XP at the threat site (Monster Experience Points table,
-                        acore_adventures_and_encounters.xml:601-660; dungeon total per
-                        ax_domain_level_encounters.xml:324)
-  reward_multiplier by threat_type:
-    monster_lair   0.50   dungeon        0.25   brigand   0.75
-    creature_bounty1.00   escort/delivery(time-based, below)  recovery (§8.5)
-    reconnaissance 0.25   domain_conquest(domain grant, §8.7) faction_goal (§7.9)
+# Treasure-bearing threats (lair / dungeon / brigand) — a PERCENTAGE of expected treasure:
+base_reward = estimated_threat_treasure × reward_multiplier
+  estimated_threat_treasure = expected GP value of the threat's treasure, PRE-ESTIMATED at
+                        generation from the ACKS treasure types of its monsters/lair
+                        (average-roll valuation, acore_treasure_and_magic_items_rules.xml)
+  reward_multiplier:  monster_lair 0.50   dungeon 0.25   brigand 0.75   # = the §13.1 bands
+
+# Creature bounties (lone monsters — little/no treasure) — a MULTIPLE of monster XP, so a
+# treasure-less bounty never collapses to ~0 (Jedidiah, 2026-07-07):
+base_reward = (Σ monster XP at the site) × 2.0
+  monster XP from the Monster Experience Points table (acore_adventures_and_encounters.xml:601-660)
+
+# Time-based (escort/delivery/reconnaissance): party-level daily rate, below.
+# recovery (§8.5); domain_conquest → domain grant (§8.8); faction_goal → §7.9.
+
 variance:  final = base × (0.90 + rand(0,0.20))          # ±10%
 round:     nearest 25 gp (<500) or nearest 100 gp (≥500) # NPCs offer round numbers
 ```
+
+The `estimated_threat_treasure` pre-estimation (Jedidiah, 2026-07-07) is what lets a lair/dungeon reward be a true percentage of expected loot (§13.1) rather than a monster-XP proxy; a simple percentage of *recovered* treasure would pay ~0 for a lone bounty monster with no hoard — hence the separate 2× monster-XP basis for bounties. The exact average-roll valuation of each treasure type is a tunable build detail.
 
 **Party-level daily rate** (time-based types):
 ```
@@ -522,9 +532,9 @@ reconnaissance reward    = party_level_gp_rate × travel_days × 0.25 (+ optiona
 
 **Sanity bounds:** `minimum 25 gp` (nothing posts for less); `maximum gold 25,000 gp` (above this, rewards shift to domain grants or political favors).
 
-### 8.2 The `xp_eligible` flag (the RAW tension made explicit)
+### 8.2 Reward XP — ruled: rewards grant XP equal to their GP value
 
-Because RAW says wages/business transactions grant no treasure XP (§2.2, `acore_adventures_and_encounters.xml:596`), the `quest_rewards` record carries `xp_eligible: bool`, defaulting **true** (the game's design intent is that quest gold *is* adventuring reward and grants 1 XP/gp on disbursement to a PC). If Jedidiah rules that quest gold is "business" (no XP), flip the default — no reward-math change. See §16 O-Q1. Item rewards follow RAW: a magic item grants XP only if **sold unused** (`:592`); the record notes this so the turn-in flow doesn't award XP for a kept item.
+**Jedidiah ruled (2026-07-07, closing §16 O-Q1): quest rewards grant XP equal to their monetary (GP) value on disbursement.** Quest rewards are adventuring rewards, not the RAW "business transaction" exclusion (§2.2). On turn-in the recipient PC gains XP equal to the reward's `total_gp_value`: gold at face, item rewards at their GP-equivalent, political favors at their GP-equivalent (§8.4). **Exception — domain grants are XP-exempt (§8.8):** a domain is land and vassalage, not spendable coin, and awarding its gp-equivalent (often tens of thousands) as XP would break progression. XP is awarded **once**, on disbursement; a reward item does **not** additionally grant RAW "sold-unused" XP (no double count). Treasure the party physically **recovers at the threat site** (caches, hoards, found magic items) is unaffected and still follows RAW (§2.2: 1 XP/gp recovered to civilization; a found magic item only if sold unused). The `quest_rewards.xp_eligible` flag defaults **true** and remains only as a rare per-quest override (e.g., a reward explicitly framed as a wage).
 
 ### 8.3 Reward tone by questgiver Motivation
 
