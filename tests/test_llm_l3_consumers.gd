@@ -461,7 +461,7 @@ func test_seam_b_still_rejects_bare_issue_decree_bias() -> void:
 
 func _polity_row(id: String, culture_id: String) -> Dictionary:
 	return {
-		"id": id, "culture_id": culture_id, "alignment": "Lawful", "tier_index": 3,
+		"id": id, "culture_id": culture_id, "alignment": "lawful", "tier_index": 3,
 		"title": "Barony", "ruler_class": "fighter", "ruler_level": 6,
 		"ruler_quality": "average", "capital_q": 0, "capital_r": 0, "liege_id": "",
 		"vassalized_by_war": 0, "founded_tick": 0, "fell_tick": 0, "fade_onset_tick": 0,

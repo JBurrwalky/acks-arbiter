@@ -198,11 +198,11 @@ func test_orso_rebellion_realm_layer_end_to_end() -> void:
 
 func test_player_vassal_favors_and_solicitation() -> void:
 	var liege := _character("NPC Liege")
-	var lr := _realm("NPC Kingdom", liege)
+	var lr := _realm("NPC Kingdom", liege, "lawful")
 	var ld := _domain("NPC Crown", liege, lr)
 	# A PC swears fealty.
 	var pc := _pc("Sir Player")
-	var pc_realm := _realm("PC Barony", pc)
+	var pc_realm := _realm("PC Barony", pc, "lawful")
 	var pc_dom := _domain("PC Seat", pc, pc_realm, ld)
 	var swear := PlayerVassalService.swear_fealty(_campaign_id, pc, liege, pc_dom, 10, false)
 	check(bool(swear.get("ok", false)), "PC swore fealty")
@@ -218,7 +218,7 @@ func test_player_vassal_favors_and_solicitation() -> void:
 
 	# A rebellion plot solicits the player-vassal; a 'join' writes a plot-member row.
 	var rebel := _character("Rebel Lord")
-	var rr := _realm("Rebel Duchy", rebel)
+	var rr := _realm("Rebel Duchy", rebel, "neutral")
 	var rm := _mirror(rr)
 	var pid := RebelCoalition.seed_rebellion(_campaign_id, rm, lr, rebel, 50)
 	var ans := PlayerVassalService.answer_solicitation(pid, pc, "join", liege, 55)

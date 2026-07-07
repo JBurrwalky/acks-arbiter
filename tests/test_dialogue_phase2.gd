@@ -411,7 +411,8 @@ func test_hire_accept_finalizes() -> void:
 	# The recruit is now a henchman in the party with an employer.
 	var c := CampaignRepository.get_character(recruit)
 	check(String(c.get("character_type", "")) == "henchman", "recruit is now a henchman")
-	check(String(c.get("employer_id", "")) == employer, "employer set")
+	# employer_id is a nullable column — String(null) crashes, so read it null-safely.
+	check(_str_or(c.get("employer_id", ""), "") == employer, "employer set")
 
 
 func test_hire_refuse_slander_penalty() -> void:
@@ -467,7 +468,8 @@ func test_exit_hire_through_negotiation_then_slander() -> void:
 	check(r_accept.get("hired", false) == true, "sweetened offer (8 + terms +1) -> Accept -> hired")
 	var c := CampaignRepository.get_character(recruit)
 	check(String(c.get("character_type", "")) == "henchman", "recruit joined as a henchman (party membership)")
-	check(String(c.get("employer_id", "")) == employer, "employer recorded")
+	# employer_id is a nullable column — String(null) crashes, so read it null-safely.
+	check(_str_or(c.get("employer_id", ""), "") == employer, "employer recorded")
 	# The hire issue is granted.
 	var hire_iss := CampaignRepository.get_npc_issue(_campaign_id, recruit, _party_id, "hire:%s" % recruit)
 	check(not hire_iss.is_empty() and NpcIssueData.from_dict(hire_iss).status == "granted",
@@ -497,3 +499,11 @@ func _dice_of(total: int):
 	var d := FixedDice.new()
 	d.fixed_total = total
 	return d
+
+
+## Null-safe String coercion for nullable DB columns. String(null) is an invalid
+## GDScript constructor call; a NULL column value must not crash the assertion.
+func _str_or(v: Variant, default_value: String) -> String:
+	if v == null:
+		return default_value
+	return str(v)

@@ -146,7 +146,13 @@ func test_sound_out_informant_exposes_plot() -> void:
 	var id_ := _domain("Fief INF", instigator, ir, ld)
 	var cd := _domain("Fief LOY", candidate, cr, ld)
 	_assignment(liege, instigator, id_)
-	_assignment(liege, candidate, cd)
+	# The informant candidate must reach FANATIC (12+ AFTER the §5.2 modifier stack)
+	# to inform the liege. A non-henchman vassal carries base_loyalty_modifier −2,
+	# so dice 12 nets to 11 (Loyal) and FANATIC is unreachable. Configure this
+	# candidate as a HENCHMAN vassal (base_loyalty_modifier 0); with the liege and
+	# candidate sharing alignment (both neutral → +1) the net is dice 12 + 0 + 1 =
+	# 13 → FANATIC. (Instigator stays a plain −2 non-henchman; unrelated to this roll.)
+	_assignment(liege, candidate, cd, true, 0)
 	var im := _mirror(ir)
 	var pid := RebelCoalition.seed_rebellion(_campaign_id, im, lr, instigator, 10)
 	var dice := FakeDice.new()

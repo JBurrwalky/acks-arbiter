@@ -35,7 +35,10 @@ static func hireable_as(npc_id: String, attitude: String, scene: Dictionary = {}
 	if c.is_empty():
 		return []
 	# Ineligible: already employed (has employer), or dead.
-	if String(c.get("employer_id", "")).strip_edges() != "":
+	# employer_id is a nullable FK column — a freshly-materialized NPC has it NULL,
+	# and String(null) is an invalid GDScript constructor (crashes). Use the
+	# null-safe _s() so an unemployed NPC reads as "" and stays hireable.
+	if _s(c.get("employer_id", "")).strip_edges() != "":
 		return []
 	# day_of_death defaults to -1 (alive); any value >= 0 is a recorded death.
 	if int(c.get("day_of_death", -1)) >= 0:
@@ -129,6 +132,14 @@ static func _disposition(outcome: String) -> String:
 		HenchmanTables.HIRE_REFUSE_SLANDER:
 			return "refuse_slander"
 	return "refuse"
+
+
+## Null-safe String coercion. String(null) is an invalid constructor call in
+## GDScript; nullable DB columns (e.g. employer_id) come back as null, not "".
+static func _s(v: Variant, default_value: String = "") -> String:
+	if v == null:
+		return default_value
+	return str(v)
 
 
 static func _is_soldier_type(c: Dictionary) -> bool:

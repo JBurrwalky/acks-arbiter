@@ -239,16 +239,19 @@ static func launch(plot_id: String, liege_character_id: String, day: int,
 	var liege_realm: Dictionary = RealmRepository.get_realm_for_character(liege_character_id)
 	var liege_realm_id: String = String(liege_realm.get("id", ""))
 
-	# Mint the rebel realm headed by the instigator's leader.
+	# Mint the rebel realm headed by the instigator's leader. Faction columns can
+	# be SQL NULL (realm-mirror rows don't set every field), so coerce through _s()
+	# — String(null) is an invalid constructor call in GDScript. alignment must be
+	# one of the realms CHECK values ('lawful'/'neutral'/'chaotic'); default neutral.
 	var instigator_faction: Dictionary = CampaignRepository.get_faction(instigator_faction_id)
-	var rebel_head: String = String(instigator_faction.get("leader_npc_id", ""))
+	var rebel_head: String = _s(instigator_faction.get("leader_npc_id"), "")
 	var rebel_realm_id: String = RealmRepository.create_realm({
 		"campaign_id": campaign_id,
-		"name": "Rebel Coalition of %s" % String(instigator_faction.get("name", "the Vassals")),
+		"name": "Rebel Coalition of %s" % _s(instigator_faction.get("name"), "the Vassals"),
 		"head_character_id": rebel_head,
-		"alignment": String(instigator_faction.get("alignment", "neutral")),
-		"dominant_religion": String(instigator_faction.get("religion_id", "")),
-		"culture": String(instigator_faction.get("culture_id", "")),
+		"alignment": _s(instigator_faction.get("alignment"), "neutral"),
+		"dominant_religion": _s(instigator_faction.get("religion_id"), ""),
+		"culture": _s(instigator_faction.get("culture_id"), ""),
 		"realm_kind": "tracked",
 	})
 	var rebel_faction_id: String = FactionRegistry.ensure_realm_mirror(campaign_id, rebel_realm_id)
@@ -260,7 +263,7 @@ static func launch(plot_id: String, liege_character_id: String, day: int,
 	for m in CampaignRepository.ff_list_plot_members(plot_id, ["committed"]):
 		var member_faction: Dictionary = CampaignRepository.get_faction(
 			String((m as Dictionary).get("faction_id", "")))
-		var member_head: String = String(member_faction.get("leader_npc_id", ""))
+		var member_head: String = _s(member_faction.get("leader_npc_id"), "")
 		if member_head == "":
 			continue
 		if _repoint_domains_to_realm(member_head, rebel_realm_id):
@@ -527,3 +530,12 @@ static func _emit_status(plot_id: String, status: String, instigator_faction_id:
 static func _parse_json(s: String) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(s)
 	return parsed if parsed is Dictionary else {}
+
+
+## Null-safe String coercion: SQL-NULL faction/realm columns come back as a Variant
+## null, and String(null) is an invalid constructor call in GDScript. Returns the
+## default when the value is null (or an unset ""), else the string form.
+static func _s(v: Variant, default_value: String = "") -> String:
+	if v == null:
+		return default_value
+	return str(v)
