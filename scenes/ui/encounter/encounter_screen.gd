@@ -9,6 +9,13 @@ extends CanvasLayer
 signal encounter_resolved(result: Dictionary)
 signal combat_requested
 signal flee_requested
+## Phase 1 dialogue: the parley/talk buttons now route into the dialogue surface
+## (gdd-npc-dialogue.md §4.2 — "all roads lead to DialogueSession.begin"). The
+## EncounterState (which owns the party/runner context this pure-UI screen lacks)
+## catches this, builds a DialogueContext from the ALREADY-rolled encounter
+## reaction (no double-roll, §6.1), and opens the DialogueScreen. The old
+## `_attempt_influence` in-place reaction stub is retired.
+signal parley_requested(encounter_data: Dictionary)
 
 const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
 const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
@@ -191,25 +198,24 @@ func _build_action_panel(parent: Control) -> void:
 
 	_action_panel.add_child(_heading("Actions"))
 
-	# Context-dependent actions based on attitude.
+	# Context-dependent actions based on attitude. The talk-shaped buttons
+	# (Parley/Intimidate/Trade/Ask Rumor/Hire) now route into the dialogue
+	# surface via _open_dialogue() rather than the retired in-place reaction stub.
 	match _attitude:
 		"hostile":
+			_add_action_btn("Talk", func(): _open_dialogue())  # only surrender-context talk
 			_add_action_btn("Fight", func(): combat_requested.emit())
 			_add_action_btn("Flee", func(): flee_requested.emit())
 		"unfriendly":
-			_add_action_btn("Parley", func(): _attempt_influence("parley"))
-			_add_action_btn("Intimidate", func(): _attempt_influence("intimidate"))
+			_add_action_btn("Parley", func(): _open_dialogue())
 			_add_action_btn("Fight", func(): combat_requested.emit())
 			_add_action_btn("Flee", func(): flee_requested.emit())
 		"neutral":
-			_add_action_btn("Parley", func(): _attempt_influence("parley"))
-			_add_action_btn("Bribe", func(): _attempt_influence("bribe"))
+			_add_action_btn("Parley", func(): _open_dialogue())
 			_add_action_btn("Fight", func(): _confirm_attack())
 			_add_action_btn("Leave", func(): _resolve_peacefully())
 		"indifferent", "friendly":
-			_add_action_btn("Trade", func(): _resolve_peacefully())
-			_add_action_btn("Ask Rumor", func(): _resolve_peacefully())
-			_add_action_btn("Hire", func(): _resolve_peacefully())
+			_add_action_btn("Talk", func(): _open_dialogue())
 			_add_action_btn("Leave", func(): _resolve_peacefully())
 
 
@@ -226,23 +232,15 @@ func _add_action_btn(text: String, callback: Callable) -> void:
 # Interaction handlers
 # ---------------------------------------------------------------------------
 
-func _attempt_influence(tone: String) -> void:
-	var roll := DiceSystem.roll_digital(6, 2, 0, "reaction")
-	var new_reaction := roll.modified_total
-
-	_narrative_area.text += "\n\nYou attempt to %s. Roll: %d." % [tone, new_reaction]
-
-	if new_reaction >= 9:
-		_attitude = "indifferent"
-		_narrative_area.text += " They seem more receptive."
-	elif new_reaction <= 3:
-		_attitude = "hostile"
-		_narrative_area.text += " They become hostile!"
-
-	# Rebuild actions for new attitude.
-	for child in _action_panel.get_children():
-		child.queue_free()
-	_build_action_panel(_action_panel.get_parent())
+## Route into the dialogue surface (gdd-npc-dialogue.md §4.2). The old in-place
+## reaction-roll stub (_attempt_influence) is retired — dialogue owns influence
+## attempts now. The encounter's ALREADY-rolled reaction seeds the session so it
+## is NOT re-rolled (§6.1); we pass it through on the encounter_data payload.
+func _open_dialogue() -> void:
+	var payload: Dictionary = _encounter_data.duplicate(true)
+	payload["reaction_roll"] = _reaction_result
+	payload["behavioral_disposition"] = _attitude
+	parley_requested.emit(payload)
 
 
 func _confirm_attack() -> void:

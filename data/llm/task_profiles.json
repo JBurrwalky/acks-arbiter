@@ -1,0 +1,202 @@
+{
+  "ruler_action_narration": {
+    "response_mode": "prose",
+    "qos": "decoration",
+    "context_budget_tokens": 1500,
+    "max_output_tokens": 120,
+    "cap_chars": 300,
+    "template": "llm_context/tasks/ruler_action_narration.txt",
+    "truncatable": [],
+    "v1_enabled": true
+  },
+  "ruler_strategy_reassessment": {
+    "response_mode": "json",
+    "qos": "decoration",
+    "context_budget_tokens": 2000,
+    "max_output_tokens": 300,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/ruler_strategy_reassessment.txt",
+    "truncatable": [],
+    "v1_enabled": true
+  },
+  "setting_narrative:timeline": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:brief": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:realm": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:culture": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:dungeon": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:poi": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": true
+  },
+  "setting_narrative:religion": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": false
+  },
+  "setting_narrative:quest": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": false
+  },
+  "setting_narrative:rumor": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": false
+  },
+  "setting_narrative:region": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 500,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/setting_narrative.txt",
+    "truncatable": ["fallback"],
+    "v1_enabled": false
+  },
+  "npc_personality_summary": {
+    "response_mode": "json",
+    "qos": "batch",
+    "context_budget_tokens": 1500,
+    "max_output_tokens": 250,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/npc_personality_summary.txt",
+    "truncatable": [],
+    "v1_enabled": false
+  },
+  "npc_dialogue_reply": {
+    "response_mode": "prose",
+    "qos": "interactive",
+    "context_budget_tokens": 3000,
+    "max_output_tokens": 150,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/npc_dialogue_reply.txt",
+    "truncatable": ["transcript_tail", "memories"],
+    "v1_enabled": false
+  },
+  "npc_dialogue_summary": {
+    "response_mode": "json",
+    "qos": "interactive",
+    "context_budget_tokens": 4000,
+    "max_output_tokens": 400,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/npc_dialogue_summary.txt",
+    "truncatable": ["transcript_tail"],
+    "v1_enabled": false
+  },
+  "interpret_player_input": {
+    "response_mode": "json",
+    "qos": "interactive",
+    "context_budget_tokens": 2000,
+    "max_output_tokens": 200,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/interpret_player_input.txt",
+    "truncatable": [],
+    "v1_enabled": false
+  },
+  "session_summary": {
+    "response_mode": "prose",
+    "qos": "batch",
+    "context_budget_tokens": 8000,
+    "max_output_tokens": 800,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/session_summary.txt",
+    "truncatable": ["session_log"],
+    "v1_enabled": false
+  },
+  "faction_action_narration": {
+    "response_mode": "prose",
+    "qos": "decoration",
+    "context_budget_tokens": 1500,
+    "max_output_tokens": 120,
+    "cap_chars": 300,
+    "template": "llm_context/tasks/faction_action_narration.txt",
+    "truncatable": [],
+    "v1_enabled": false
+  },
+  "region_name_polish": {
+    "response_mode": "json",
+    "qos": "batch",
+    "context_budget_tokens": 1500,
+    "max_output_tokens": 100,
+    "cap_chars": 1200,
+    "template": "llm_context/tasks/region_name_polish.txt",
+    "truncatable": [],
+    "v1_enabled": false
+  },
+  "connection_test": {
+    "response_mode": "prose",
+    "qos": "interactive",
+    "context_budget_tokens": 0,
+    "max_output_tokens": 0,
+    "cap_chars": 0,
+    "template": "",
+    "truncatable": [],
+    "v1_enabled": true
+  }
+}

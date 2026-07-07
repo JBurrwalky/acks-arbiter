@@ -580,6 +580,16 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 	for rid in tracked_realms:
 		db.query_with_bindings("UPDATE realms SET realm_kind = 'tracked' WHERE id = ?", [rid])
 
+	# Faction Framework FF-1.1 (gdd-faction-framework.md §5.1): every tracked
+	# realm gets exactly one realm-mirror faction so orgs/warbands/parties can
+	# hold stances toward it. Idempotent; foreign realms mirror lazily on first
+	# faction interaction (FactionRegistry.ensure_realm_mirror).
+	var mirror_count := 0
+	for rid in tracked_realms:
+		if FactionRegistry.ensure_realm_mirror(campaign_id, str(rid)) != "":
+			mirror_count += 1
+	result["realm_mirror_count"] = mirror_count
+
 	result["located_domain_count"] = located
 	result["tracked_realm_count"] = tracked_realms.size()
 

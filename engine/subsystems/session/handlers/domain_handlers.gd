@@ -203,6 +203,14 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 	var ruler_reports: Array = RulerAI.process_campaign_month(
 		_campaign_id, calendar_day, active_ruler_ids, domain_results, ruler_scheduler)
 
+	# Faction Framework FF-1.3 (gdd-faction-framework.md §5.6 final ¶): realm-
+	# relations QUIET-DECAY maintenance — a batch, no auto_pause, no LLM (the
+	# NpcSyndicateMonthlyResolver pattern). Runs AFTER RulerAI's batch and BEFORE
+	# threat escalation. Event-driven drift (conquest/revolt/vagary/pillage) fires
+	# at emission time via RealmRelationsDrift's EventBus listeners; this slot only
+	# ages quiet pairs one band toward their structural default.
+	RealmRelationsDrift.process_campaign_month(_campaign_id, calendar_day)
+
 	# Phase F (gdd-army-warfare.md §4.10.2): NPC challenger escalation runs AFTER RulerAI, only
 	# for active-LOD NPC domains — fields unfielded challengers, routes the §7.3 accept/refuse,
 	# and dispatches a siege/battle (accept) or stamps the RAW -4 pillage penalty (refuse). The

@@ -1,0 +1,32 @@
+{
+  "models": [
+    {
+      "name": "gpt-oss:120b",
+      "model": "gpt-oss:120b",
+      "modified_at": "2026-07-01T00:00:00.000000Z",
+      "size": 65000000000,
+      "digest": "abc123",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gptoss",
+        "parameter_size": "120B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    {
+      "name": "llama3.1:8b",
+      "model": "llama3.1:8b",
+      "modified_at": "2026-06-15T00:00:00.000000Z",
+      "size": 4700000000,
+      "digest": "def456",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "llama",
+        "parameter_size": "8B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  ]
+}

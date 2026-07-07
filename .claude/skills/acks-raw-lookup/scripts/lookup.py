@@ -31,6 +31,7 @@ from typing import Iterable
 
 # Source precedence: lower index = higher precedence.
 PRECEDENCE_PREFIXES: list[tuple[str, str]] = [
+    ("rulings_", "Rulings"),
     ("ax_", "Axioms"),
     ("hfh_", "HFH"),
     ("pc_", "APC"),

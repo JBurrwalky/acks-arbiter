@@ -1,0 +1,10 @@
+[PLACEHOLDER — Phase L-0 seed file. PromptAssembler (Phase L-1) renders this
+template with context from NpcPersonalityGenerator / PersonalitySummaryUpgrader.
+Establishes the directory contract per gdd-live-llm-integration.md §10.2 / §4.1
+only; wording here is not final and is not consumed by any code yet.]
+
+Given the following personality axis deviations for an NPC, write a short
+in-fiction personality summary and speech notes as JSON:
+{"personality_summary": "...", "speech_notes": "..."}
+
+Deviant axes: {deviant_axes}

@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "category": "faction_stance_type_matrix",
+    "source": "gdd-faction-framework.md §7.2 (default-stance function type_term) + §6.4 (temple rivalry)",
+    "schema_version": 1,
+    "phase": "FF-1.2",
+    "notes": "Type-pair contribution to the default-stance score (§7.2). ALL constants here are PROJECT CALL and tunable (Jedidiah, no reserved conventions). Keys are 'typeA|typeB' where typeA/typeB are factions.faction_type values; lookup is symmetric (the evaluator tries both orders). 'requires_same_settlement' pairs only apply their value when both factions seat in the same settlement (the temple-rivalry case, §6.4). 'requires_same_religion_family' applies only when the two share an alignment/deity family (co-aligned temple rivalry). A missing pair contributes 0 (coin/strangers are neutral)."
+  },
+  "default_term": 0,
+  "pairs": [
+    {
+      "a": "syndicate",
+      "b": "any_lawful_org",
+      "value": -2,
+      "tunable": true,
+      "note": "syndicate ↔ any lawful organization: crime vs. order (§7.2). 'any_lawful_org' is a wildcard matched when the OTHER faction is an organization-scope row with lawful alignment."
+    },
+    {
+      "a": "temple",
+      "b": "temple",
+      "value": -1,
+      "tunable": true,
+      "requires_same_settlement": true,
+      "requires_same_religion_family": true,
+      "note": "co-aligned same-settlement temples RIVALRY (§6.4): they compete for the same congregants and the same ruler's favor. Never auto-friendly. Nemesis-family temples are handled by the religion_term (-3), not here."
+    },
+    {
+      "a": "mercenary_company",
+      "b": "any",
+      "value": 0,
+      "tunable": true,
+      "note": "coin is neutral — a mercenary company defaults 0 toward anyone (§7.2)."
+    },
+    {
+      "a": "brigand_gang",
+      "b": "realm",
+      "value": -3,
+      "tunable": true,
+      "note": "brigands ↔ any realm: outlaws vs. the state (§7.2)."
+    },
+    {
+      "a": "knightly_order",
+      "b": "patrons_enemies",
+      "value": -2,
+      "tunable": true,
+      "note": "knightly order ↔ its patron realm's enemies (§7.2). 'patrons_enemies' is resolved by the evaluator from context (the order's patron realm and that realm's hostile relations); when context is absent it contributes 0."
+    }
+  ]
+}

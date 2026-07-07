@@ -238,6 +238,8 @@ func set_dice_mode(mode: DiceMode) -> void:
 func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("dice", "mode", dice_mode)
+	# --- Live LLM Integration Phase L-0 (gdd-live-llm-integration.md §12.1) ---
+	LLMManager.settings.write_to(config)
 	var err := config.save(_SETTINGS_PATH)
 	if err != OK:
 		push_error("GameState.save_settings: could not write settings file (err=%d)" % err)
@@ -250,3 +252,7 @@ func load_settings() -> void:
 	if config.load(_SETTINGS_PATH) != OK:
 		return  # File not present — use defaults
 	dice_mode = config.get_value("dice", "mode", DiceMode.HYBRID) as DiceMode
+	# --- Live LLM Integration Phase L-0 (gdd-live-llm-integration.md §12.1) ---
+	LLMManager.settings.read_from(config)
+	# --- Live LLM Integration Phase L-1 (§9.3: queue reads settings.max_concurrent) ---
+	LLMManager._sync_queue_concurrency()

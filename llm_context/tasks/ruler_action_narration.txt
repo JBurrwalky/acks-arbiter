@@ -1,0 +1,13 @@
+[PLACEHOLDER — Phase L-0 seed file. PromptAssembler (Phase L-1) renders this
+template with context from RulerActionNarrator. Establishes the directory
+contract per gdd-live-llm-integration.md §10.2 / §4.1 only; wording here is
+not final and is not consumed by any code yet.]
+
+Write a single short sentence (one line, no more than ~40 words) narrating
+the following domain ruler's action and its outcome. Do not editorialize
+beyond the given facts.
+
+Ruler: {ruler_name}
+Domain: {domain_name}
+Action: {action_id}
+Outcome: {action_outcome}

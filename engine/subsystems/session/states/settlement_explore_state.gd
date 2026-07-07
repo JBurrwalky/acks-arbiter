@@ -210,6 +210,9 @@ func _create_settlement_hud() -> void:
 	_activity_panel.hiring_requested.connect(_on_hiring_requested)
 	_activity_panel.specialist_hiring_requested.connect(_on_specialist_hiring_requested)
 	_activity_panel.activity_requested.connect(_on_activity_requested)
+	# Phase 1 dialogue: the "Talk" activity opens a DialogueSession with the PoI's
+	# occupant NPC (gdd-npc-dialogue.md §4.2).
+	_activity_panel.talk_requested.connect(_on_talk_requested)
 	# Phase 10B.2 Wave 2: route mercantile activity launchers to mercantile_panel.
 	_activity_panel.mercantile_requested.connect(_on_mercantile_requested)
 	# "Leave" returns to the PoI menu (the panel can be opened via travel arrival
@@ -342,6 +345,37 @@ func _on_shop_requested(poi: Dictionary) -> void:
 		panel.queue_free()
 		_restore_navigation_ui()
 	)
+
+
+## Phase 1 dialogue entry point (gdd-npc-dialogue.md §4.2). Opens a DialogueSession
+## with the PoI's occupant NPC (settlement_pois.stocked_character_id). If the PoI
+## has no stocked occupant, the session still opens with a generic interlocutor —
+## the mock templates perform with a placeholder name. A combat outcome from
+## dialogue routes into the existing combat transition.
+func _on_talk_requested(poi: Dictionary) -> void:
+	if _runner == null:
+		return
+	var party_id: String = _runner.get_party_id()
+	var npc_id = poi.get("stocked_character_id", poi.get("occupant_npc_id", ""))
+	if npc_id == null:
+		npc_id = ""
+	var ctx: Dictionary = DialogueContextBuilder.from_settlement_poi(poi, String(npc_id), party_id)
+	var session := DialogueSession.begin(ctx)
+
+	if _activity_panel != null:
+		_activity_panel.visible = false
+	if _menu != null:
+		_menu.visible = false
+	var screen := DialogueScreen.open(session, _settlement_hud)
+	screen.combat_requested.connect(
+		func(_combat_seed: Dictionary):
+			_runner.transition_to_state("combat", {
+				"return_state": "settlement",
+				"encounter_data": {"encounter_id": "", "npc_combatant_ids": [String(npc_id)]},
+			}))
+	screen.dialogue_closed.connect(
+		func(_outcome: Dictionary):
+			_restore_navigation_ui())
 
 
 func _on_hiring_requested(poi: Dictionary) -> void:

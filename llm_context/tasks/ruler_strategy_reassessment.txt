@@ -1,0 +1,12 @@
+[PLACEHOLDER — Phase L-0 seed file. PromptAssembler (Phase L-1) renders this
+template with context from RulerStrategyReassessor. Establishes the directory
+contract per gdd-live-llm-integration.md §10.2 / §4.1 only; wording here is
+not final and is not consumed by any code yet.]
+
+Given the following ruler, trigger event, and situation, suggest strategy
+adjustments as minified JSON only, no code fences, no commentary:
+{"suggested_biases": {...}, "posture": "...", "aggression_toward": "..."}
+
+Ruler: {ruler_name}
+Trigger: {trigger}
+Situation: {situation}

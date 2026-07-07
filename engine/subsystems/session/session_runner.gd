@@ -341,6 +341,12 @@ func _ready() -> void:
 	_handler_registry.set_scheduler(_scheduler)
 	_scheduler_loop = SchedulerLoop.new()
 	EventBus.clock_speed_requested.connect(_on_clock_speed_requested)
+	# Faction Framework FF-1.3 (gdd-faction-framework.md §5.6): register the
+	# realm_relations drift writer's EventBus listeners once per session so
+	# conquest / vassal-revolt / vagary events drive one-band-per-cluster
+	# disposition drift. Idempotent; the monthly quiet-decay runs from the
+	# domain monthly tick, not here.
+	RealmRelationsDrift.register_listeners()
 	# Eyes of the Eagle V2 (2026-06-03) — refresh the party visibility bonus
 	# on the hexmap whenever an inventory change or party-membership change
 	# could affect a member's `has_eyes_of_the_eagle` flag. Cheap (single
@@ -717,6 +723,13 @@ func get_location_key_for_character(character_id: String) -> String:
 ## Loads all session data for the given campaign and party.
 ## Called from SessionLoadState after campaign selection.
 func load_session(campaign_id: String, party_id: String) -> void:
+	# Live LLM Integration Phase L-1 (gdd-live-llm-integration.md §6.3): a
+	# campaign switch cancels any in-flight/queued LLM requests from the
+	# PREVIOUS campaign before re-scoping to the new one, so a late-arriving
+	# response can never be delivered against the wrong campaign's state.
+	LLMManager.cancel_all("campaign_switch")
+	LLMManager.set_active_campaign(campaign_id)
+
 	_campaign_id = campaign_id
 	_party_id = party_id
 
@@ -1593,6 +1606,11 @@ func _on_specialist_payday(_new_month: int, _new_year: int) -> void:
 
 ## Ends the current session: saves, disconnects, resets.
 func end_session() -> void:
+	# Live LLM Integration Phase L-1 (§6.3): cancel any pending LLM work for
+	# the campaign that's ending — saving does NOT cancel requests (only
+	# session end/campaign switch does), so this is the teardown-specific
+	# call; load_session() covers the switch-to-a-new-campaign case.
+	LLMManager.cancel_all("session_end")
 	cancel_pending_roll()
 	save_session()
 	_effect_ticker.disconnect_signals()

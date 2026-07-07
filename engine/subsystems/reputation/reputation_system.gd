@@ -138,6 +138,132 @@ func set_reputation_score(scope_type: String, scope_id: String,
 
 
 # ---------------------------------------------------------------------------
+# Faction Framework FF-1.3 — reputation propagation (gdd-faction-framework.md §8.3)
+# ---------------------------------------------------------------------------
+
+## Apply a faction-affecting deed to [param target_faction_id] at FULL weight,
+## then PROPAGATE it to related factions (§8.3):
+##   • factions with allied/friendly stance TOWARD the target → half weight
+##     (banker's rounding, MathUtils.bankers_round)
+##   • factions with HOSTILE stance toward the target → INVERTED half weight
+## Propagation is AWARENESS-GATED: a related faction receives the echo only when
+## it shares a settlement with the target, shares a realm with the target, OR
+## holds an INSTANTIATED stance row toward the target. No global telepathy —
+## distant awareness arrives via the rumor system in FF-2+ (NOT built here).
+##
+## Determinism: no RNG; stance/awareness reads are pure DB queries. Returns the
+## full-weight ReputationEntry for the target (the propagated echoes are
+## persisted as a side effect).
+func apply_faction_deed(target_faction_id: String, delta: int, reason: String = "") -> ReputationEntry:
+	var target_entry := apply_reputation_change(
+		ReputationEntry.SCOPE_FACTION, target_faction_id, delta, reason)
+	if _repo == null or _repo.db == null or target_faction_id == "":
+		return target_entry
+	if delta == 0:
+		return target_entry
+
+	# Half weight (banker's rounding). The inverted echo is the negation.
+	var half: int = MathUtils.bankers_round(float(delta) / 2.0)
+	if half == 0:
+		return target_entry
+
+	var target: Dictionary = _repo.get_faction(target_faction_id)
+	if target.is_empty():
+		return target_entry
+	var target_settlement: String = _s(target.get("seat_settlement_id"))
+	var target_realm: String = _s(target.get("realm_id"))
+
+	# Every OTHER faction with an instantiated stance TOWARD the target is a
+	# candidate; the stance band selects the echo weight and the awareness gate
+	# decides whether it lands. Same-settlement / same-realm factions that have
+	# no instantiated row still qualify via the awareness gate (their structural
+	# stance is read on demand).
+	for observer_id in _propagation_candidates(target_faction_id, target_settlement, target_realm):
+		if observer_id == target_faction_id:
+			continue
+		var band: String = _observer_stance_band(observer_id, target_faction_id)
+		var echo: int = 0
+		if band == "allied" or band == "friendly":
+			echo = half
+		elif band == "hostile":
+			echo = -half
+		else:
+			continue   # neutral/unfriendly/indifferent do not propagate (§8.3)
+		if not _aware_of(observer_id, target_faction_id, target_settlement, target_realm):
+			continue
+		apply_reputation_change(ReputationEntry.SCOPE_FACTION, observer_id, echo,
+			"propagated: %s" % reason)
+	return target_entry
+
+
+## Candidate observer factions for propagation: the union of (a) same-campaign
+## factions sharing the target's settlement or realm, and (b) factions holding
+## an instantiated stance row toward the target. Returns an Array of faction ids.
+func _propagation_candidates(target_faction_id: String, target_settlement: String,
+		target_realm: String) -> Array:
+	var seen: Dictionary = {}
+	var out: Array = []
+	# (a) instantiated stance rows pointing AT the target (faction_a → target).
+	if _repo.db.query_with_bindings(
+			"SELECT faction_a_id FROM faction_stances WHERE faction_b_id = ?",
+			[target_faction_id]):
+		for row in _repo.db.query_result:
+			var fid: String = _s((row as Dictionary).get("faction_a_id"))
+			if fid != "" and not seen.has(fid):
+				seen[fid] = true
+				out.append(fid)
+	# (b) same-settlement / same-realm factions in the campaign.
+	if target_settlement != "":
+		if _repo.db.query_with_bindings(
+				"SELECT id FROM factions WHERE campaign_id = ? AND seat_settlement_id = ?",
+				[_campaign_id, target_settlement]):
+			for row in _repo.db.query_result:
+				var fid2: String = _s((row as Dictionary).get("id"))
+				if fid2 != "" and not seen.has(fid2):
+					seen[fid2] = true
+					out.append(fid2)
+	if target_realm != "":
+		if _repo.db.query_with_bindings(
+				"SELECT id FROM factions WHERE campaign_id = ? AND realm_id = ?",
+				[_campaign_id, target_realm]):
+			for row in _repo.db.query_result:
+				var fid3: String = _s((row as Dictionary).get("id"))
+				if fid3 != "" and not seen.has(fid3):
+					seen[fid3] = true
+					out.append(fid3)
+	return out
+
+
+## The observer's stance band toward the target — the instantiated public band if
+## a row exists, else the structural default (FactionStanceService). Pure read;
+## no decay side effects (day 0 disables decay).
+func _observer_stance_band(observer_id: String, target_id: String) -> String:
+	var stance: Dictionary = FactionStanceService.get_stance(observer_id, target_id, 0)
+	return String(stance.get("public_stance", "neutral"))
+
+
+## Awareness gate (§8.3): the observer is aware of the target's deed iff they
+## share a settlement, share a realm, OR the observer holds an instantiated
+## stance row toward the target. No global telepathy.
+func _aware_of(observer_id: String, target_id: String, target_settlement: String,
+		target_realm: String) -> bool:
+	var observer: Dictionary = _repo.get_faction(observer_id)
+	if observer.is_empty():
+		return false
+	if target_settlement != "" and _s(observer.get("seat_settlement_id")) == target_settlement:
+		return true
+	if target_realm != "" and _s(observer.get("realm_id")) == target_realm:
+		return true
+	# Instantiated stance row = a live relationship = awareness.
+	var row: Dictionary = _repo.ff_get_stance_row(observer_id, target_id)
+	return not row.is_empty()
+
+
+func _s(value) -> String:
+	return String(value) if value != null else ""
+
+
+# ---------------------------------------------------------------------------
 # Reaction modifier assembly
 # ---------------------------------------------------------------------------
 

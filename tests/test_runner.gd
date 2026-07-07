@@ -8,6 +8,17 @@ extends Node
 ##
 ## Exits with code 0 on success, 1 on failure.
 
+# 2026-07-07 — Live LLM Integration Phase L-0 (provider wall: settings/mock/registry)
+@onready var _llm_provider_wall_tests = $LlmProviderWallTests
+# 2026-07-07 — Live LLM Integration Phase L-1 (transport/queue/generate()/Ollama adapter)
+@onready var _ollama_provider_tests = $OllamaProviderTests
+@onready var _prompt_assembler_tests = $PromptAssemblerTests
+@onready var _llm_response_validator_tests = $LlmResponseValidatorTests
+@onready var _llm_request_queue_tests = $LlmRequestQueueTests
+@onready var _llm_generate_wall_tests = $LlmGenerateWallTests
+# Async suite — NOT dispatched via the normal _run_suite() sync loop below;
+# awaited directly in run() (see the "Async suites" block).
+@onready var _llm_generate_async_tests = $LlmGenerateAsyncTests
 @onready var _terrain_tests = $HexTerrainDataTests
 @onready var _controller_tests = $HexMapControllerTests
 @onready var _climb_resolver_tests = $ClimbResolverTests
@@ -42,6 +53,19 @@ extends Node
 @onready var _ruler_ai_capstone_tests = $RulerAiCapstoneTests
 # 2026-07-04 - Threat→army forward flow + militia-death reverse flow (limited-resource cap)
 @onready var _militia_casualty_persistence_tests = $MilitiaCasualtyPersistenceTests
+# Faction Framework FF-1 (gdd-faction-framework.md §4-§8) — 2026-07-07
+@onready var _faction_ff1_schema_tests = $FactionFF1SchemaTests
+@onready var _faction_ff1_realm_mirrors_tests = $FactionFF1RealmMirrorsTests
+@onready var _faction_ff1_stance_api_tests = $FactionFF1StanceApiTests
+@onready var _faction_ff1_ledger_drift_tests = $FactionFF1LedgerDriftTests
+# 2026-07-07 - NPC Dialogue Phase 1 ("The Spine"): session/catalog/adjudicator/memory + exit test
+@onready var _dialogue_phase1_tests = $DialoguePhase1Tests
+# 2026-07-07 - Quest & Rumor Q-1 (schema, registries, RewardValuator)
+@onready var _reward_valuator_tests = $RewardValuatorTests
+@onready var _quest_rumor_shared_types_tests = $QuestRumorSharedTypesTests
+@onready var _quest_registry_tests = $QuestRegistryTests
+@onready var _rumor_registry_tests = $RumorRegistryTests
+@onready var _quest_rumor_persistence_tests = $QuestRumorPersistenceTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -623,7 +647,15 @@ func _ready() -> void:
 	# accumulating orphans in user://campaign.db (last count: 10,191 rows
 	# making the live load screen lag). Schema is preserved.
 	CampaignRepository.wipe_for_tests()
-	run()
+	# 2026-07-07 — Live LLM Integration Phase L-0 (gdd-live-llm-integration.md
+	# §20.1): hard-override so a developer's live settings.cfg can never leak
+	# into test results. Test-DB isolation redirects the DB, not settings.cfg;
+	# this closes that hole.
+	LLMManager.force_mock(true)
+	run()  # not awaited: run() now suspends internally (async-suite block,
+	# gdd-live-llm-integration.md §20 point 3) and resumes across later
+	# frames; the headless run stays alive because run() itself calls
+	# get_tree().quit() once every suite (sync + async) has finished.
 
 
 func run() -> void:
@@ -1231,12 +1263,57 @@ func run() -> void:
 			# 2026-07-04 — Army-warfare-seams arc capstone (ruler-AI §12 integration)
 			_ruler_ai_capstone_tests,
 			# 2026-07-04 — Threat→army forward flow + militia-death reverse flow
-			_militia_casualty_persistence_tests]:
+			_militia_casualty_persistence_tests,
+			# 2026-07-07 — Live LLM Integration Phase L-0 (provider wall)
+			_llm_provider_wall_tests,
+			# 2026-07-07 — Live LLM Integration Phase L-1 (transport/queue/generate()/Ollama adapter)
+			_ollama_provider_tests,
+			_prompt_assembler_tests,
+			_llm_response_validator_tests,
+			_llm_request_queue_tests,
+			_llm_generate_wall_tests,
+			# Faction Framework FF-1 (gdd-faction-framework.md §4-§8)
+			_faction_ff1_schema_tests,
+			_faction_ff1_realm_mirrors_tests,
+			_faction_ff1_stance_api_tests,
+			_faction_ff1_ledger_drift_tests,
+			# 2026-07-07 — NPC Dialogue Phase 1 ("The Spine")
+			_dialogue_phase1_tests,
+			# 2026-07-07 — Quest & Rumor Q-1 (schema, registries, RewardValuator)
+			_reward_valuator_tests,
+			_quest_rumor_shared_types_tests,
+			_quest_registry_tests,
+			_rumor_registry_tests,
+			_quest_rumor_persistence_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
 			continue
 		var ok := _run_suite(suite)
+		if ok:
+			passed += 1
+		else:
+			failed += 1
+
+	# ---------------------------------------------------------------------
+	# Async suites (gdd-live-llm-integration.md §20 point 3; conventions
+	# §9.2's documented coroutine-test limitation: a suite whose checks
+	# require `await` cannot run through the synchronous _run_suite() loop
+	# above, since run_all_tests() there is called without await. Each such
+	# suite instead exposes run_async_tests() -> void (a coroutine), AWAITED
+	# directly here, outside the sync loop, once per suite. Failures are
+	# still read via the same has_failures()/fail_count() surface from
+	# test_suite_base.gd, so pass/fail accounting is uniform.
+	# ---------------------------------------------------------------------
+	for async_suite in [_llm_generate_async_tests]:
+		if async_suite == null:
+			push_error("TestRunner: missing async test suite node — check scene tree")
+			failed += 1
+			continue
+		await async_suite.run_async_tests()
+		var ok: bool = not async_suite.has_failures()
+		if not ok:
+			print("  FAILED (%d assertion(s))" % async_suite.fail_count())
 		if ok:
 			passed += 1
 		else:

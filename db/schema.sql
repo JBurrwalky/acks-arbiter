@@ -1473,13 +1473,39 @@ CREATE TABLE IF NOT EXISTS factions (
     leader_npc_id TEXT REFERENCES characters(id),
     parent_faction_id TEXT REFERENCES factions(id),
     description TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    -- Faction Framework FF-1 (migration 188 / gdd-faction-framework.md §4.1)
+    scope TEXT NOT NULL DEFAULT 'organization'
+        CHECK(scope IN ('realm', 'organization', 'warband')),
+    realm_id TEXT REFERENCES realms(id),        -- set only for scope='realm' mirror rows
+    religion_id TEXT,
+    culture_id TEXT,
+    seat_poi_id TEXT,
+    seat_settlement_id TEXT,
+    treasury_gp INTEGER NOT NULL DEFAULT 0,
+    member_count_abstract INTEGER NOT NULL DEFAULT 0,
+    power_rating INTEGER NOT NULL DEFAULT 0,
+    goal_primary TEXT,
+    goal_secondary TEXT,
+    volatility REAL NOT NULL DEFAULT 1.0,
+    is_player_founded INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK(status IN ('active', 'underground', 'disbanded', 'destroyed', 'absorbed')),
+    personality_weight_biases TEXT
 );
 
 CREATE TABLE IF NOT EXISTS faction_memberships (
     faction_id TEXT NOT NULL REFERENCES factions(id),
     npc_id TEXT NOT NULL REFERENCES characters(id),
     role TEXT NOT NULL DEFAULT 'member',
+    -- Faction Framework FF-1 (migration 188 / gdd-faction-framework.md §4.4)
+    rank INTEGER NOT NULL DEFAULT 0,
+    loyalty_mod INTEGER NOT NULL DEFAULT 0,
+    standing INTEGER NOT NULL DEFAULT 0,
+    is_secret INTEGER NOT NULL DEFAULT 0,
+    joined_day INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'member'
+        CHECK(status IN ('petitioner', 'member', 'suspended', 'expelled', 'left', 'deceased')),
     PRIMARY KEY (faction_id, npc_id)
 );
 
@@ -4020,4 +4046,375 @@ CREATE TABLE IF NOT EXISTS ruler_ai_state (
 
 CREATE INDEX IF NOT EXISTS idx_ruler_ai_state_campaign
     ON ruler_ai_state(campaign_id);
+
+-- ===========================================================================
+-- Faction Framework FF-1 (migrations 188-189 / gdd-faction-framework.md §4)
+-- Reference snapshot of the new §4 tables. The factions / faction_memberships
+-- ALTER columns (§4.1, §4.4) appear inline in their table definitions above.
+-- No new PoI column: §4.7 reuses the existing settlement_pois.owner_faction_id
+-- and pois.faction_id as the "controlling faction" linkage.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS faction_stances (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    faction_a_id TEXT NOT NULL REFERENCES factions(id),
+    faction_b_id TEXT NOT NULL REFERENCES factions(id),
+    public_stance TEXT NOT NULL DEFAULT 'neutral'
+        CHECK(public_stance IN ('hostile', 'unfriendly', 'neutral', 'indifferent', 'friendly', 'allied')),
+    true_stance TEXT
+        CHECK(true_stance IS NULL OR true_stance IN ('hostile', 'unfriendly', 'neutral', 'indifferent', 'friendly', 'allied')),
+    betrayal_condition TEXT,
+    stance_reason TEXT NOT NULL DEFAULT '',
+    grievance_score INTEGER NOT NULL DEFAULT 0,
+    last_evaluated_day INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_faction_stances_pair
+    ON faction_stances(faction_a_id, faction_b_id);
+CREATE INDEX IF NOT EXISTS idx_faction_stances_campaign
+    ON faction_stances(campaign_id);
+
+CREATE TABLE IF NOT EXISTS treaties (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    kind TEXT NOT NULL
+        CHECK(kind IN ('alliance', 'defensive_pact', 'non_aggression', 'protectorate', 'trade_pact')),
+    realm_a_id TEXT NOT NULL REFERENCES realms(id),
+    realm_b_id TEXT NOT NULL REFERENCES realms(id),
+    terms TEXT NOT NULL DEFAULT '{}',
+    signed_day INTEGER NOT NULL DEFAULT 0,
+    duration_months INTEGER,
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK(status IN ('active', 'expired', 'renewed', 'broken', 'dissolved')),
+    broken_by_realm_id TEXT REFERENCES realms(id),
+    broken_day INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_treaties_campaign
+    ON treaties(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_treaties_pair
+    ON treaties(realm_a_id, realm_b_id, status);
+
+CREATE TABLE IF NOT EXISTS faction_events (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    day INTEGER NOT NULL DEFAULT 0,
+    actor_faction_id TEXT NOT NULL REFERENCES factions(id),
+    target_faction_id TEXT NOT NULL REFERENCES factions(id),
+    kind TEXT NOT NULL,
+    magnitude INTEGER NOT NULL DEFAULT 0,
+    data TEXT NOT NULL DEFAULT '{}',
+    expires_day INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_faction_events_campaign
+    ON faction_events(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_faction_events_pair
+    ON faction_events(actor_faction_id, target_faction_id);
+
+CREATE TABLE IF NOT EXISTS faction_plots (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    kind TEXT NOT NULL
+        CHECK(kind IN ('rebellion', 'defection', 'betrayal', 'coup')),
+    instigator_faction_id TEXT NOT NULL REFERENCES factions(id),
+    target_faction_id TEXT REFERENCES factions(id),
+    secrecy INTEGER NOT NULL DEFAULT 10,
+    launch_condition TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'brewing'
+        CHECK(status IN ('brewing', 'recruiting', 'ready', 'launched', 'exposed', 'abandoned', 'resolved')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_faction_plots_campaign
+    ON faction_plots(campaign_id);
+
+CREATE TABLE IF NOT EXISTS faction_plot_members (
+    plot_id TEXT NOT NULL REFERENCES faction_plots(id),
+    faction_id TEXT NOT NULL REFERENCES factions(id),
+    commitment TEXT NOT NULL DEFAULT 'committed'
+        CHECK(commitment IN ('committed', 'sympathetic', 'informant')),
+    joined_day INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (plot_id, faction_id)
+);
+
+CREATE TABLE IF NOT EXISTS realm_petitions (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    petitioner_domain_id TEXT NOT NULL REFERENCES domains(id),
+    liege_domain_id TEXT REFERENCES domains(id),
+    kind TEXT NOT NULL
+        CHECK(kind IN ('release', 'transfer', 'appeal')),
+    status TEXT NOT NULL DEFAULT 'filed'
+        CHECK(status IN ('filed', 'granted', 'refused', 'bought_off', 'escalated', 'withdrawn')),
+    filed_day INTEGER NOT NULL DEFAULT 0,
+    resolved_day INTEGER,
+    terms TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_realm_petitions_campaign
+    ON realm_petitions(campaign_id);
+
+CREATE TABLE IF NOT EXISTS domain_tithe_shares (
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    domain_id TEXT NOT NULL REFERENCES domains(id),
+    faction_id TEXT NOT NULL REFERENCES factions(id),
+    share_pct INTEGER NOT NULL DEFAULT 0,
+    set_day INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (domain_id, faction_id)
+);
+CREATE INDEX IF NOT EXISTS idx_domain_tithe_shares_campaign
+    ON domain_tithe_shares(campaign_id);
+
+-- ===========================================================================
+-- Dialogue subsystem (Phase 1) — NPC memory data model (migration 191).
+-- generation/gdd-npc-dialogue.md §8.1 / §15. Three campaign-scoped LEAF tables:
+--   npc_relationships (Layer 1, mechanical spine), npc_memories (Layer 2,
+--   episodic), npc_issues (Layer 3 / Track 2, landed now, consumed Phase 3).
+-- Registered in CampaignRepository._SCOPE_DIRECT_CAMPAIGN's Dialogue block.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS npc_relationships (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL,
+    npc_id TEXT NOT NULL,
+    party_id TEXT NOT NULL,
+    attitude TEXT NOT NULL DEFAULT 'neutral'
+        CHECK(attitude IN ('hostile','unfriendly','neutral','indifferent','friendly','fearful','cowed')),
+    is_intimidated INTEGER NOT NULL DEFAULT 0,
+    influence_attempt_count INTEGER NOT NULL DEFAULT 0,       -- Track 1 (tone) ladder counter only
+    next_attempt_available_at INTEGER NOT NULL DEFAULT 0,     -- absolute rounds, tone-track
+    favors_owed_to_party INTEGER NOT NULL DEFAULT 0,
+    favors_owed_by_party INTEGER NOT NULL DEFAULT 0,
+    first_met_day INTEGER,
+    last_interaction_day INTEGER,
+    role_tags TEXT NOT NULL DEFAULT '[]',      -- JSON: "employer","quest_giver","rival","victim"...
+    UNIQUE(campaign_id, npc_id, party_id)
+);
+
+CREATE TABLE IF NOT EXISTS npc_memories (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL,
+    npc_id TEXT NOT NULL,
+    party_id TEXT,
+    kind TEXT NOT NULL CHECK(kind IN
+        ('conversation','event','promise','debt','grudge','gift','deception_by_npc','deception_suffered')),
+    summary TEXT NOT NULL,
+    facts TEXT NOT NULL DEFAULT '[]',
+    attitude_after TEXT,
+    importance INTEGER NOT NULL DEFAULT 1,      -- 1..5
+    created_day INTEGER NOT NULL,
+    last_recalled_day INTEGER,
+    source_session_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_npc_memories_recall
+    ON npc_memories(campaign_id, npc_id, importance DESC, created_day DESC);
+
+CREATE TABLE IF NOT EXISTS npc_issues (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL,
+    npc_id TEXT NOT NULL,
+    party_id TEXT NOT NULL,
+    issue_key TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open'
+        CHECK(status IN ('open','granted','refused','withdrawn','expired')),
+    last_result TEXT,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_available_at INTEGER NOT NULL DEFAULT 0,
+    terms TEXT NOT NULL DEFAULT '{}',
+    offense_fired INTEGER NOT NULL DEFAULT 0,
+    created_day INTEGER NOT NULL,
+    resolved_day INTEGER,
+    UNIQUE(campaign_id, npc_id, party_id, issue_key)
+);
+
+-- =============================================================================
+-- Quest & Rumor system (Session Q-1) — migration 192
+-- generation/gdd-quest-rumor-system.md §12. Seed layer (setting_quests,
+-- setting_rumors) mirrors setting_poi_seeds' PRIMARY KEY (campaign_id, id)
+-- convention. Runtime layer (quests, quest_rewards, domain_grants, rumors,
+-- rumor_settlement_pool) uses CampaignRepository.generate_id() hex ids.
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS setting_quests (
+    id TEXT NOT NULL,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    questgiver_npc_id TEXT NOT NULL DEFAULT '',
+    questgiver_faction_id TEXT REFERENCES factions(id),
+    threat_type TEXT NOT NULL DEFAULT '' CHECK(threat_type IN (
+        'monster_lair', 'dungeon', 'brigand', 'creature_bounty', 'recovery',
+        'escort', 'delivery', 'domain_conquest', 'reconnaissance', 'faction_goal')),
+    threat_source_id TEXT NOT NULL DEFAULT '',
+    threat_hex TEXT NOT NULL DEFAULT '',
+    completion_type TEXT NOT NULL DEFAULT '' CHECK(completion_type IN (
+        'clear_dungeon', 'clear_lair', 'kill_target', 'retrieve_item',
+        'escort_npc', 'deliver_item', 'hold_territory', 'scout_hex',
+        'build_structure', 'faction_goal')),
+    completion_target_id TEXT NOT NULL DEFAULT '',
+    reward TEXT NOT NULL DEFAULT '{}',
+    posting_type TEXT NOT NULL DEFAULT 'posted'
+        CHECK(posting_type IN ('personal', 'posted', 'broadcast')),
+    posting_range INTEGER NOT NULL DEFAULT 8,
+    expires_day INTEGER,
+    description_placeholder TEXT NOT NULL DEFAULT '',
+    questgiver_dialogue_placeholder TEXT NOT NULL DEFAULT '',
+    completion_dialogue_placeholder TEXT NOT NULL DEFAULT '',
+    title_placeholder TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (campaign_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS setting_rumors (
+    id TEXT NOT NULL,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    source_type TEXT NOT NULL DEFAULT '' CHECK(source_type IN (
+        'poi', 'dungeon', 'lair', 'political', 'settlement', 'npc',
+        'quest', 'historical')),
+    source_id TEXT NOT NULL DEFAULT '',
+    source_quest_id TEXT REFERENCES setting_quests(id),
+    content_hint TEXT NOT NULL DEFAULT '',
+    accuracy TEXT NOT NULL DEFAULT 'true' CHECK(accuracy IN (
+        'true', 'exaggerated', 'understated', 'misleading', 'false')),
+    accuracy_detail TEXT NOT NULL DEFAULT '',
+    knowledge_category TEXT NOT NULL DEFAULT 'local' CHECK(knowledge_category IN (
+        'local', 'professional', 'political', 'criminal', 'religious',
+        'military', 'dungeon', 'personal', 'historical')),
+    origin_hex TEXT NOT NULL DEFAULT '',
+    settlement_range INTEGER NOT NULL DEFAULT 5,
+    min_npc_tier TEXT NOT NULL DEFAULT 'C' CHECK(min_npc_tier IN ('C', 'B', 'A')),
+    freshness TEXT NOT NULL DEFAULT 'current' CHECK(freshness IN (
+        'persistent', 'current', 'stale')),
+    narrated_placeholder TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (campaign_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_setting_quests_campaign ON setting_quests(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_setting_rumors_campaign ON setting_rumors(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_setting_rumors_source_quest ON setting_rumors(source_quest_id);
+
+CREATE TABLE IF NOT EXISTS quests (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    status TEXT NOT NULL DEFAULT 'available' CHECK(status IN (
+        'available', 'accepted', 'completed', 'failed', 'expired', 'abandoned')),
+    questgiver_id TEXT REFERENCES characters(id),
+    questgiver_faction_id TEXT REFERENCES factions(id),
+    questgiver_settlement_id TEXT REFERENCES settlement_entrances(id),
+    questgiver_motivation TEXT NOT NULL DEFAULT '',
+    threat_type TEXT NOT NULL DEFAULT '' CHECK(threat_type IN (
+        'monster_lair', 'dungeon', 'brigand', 'creature_bounty', 'recovery',
+        'escort', 'delivery', 'domain_conquest', 'reconnaissance', 'faction_goal')),
+    threat_source_id TEXT NOT NULL DEFAULT '',
+    threat_hex TEXT NOT NULL DEFAULT '',
+    threat_description_hint TEXT NOT NULL DEFAULT '',
+    completion_type TEXT NOT NULL DEFAULT '' CHECK(completion_type IN (
+        'clear_dungeon', 'clear_lair', 'kill_target', 'retrieve_item',
+        'escort_npc', 'deliver_item', 'hold_territory', 'scout_hex',
+        'build_structure', 'faction_goal')),
+    completion_target_id TEXT NOT NULL DEFAULT '',
+    completion_verified_by TEXT NOT NULL DEFAULT 'automatic'
+        CHECK(completion_verified_by IN ('questgiver_report', 'automatic', 'witness')),
+    is_complete INTEGER NOT NULL DEFAULT 0 CHECK(is_complete IN (0, 1)),
+    progress TEXT NOT NULL DEFAULT '{}',
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    questgiver_dialogue TEXT NOT NULL DEFAULT '',
+    completion_dialogue TEXT NOT NULL DEFAULT '',
+    posting_type TEXT NOT NULL DEFAULT 'posted'
+        CHECK(posting_type IN ('personal', 'posted', 'broadcast')),
+    posting_range INTEGER NOT NULL DEFAULT 8,
+    created_day INTEGER NOT NULL DEFAULT 0,
+    expires_day INTEGER,
+    accepted_day INTEGER,
+    completed_day INTEGER,
+    accepting_pc_id TEXT REFERENCES characters(id),
+    reward_recipient_pc_id TEXT REFERENCES characters(id),
+    faction_goal_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_quests_campaign ON quests(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_quests_status ON quests(status);
+CREATE INDEX IF NOT EXISTS idx_quests_questgiver_settlement ON quests(questgiver_settlement_id);
+CREATE INDEX IF NOT EXISTS idx_quests_threat_hex ON quests(threat_hex);
+CREATE INDEX IF NOT EXISTS idx_quests_threat_type ON quests(threat_type);
+CREATE INDEX IF NOT EXISTS idx_quests_questgiver_faction ON quests(questgiver_faction_id);
+
+CREATE TABLE IF NOT EXISTS quest_rewards (
+    id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL REFERENCES quests(id),
+    reward_type TEXT NOT NULL DEFAULT 'gold'
+        CHECK(reward_type IN ('gold', 'item', 'domain', 'political', 'mixed')),
+    gold_value INTEGER NOT NULL DEFAULT 0,
+    item_id TEXT NOT NULL DEFAULT '',
+    item_description TEXT NOT NULL DEFAULT '',
+    domain_grant_id TEXT REFERENCES domain_grants(id),
+    political_favor TEXT NOT NULL DEFAULT '',
+    total_gp_value INTEGER NOT NULL DEFAULT 0,
+    xp_eligible INTEGER NOT NULL DEFAULT 1 CHECK(xp_eligible IN (0, 1)),
+    variance_applied REAL NOT NULL DEFAULT 0.0
+);
+
+CREATE INDEX IF NOT EXISTS idx_quest_rewards_quest ON quest_rewards(quest_id);
+
+CREATE TABLE IF NOT EXISTS domain_grants (
+    id TEXT PRIMARY KEY,
+    quest_reward_id TEXT NOT NULL REFERENCES quest_rewards(id),
+    hex_ids TEXT NOT NULL DEFAULT '[]',
+    territory_class TEXT NOT NULL DEFAULT 'wilderness'
+        CHECK(territory_class IN ('civilized', 'borderlands', 'wilderness')),
+    estimated_families INTEGER NOT NULL DEFAULT 0,
+    stronghold_present INTEGER NOT NULL DEFAULT 0 CHECK(stronghold_present IN (0, 1)),
+    stronghold_value INTEGER NOT NULL DEFAULT 0,
+    vassal_obligations TEXT NOT NULL DEFAULT '{}',
+    title_granted TEXT NOT NULL DEFAULT '',
+    single_owner_pc_id TEXT REFERENCES characters(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_domain_grants_quest_reward ON domain_grants(quest_reward_id);
+
+CREATE TABLE IF NOT EXISTS rumors (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    source_type TEXT NOT NULL DEFAULT '' CHECK(source_type IN (
+        'poi', 'dungeon', 'lair', 'political', 'settlement', 'npc',
+        'quest', 'historical')),
+    source_id TEXT NOT NULL DEFAULT '',
+    source_quest_id TEXT REFERENCES quests(id),
+    content_hint TEXT NOT NULL DEFAULT '',
+    narrated_text TEXT NOT NULL DEFAULT '',
+    accuracy TEXT NOT NULL DEFAULT 'true' CHECK(accuracy IN (
+        'true', 'exaggerated', 'understated', 'misleading', 'false')),
+    accuracy_detail TEXT NOT NULL DEFAULT '',
+    knowledge_category TEXT NOT NULL DEFAULT 'local' CHECK(knowledge_category IN (
+        'local', 'professional', 'political', 'criminal', 'religious',
+        'military', 'dungeon', 'personal', 'historical')),
+    origin_hex TEXT NOT NULL DEFAULT '',
+    settlement_range INTEGER NOT NULL DEFAULT 5,
+    min_npc_tier TEXT NOT NULL DEFAULT 'C' CHECK(min_npc_tier IN ('C', 'B', 'A')),
+    freshness TEXT NOT NULL DEFAULT 'current' CHECK(freshness IN (
+        'persistent', 'current', 'stale')),
+    known_to_party INTEGER NOT NULL DEFAULT 0 CHECK(known_to_party IN (0, 1)),
+    verified INTEGER NOT NULL DEFAULT 0 CHECK(verified IN (0, 1)),
+    first_heard_day INTEGER,
+    created_day INTEGER NOT NULL DEFAULT 0,
+    expires_day INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_rumors_campaign ON rumors(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_rumors_source_id ON rumors(source_id);
+CREATE INDEX IF NOT EXISTS idx_rumors_origin_hex ON rumors(origin_hex);
+CREATE INDEX IF NOT EXISTS idx_rumors_knowledge_category ON rumors(knowledge_category);
+CREATE INDEX IF NOT EXISTS idx_rumors_freshness ON rumors(freshness);
+CREATE INDEX IF NOT EXISTS idx_rumors_source_quest ON rumors(source_quest_id);
+
+CREATE TABLE IF NOT EXISTS rumor_settlement_pool (
+    rumor_id TEXT NOT NULL REFERENCES rumors(id),
+    settlement_id TEXT NOT NULL REFERENCES settlement_entrances(id),
+    PRIMARY KEY (rumor_id, settlement_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rumor_settlement_pool_settlement ON rumor_settlement_pool(settlement_id);
 

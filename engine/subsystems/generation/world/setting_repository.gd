@@ -66,6 +66,34 @@ const DOMAIN_COLUMNS := ["id", "polity_id", "liege_domain_id", "tier_index", "ti
 	"ruler_class", "ruler_level", "ruler_name", "realm_name", "seat_q", "seat_r",
 	"families", "hex_count", "depth", "is_personal_domain"]
 
+# Quest & Rumor Q-1 (migration 192; gdd-quest-rumor-system.md §12). Full
+# column list (writer/reader order) vs. the MECHANICAL subset the hasher
+# treats as canonical — *_placeholder columns are prose, excluded per
+# §10.3/O-Q10 (mirrors NARRATIVE_COLUMNS' is_fallback treatment: prose is
+# presentation, never part of the determinism fingerprint).
+const QUEST_SEED_COLUMNS := [
+	"id", "questgiver_npc_id", "questgiver_faction_id", "threat_type",
+	"threat_source_id", "threat_hex", "completion_type", "completion_target_id",
+	"reward", "posting_type", "posting_range", "expires_day",
+	"description_placeholder", "questgiver_dialogue_placeholder",
+	"completion_dialogue_placeholder", "title_placeholder",
+]
+const QUEST_SEED_MECHANICAL_COLUMNS := [
+	"id", "questgiver_npc_id", "questgiver_faction_id", "threat_type",
+	"threat_source_id", "threat_hex", "completion_type", "completion_target_id",
+	"reward", "posting_type", "posting_range", "expires_day",
+]
+const RUMOR_SEED_COLUMNS := [
+	"id", "source_type", "source_id", "source_quest_id", "content_hint",
+	"accuracy", "accuracy_detail", "knowledge_category", "origin_hex",
+	"settlement_range", "min_npc_tier", "freshness", "narrated_placeholder",
+]
+const RUMOR_SEED_MECHANICAL_COLUMNS := [
+	"id", "source_type", "source_id", "source_quest_id", "content_hint",
+	"accuracy", "accuracy_detail", "knowledge_category", "origin_hex",
+	"settlement_range", "min_npc_tier", "freshness",
+]
+
 # Every setting table except setting_parameters, in delete order.
 const _DATA_TABLES := [
 	"setting_hexes", "setting_river_edges", "setting_polities", "setting_domains",
@@ -73,6 +101,10 @@ const _DATA_TABLES := [
 	"setting_events", "setting_ruin_seeds", "setting_poi_seeds", "setting_roads",
 	"setting_fortifications", "setting_narrative", "setting_replay_frames",
 	"setting_replay_palette",
+	# Quest & Rumor Q-1: setting_rumors before setting_quests (rumors carry an
+	# optional source_quest_id FK; delete-order safety, though SQLite FK
+	# enforcement is off by default per godot-sqlite — see conventions §6.4).
+	"setting_rumors", "setting_quests",
 ]
 
 
@@ -261,6 +293,17 @@ static func save_narrative(campaign_id: String, rows: Array) -> bool:
 	return _bulk_insert(campaign_id, "setting_narrative", NARRATIVE_COLUMNS, rows, true)
 
 
+## Quest & Rumor Q-1 (QuestSeeder's Q-2 write path; schema landed here so Q-2
+## has a stable writer to build against). Matches save_poi_seeds' shape
+## (insert-only, no upsert — generation writes each seed row once).
+static func save_quest_seeds(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_quests", QUEST_SEED_COLUMNS, rows)
+
+
+static func save_rumor_seeds(campaign_id: String, rows: Array) -> bool:
+	return _bulk_insert(campaign_id, "setting_rumors", RUMOR_SEED_COLUMNS, rows)
+
+
 # ---------------------------------------------------------------------------
 # Readers (deterministic order; .duplicate()'d so callers own the result)
 # ---------------------------------------------------------------------------
@@ -335,6 +378,14 @@ static func list_replay_frames(campaign_id: String) -> Array:
 
 static func list_replay_palette(campaign_id: String) -> Array:
 	return _list(campaign_id, "setting_replay_palette", "polity_id ASC")
+
+
+static func list_quest_seeds(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_quests", "id ASC")
+
+
+static func list_rumor_seeds(campaign_id: String) -> Array:
+	return _list(campaign_id, "setting_rumors", "id ASC")
 
 
 # ---------------------------------------------------------------------------

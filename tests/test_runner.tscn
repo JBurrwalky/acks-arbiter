@@ -1,6 +1,23 @@
 [gd_scene format=3 uid="uid://test_runner_scene"]
 
 [ext_resource type="Script" path="res://tests/test_runner.gd" id="1_runner"]
+[ext_resource type="Script" path="res://tests/test_llm_provider_wall.gd" id="496_llm_provider_wall_tests"]
+[ext_resource type="Script" path="res://tests/test_ollama_provider.gd" id="497_ollama_provider_tests"]
+[ext_resource type="Script" path="res://tests/test_prompt_assembler.gd" id="498_prompt_assembler_tests"]
+[ext_resource type="Script" path="res://tests/test_llm_response_validator.gd" id="499_llm_response_validator_tests"]
+[ext_resource type="Script" path="res://tests/test_llm_request_queue.gd" id="500_llm_request_queue_tests"]
+[ext_resource type="Script" path="res://tests/test_llm_generate_wall.gd" id="501_llm_generate_wall_tests"]
+[ext_resource type="Script" path="res://tests/test_llm_generate_async.gd" id="502_llm_generate_async_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff1_schema.gd" id="503_faction_ff1_schema_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff1_realm_mirrors.gd" id="504_faction_ff1_realm_mirrors_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff1_stance_api.gd" id="505_faction_ff1_stance_api_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff1_ledger_drift.gd" id="506_faction_ff1_ledger_drift_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_phase1.gd" id="507_dialogue_phase1_tests"]
+[ext_resource type="Script" path="res://tests/test_reward_valuator.gd" id="508_reward_valuator_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_rumor_shared_types.gd" id="509_quest_rumor_shared_types_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_registry.gd" id="510_quest_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_rumor_registry.gd" id="511_rumor_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_rumor_persistence.gd" id="512_quest_rumor_persistence_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2036,3 +2053,54 @@ script = ExtResource("494_ruler_ai_capstone_tests")
 
 [node name="MilitiaCasualtyPersistenceTests" type="Node" parent="."]
 script = ExtResource("495_militia_casualty_persistence_tests")
+
+[node name="LlmProviderWallTests" type="Node" parent="."]
+script = ExtResource("496_llm_provider_wall_tests")
+
+[node name="OllamaProviderTests" type="Node" parent="."]
+script = ExtResource("497_ollama_provider_tests")
+
+[node name="PromptAssemblerTests" type="Node" parent="."]
+script = ExtResource("498_prompt_assembler_tests")
+
+[node name="LlmResponseValidatorTests" type="Node" parent="."]
+script = ExtResource("499_llm_response_validator_tests")
+
+[node name="LlmRequestQueueTests" type="Node" parent="."]
+script = ExtResource("500_llm_request_queue_tests")
+
+[node name="LlmGenerateWallTests" type="Node" parent="."]
+script = ExtResource("501_llm_generate_wall_tests")
+
+[node name="LlmGenerateAsyncTests" type="Node" parent="."]
+script = ExtResource("502_llm_generate_async_tests")
+
+[node name="FactionFF1SchemaTests" type="Node" parent="."]
+script = ExtResource("503_faction_ff1_schema_tests")
+
+[node name="FactionFF1RealmMirrorsTests" type="Node" parent="."]
+script = ExtResource("504_faction_ff1_realm_mirrors_tests")
+
+[node name="FactionFF1StanceApiTests" type="Node" parent="."]
+script = ExtResource("505_faction_ff1_stance_api_tests")
+
+[node name="FactionFF1LedgerDriftTests" type="Node" parent="."]
+script = ExtResource("506_faction_ff1_ledger_drift_tests")
+
+[node name="DialoguePhase1Tests" type="Node" parent="."]
+script = ExtResource("507_dialogue_phase1_tests")
+
+[node name="RewardValuatorTests" type="Node" parent="."]
+script = ExtResource("508_reward_valuator_tests")
+
+[node name="QuestRumorSharedTypesTests" type="Node" parent="."]
+script = ExtResource("509_quest_rumor_shared_types_tests")
+
+[node name="QuestRegistryTests" type="Node" parent="."]
+script = ExtResource("510_quest_registry_tests")
+
+[node name="RumorRegistryTests" type="Node" parent="."]
+script = ExtResource("511_rumor_registry_tests")
+
+[node name="QuestRumorPersistenceTests" type="Node" parent="."]
+script = ExtResource("512_quest_rumor_persistence_tests")

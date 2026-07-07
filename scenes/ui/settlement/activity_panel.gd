@@ -13,6 +13,10 @@ extends VBoxContainer
 
 signal activity_requested(activity_type: String, poi: Dictionary)
 signal exit_settlement_requested()
+## Phase 1 dialogue: the "Talk" activity opens a DialogueSession with the PoI's
+## occupant NPC (gdd-npc-dialogue.md §4.2, gdd-settlement-exploration-ui.md §4.1).
+## Routed to SettlementExploreState, which owns the party/runner context.
+signal talk_requested(poi: Dictionary)
 ## Emitted when the player clicks "Leave" to back out of the activity panel
 ## without committing to an activity. The owning state re-surfaces the PoI
 ## selection menu (otherwise the player is stranded with both panels hidden when
@@ -44,6 +48,7 @@ var _is_open: bool = false  ## true = within business hours
 ## Each activity: {id, label, major: bool, requires_open: bool}
 const ACTIVITIES := {
 	"tavern": [
+		{"id": "talk", "label": "Talk", "major": false, "requires_open": false},
 		{"id": "rest_short", "label": "Rest (Short)", "major": false, "requires_open": false},
 		{"id": "rest_long", "label": "Rest (Long, 8 hours)", "major": true, "requires_open": false},
 		{"id": "gather_info", "label": "Gather Information (4 hours)", "major": true, "requires_open": false},
@@ -51,6 +56,7 @@ const ACTIVITIES := {
 		{"id": "hire_henchmen", "label": "Hire Henchmen", "major": false, "requires_open": false},
 	],
 	"inn": [
+		{"id": "talk", "label": "Talk", "major": false, "requires_open": false},
 		{"id": "rest_short", "label": "Rest (Short)", "major": false, "requires_open": false},
 		{"id": "rest_long", "label": "Rest (Long, 8 hours)", "major": true, "requires_open": false},
 		{"id": "gather_info", "label": "Gather Information (4 hours)", "major": true, "requires_open": false},
@@ -222,6 +228,8 @@ func _on_activity_pressed(activity_id: String) -> void:
 	match activity_id:
 		"exit_settlement":
 			exit_settlement_requested.emit()
+		"talk":
+			talk_requested.emit(_poi)
 		"buy_equipment", "sell_equipment", "commission":
 			shop_requested.emit(_poi)
 		"hire_henchmen":

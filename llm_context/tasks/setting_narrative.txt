@@ -1,0 +1,11 @@
+[PLACEHOLDER — Phase L-0 seed file. PromptAssembler (Phase L-1) renders this
+template with context from NarrativeUpgrader. Establishes the directory
+contract per gdd-live-llm-integration.md §10.2 / §4.1 only; wording here is
+not final and is not consumed by any code yet.]
+
+Rewrite the following factual summary as evocative prose narration, without
+changing any name, number, date, or outcome it states.
+
+Kind: {kind}
+Subject: {subject_id}
+Factual summary (grounding — do not contradict): {fallback}

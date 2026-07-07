@@ -87,15 +87,25 @@ func test_intimidation_modifiers() -> void:
 
 
 func test_already_attitude_modifier() -> void:
-	# Diplomatic: already-friendly contributes 0 (only seduction has +2 already-friendly).
+	# Diplomatic: already-friendly now contributes +2 across ALL tones per the
+	# gdd-npc-dialogue.md §6.1 ruling (previously seduction-only). Extends the
+	# RAW +2 friendly line symmetrically with hostile −2 / unfriendly −1 / indifferent +1.
 	var r1 := _resolve_initial("diplomatic", 7, {"already_attitude": Attitude.FRIENDLY})
-	check(r1.total_modifier == 0, "diplomatic already-friendly = 0")
-	# Seduction: already-friendly contributes +2.
+	check(r1.total_modifier == 2, "diplomatic already-friendly = +2 (dialogue §6.1)")
+	# Seduction: already-friendly contributes +2 (the original RAW line).
 	var r2 := _resolve_initial("seduction", 7, {"already_attitude": Attitude.FRIENDLY})
 	check(r2.total_modifier == 2, "seduction already-friendly = +2")
-	# Intimidation: already-fearful contributes +1.
+	# Intimidation: already-friendly also +2 now (uniform across tones).
+	var r_int := _resolve_initial("intimidation", 7, {"already_attitude": Attitude.FRIENDLY})
+	check(r_int.total_modifier == 2, "intimidation already-friendly = +2 (dialogue §6.1)")
+	# Intimidation: already-fearful contributes +1 (unchanged).
 	var r3 := _resolve_initial("intimidation", 7, {"already_attitude": Attitude.FEARFUL})
 	check(r3.total_modifier == 1, "intimidation already-fearful = +1")
+	# Already-hostile / unfriendly / indifferent unchanged across tones.
+	var r4 := _resolve_initial("diplomatic", 7, {"already_attitude": Attitude.HOSTILE})
+	check(r4.total_modifier == -2, "diplomatic already-hostile = -2")
+	var r5 := _resolve_initial("diplomatic", 7, {"already_attitude": Attitude.INDIFFERENT})
+	check(r5.total_modifier == 1, "diplomatic already-indifferent = +1")
 
 
 func test_proficiency_modifiers() -> void:

@@ -184,6 +184,8 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
 | `gdd-quest-rumor-system.md` | Quest generation, rumor distribution, reward valuation, and completion tracking. Mechanics layer; surfaced by `gdd-quests-tab.md` (stub until upstream systems land) | Draft | `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation` |
+| `gdd-npc-dialogue.md` | NPC dialogue system: `DialogueSession`/`DialogueScreen` turn loop, hybrid move-catalog input, two-track attitude model (relationship tone + per-issue reactions), `NpcMemoryStore` (`npc_relationships`/`npc_memories`/`npc_issues`), Social Status Profile, lying/demeanor-beat deduction, capability registry for dialogue-usable spells/powers, LLM performance layer | Draft | `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_equipment`, `gdd-npc-personality`, `gdd-quest-rumor-system`, `gdd-ruler-ai`, `gdd-army-warfare`, `gdd-live-llm-integration`, `gdd-realtime-scheduler` |
+| `gdd-faction-framework.md` | Faction registry (realm/organization/warband scopes), stance system (public/secret, lazy-instantiated, compute-on-read default + decay), treaties/rebellion/vassal-loyalty, organizations (temples/guilds/syndicates), allegiance & covert-ops engine, dungeon-faction tie-in | Draft v0.7 — §4 data model fully approved | `ax_domains_of_chaos`, `acore-campaign-hijinks`, `gdd-npc-personality`, `gdd-ruler-ai`, `gdd-dungeon-factions`, `gdd-quest-rumor-system`, `gdd-live-llm-integration` |
 
 ### Combat & Tactical
 
@@ -264,6 +266,12 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `monster_system_map.md` | Maps monster stat-block fields and special abilities to the systems that must expose mechanical hooks |
 | `npc-domain-systems-stock-take-2026-06-27.md` | NPC domain/ruler subsystem audit: per-item status (built / designed / gap) across the 11-item full system, dependency chain, unlisted gaps, recommended build sequence. Identifies `gdd-ruler-ai.md` as the keystone |
 | `handoff-ruler-ai-build.md` | Phased build handoff for Claude Code implementing `gdd-ruler-ai.md` v0.3 — shared preamble + Phase 0–4 paste-ready prompts (StrategicDisposition → action catalog + `manage_stronghold` → scorer/monthly-tick → crisis/LOD → LLM contract), with file lists, interfaces, acceptance bars, and model guidance |
+| `master-build-plan-social-llm-stack.md` | Cross-GDD implementation sequence for the social/LLM stack (Faction Framework, Live LLM, NPC Dialogue) and satellites (Ruler AI, Dungeon Factions, Quest & Rumor, NPC Agency, NPC-personality generators, session log/summaries) — wave plan (§4), critical path (§5), gap tracking (§6) |
+| `handoff-faction-ff1-build.md` | Four-session build handoff for `gdd-faction-framework.md` FF-1 (registry & stances): schema/CRUD → realm mirrors → default-stance API+audit → ledger+`realm_relations` drift writer+reputation propagation |
+| `handoff-quest-rumor-build.md` | Six-session build handoff (Q-1…Q-6) for `gdd-quest-rumor-system.md` v1.0c: schema/registries/reward-valuator → questgiver seeding → rumor delivery → completion/turn-in → dialogue adapters → faction `post_job` bridge |
+| `handoff-dialogue-p1-build.md` | Build handoff for `gdd-npc-dialogue.md` Phase 1 (the spine): session/screen shell, six-move catalog, `npc_relationships`/`npc_memories`/`npc_issues` data model, deterministic summarizer, time-ladder enforcement, encounter-parley + settlement-Talk entry points |
+| `handoff-faction-ff3-build.md` | Build handoff for `gdd-faction-framework.md` FF-3 (realm diplomacy & rebellion, §5): vassal loyalty triggers + compliance ladder, treaties, ruler-AI diplomacy actions (war-ceiling raise for active-LOD sovereigns), rebel coalitions + plot secrecy, player-as-vassal mirror, resignation ladder A+B+C |
+| `handoff-dialogue-p2-build.md` | Build handoff for `gdd-npc-dialogue.md` Phase 2 (transactions): Social Status Profile subsystem, `ask_question` + knowledge disclosure, offer/bribe/terms moves, hiring-through-dialogue interview, slander ledger, Gather-Information dual path |
 
 ---
 
@@ -275,15 +283,15 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 40 files
+- **GDDs:** 42 files
   - World, setting, environment generation: 7
   - Settlement, dungeon, stronghold generation: 7
-  - NPCs, character systems, quests: 5
+  - NPCs, character systems, quests: 7
   - Combat & tactical: 3
   - Realtime & scheduling: 1
   - UI architecture & shared services: 2
   - UI Management Notebook (8 tabs + container): 9
   - UI HUD & surfaces: 4
   - Art & visual identity: 2
-- **Architecture and planning docs:** 10 files
-- **Grand total indexed:** 120 files
+- **Architecture and planning docs:** 13 files
+- **Grand total indexed:** 125 files

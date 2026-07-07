@@ -77,6 +77,17 @@ static func _table_specs() -> Dictionary:
 			"columns": SettingRepository.REPLAY_PALETTE_COLUMNS,
 			"order_by": "polity_id ASC",
 		},
+		# Quest & Rumor Q-1 (gdd-quest-rumor-system.md §10.3/O-Q10): the
+		# MECHANICAL column subset is canonical; *_placeholder prose columns
+		# are excluded, mirroring setting_narrative's is_fallback treatment.
+		"setting_quests": {
+			"columns": SettingRepository.QUEST_SEED_MECHANICAL_COLUMNS,
+			"order_by": "id ASC",
+		},
+		"setting_rumors": {
+			"columns": SettingRepository.RUMOR_SEED_MECHANICAL_COLUMNS,
+			"order_by": "id ASC",
+		},
 	}
 
 

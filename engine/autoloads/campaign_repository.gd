@@ -466,6 +466,14 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM hijink_assignments WHERE syndicate_id IN (SELECT id FROM syndicates WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM faction_memberships WHERE faction_id IN (SELECT id FROM factions WHERE campaign_id = ?)", [campaign_id])
 	db.query_with_bindings("DELETE FROM henchman_pool_members WHERE pool_id IN (SELECT id FROM henchman_pools WHERE campaign_id = ?)", [campaign_id])
+	# --- Faction Framework FF-1 sub-tables (delete children before factions/realms below) ---
+	db.query_with_bindings("DELETE FROM faction_plot_members WHERE plot_id IN (SELECT id FROM faction_plots WHERE campaign_id = ?)", [campaign_id])
+	db.query_with_bindings("DELETE FROM faction_plots WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM faction_stances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM faction_events WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM treaties WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM realm_petitions WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM domain_tithe_shares WHERE campaign_id = ?", [campaign_id])
 
 	# Tier 1 ── direct campaign_id tables (63 tables) ─────────────────────────
 	db.query_with_bindings("DELETE FROM characters WHERE campaign_id = ?", [campaign_id])
@@ -497,6 +505,12 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM shipping_contracts WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM factions WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM reputation_entries WHERE campaign_id = ?", [campaign_id])
+	# --- Dialogue subsystem (Phase 1): npc memory tables (migration 191) ---
+	# Campaign-scoped LEAF tables (no enforced FK); delete alongside the other
+	# direct-campaign rows. Own labeled block for clean Wave-0 merge.
+	db.query_with_bindings("DELETE FROM npc_relationships WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM npc_memories WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM npc_issues WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM social_groups WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM henchman_pools WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM scheduled_events WHERE campaign_id = ?", [campaign_id])
@@ -532,6 +546,22 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM domain_departure_log WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM realms WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM realm_relations WHERE campaign_id = ?", [campaign_id])
+
+	# --- Quest & Rumor Q-1 (migration 192) — child-before-parent order ---
+	db.query_with_bindings("""
+		DELETE FROM domain_grants WHERE quest_reward_id IN (
+			SELECT id FROM quest_rewards WHERE quest_id IN (
+				SELECT id FROM quests WHERE campaign_id = ?))""", [campaign_id])
+	db.query_with_bindings("""
+		DELETE FROM quest_rewards WHERE quest_id IN (
+			SELECT id FROM quests WHERE campaign_id = ?)""", [campaign_id])
+	db.query_with_bindings("""
+		DELETE FROM rumor_settlement_pool WHERE rumor_id IN (
+			SELECT id FROM rumors WHERE campaign_id = ?)""", [campaign_id])
+	db.query_with_bindings("DELETE FROM quests WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM rumors WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM setting_quests WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM setting_rumors WHERE campaign_id = ?", [campaign_id])
 
 	# Finally delete the campaign record itself
 	var ok := db.query_with_bindings("DELETE FROM campaigns WHERE id = ?", [campaign_id])
@@ -5347,6 +5377,17 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	"social_groups", "specialists", "survey_progress", "syndicates", "tracking_sessions",
 	"trade_routes", "trained_creatures", "troop_units", "vassal_assignments", "visited_pois",
 	"weather_states", "workshops", "xp_awards",
+	# --- Faction Framework FF-1: campaign-direct tables (§4.2/4.3/4.5/4.6/4.8/4.9).
+	# faction_plot_members scopes via faction_plots (a _via entry above), not here. ---
+	"faction_stances", "treaties", "faction_events", "faction_plots",
+	"realm_petitions", "domain_tithe_shares",
+	# --- Dialogue subsystem (Phase 1): npc memory tables (migration 191) ---
+	# All three are campaign-scoped LEAF tables (nothing FKs into them yet), so
+	# they purge as direct-campaign entries. Kept as their own labeled block for
+	# clean Wave-0 merge.
+	"npc_relationships", "npc_memories", "npc_issues",
+	# --- Quest & Rumor Q-1 (migration 192; campaign_id direct parents) ---
+	"quests", "rumors", "setting_quests", "setting_rumors",
 ]
 const _SCOPE_VIA_CHARACTER := [
 	"character_activity_state", "character_conditions", "character_divine_power",
@@ -5388,6 +5429,10 @@ func _campaign_scope_entries() -> Array:
 		"via": "poi_id IN (SELECT id FROM {s}.settlement_pois WHERE settlement_id IN (SELECT id FROM {s}.settlement_entrances WHERE campaign_id = ?))"})
 	e.append({"table": "stronghold_accessories", "via": _via_stronghold_child()})
 	e.append({"table": "stronghold_commissions", "via": _via_stronghold_child()})
+	# Quest & Rumor Q-1 (migration 192): domain_grants is depth-3 (via
+	# quest_rewards via quests) — must be deleted before quest_rewards.
+	e.append({"table": "domain_grants",
+		"via": "quest_reward_id IN (SELECT id FROM {s}.quest_rewards WHERE quest_id IN (SELECT id FROM {s}.quests WHERE campaign_id = ?))"})
 	# Depth 2 — scope through a direct (campaign_id) parent.
 	for t in _SCOPE_VIA_CHARACTER:
 		e.append({"table": t, "via": _via("character_id", "characters")})
@@ -5406,6 +5451,8 @@ func _campaign_scope_entries() -> Array:
 	for t in _SCOPE_VIA_SYNDICATE:
 		e.append({"table": t, "via": _via("syndicate_id", "syndicates")})
 	e.append({"table": "faction_memberships", "via": _via("faction_id", "factions")})
+	# --- Faction Framework FF-1: plot_members scope through faction_plots ---
+	e.append({"table": "faction_plot_members", "via": _via("plot_id", "faction_plots")})
 	e.append({"table": "vassal_obligations", "via": _via("vassal_assignment_id", "vassal_assignments")})
 	e.append({"table": "settlement_pois", "via": _via("settlement_id", "settlement_entrances")})
 	e.append({"table": "settlement_merchandise_demand", "via": _via("settlement_entrance_id", "settlement_entrances")})
@@ -5419,6 +5466,11 @@ func _campaign_scope_entries() -> Array:
 		"via": "(observer_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR observed_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?))"})
 	e.append({"table": "call_to_arms_state",
 		"via": "(lord_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR vassal_character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?))"})
+	# Quest & Rumor Q-1 (migration 192): quest_rewards via quests;
+	# rumor_settlement_pool via rumors. domain_grants (depth-3, via
+	# quest_rewards) is appended earlier, ahead of this depth-2 block.
+	e.append({"table": "quest_rewards", "via": _via("quest_id", "quests")})
+	e.append({"table": "rumor_settlement_pool", "via": _via("rumor_id", "rumors")})
 	# Dungeon-content tables: dungeon_id is buried in dungeon_entrances.dungeon_data
 	# JSON, so scope by the campaign's computed dungeon-id list. Processed before
 	# dungeon_entrances (a depth-1 parent) so the id list is still resolvable.
@@ -6051,21 +6103,71 @@ func get_items_in_vehicle(vehicle_id: String) -> Array:
 func create_faction(faction: FactionData) -> String:
 	if faction.id == "":
 		faction.id = generate_id()
+	# FF-1 (§4.1): write the full extended column set. Empty strings on nullable
+	# columns round-trip as SQL NULL. faction_type is not CHECK-constrained at
+	# the schema level (org/warband/realm vocabulary extends over time).
 	var ok := db.query_with_bindings(
 		"""INSERT INTO factions
 			(id, campaign_id, name, alignment, faction_type, home_domain_id,
-			 leader_npc_id, parent_faction_id, description)
-		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+			 leader_npc_id, parent_faction_id, description,
+			 scope, realm_id, religion_id, culture_id, seat_poi_id, seat_settlement_id,
+			 treasury_gp, member_count_abstract, power_rating, goal_primary, goal_secondary,
+			 volatility, is_player_founded, status, personality_weight_biases)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 		[faction.id, faction.campaign_id, faction.name, faction.alignment,
 		 faction.faction_type,
 		 null if faction.home_domain_id == "" else faction.home_domain_id,
 		 null if faction.leader_npc_id == "" else faction.leader_npc_id,
 		 null if faction.parent_faction_id == "" else faction.parent_faction_id,
-		 faction.description])
+		 faction.description,
+		 faction.scope,
+		 null if faction.realm_id == "" else faction.realm_id,
+		 null if faction.religion_id == "" else faction.religion_id,
+		 null if faction.culture_id == "" else faction.culture_id,
+		 null if faction.seat_poi_id == "" else faction.seat_poi_id,
+		 null if faction.seat_settlement_id == "" else faction.seat_settlement_id,
+		 faction.treasury_gp, faction.member_count_abstract, faction.power_rating,
+		 null if faction.goal_primary == "" else faction.goal_primary,
+		 null if faction.goal_secondary == "" else faction.goal_secondary,
+		 faction.volatility, 1 if faction.is_player_founded else 0, faction.status,
+		 null if faction.personality_weight_biases == "" else faction.personality_weight_biases])
 	if not ok:
 		push_error("CampaignRepository.create_faction: failed. name=%s" % faction.name)
 		return ""
 	return faction.id
+
+
+## Update the mutable FF-1 columns of an existing faction row (§4.1). Identity
+## columns (campaign_id) and scope/realm_id are treated as immutable here —
+## a realm-mirror never re-scopes. Returns true on success.
+func update_faction(faction: FactionData) -> bool:
+	if faction.id == "":
+		push_error("CampaignRepository.update_faction: empty id")
+		return false
+	return db.query_with_bindings(
+		"""UPDATE factions SET
+			name = ?, alignment = ?, faction_type = ?, home_domain_id = ?,
+			leader_npc_id = ?, parent_faction_id = ?, description = ?,
+			religion_id = ?, culture_id = ?, seat_poi_id = ?, seat_settlement_id = ?,
+			treasury_gp = ?, member_count_abstract = ?, power_rating = ?,
+			goal_primary = ?, goal_secondary = ?, volatility = ?,
+			is_player_founded = ?, status = ?, personality_weight_biases = ?
+		   WHERE id = ?""",
+		[faction.name, faction.alignment, faction.faction_type,
+		 null if faction.home_domain_id == "" else faction.home_domain_id,
+		 null if faction.leader_npc_id == "" else faction.leader_npc_id,
+		 null if faction.parent_faction_id == "" else faction.parent_faction_id,
+		 faction.description,
+		 null if faction.religion_id == "" else faction.religion_id,
+		 null if faction.culture_id == "" else faction.culture_id,
+		 null if faction.seat_poi_id == "" else faction.seat_poi_id,
+		 null if faction.seat_settlement_id == "" else faction.seat_settlement_id,
+		 faction.treasury_gp, faction.member_count_abstract, faction.power_rating,
+		 null if faction.goal_primary == "" else faction.goal_primary,
+		 null if faction.goal_secondary == "" else faction.goal_secondary,
+		 faction.volatility, 1 if faction.is_player_founded else 0, faction.status,
+		 null if faction.personality_weight_biases == "" else faction.personality_weight_biases,
+		 faction.id])
 
 
 func get_faction(faction_id: String) -> Dictionary:
@@ -6094,6 +6196,180 @@ func get_faction_ids_for_npc(npc_id: String) -> Array:
 	for row in db.query_result:
 		ids.append(row["faction_id"])
 	return ids
+
+
+# ===========================================================================
+# --- Faction Framework FF-1 CRUD (gdd-faction-framework.md §4) ---
+# Self-contained block appended under the Phase G-1 reputation section so the
+# orchestrator's merge is mechanical. Covers: extended membership writes,
+# faction_stances (§4.2), faction_events ledger (§4.5), and thin schema-only
+# CRUD for treaties/plots/petitions/tithe-shares whose resolvers land FF-2/FF-3.
+# The authority-split guard (§3.1: no realm-mirror↔realm-mirror stance rows)
+# lives in ff_upsert_stance_row / instantiate path — see FactionRegistry and
+# the stance API for the enforcement point.
+# ===========================================================================
+
+## Extended membership upsert (§4.4). INSERT OR REPLACE re-inserts on conflict,
+## so pass the full desired row (a bare add would reset defaults). role keeps
+## its named-post meaning; the ladder index is `rank`.
+func ff_upsert_membership(faction_id: String, npc_id: String, fields: Dictionary = {}) -> bool:
+	# Read any existing row so a partial update preserves untouched columns.
+	var existing: Dictionary = {}
+	if db.query_with_bindings(
+			"SELECT * FROM faction_memberships WHERE faction_id = ? AND npc_id = ?",
+			[faction_id, npc_id]) and not db.query_result.is_empty():
+		existing = db.query_result[0]
+	var role_v: String = String(fields.get("role", existing.get("role", "member")))
+	var rank_v: int = int(fields.get("rank", existing.get("rank", 0)))
+	var loyalty_v: int = int(fields.get("loyalty_mod", existing.get("loyalty_mod", 0)))
+	var standing_v: int = int(fields.get("standing", existing.get("standing", 0)))
+	var secret_v: int = 1 if bool(fields.get("is_secret", int(existing.get("is_secret", 0)) != 0)) else 0
+	var joined_v: int = int(fields.get("joined_day", existing.get("joined_day", 0)))
+	var status_v: String = String(fields.get("status", existing.get("status", "member")))
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO faction_memberships
+			(faction_id, npc_id, role, rank, loyalty_mod, standing, is_secret, joined_day, status)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[faction_id, npc_id, role_v, rank_v, loyalty_v, standing_v, secret_v, joined_v, status_v])
+
+
+func ff_get_membership(faction_id: String, npc_id: String) -> Dictionary:
+	if db.query_with_bindings(
+			"SELECT * FROM faction_memberships WHERE faction_id = ? AND npc_id = ?",
+			[faction_id, npc_id]) and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+func ff_list_members(faction_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_memberships WHERE faction_id = ?", [faction_id])
+	return db.query_result.duplicate()
+
+
+# --- faction_stances (§4.2) ------------------------------------------------
+
+## Fetch the raw instantiated stance row for a directed pair (A→B), or {} if
+## un-instantiated. Callers that must not see true_stance should use the stance
+## API (get_stance) rather than this raw accessor.
+func ff_get_stance_row(faction_a_id: String, faction_b_id: String) -> Dictionary:
+	if db.query_with_bindings(
+			"SELECT * FROM faction_stances WHERE faction_a_id = ? AND faction_b_id = ?",
+			[faction_a_id, faction_b_id]) and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+## Insert-or-update a stance row from a FactionStanceData. Returns the row id, or
+## "" on failure. Does NOT enforce the authority split — the stance API layer
+## (FF-1.2) is the guard point (it has scope context). Empty true_stance /
+## betrayal_condition round-trip as NULL.
+func ff_upsert_stance(stance: FactionStanceData) -> String:
+	if stance.faction_a_id == "" or stance.faction_b_id == "":
+		push_error("CampaignRepository.ff_upsert_stance: empty faction id")
+		return ""
+	var existing: Dictionary = ff_get_stance_row(stance.faction_a_id, stance.faction_b_id)
+	if not existing.is_empty():
+		stance.id = String(existing.get("id", stance.id))
+		var ok_u := db.query_with_bindings(
+			"""UPDATE faction_stances SET
+				public_stance = ?, true_stance = ?, betrayal_condition = ?,
+				stance_reason = ?, grievance_score = ?, last_evaluated_day = ?,
+				updated_at = datetime('now')
+			   WHERE id = ?""",
+			[stance.public_stance,
+			 null if stance.true_stance == "" else stance.true_stance,
+			 null if stance.betrayal_condition == "" else stance.betrayal_condition,
+			 stance.stance_reason, stance.grievance_score, stance.last_evaluated_day,
+			 stance.id])
+		return stance.id if ok_u else ""
+	if stance.id == "":
+		stance.id = generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO faction_stances
+			(id, campaign_id, faction_a_id, faction_b_id, public_stance, true_stance,
+			 betrayal_condition, stance_reason, grievance_score, last_evaluated_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[stance.id, stance.campaign_id, stance.faction_a_id, stance.faction_b_id,
+		 stance.public_stance,
+		 null if stance.true_stance == "" else stance.true_stance,
+		 null if stance.betrayal_condition == "" else stance.betrayal_condition,
+		 stance.stance_reason, stance.grievance_score, stance.last_evaluated_day])
+	if not ok:
+		push_error("CampaignRepository.ff_upsert_stance: failed a=%s b=%s"
+			% [stance.faction_a_id, stance.faction_b_id])
+		return ""
+	return stance.id
+
+
+func ff_list_stances(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_stances WHERE campaign_id = ?", [campaign_id])
+	return db.query_result.duplicate()
+
+
+# --- faction_events ledger (§4.5) ------------------------------------------
+
+## Append one ledger row. expires_day <= 0 writes SQL NULL (never-expires kinds
+## rely on this; FactionEventLedger.record computes the 60-month window for
+## expiring kinds and passes it here). Returns the row id, or "".
+func ff_append_faction_event(entry: FactionLedgerEntry) -> String:
+	if entry.actor_faction_id == "" or entry.target_faction_id == "":
+		push_error("CampaignRepository.ff_append_faction_event: empty faction id")
+		return ""
+	if entry.id == "":
+		entry.id = generate_id()
+	var expires_v: Variant = null if entry.expires_day <= 0 else entry.expires_day
+	var ok := db.query_with_bindings(
+		"""INSERT INTO faction_events
+			(id, campaign_id, day, actor_faction_id, target_faction_id, kind,
+			 magnitude, data, expires_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[entry.id, entry.campaign_id, entry.day, entry.actor_faction_id,
+		 entry.target_faction_id, entry.kind, entry.magnitude, entry.data, expires_v])
+	if not ok:
+		push_error("CampaignRepository.ff_append_faction_event: failed kind=%s" % entry.kind)
+		return ""
+	return entry.id
+
+
+## Ledger rows for a directed pair that are still live on [param as_of_day]
+## (expires_day NULL = never expires, always live; else live while
+## expires_day > as_of_day). Ordered oldest-first.
+func ff_list_faction_events(actor_faction_id: String, target_faction_id: String,
+		as_of_day: int = -1) -> Array:
+	if as_of_day < 0:
+		db.query_with_bindings(
+			"""SELECT * FROM faction_events
+			   WHERE actor_faction_id = ? AND target_faction_id = ?
+			   ORDER BY day ASC, id ASC""",
+			[actor_faction_id, target_faction_id])
+	else:
+		db.query_with_bindings(
+			"""SELECT * FROM faction_events
+			   WHERE actor_faction_id = ? AND target_faction_id = ?
+				 AND (expires_day IS NULL OR expires_day > ?)
+			   ORDER BY day ASC, id ASC""",
+			[actor_faction_id, target_faction_id, as_of_day])
+	return db.query_result.duplicate()
+
+
+# --- treaties / plots / petitions / tithe-shares (schema-only CRUD) ---------
+
+func ff_upsert_tithe_share(campaign_id: String, domain_id: String, faction_id: String,
+		share_pct: int, set_day: int) -> bool:
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO domain_tithe_shares
+			(campaign_id, domain_id, faction_id, share_pct, set_day)
+		   VALUES (?, ?, ?, ?, ?)""",
+		[campaign_id, domain_id, faction_id, share_pct, set_day])
+
+
+func ff_list_tithe_shares(domain_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM domain_tithe_shares WHERE domain_id = ? ORDER BY faction_id ASC",
+		[domain_id])
+	return db.query_result.duplicate()
 
 
 func fetch_reputation_entry(party_id: String, scope_type: String, scope_id: String) -> Dictionary:
@@ -6133,6 +6409,173 @@ func list_reputation_entries(party_id: String) -> Array:
 		"SELECT * FROM reputation_entries WHERE party_id = ? ORDER BY scope_type, scope_id",
 		[party_id])
 	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# --- Dialogue subsystem (Phase 1): npc_relationships / npc_memories / npc_issues ---
+# gdd-npc-dialogue.md §8.1 / §15. CRUD for the three dialogue-memory tables
+# (migration 191). Kept textually self-contained (its own labeled block, not
+# interleaved with the Phase G-1 reputation section above) for clean Wave-0
+# merge. save_* methods upsert; NpcMemoryStore/DialogueSession are the callers.
+# ---------------------------------------------------------------------------
+
+## Fetch the relationship row for an NPC x party. Returns {} if none exists yet
+## (i.e. a first-ever meeting). Callers use the empty result to decide whether to
+## resolve an initial interaction (§6.1).
+func get_npc_relationship(campaign_id: String, npc_id: String, party_id: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"""SELECT * FROM npc_relationships
+			   WHERE campaign_id = ? AND npc_id = ? AND party_id = ?""",
+			[campaign_id, npc_id, party_id]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func list_npc_relationships(campaign_id: String, party_id: String = "") -> Array:
+	if party_id.is_empty():
+		db.query_with_bindings(
+			"SELECT * FROM npc_relationships WHERE campaign_id = ?", [campaign_id])
+	else:
+		db.query_with_bindings(
+			"SELECT * FROM npc_relationships WHERE campaign_id = ? AND party_id = ?",
+			[campaign_id, party_id])
+	return db.query_result.duplicate()
+
+
+## Insert-or-update a relationship row (upsert on the UNIQUE(campaign,npc,party)
+## key). [param rel] is a NpcRelationshipData. Assigns an id if empty. Returns the
+## row id, or "" on failure.
+func save_npc_relationship(rel: NpcRelationshipData) -> String:
+	if rel.id.is_empty():
+		rel.id = generate_id()
+	var d := rel.to_dict()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO npc_relationships
+			(id, campaign_id, npc_id, party_id, attitude, is_intimidated,
+			 influence_attempt_count, next_attempt_available_at,
+			 favors_owed_to_party, favors_owed_by_party,
+			 first_met_day, last_interaction_day, role_tags)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		   ON CONFLICT(campaign_id, npc_id, party_id) DO UPDATE SET
+			attitude = excluded.attitude,
+			is_intimidated = excluded.is_intimidated,
+			influence_attempt_count = excluded.influence_attempt_count,
+			next_attempt_available_at = excluded.next_attempt_available_at,
+			favors_owed_to_party = excluded.favors_owed_to_party,
+			favors_owed_by_party = excluded.favors_owed_by_party,
+			first_met_day = excluded.first_met_day,
+			last_interaction_day = excluded.last_interaction_day,
+			role_tags = excluded.role_tags""",
+		[d["id"], d["campaign_id"], d["npc_id"], d["party_id"], d["attitude"],
+		 d["is_intimidated"], d["influence_attempt_count"], d["next_attempt_available_at"],
+		 d["favors_owed_to_party"], d["favors_owed_by_party"],
+		 d["first_met_day"], d["last_interaction_day"], d["role_tags"]])
+	if not ok:
+		push_error("CampaignRepository.save_npc_relationship: failed. npc=%s party=%s"
+			% [rel.npc_id, rel.party_id])
+		return ""
+	return rel.id
+
+
+func delete_npc_relationship(relationship_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM npc_relationships WHERE id = ?", [relationship_id])
+
+
+## Insert a memory row (memories are append-only episodic records; no upsert).
+## Assigns an id if empty. Returns the row id, or "" on failure.
+func save_npc_memory(mem: NpcMemoryData) -> String:
+	if mem.id.is_empty():
+		mem.id = generate_id()
+	var d := mem.to_dict()
+	var ok := db.query_with_bindings(
+		"""INSERT OR REPLACE INTO npc_memories
+			(id, campaign_id, npc_id, party_id, kind, summary, facts,
+			 attitude_after, importance, created_day, last_recalled_day, source_session_id)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[d["id"], d["campaign_id"], d["npc_id"], d["party_id"], d["kind"],
+		 d["summary"], d["facts"], d["attitude_after"], d["importance"],
+		 d["created_day"], d["last_recalled_day"], d["source_session_id"]])
+	if not ok:
+		push_error("CampaignRepository.save_npc_memory: failed. npc=%s kind=%s"
+			% [mem.npc_id, mem.kind])
+		return ""
+	return mem.id
+
+
+## Top-K recall for a given NPC (§8.3): importance DESC, then recency DESC.
+## [param limit] <= 0 returns all rows.
+func list_npc_memories(campaign_id: String, npc_id: String, limit: int = 0) -> Array:
+	var sql := """SELECT * FROM npc_memories
+		WHERE campaign_id = ? AND npc_id = ?
+		ORDER BY importance DESC, created_day DESC"""
+	if limit > 0:
+		sql += " LIMIT %d" % limit
+	db.query_with_bindings(sql, [campaign_id, npc_id])
+	return db.query_result.duplicate()
+
+
+func delete_npc_memory(memory_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM npc_memories WHERE id = ?", [memory_id])
+
+
+## Fetch a single issue by its natural key (§6.5). Returns {} if none.
+func get_npc_issue(campaign_id: String, npc_id: String, party_id: String, issue_key: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"""SELECT * FROM npc_issues
+			   WHERE campaign_id = ? AND npc_id = ? AND party_id = ? AND issue_key = ?""",
+			[campaign_id, npc_id, party_id, issue_key]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func list_npc_issues(campaign_id: String, npc_id: String, party_id: String = "") -> Array:
+	if party_id.is_empty():
+		db.query_with_bindings(
+			"SELECT * FROM npc_issues WHERE campaign_id = ? AND npc_id = ?",
+			[campaign_id, npc_id])
+	else:
+		db.query_with_bindings(
+			"SELECT * FROM npc_issues WHERE campaign_id = ? AND npc_id = ? AND party_id = ?",
+			[campaign_id, npc_id, party_id])
+	return db.query_result.duplicate()
+
+
+## Insert-or-update an issue row (upsert on UNIQUE(campaign,npc,party,issue_key)).
+## [param issue] is a NpcIssueData. Not consumed until Phase 3, but the CRUD ships
+## now so the whole data model is live in one pass.
+func save_npc_issue(issue: NpcIssueData) -> String:
+	if issue.id.is_empty():
+		issue.id = generate_id()
+	var d := issue.to_dict()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO npc_issues
+			(id, campaign_id, npc_id, party_id, issue_key, status, last_result,
+			 attempt_count, next_attempt_available_at, terms, offense_fired,
+			 created_day, resolved_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		   ON CONFLICT(campaign_id, npc_id, party_id, issue_key) DO UPDATE SET
+			status = excluded.status,
+			last_result = excluded.last_result,
+			attempt_count = excluded.attempt_count,
+			next_attempt_available_at = excluded.next_attempt_available_at,
+			terms = excluded.terms,
+			offense_fired = excluded.offense_fired,
+			resolved_day = excluded.resolved_day""",
+		[d["id"], d["campaign_id"], d["npc_id"], d["party_id"], d["issue_key"],
+		 d["status"], d["last_result"], d["attempt_count"], d["next_attempt_available_at"],
+		 d["terms"], d["offense_fired"], d["created_day"], d["resolved_day"]])
+	if not ok:
+		push_error("CampaignRepository.save_npc_issue: failed. npc=%s issue=%s"
+			% [issue.npc_id, issue.issue_key])
+		return ""
+	return issue.id
+
+
+func delete_npc_issue(issue_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM npc_issues WHERE id = ?", [issue_id])
 
 
 func get_domain_ruler_id(domain_id: String) -> String:
@@ -6193,6 +6636,241 @@ func clear_settlement_barred_party(settlement_id: String, party_id: String) -> b
 	return db.query_with_bindings(
 		"UPDATE settlement_entrances SET barred_party_ids = ? WHERE id = ?",
 		[JSON.stringify(current), settlement_id])
+
+
+# ---------------------------------------------------------------------------
+# Quest & Rumor Q-1 (generation/gdd-quest-rumor-system.md §12) — quests,
+# quest_rewards, domain_grants, rumors, rumor_settlement_pool CRUD.
+# Backs QuestRegistry/RumorRegistry (engine/subsystems/quests/). Column
+# lists match migration 192 verbatim.
+# ---------------------------------------------------------------------------
+
+const _QUEST_COLUMNS := [
+	"id", "campaign_id", "status", "questgiver_id", "questgiver_faction_id",
+	"questgiver_settlement_id", "questgiver_motivation", "threat_type",
+	"threat_source_id", "threat_hex", "threat_description_hint",
+	"completion_type", "completion_target_id", "completion_verified_by",
+	"is_complete", "progress", "title", "description", "questgiver_dialogue",
+	"completion_dialogue", "posting_type", "posting_range", "created_day",
+	"expires_day", "accepted_day", "completed_day", "accepting_pc_id",
+	"reward_recipient_pc_id", "faction_goal_id",
+]
+
+func create_quest(quest: QuestData) -> bool:
+	var data := quest.to_dict()
+	var placeholders := "?" + (", ?" as String).repeat(_QUEST_COLUMNS.size() - 1)
+	var values: Array = []
+	for c in _QUEST_COLUMNS:
+		values.append(_null_if_empty_or_neg(data[c], c))
+	var ok := db.query_with_bindings(
+		"INSERT INTO quests (%s) VALUES (%s)" % [", ".join(_QUEST_COLUMNS), placeholders],
+		values)
+	if not ok:
+		push_error("CampaignRepository.create_quest: failed. id=%s" % quest.id)
+	return ok
+
+
+func get_quest(quest_id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM quests WHERE id = ?", [quest_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func save_quest(quest: QuestData) -> bool:
+	var data := quest.to_dict()
+	var set_clause := ""
+	var values: Array = []
+	for i in _QUEST_COLUMNS.size():
+		var c: String = _QUEST_COLUMNS[i]
+		if c == "id":
+			continue
+		set_clause += ("" if values.is_empty() else ", ") + "%s = ?" % c
+		values.append(_null_if_empty_or_neg(data[c], c))
+	values.append(quest.id)
+	var ok := db.query_with_bindings(
+		"UPDATE quests SET %s WHERE id = ?" % set_clause, values)
+	if not ok:
+		push_error("CampaignRepository.save_quest: failed. id=%s" % quest.id)
+	return ok
+
+
+func list_quests_by_questgiver(npc_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM quests WHERE questgiver_id = ? AND campaign_id = ?",
+		[npc_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+func list_quests_by_settlement(settlement_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM quests WHERE questgiver_settlement_id = ? AND campaign_id = ?",
+		[settlement_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+func list_quests_by_hex(hex: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM quests WHERE threat_hex = ? AND campaign_id = ?",
+		[hex, campaign_id])
+	return db.query_result.duplicate()
+
+
+## Columns that store SQLite NULL rather than a sentinel default when the
+## in-memory value is the QuestData "unset" sentinel (-1 for the nullable
+## day-int fields, "" for nullable FK-string fields).
+const _QUEST_NULLABLE_NEG1_INT := ["expires_day", "accepted_day", "completed_day"]
+const _QUEST_NULLABLE_EMPTY_STR := [
+	"questgiver_id", "questgiver_faction_id", "questgiver_settlement_id",
+	"accepting_pc_id", "reward_recipient_pc_id",
+]
+
+func _null_if_empty_or_neg(value, column: String):
+	if _QUEST_NULLABLE_NEG1_INT.has(column) and int(value) == -1:
+		return null
+	if _QUEST_NULLABLE_EMPTY_STR.has(column) and String(value) == "":
+		return null
+	return value
+
+
+func create_quest_reward(reward: QuestRewardData) -> bool:
+	if reward.id == "":
+		reward.id = generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO quest_rewards
+			(id, quest_id, reward_type, gold_value, item_id, item_description,
+			 domain_grant_id, political_favor, total_gp_value, xp_eligible,
+			 variance_applied)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[reward.id, reward.quest_id, reward.reward_type, reward.gold_value,
+		 reward.item_id, reward.item_description,
+		 null if reward.domain_grant_id == "" else reward.domain_grant_id,
+		 reward.political_favor, reward.total_gp_value,
+		 1 if reward.xp_eligible else 0, reward.variance_applied])
+	if not ok:
+		push_error("CampaignRepository.create_quest_reward: failed. quest_id=%s" % reward.quest_id)
+	return ok
+
+
+func get_quest_reward_for_quest(quest_id: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"SELECT * FROM quest_rewards WHERE quest_id = ?", [quest_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func create_domain_grant(grant: DomainGrantData) -> bool:
+	if grant.id == "":
+		grant.id = generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO domain_grants
+			(id, quest_reward_id, hex_ids, territory_class, estimated_families,
+			 stronghold_present, stronghold_value, vassal_obligations,
+			 title_granted, single_owner_pc_id)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[grant.id, grant.quest_reward_id, JSON.stringify(grant.hex_ids),
+		 grant.territory_class, grant.estimated_families,
+		 1 if grant.stronghold_present else 0, grant.stronghold_value,
+		 JSON.stringify(grant.vassal_obligations), grant.title_granted,
+		 null if grant.single_owner_pc_id == "" else grant.single_owner_pc_id])
+	if not ok:
+		push_error("CampaignRepository.create_domain_grant: failed. quest_reward_id=%s"
+			% grant.quest_reward_id)
+	return ok
+
+
+func get_domain_grant(grant_id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM domain_grants WHERE id = ?", [grant_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+const _RUMOR_COLUMNS := [
+	"id", "campaign_id", "source_type", "source_id", "source_quest_id",
+	"content_hint", "narrated_text", "accuracy", "accuracy_detail",
+	"knowledge_category", "origin_hex", "settlement_range", "min_npc_tier",
+	"freshness", "known_to_party", "verified", "first_heard_day",
+	"created_day", "expires_day",
+]
+const _RUMOR_NULLABLE_NEG1_INT := ["first_heard_day", "expires_day"]
+const _RUMOR_NULLABLE_EMPTY_STR := ["source_quest_id"]
+
+func create_rumor(rumor: RumorData) -> bool:
+	var data := rumor.to_dict()
+	var placeholders := "?" + (", ?" as String).repeat(_RUMOR_COLUMNS.size() - 1)
+	var values: Array = []
+	for c in _RUMOR_COLUMNS:
+		values.append(_null_if_empty_or_neg_rumor(data[c], c))
+	var ok := db.query_with_bindings(
+		"INSERT INTO rumors (%s) VALUES (%s)" % [", ".join(_RUMOR_COLUMNS), placeholders],
+		values)
+	if not ok:
+		push_error("CampaignRepository.create_rumor: failed. id=%s" % rumor.id)
+	return ok
+
+
+func get_rumor(rumor_id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM rumors WHERE id = ?", [rumor_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func save_rumor(rumor: RumorData) -> bool:
+	var data := rumor.to_dict()
+	var set_clause := ""
+	var values: Array = []
+	for i in _RUMOR_COLUMNS.size():
+		var c: String = _RUMOR_COLUMNS[i]
+		if c == "id":
+			continue
+		set_clause += ("" if values.is_empty() else ", ") + "%s = ?" % c
+		values.append(_null_if_empty_or_neg_rumor(data[c], c))
+	values.append(rumor.id)
+	var ok := db.query_with_bindings(
+		"UPDATE rumors SET %s WHERE id = ?" % set_clause, values)
+	if not ok:
+		push_error("CampaignRepository.save_rumor: failed. id=%s" % rumor.id)
+	return ok
+
+
+func _null_if_empty_or_neg_rumor(value, column: String):
+	if _RUMOR_NULLABLE_NEG1_INT.has(column) and int(value) == -1:
+		return null
+	if _RUMOR_NULLABLE_EMPTY_STR.has(column) and String(value) == "":
+		return null
+	return value
+
+
+func list_rumors_for_settlement(settlement_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT r.* FROM rumors r
+		   INNER JOIN rumor_settlement_pool p ON p.rumor_id = r.id
+		   WHERE p.settlement_id = ? AND r.campaign_id = ?""",
+		[settlement_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+func list_rumors_by_source(source_id: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM rumors WHERE source_id = ? AND campaign_id = ?",
+		[source_id, campaign_id])
+	return db.query_result.duplicate()
+
+
+func list_rumors_by_category(knowledge_category: String, campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM rumors WHERE knowledge_category = ? AND campaign_id = ?",
+		[knowledge_category, campaign_id])
+	return db.query_result.duplicate()
+
+
+func add_rumor_to_settlement_pool(rumor_id: String, settlement_id: String) -> bool:
+	return db.query_with_bindings(
+		"INSERT OR IGNORE INTO rumor_settlement_pool (rumor_id, settlement_id) VALUES (?, ?)",
+		[rumor_id, settlement_id])
 
 
 # ---------------------------------------------------------------------------

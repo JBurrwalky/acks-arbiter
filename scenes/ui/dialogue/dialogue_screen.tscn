@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dlg_screen_phase1"]
+
+[ext_resource type="Script" path="res://scenes/ui/dialogue/dialogue_screen.gd" id="1_script"]
+
+[node name="DialogueScreen" type="CanvasLayer"]
+layer = 50
+script = ExtResource("1_script")

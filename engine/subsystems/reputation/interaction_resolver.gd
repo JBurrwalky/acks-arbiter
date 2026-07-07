@@ -326,8 +326,12 @@ static func _already_attitude_modifier(tone: String, already: String) -> int:
 		Attitude.INDIFFERENT:
 			return 1
 		Attitude.FRIENDLY:
-			# Only seduction has an explicit "+2 already friendly" entry.
-			return 2 if tone == InteractionResult.TONE_SEDUCTION else 0
+			# RAW has an explicit "+2 already friendly" entry only in the seduction
+			# stack (ax_reactions_and_influencing.xml:278-282). Per Jedidiah's ruling
+			# (gdd-npc-dialogue.md §6.1), the +2 Friendly relationship modifier
+			# extends to ALL three tones — consistent with that precedent and with
+			# the symmetric already-Hostile −2 / Unfriendly −1 / Indifferent +1 lines.
+			return 2
 		Attitude.FEARFUL:
 			# Intimidation: already-fearful +1.
 			return 1 if tone == InteractionResult.TONE_INTIMIDATION else 0

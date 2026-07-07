@@ -1337,6 +1337,24 @@ signal ruler_deactivated_for_lod(ruler_npc_id: String)
 
 
 # ---------------------------------------------------------------------------
+# Faction Framework (gdd-faction-framework.md §11.6). FF-1 introduces the
+# stance-change signal; the remaining §11.6 signals (faction_action_taken,
+# treaty_signed/broken, plot_advanced/exposed, rebellion_launched,
+# allegiance_declared, betrayal_executed, faction_membership_changed,
+# party_loyalty_conflict_detected, realm_petition_resolved) arrive with their
+# phases and are declared on first use.
+# ---------------------------------------------------------------------------
+
+## Emitted by FactionStanceService when an INSTANTIATED faction↔faction stance
+## changes band — via shift_stance or a decay-at-read step (§4.2, §5.6). Carries
+## PUBLIC bands only (never true_stance, §7.4). Consumers: faction/political
+## observability, future FactionActionNarrator (Seam A), the reputation
+## awareness gate. old_public/new_public are band words
+## (hostile|unfriendly|neutral|indifferent|friendly|allied).
+signal faction_stance_changed(faction_a_id: String, faction_b_id: String, old_public: String, new_public: String)
+
+
+# ---------------------------------------------------------------------------
 # Phase 8 — Favors & Duties Monthly System (gdd-domain-tab.md §11 +
 # acore_axioms_strongholds_and_domains.xml §favors_and_duties L352-372)
 # ---------------------------------------------------------------------------
@@ -2072,3 +2090,88 @@ signal replay_frame_advanced(tick: int)
 ## Fired AFTER the post-approval lock is written — consumers may treat the
 ## setting dataset as canonical and read-only from this moment.
 signal world_approved(campaign_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Dialogue subsystem (Phase 1) — gdd-npc-dialogue.md §15
+# ---------------------------------------------------------------------------
+# Own labeled block (not intermixed with the faction/quest sections other
+# Wave-0 tracks are concurrently adding). Emitted by DialogueSession; consumers
+# are Phase-2+ (log panel, reputation, quest adapters) — declared now so the
+# contract is stable across sibling tracks and future dialogue phases.
+
+## A dialogue session opened. Fired at DialogueSession.begin() after the context
+## is built and any initial interaction is resolved. [param npc_ids] are the
+## NPCs present in the scene (spokesperson first).
+signal dialogue_started(session_id: String, npc_ids: Array, party_id: String)
+
+## A dialogue session closed (COMMIT, §4.4 step 8). [param outcome] keys:
+##   kind: String  — "farewell" | "combat" | "hire" | "agreement" | "withdrawn"
+##   npc_id: String — the primary interlocutor (spokesperson)
+##   final_attitude: String — the relationship attitude at close (Attitude vocab)
+##   combat_seed: Dictionary (OPTIONAL — present only when kind == "combat", §12.1):
+##     encounter_id, party_member_ids, npc_combatant_ids, instigator, scene
+signal dialogue_ended(session_id: String, outcome: Dictionary)
+
+## An NPC agreed to a per-issue ask (request_action grant, parley terms). Phase 3
+## consumer; declared now. [param agreement] keys: issue_key, terms, result_band.
+signal npc_agreement_reached(npc_id: String, agreement: Dictionary)
+
+## A memory row was written to npc_memories. [param kind] is the NpcMemoryData
+## kind. Consumers: log panel, gossip propagation (v2).
+signal npc_memory_written(npc_id: String, memory_id: String, kind: String)
+
+
+# ---------------------------------------------------------------------------
+# Quest & Rumor (Session Q-1; generation/gdd-quest-rumor-system.md §11.6)
+# ---------------------------------------------------------------------------
+
+## A new quest row was created (QuestRegistry.create_quest — setting-gen
+## seeding at Q-2, or a runtime mint such as create_faction_quest at Q-6).
+signal quest_discovered(quest_id: String)
+
+## Dialogue's quest_ask move surfaced this quest to the player
+## (QuestRegistry.offerable_quests, §11.1).
+signal quest_offered(quest_id: String, npc_id: String)
+
+## The player formally accepted a quest (QuestRegistry.accept). status ->
+## accepted.
+signal quest_accepted(quest_id: String, pc_id: String)
+
+## The player declined an offered quest (QuestRegistry.decline). No status
+## change — the quest remains available/re-offerable while the questgiver's
+## attitude toward the party is non-Hostile (O-Q7).
+signal quest_declined(quest_id: String)
+
+## QuestCompletionWatcher (Q-4) flipped is_complete = true. Awaits turn-in.
+signal quest_completion_ready(quest_id: String)
+
+## Reward disbursed (QuestRegistry.disburse_reward). status -> completed.
+## reward is the disbursement payload: {reward_type, gold_value, item_id,
+## political_favor, total_gp_value, xp_awarded}.
+signal quest_turned_in(quest_id: String, recipient_pc_id: String, reward: Dictionary)
+
+## Quest transitioned to failed (dead questgiver, impossible objective —
+## QuestRegistry.fail). reason is a short machine-readable cause tag.
+signal quest_failed(quest_id: String, reason: String)
+
+## Quest's expires_day passed without completion (QuestRegistry.expire, the
+## Q-3 monthly decay pass). Re-mints if the threat persists (§9.7).
+signal quest_expired(quest_id: String)
+
+## Player abandoned an accepted quest via the Quests-tab (QuestRegistry.abandon).
+signal quest_abandoned(quest_id: String)
+
+## A rumor was heard by the party (RumorRegistry.mark_heard). source_channel
+## is one of: carouse|spy|ask|board|venturer|gather_info.
+signal rumor_heard(rumor_id: String, source_channel: String)
+
+## The party visited the rumor's source and learned the truth
+## (RumorRegistry.mark_verified). accuracy is the TRUE accuracy tier — the
+## only place accuracy is ever surfaced to the player (no reliability cue,
+## §4.4/O-Q3).
+signal rumor_verified(rumor_id: String, accuracy: String)
+
+## A rumor's source was destroyed; it goes stale immediately regardless of
+## its normal decay timer (RumorRegistry.invalidate, §4.6).
+signal rumor_expired(rumor_id: String)

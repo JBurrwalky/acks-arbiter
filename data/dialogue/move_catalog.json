@@ -1,0 +1,97 @@
+{
+  "_comment": "Phase 1 dialogue move catalog (gdd-npc-dialogue.md §5.2). Six moves ONLY. This JSON is the action-vocabulary registration site for dialogue moves (the formal action_vocabulary.gd does not yet exist per conventions §10.1; moves are data-defined per §5.1). DialogueMoveCatalog loads and gates these. Phase 2/3 moves (ask_question, offer_*, request_action, quest_*, persuade_ruler, use_ability, army-parley) are intentionally absent.",
+  "moves": [
+    {
+      "id": "converse",
+      "category": "converse",
+      "label": "Converse",
+      "resolution": "none",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": false,
+      "notes": "Small talk; no roll. Feeds memory; may surface knowledge marked freely (Phase 2+)."
+    },
+    {
+      "id": "ask_rumor",
+      "category": "ask",
+      "label": "Ask for Rumor",
+      "resolution": "rumor",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "notes": "Phase 1 uses a STUB rumor pool (no live quest/rumor system yet, Wave 0 sequencing). Requires attitude >= Neutral (§5.2)."
+    },
+    {
+      "id": "influence_diplomatic",
+      "category": "influence",
+      "label": "Persuade (Diplomatic)",
+      "resolution": "influence",
+      "tone": "diplomatic",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": true,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "notes": "InteractionResolver.resolve_attempt_to_influence, diplomatic tone (ax_reactions:74-149)."
+    },
+    {
+      "id": "influence_intimidate",
+      "category": "influence",
+      "label": "Intimidate",
+      "resolution": "influence",
+      "tone": "intimidation",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": true,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "notes": "Intimidation tone (ax_reactions:151-241); Fearful/Cowed substitutions. Result 2 -> combat."
+    },
+    {
+      "id": "influence_seduce",
+      "category": "influence",
+      "label": "Seduce",
+      "resolution": "influence",
+      "tone": "seduction",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": true,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "requires_receptive": true,
+      "notes": "Seduction tone (ax_reactions:243-324); NPC must be flagged receptive."
+    },
+    {
+      "id": "provoke",
+      "category": "influence",
+      "label": "Provoke",
+      "resolution": "provoke",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "notes": "No roll to anger: attitude shifts 1 step toward Hostile per use (PROJECT CALL). On reaching Hostile, NPC attacks immediately (acore_adventures:952-954)."
+    },
+    {
+      "id": "farewell",
+      "category": "leave",
+      "label": "Farewell",
+      "resolution": "none",
+      "tone": "",
+      "terminal": true,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "notes": "Terminal; triggers COMMIT (§4.4 step 8)."
+    }
+  ]
+}

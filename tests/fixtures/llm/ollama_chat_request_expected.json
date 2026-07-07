@@ -1,0 +1,12 @@
+{
+  "model": "gpt-oss:120b",
+  "messages": [
+    {"role": "system", "content": "You are the narrator."},
+    {"role": "user", "content": "Narrate this."}
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.8,
+    "num_predict": 120
+  }
+}

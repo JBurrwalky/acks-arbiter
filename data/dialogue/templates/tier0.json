@@ -1,0 +1,90 @@
+{
+  "_comment": "Tier-0 mock dialogue templates (gdd-npc-dialogue.md §13.9). Keyed by move -> outcome -> attitude-band, with a per-move default and a global fallback. Because must_say content is engine-generated (NpcReplyPlan), these are informationally complete (§13.9). Slots: {npc_name}, {speaker_name}, {new_attitude}. The renderer (DialogueTemplateProvider) fills slots from the reply plan. Terse by design; the game is fully playable offline on these.",
+  "moves": {
+    "converse": {
+      "default": {
+        "any": "{npc_name} makes idle conversation, sizing up {speaker_name}."
+      }
+    },
+    "ask_rumor": {
+      "shared": {
+        "any": "{npc_name} leans in. \"Here's a thing worth knowing: {rumor_text}\""
+      },
+      "refused": {
+        "any": "{npc_name} shrugs. \"I've nothing to tell you.\""
+      },
+      "default": {
+        "any": "{npc_name} considers, then shares what they've heard."
+      }
+    },
+    "influence_diplomatic": {
+      "shift_toward_friendly": {
+        "friendly": "{npc_name} warms. \"You make a fair case, {speaker_name}.\"",
+        "indifferent": "{npc_name} relents a little. \"Perhaps we can deal.\"",
+        "neutral": "{npc_name} unbends slightly. \"Go on, then.\"",
+        "any": "{npc_name} seems more receptive."
+      },
+      "shift_toward_hostile": {
+        "hostile": "{npc_name}'s face darkens. \"You've said the wrong thing.\"",
+        "unfriendly": "{npc_name} scowls. \"That won us nothing.\"",
+        "any": "{npc_name} stiffens, less inclined to help."
+      },
+      "no_change": {
+        "any": "{npc_name} is unmoved. Their manner is unchanged ({new_attitude})."
+      },
+      "default": {
+        "any": "{npc_name} weighs {speaker_name}'s words."
+      }
+    },
+    "influence_intimidate": {
+      "shift_toward_friendly": {
+        "cowed": "{npc_name} pales and submits. \"Whatever you say — just don't hurt me.\"",
+        "fearful": "{npc_name} flinches, eyes darting for the exit.",
+        "any": "{npc_name} shrinks back under the threat."
+      },
+      "shift_toward_hostile": {
+        "hostile": "{npc_name} bares teeth. \"Threaten me? Then we're done talking.\"",
+        "any": "{npc_name} bristles rather than bends."
+      },
+      "no_change": {
+        "any": "{npc_name} holds their ground ({new_attitude})."
+      },
+      "default": {
+        "any": "{npc_name} measures the threat from {speaker_name}."
+      }
+    },
+    "influence_seduce": {
+      "shift_toward_friendly": {
+        "friendly": "{npc_name} softens, charmed by {speaker_name}.",
+        "any": "{npc_name} seems flattered."
+      },
+      "shift_toward_hostile": {
+        "any": "{npc_name} rebuffs the advance coldly."
+      },
+      "no_change": {
+        "any": "{npc_name} remains politely unmoved ({new_attitude})."
+      },
+      "default": {
+        "any": "{npc_name} regards {speaker_name} with guarded interest."
+      }
+    },
+    "provoke": {
+      "to_hostile": {
+        "hostile": "{npc_name} snaps. \"That's the last insult I'll take from you!\" — and reaches for a weapon.",
+        "any": "{npc_name} boils over into open hostility."
+      },
+      "angered": {
+        "any": "{npc_name} glares at {speaker_name}, temper fraying ({new_attitude})."
+      },
+      "default": {
+        "any": "{npc_name} takes offense at {speaker_name}."
+      }
+    },
+    "farewell": {
+      "default": {
+        "any": "{npc_name} nods a curt goodbye."
+      }
+    }
+  },
+  "fallback": "{npc_name} responds."
+}

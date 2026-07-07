@@ -1,0 +1,14 @@
+{
+  "model": "gpt-oss:120b",
+  "created_at": "2026-07-07T12:00:00.000000Z",
+  "message": {
+    "role": "assistant",
+    "content": "The reeve mends the granary roof before the autumn rains arrive."
+  },
+  "done": true,
+  "done_reason": "stop",
+  "prompt_eval_count": 27,
+  "eval_count": 298,
+  "total_duration": 4935886791,
+  "eval_duration": 4709213000
+}
