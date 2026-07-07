@@ -45,6 +45,13 @@ static func plan_reply(npc_id: String, outcome: Dictionary) -> Dictionary:
 	# ask_rumor carries its rumor text through for the template slot.
 	if outcome.has("rumor_text"):
 		plan["rumor_text"] = outcome.get("rumor_text", "")
+	# --- Dialogue Phase 2 ---
+	# ask_question disclosure carries the fact through as a template slot; the
+	# entry's `accuracy` flows UNCHANGED (the NPC states what they believe, §9.1).
+	if outcome.get("kind", "") == DialogueAdjudicator.OUTCOME_KNOWLEDGE:
+		var entry: Dictionary = outcome.get("knowledge", {})
+		plan["knowledge_fact"] = String(entry.get("fact", ""))
+		plan["knowledge_accuracy"] = String(entry.get("accuracy", "true"))
 	return plan
 
 
@@ -69,6 +76,38 @@ static func _template_outcome_key(outcome: Dictionary) -> String:
 			return "angered"
 		DialogueAdjudicator.OUTCOME_RUMOR:
 			return "shared"
+		# --- Dialogue Phase 2 ---
+		DialogueAdjudicator.OUTCOME_KNOWLEDGE:
+			return "disclosed"
+		DialogueAdjudicator.OUTCOME_KNOWLEDGE_REFUSED:
+			# The refusal reason picks the template variant.
+			match String(outcome.get("reason", "never")):
+				"no_knowledge":
+					return "no_knowledge"
+				"if_paid":
+					return "wants_payment"
+				"not_trusted":
+					return "not_trusted"
+				_:
+					return "refused"
+		DialogueAdjudicator.OUTCOME_BRIBE:
+			return "bribed"
+		DialogueAdjudicator.OUTCOME_TERMS:
+			return "terms"
+		DialogueAdjudicator.OUTCOME_HIRE:
+			match String(outcome.get("disposition", "refuse")):
+				"accept_elan":
+					return "accept_elan"
+				"accept":
+					return "accept"
+				"try_again":
+					return "try_again"
+				"refuse_slander":
+					return "refuse_slander"
+				_:
+					return "refuse"
+		DialogueAdjudicator.OUTCOME_GATHER:
+			return "default"
 		_:
 			return "default"
 
@@ -88,6 +127,25 @@ static func _mood_for(outcome: Dictionary) -> String:
 		return "affronted"
 	if kind == DialogueAdjudicator.OUTCOME_RUMOR:
 		return "conspiratorial"
+	# --- Dialogue Phase 2 ---
+	if kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE:
+		return "forthcoming"
+	if kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE_REFUSED:
+		return "guarded"
+	if kind == DialogueAdjudicator.OUTCOME_BRIBE:
+		return "tempted"
+	if kind == DialogueAdjudicator.OUTCOME_TERMS:
+		return "bargaining"
+	if kind == DialogueAdjudicator.OUTCOME_HIRE:
+		match String(outcome.get("disposition", "refuse")):
+			"accept_elan", "accept":
+				return "eager"
+			"try_again":
+				return "haggling"
+			"refuse_slander":
+				return "affronted"
+			_:
+				return "reluctant"
 	return "neutral"
 
 
@@ -99,4 +157,14 @@ static func _must_say(outcome: Dictionary) -> Array:
 		out.append("turns hostile and moves to attack")
 	elif outcome.get("kind", "") == DialogueAdjudicator.OUTCOME_RUMOR:
 		out.append("shares a rumor: %s" % outcome.get("rumor_text", ""))
+	# --- Dialogue Phase 2 ---
+	elif outcome.get("kind", "") == DialogueAdjudicator.OUTCOME_KNOWLEDGE:
+		var entry: Dictionary = outcome.get("knowledge", {})
+		out.append("discloses: %s" % String(entry.get("fact", "what they know")))
+	elif outcome.get("kind", "") == DialogueAdjudicator.OUTCOME_HIRE:
+		var disp := String(outcome.get("disposition", "refuse"))
+		if disp == "accept" or disp == "accept_elan":
+			out.append("agrees to take service")
+		elif disp == "refuse_slander":
+			out.append("refuses and will speak ill of them")
 	return out
