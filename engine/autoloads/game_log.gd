@@ -753,6 +753,13 @@ func _connect_domain_signals() -> void:
 	# active-LOD rulers (the 6-mile play window + buffer), so the LOD gate is the
 	# relevance filter — off-camera backdrop rulers never reach the log.
 	EventBus.ruler_action_taken.connect(_on_ruler_action_taken)
+	# Faction FF-2.3 Seam A (gdd-faction-framework.md §10.3): retroactive, cosmetic
+	# narration of an org's executed monthly action. faction_action_taken fires ONLY
+	# for active-LOD orgs (seated in the active-settlement window), so — exactly like
+	# the ruler seam — the LOD gate is the primary relevance filter. The extra
+	# §10.3 player-awareness gate (met / same settlement) is available to callers via
+	# FactionActionNarrator.is_player_relevant().
+	EventBus.faction_action_taken.connect(_on_faction_action_taken)
 	# Live LLM L-3: wire the Ruler Seam-B trigger sites (handoff-ruler-ai-build.md
 	# §10.3/§10.5). RulerSeamBTrigger connects siege_started / domain_conquered /
 	# domain_morale_changed to RulerStrategyReassessor.reassess() with a per-ruler
@@ -886,6 +893,25 @@ func _flush_ruler_slots() -> void:
 			String(args.get("actor_id", "")),
 			String(args.get("target_id", "")),
 			args.get("data", {}))
+
+
+## Faction FF-2.3 Seam A production caller (gdd-faction-framework.md §10.3).
+## Narrates an org's executed monthly action retroactively via
+## FactionActionNarrator (deterministic template under the mock provider; real
+## prose only once a provider is configured). variant_key = the decree kind for
+## a tithe re-apportionment so a same-day decree does not alias its cache slot.
+func _on_faction_action_taken(faction_id: String, action_id: String,
+		outcome: Dictionary) -> void:
+	var variant_key: String = String(outcome.get("decree_kind", ""))
+	var calendar_day: int = Timekeeping.get_calendar_day()
+	var env: ResponseEnvelope = FactionActionNarrator.narrate_action(
+		faction_id, action_id, outcome, calendar_day, variant_key)
+	var text: String = env.text if env != null else ""
+	if text.strip_edges().is_empty():
+		text = String(outcome.get("summary", action_id))
+	_append("domain", "faction_action", text, faction_id, "",
+		{"faction_id": faction_id, "action_id": action_id,
+		 "is_fallback": env.is_fallback if env != null else true})
 
 
 ## Army-warfare §7.6 world-log integration. Fires for every concluded field battle

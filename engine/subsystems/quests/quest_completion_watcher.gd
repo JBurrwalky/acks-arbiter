@@ -133,3 +133,39 @@ func _complete_matching(completion_type: String, target_id: String) -> void:
 		if quest.status in ["completed", "failed", "expired", "abandoned"]:
 			continue
 		_registry.mark_complete(quest.id)
+
+
+# ---------------------------------------------------------------------------
+# Q-6: faction_goal completion polling (faction §6.5 post_job / §11.2)
+# ---------------------------------------------------------------------------
+
+## Poll the faction layer's goal state for live faction_goal quests: a quest
+## completes ONCE when its underlying faction goal is satisfied (the progress
+## flag the faction layer sets via QuestRegistry.set_faction_goal_satisfied).
+## Idempotent — mark_complete short-circuits on is_complete. Called on the
+## monthly tick (batch, no signal). Returns the count newly completed.
+func poll_faction_goals(_calendar_day: int = -1) -> int:
+	var completed: int = 0
+	for row in _live_faction_goal_quests():
+		var quest := QuestData.from_dict(row)
+		if quest.is_complete:
+			continue
+		if quest.status in ["completed", "failed", "expired", "abandoned"]:
+			continue
+		if bool(quest.progress.get("goal_satisfied", false)):
+			if _registry.mark_complete(quest.id):
+				completed += 1
+	return completed
+
+
+func _live_faction_goal_quests() -> Array:
+	var db_ref = _repo.get("db")
+	if db_ref == null:
+		return []
+	if not db_ref.query_with_bindings(
+			"""SELECT * FROM quests
+			   WHERE campaign_id = ? AND completion_type = 'faction_goal'
+			     AND is_complete = 0 AND status IN ('available','accepted')
+			   ORDER BY id ASC""", [_campaign_id]):
+		return []
+	return db_ref.query_result.duplicate()

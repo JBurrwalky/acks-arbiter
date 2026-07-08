@@ -1,0 +1,130 @@
+{
+	"_comment": "gdd-faction-framework.md §6.1/§6.2/§6.3/§8.2/§8.5. Data-defined org-type catalog: presence gating (market class + 1d6 roll), income model, size tier, join criteria (class families), rank ladders (§8.2 index -> title), and the service menu (§8.5, min_rank eligibility gate). Market class is stored as an integer on settlement_entrances where LOWER = BIGGER (Class I = metropolis .. Class VI = hamlet); 'presence_class_threshold' means a settlement qualifies when market_class <= threshold. temples are gated by religion presence (special path), syndicates are promoted from stocking seeds (special path) — both carry roll_threshold 0 (their presence is decided upstream, not by the 1d6 roll). All numbers PROJECT CALL.",
+	"types": {
+		"temple": {
+			"scope": "organization",
+			"size_tier": 3,
+			"presence_class_threshold": 6,
+			"roll_threshold": 0,
+			"income_model": "quarter_wages",
+			"join_class_families": ["cleric"],
+			"default_goal_primary": "grow_membership",
+			"default_goal_secondary": "gain_influence",
+			"ranks": ["Congregant", "Lay Brother", "Initiate", "Priest"],
+			"services": [
+				{"id": "healing", "min_rank": 0},
+				{"id": "sanctuary", "min_rank": 1},
+				{"id": "divine_casting", "min_rank": 2},
+				{"id": "consecration", "min_rank": 3}
+			]
+		},
+		"holy_order": {
+			"scope": "organization",
+			"size_tier": 2,
+			"presence_class_threshold": 3,
+			"roll_threshold": 5,
+			"income_model": "quarter_wages",
+			"join_class_families": ["cleric", "fighter"],
+			"default_goal_primary": "spread_doctrine",
+			"default_goal_secondary": "defend_patron",
+			"ranks": ["Aspirant", "Brother", "Knight-Brother", "Master"],
+			"services": [
+				{"id": "martial_training", "min_rank": 1},
+				{"id": "escort", "min_rank": 2}
+			]
+		},
+		"mage_guild": {
+			"scope": "organization",
+			"size_tier": 2,
+			"presence_class_threshold": 2,
+			"roll_threshold": 4,
+			"income_model": "quarter_wages",
+			"join_class_families": ["mage"],
+			"default_goal_primary": "gain_influence",
+			"default_goal_secondary": "accumulate_wealth",
+			"ranks": ["Associate", "Journeyman", "Magist", "Archmagist"],
+			"services": [
+				{"id": "identify", "min_rank": 0},
+				{"id": "spell_service", "min_rank": 1},
+				{"id": "research_access", "min_rank": 2},
+				{"id": "apprentice_pool", "min_rank": 3}
+			]
+		},
+		"syndicate": {
+			"scope": "organization",
+			"size_tier": 3,
+			"presence_class_threshold": 6,
+			"roll_threshold": 0,
+			"income_model": "syndicate_passthrough",
+			"join_class_families": ["thief"],
+			"default_goal_primary": "accumulate_wealth",
+			"default_goal_secondary": "grow_membership",
+			"ranks": ["Associate", "Soldier", "Underboss", "Boss"],
+			"services": [
+				{"id": "fence", "min_rank": 0},
+				{"id": "safehouse", "min_rank": 1},
+				{"id": "hijink_hire", "min_rank": 1},
+				{"id": "rumor_feed", "min_rank": 2}
+			]
+		},
+		"mercenary_company": {
+			"scope": "organization",
+			"size_tier": 3,
+			"presence_class_threshold": 4,
+			"roll_threshold": 4,
+			"income_model": "quarter_wages",
+			"join_class_families": ["fighter"],
+			"default_goal_primary": "accumulate_wealth",
+			"default_goal_secondary": "defend_patron",
+			"ranks": ["Man-at-arms", "Sergeant", "Lieutenant", "Captain"],
+			"services": [
+				{"id": "wage_work", "min_rank": 0},
+				{"id": "troop_discount", "min_rank": 1},
+				{"id": "battlefield_intel", "min_rank": 2}
+			]
+		},
+		"knightly_order": {
+			"scope": "organization",
+			"size_tier": 2,
+			"presence_class_threshold": 3,
+			"roll_threshold": 5,
+			"income_model": "quarter_wages",
+			"join_class_families": ["fighter"],
+			"default_goal_primary": "defend_patron",
+			"default_goal_secondary": "gain_influence",
+			"ranks": ["Squire", "Knight", "Knight-Commander", "Grand Master"],
+			"services": [
+				{"id": "escort", "min_rank": 1},
+				{"id": "court_access", "min_rank": 2}
+			]
+		},
+		"merchant_guild": {
+			"scope": "organization",
+			"size_tier": 3,
+			"presence_class_threshold": 3,
+			"roll_threshold": 4,
+			"income_model": "syndicate_passthrough",
+			"join_class_families": ["thief"],
+			"default_goal_primary": "accumulate_wealth",
+			"default_goal_secondary": "gain_influence",
+			"ranks": ["Factor", "Trader", "Guildmaster", "Grand Guildmaster"],
+			"services": [
+				{"id": "loan", "min_rank": 0},
+				{"id": "trade_terms", "min_rank": 1},
+				{"id": "caravan_escort", "min_rank": 2}
+			]
+		},
+		"brigand_gang": {
+			"scope": "organization",
+			"size_tier": 2,
+			"presence_class_threshold": 0,
+			"roll_threshold": 99,
+			"income_model": "quarter_wages",
+			"join_class_families": ["fighter"],
+			"default_goal_primary": "accumulate_wealth",
+			"default_goal_secondary": "survive",
+			"ranks": ["Cutthroat", "Bravo", "Lieutenant", "Chief"],
+			"services": []
+		}
+	}
+}

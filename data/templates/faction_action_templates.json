@@ -1,0 +1,25 @@
+{
+	"_comment": "gdd-faction-framework.md §10.3 Seam-A narration for FactionActionNarrator (clone of ruler_action_templates.json). Per-action phrase bank; {faction} and {leader} are substituted. The deterministic template is the final text whenever no live provider is configured or a live request fails / returns a generic fallback.",
+	"action_phrases": {
+		"recruit_members": "{faction} opens its rolls to new blood.",
+		"raise_funds": "{faction} turns its hand to filling its coffers.",
+		"proselytize": "{faction} sends its preachers into the streets.",
+		"court_patron": "{faction} seeks the ear of those who rule.",
+		"post_job": "{faction} lets it be known that it has work for the willing.",
+		"aid_faction": "{faction} extends a hand to an ally.",
+		"go_underground": "{faction} withdraws from open sight.",
+		"relocate": "{faction} quietly shifts its seat.",
+		"hold": "{faction} bides its time and guards its purse.",
+		"issue_decree": "{leader} decrees a new apportionment of the tithe.",
+		"_default": "{faction} attends to its affairs."
+	},
+	"goal_motivation": {
+		"grow_membership": "Numbers are strength, and it means to have them.",
+		"accumulate_wealth": "Gold buys everything else, in the end.",
+		"gain_influence": "Power flows to those the powerful must heed.",
+		"suppress_rival": "A rival unchecked is a rival triumphant.",
+		"defend_patron": "Its fortunes are bound to its patron's.",
+		"spread_doctrine": "The faith must be carried to every hearth.",
+		"survive": "First, endure; ambition can wait for safer days."
+	}
+}

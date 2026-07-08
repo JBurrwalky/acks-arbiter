@@ -81,6 +81,12 @@ extends Node
 @onready var _quest_seeder_tests = $QuestSeederTests
 @onready var _quest_completion_lifecycle_tests = $QuestCompletionLifecycleTests
 @onready var _rumor_delivery_tests = $RumorDeliveryTests
+# 2026-07-08 - Wave 2 Track A: Faction FF-2 (organizations) + Quest-Rumor Q-6 (faction bridge)
+@onready var _faction_ff2_seeding_tests = $FactionFF2SeedingTests
+@onready var _faction_ff2_org_month_tests = $FactionFF2OrgMonthTests
+@onready var _faction_ff2_tithe_tests = $FactionFF2TitheTests
+@onready var _faction_ff2_membership_tests = $FactionFF2MembershipTests
+@onready var _quest_faction_bridge_tests = $QuestFactionBridgeTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -1311,7 +1317,13 @@ func run() -> void:
 			# 2026-07-07 — Quest & Rumor Q-2/Q-3/Q-4
 			_quest_seeder_tests,
 			_quest_completion_lifecycle_tests,
-			_rumor_delivery_tests]:
+			_rumor_delivery_tests,
+			# 2026-07-08 — Wave 2 Track A: Faction FF-2 + Quest-Rumor Q-6
+			_faction_ff2_seeding_tests,
+			_faction_ff2_org_month_tests,
+			_faction_ff2_tithe_tests,
+			_faction_ff2_membership_tests,
+			_quest_faction_bridge_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

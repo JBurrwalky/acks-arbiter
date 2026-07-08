@@ -285,6 +285,10 @@ func _apply_and_finalize(quest: QuestData, reward: QuestRewardData,
 		quest.completed_day = calendar_day
 	if not save_quest(quest):
 		return {}
+	# Q-6: a faction quest's turn-in debits the org treasury (the reward was
+	# drawn against it) and improves the party's standing with the faction.
+	if quest.questgiver_faction_id != "":
+		_apply_faction_turn_in(quest, reward, recipient_pc_id, calendar_day)
 	# §4.6: quest leaving available/accepted stales its quest-sourced rumors
 	# (the RumorRegistry invalidation hook, wired by the caller/watcher).
 	var payload := {
@@ -417,21 +421,149 @@ func _log_quest_beat(quest: QuestData, type_key: String, summary: String) -> voi
 
 
 # ---------------------------------------------------------------------------
-# Faction bridge (§7.9/§11.2) — STUB pending Q-6
+# Faction bridge (§7.9/§11.2 — Q-6; faction §6.5 post_job / §6.6 / §4.5)
 # ---------------------------------------------------------------------------
 
-## post_job faction bridge entry point (§11.2). Mints a faction_goal-or-typed
-## quest with questgiver_faction_id set. Full implementation (org-treasury
-## affordability gate, faction_goal_id wiring) is Q-6 scope (needs Faction
-## FF-2's post_job/org treasury). Q-1 declares the signature so Q-6 builds
-## against a stable contract.
-func create_faction_quest(_faction_id: String, _front_npc_id: String, _goal: String,
-		_terms: Dictionary) -> String:
-	push_error("QuestRegistry.create_faction_quest: Q-6 scope, not yet built.")
-	return ""
+## Standing improvement a party earns for completing a posted faction job
+## (gdd-faction-framework.md §8.1 "completed its posted jobs at +2"). Additive
+## to the gold reward — the separate faction-standing side-effect.
+const FACTION_JOB_STANDING_DELTA: int = 2
+
+## Faction goals -> quest threat shapes (§7.9 goal->predicate mapping). Every
+## faction quest also carries completion_type='faction_goal' + faction_goal_id
+## so the org layer's goal state polls it; threat_type flavors the posting.
+const _GOAL_THREAT_TYPE: Dictionary = {
+	"accumulate_wealth": "recovery",
+	"grow_membership": "escort",
+	"gain_influence": "delivery",
+	"suppress_rival": "monster",
+	"defend_patron": "escort",
+	"spread_doctrine": "delivery",
+	"survive": "monster",
+}
+
+## Dialogue issues that advance each faction goal (§6.5 status-differential
+## relevance). PROJECT CALL synonym set.
+const _GOAL_ISSUES: Dictionary = {
+	"accumulate_wealth": ["trade", "loan", "payment", "profit", "gold"],
+	"grow_membership": ["recruit", "join", "membership", "initiation"],
+	"gain_influence": ["office", "charter", "favor", "patronage", "tithe", "appointment"],
+	"suppress_rival": ["rival", "sabotage", "slander", "undermine"],
+	"defend_patron": ["defense", "garrison", "muster", "protect"],
+	"spread_doctrine": ["conversion", "shrine", "doctrine", "pilgrimage"],
+	"survive": ["asylum", "relocate", "protection", "amnesty"],
+}
 
 
-## Dialogue status-differential relevance check (§11.2, faction §6.5) — Q-6
-## scope. Q-1 declares the signature; returns false until Q-6 lands it.
-func advances_faction_goal(_issue: String, _faction_id: String) -> bool:
+## post_job faction bridge entry point (§11.2 / faction §6.5). Mints a
+## faction_goal quest with questgiver_faction_id set, its reward drawn against
+## the org treasury (rejected if insolvent, §6.6). Reward is GOLD ONLY
+## (O-Q12/O-Q13 — NEVER membership/rank: those are per-character, level/class
+## gated). Improved faction standing is the SEPARATE ledger side-effect applied
+## on turn-in, additive to the reward. Returns the quest id, or "" (insolvent /
+## missing faction). [param terms] keys: reward_gp (int), calendar_day (int).
+func create_faction_quest(faction_id: String, front_npc_id: String, goal: String,
+		terms: Dictionary = {}) -> String:
+	var faction: Dictionary = _repo.get_faction(faction_id)
+	if faction.is_empty():
+		push_error("QuestRegistry.create_faction_quest: faction not found %s" % faction_id)
+		return ""
+	var reward_gp: int = maxi(0, int(terms.get("reward_gp", 100)))
+	# §6.6 affordability: an insolvent org cannot post paid work.
+	if int(faction.get("treasury_gp", 0)) < reward_gp:
+		return ""
+	var calendar_day: int = int(terms.get("calendar_day", 0))
+	var goal_key: String = goal if goal != "" else "accumulate_wealth"
+
+	var q := QuestData.new()
+	q.questgiver_faction_id = faction_id
+	q.questgiver_id = front_npc_id
+	q.questgiver_settlement_id = String(faction.get("seat_settlement_id", ""))
+	q.questgiver_motivation = goal_key
+	q.threat_type = String(_GOAL_THREAT_TYPE.get(goal_key, "recovery"))
+	q.completion_type = "faction_goal"
+	q.faction_goal_id = "goal:%s" % goal_key
+	q.completion_target_id = q.faction_goal_id
+	q.posting_type = "posted"
+	q.title = "%s: %s" % [String(faction.get("name", "A faction")), _goal_label(goal_key)]
+	q.description = "%s seeks agents to advance its aim (%s)." % [
+		String(faction.get("name", "A faction")), _goal_label(goal_key)]
+	q.questgiver_dialogue = "%s has work for those willing to serve its ends." % \
+		String(faction.get("name", "A faction"))
+	q.progress = {"faction_goal": goal_key, "goal_satisfied": false}
+	q.created_day = calendar_day
+	var qid: String = create_quest(q)
+	if qid == "":
+		return ""
+	# Reward: gold only. Guard the impossible — no party-wide membership/rank.
+	var reward := QuestRewardData.new()
+	reward.quest_id = qid
+	reward.reward_type = "gold"
+	reward.gold_value = reward_gp
+	reward.total_gp_value = reward_gp
+	reward.xp_eligible = true
+	if not _repo.create_quest_reward(reward):
+		push_error("QuestRegistry.create_faction_quest: reward write failed for %s" % qid)
+	return qid
+
+
+## Mark a faction-goal quest's underlying goal as satisfied (the faction layer's
+## trigger). The QuestCompletionWatcher's poll then flips is_complete once.
+func set_faction_goal_satisfied(quest_id: String) -> bool:
+	var quest := get_quest(quest_id)
+	if quest == null or quest.completion_type != "faction_goal":
+		return false
+	quest.progress["goal_satisfied"] = true
+	return save_quest(quest)
+
+
+## Dialogue status-differential relevance check (§11.2, faction §6.5): true when
+## [param issue] advances the faction's goal_primary. Used by the dialogue layer
+## to bias per-issue reactions toward asks that serve the faction's aim.
+func advances_faction_goal(issue: String, faction_id: String) -> bool:
+	var faction: Dictionary = _repo.get_faction(faction_id)
+	if faction.is_empty():
+		return false
+	var goal: String = String(faction.get("goal_primary", ""))
+	if goal == "":
+		return false
+	if issue == goal:
+		return true
+	var issue_l: String = issue.to_lower()
+	for kw in _GOAL_ISSUES.get(goal, []):
+		if issue_l.find(String(kw)) != -1:
+			return true
 	return false
+
+
+## Apply the faction-quest turn-in side-effects (§4.5 / §8.3): debit the reward
+## from the org treasury (drawn against it), and improve the party's standing
+## with the faction (the party<->faction reputation ledger — §8.3 names this THE
+## party<->faction ledger; faction_events is inter-faction only, so a party's
+## job completion lands here, not there). Called once from the disbursement
+## finalizer for a quest with questgiver_faction_id set.
+func _apply_faction_turn_in(quest: QuestData, reward: QuestRewardData,
+		recipient_pc_id: String, _calendar_day: int) -> void:
+	var fid: String = quest.questgiver_faction_id
+	if fid == "":
+		return
+	var faction: Dictionary = _repo.get_faction(fid)
+	if faction.is_empty():
+		return
+	# Debit the reward from the org treasury.
+	var db_ref = _repo.get("db")
+	if db_ref != null:
+		db_ref.query_with_bindings(
+			"UPDATE factions SET treasury_gp = treasury_gp - ? WHERE id = ?",
+			[reward.total_gp_value, fid])
+	# Improve party standing with the faction.
+	var party_id: String = ""
+	if _repo.has_method("get_party_for_character"):
+		party_id = _repo.get_party_for_character(recipient_pc_id)
+	if party_id != "":
+		var rep := ReputationSystem.new(_repo, _campaign_id, party_id)
+		rep.apply_faction_deed(fid, FACTION_JOB_STANDING_DELTA, "completed a posted faction job")
+
+
+func _goal_label(goal: String) -> String:
+	return goal.replace("_", " ").capitalize()

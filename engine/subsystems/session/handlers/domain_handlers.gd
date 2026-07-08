@@ -205,6 +205,29 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		# revert if not.
 		RulerDeathHandler.tick_succession_grace(domain_data, calendar_day)
 
+	# Faction FF-2.2 (gdd-faction-framework.md §6.6/§11.1): organization turns batch
+	# AFTER the syndicate/venture slots (so passthrough treasuries are already
+	# resolved) and HERE, before RulerAI. Gated to ACTIVE-LOD settlements — those of
+	# player domains + active-LOD NPC-ruler domains (§11.2, inherits ruler-AI LOD).
+	# Batch, no auto_pause; Seam-A narration fires via GameLog on faction_action_taken.
+	var faction_active_settlements: Array = []
+	for fdom: Dictionary in domains:
+		var fowner_v: Variant = fdom.get("owner_character_id")
+		var fowner: String = String(fowner_v) if fowner_v != null else ""
+		var f_active: bool = (not fowner.is_empty() and pc_ids.has(fowner)) \
+			or active_ruler_ids.has(fowner)
+		if not f_active:
+			continue
+		for st in CampaignRepository.list_settlements_for_domain(String(fdom.get("id", ""))):
+			faction_active_settlements.append(String((st as Dictionary).get("id", "")))
+	var faction_reports: Array = FactionAI.process_campaign_month(
+		_campaign_id, calendar_day, faction_active_settlements)
+	# Q-6: poll faction_goal quest completion (batch, idempotent — fires each
+	# satisfied goal quest once).
+	var faction_goal_watcher := QuestCompletionWatcher.new(
+		QuestRegistry.new(CampaignRepository, _campaign_id), CampaignRepository, _campaign_id)
+	var faction_goals_completed: int = faction_goal_watcher.poll_faction_goals(calendar_day)
+
 	# Ruler AI Phase 2 (§3.2): active-set NPC rulers take their deterministic
 	# monthly turns AFTER the economic resolution, with the post-resolution
 	# result dicts in hand for threat context. Batch, no UI interrupt, no LLM;
@@ -256,6 +279,8 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		"syndicate_results": syndicate_results,
 		"venture_results": venture_results,
 		"ruler_reports": ruler_reports,
+		"faction_reports": faction_reports,  # Faction FF-2.2 org month
+		"faction_goals_completed": faction_goals_completed,  # Q-6
 		"rumors_decayed": rumors_decayed,  # Quest-Rumor Q-3
 	}
 

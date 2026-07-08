@@ -593,6 +593,15 @@ func _locate_in_window_domains(campaign_id: String, region_map_id: String, ctx: 
 			mirror_count += 1
 	result["realm_mirror_count"] = mirror_count
 
+	# Faction Framework FF-2.0 (gdd-faction-framework.md §6.2): promote syndicate
+	# seeds + seed temples/guilds for every materialized settlement, and seed the
+	# tithe-share defaults. Idempotent (deterministic org ids), leaders stay
+	# abstract until proximity (materialize_leaders=false here — lazy, per §6.2
+	# step 4). Determinism keyed to the campaign id so a rebuild reproduces the
+	# roster byte-for-byte.
+	result["org_seed_count"] = OrgSeeder.backfill_campaign(
+		campaign_id, hash(campaign_id), 0, false)
+
 	result["located_domain_count"] = located
 	result["tracked_realm_count"] = tracked_realms.size()
 
