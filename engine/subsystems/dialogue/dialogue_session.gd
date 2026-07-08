@@ -59,6 +59,23 @@ var _hired: bool = false                          # a hire finalized this sessio
 var _hire_settlement_id: String = ""
 var _pending_issue_key_value: String = ""         # the dependent issue offer_terms attaches to
 
+# --- Dialogue Phase 3 (The World Stage) state ---
+var _quest_registry = null                        # QuestRegistry (context.deps, §9.3)
+var _rumor_registry = null                        # RumorRegistry (context.deps, §9.2)
+var _event_scheduler = null                       # EventScheduler (context.deps, deferred handoff)
+var _combat_roster = null                         # CombatRoster (context.deps, charm defection §12.1)
+var _requestable_matrix: RequestableActionsMatrix = null   # lazy (§10.1)
+var _capability_registry: CapabilityRegistry = null        # lazy (§5.5)
+var _offered_quests: Array = []                   # quest ids surfaced this session (quest_ask)
+var _accepted_quest_ids: Array = []               # quests accepted this session
+var _exchange_index: int = 0                      # player-turn counter (§5.6 intent cap)
+var _last_npc_act_exchange: int = -999            # last exchange the NPC self-initiated an act
+var _pending_npc_move = null                      # this exchange's NPC-side move (§5.6) or null
+var _active_effects: Array = []                   # live capability effects (§5.5) — charm/esp/etc.
+var _charmed_pcs: Dictionary = {}                 # pc_id -> charmer_npc_id (§5.6 charm-on-PC)
+var _requestable_cache = null                     # cached requestable_actions (Array) or null
+var _player_cap_cache = null                      # cached player capabilities (Array) or null
+
 
 ## Static factory (§4.1). Builds the session from a context Dictionary produced by
 ## DialogueContextBuilder, resolves the initial interaction (or loads the persisted
@@ -81,6 +98,16 @@ static func begin(ctx: Dictionary, dice = null) -> DialogueSession:
 	var deps: Dictionary = ctx.get("deps", {})
 	s._rep_system = deps.get("rep_system", null)
 	s._henchman_manager = deps.get("henchman_manager", null)
+	# --- Dialogue Phase 3 --- optional cross-subsystem collaborators.
+	s._quest_registry = deps.get("quest_registry", null)
+	s._rumor_registry = deps.get("rumor_registry", null)
+	s._event_scheduler = deps.get("event_scheduler", null)
+	s._combat_roster = deps.get("combat_roster", null)
+	# Pre-buffed NPC effects (§5.6): the encounter/PoI generator may seed active
+	# effects (an ESP already running) so no hidden mid-scene roll is needed.
+	var pre_buffed: Array = ctx.get("pre_buffed_effects", [])
+	if pre_buffed is Array:
+		s._active_effects.append_array(pre_buffed)
 	s._open()
 	EventBus.dialogue_started.emit(s.session_id, npc_side.get("npc_ids", [s.npc_id]), s.party_id)
 	return s
@@ -211,6 +238,19 @@ func _session_state(params: Dictionary = {}) -> Dictionary:
 	state_dict["has_knowledge"] = _has_any_knowledge()
 	state_dict["in_settlement"] = String(scene.get("location_type", "")) == "settlement"
 	state_dict["allow_field_mercenary"] = bool(hooks.get("allow_field_mercenary", false))
+	# --- Dialogue Phase 3 + Q-5 gating inputs ---
+	state_dict["has_offerable_quests"] = _has_offerable_quests()
+	state_dict["quest_in_play"] = not _offered_quests.is_empty()
+	state_dict["has_turninable_quest"] = _has_turninable_quest()
+	state_dict["requestable_nonempty"] = not _requestable_actions().is_empty()
+	state_dict["is_ruler_audience"] = bool(context.get("is_ruler_audience", false))
+	state_dict["is_army_parley"] = bool(context.get("is_army_parley", false))
+	state_dict["is_surrender_scene"] = bool(context.get("is_surrender_scene", false))
+	state_dict["has_player_capability"] = not _player_capabilities().is_empty()
+	# Charm-on-PC (§5.6): the designated speaker being charmed by THIS interlocutor
+	# blocks hostile-toward-target moves in the menu (RAW "acts to protect its
+	# friend"). The player may still refuse / farewell (compulsion ceiling).
+	state_dict["speaker_charmed_by_interlocutor"] = _speaker_charmed_by_interlocutor()
 	# Move-invocation params (bribe amount, terms package/modifier) flow to the
 	# adjudicator via the session_state it reads.
 	if params.has("bribe_amount_cp"):
@@ -247,20 +287,44 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 	if not _is_currently_eligible(move_id):
 		return {"rejected": true, "reason": "ineligible"}
 
+	# --- Dialogue Phase 3 --- one exchange begins: advance the counter and let the
+	# NPC-side intent policy (§5.6) MAYBE select one NPC move (capped ≤1 per ~3
+	# exchanges). Its result is woven into this turn's reply plan.
+	_begin_exchange(params)
+
 	# --- Dialogue Phase 2 ---
 	# Hiring is stateful (wraps the henchman pipeline); route it to its own handler.
-	if String(move.get("resolution", "")) == "hire":
+	var resolution := String(move.get("resolution", ""))
+	if resolution == "hire":
 		return _submit_hire(move, free_text, params)
 	# Gather-information routes to its dual-path handler (§4.2). The menu-click path
 	# defaults to the quick-resolve fork; an entry point wanting the session fork
 	# calls gather_information("session") directly.
-	if String(move.get("resolution", "")) == "gather":
+	if resolution == "gather":
 		var g := gather_information(String(params.get("mode", "quick")), params)
 		return {
 			"rejected": false, "plan": {}, "line": _gather_line(g),
 			"outcome": DialogueAdjudicator.OUTCOME_GATHER, "gather": g,
 			"new_attitude": _attitude, "terminal": false, "becomes_combat": false,
 		}
+	# --- Dialogue Phase 3 + Q-5 --- the world-stage moves route to their handlers.
+	match resolution:
+		"quest_ask", "quest_accept", "quest_decline", "quest_turn_in":
+			return _submit_quest(move, resolution, free_text, params)
+		"request_action":
+			return _submit_request_action(move, free_text, params)
+		"ruler_audience":
+			return _submit_ruler_audience(move, free_text, params)
+		"army_parley":
+			return _submit_army_parley(move, free_text, params)
+		"surrender_terms":
+			return _submit_surrender(move, free_text, params)
+		"capability":
+			return _submit_capability(move, free_text, params)
+	# ask_rumor: Q-5 swaps the Phase-1 stub pool for the real RumorRegistry
+	# (per-band share) when one is injected via context.deps.rumor_registry.
+	if resolution == "rumor" and _rumor_registry != null:
+		return _submit_ask_rumor_real(move, free_text, params)
 
 	# ADJUDICATE. The resolver context is enriched per-move (ask_question needs the
 	# pre-read willingness/entry; the rest read session_state + StatusProfile).
@@ -284,8 +348,13 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 	last_outcome = outcome
 	_apply_outcome(move, outcome, free_text)
 
-	# PLAN REPLY (deterministic).
-	var plan: Dictionary = NpcReplyPlanner.plan_reply(npc_id, outcome)
+	# PLAN REPLY (deterministic). The reply_ctx carries the §9.4 lie-decision + the
+	# §13.11 demeanor-beat inputs, the §5.5 active effects, and this turn's §5.6 NPC
+	# move (selected in _begin_exchange).
+	var plan: Dictionary = NpcReplyPlanner.plan_reply(npc_id, outcome, _reply_ctx_for(outcome))
+	# A fired lie writes a deception_by_npc memory so the NPC stays consistent
+	# forever after (§9.4 consistency).
+	_maybe_write_deception(plan, String(outcome.get("topic", "")))
 
 	# PERFORM (Tier-0 template; LLM is Phase 4).
 	var line: String = _templates.render(plan, _template_slots())
@@ -298,6 +367,7 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 		"new_attitude": _attitude,
 		"terminal": bool(outcome.get("terminal", false)),
 		"becomes_combat": bool(outcome.get("becomes_combat", false)),
+		"npc_move": _pending_npc_move,
 	}
 
 	# CLOSE on terminal move/outcome (§4.4 step 7).
@@ -540,13 +610,14 @@ func _submit_hire(move: Dictionary, free_text: String, params: Dictionary) -> Di
 	_pending_terms_modifier = 0
 
 	_apply_outcome_log_only(move, outcome, free_text)
-	var plan := NpcReplyPlanner.plan_reply(npc_id, outcome)
+	var plan := NpcReplyPlanner.plan_reply(npc_id, outcome, _reply_ctx_for(outcome))
 	var line := _templates.render(plan, _template_slots())
 	return {
 		"rejected": false, "plan": plan, "line": line,
 		"outcome": outcome["kind"], "disposition": disposition,
 		"hired": bool(outcome.get("hired", false)),
 		"new_attitude": _attitude, "terminal": false, "becomes_combat": false,
+		"npc_move": _pending_npc_move,
 	}
 
 
@@ -595,12 +666,14 @@ func _resolve_paid_knowledge(move: Dictionary, topic: String, issue_key: String,
 
 	last_outcome = outcome
 	_apply_outcome_log_only(move, outcome, free_text)
-	var plan := NpcReplyPlanner.plan_reply(npc_id, outcome)
+	var plan := NpcReplyPlanner.plan_reply(npc_id, outcome, _reply_ctx_for(outcome))
+	_maybe_write_deception(plan, topic)
 	var line := _templates.render(plan, _template_slots())
 	return {
 		"rejected": false, "plan": plan, "line": line,
 		"outcome": outcome["kind"], "new_attitude": _attitude,
 		"per_issue_result": band, "terminal": false, "becomes_combat": false,
+		"npc_move": _pending_npc_move,
 	}
 
 
@@ -901,3 +974,719 @@ func _current_round() -> int:
 func _seconds_to_rounds(seconds: int) -> int:
 	# 10 seconds per round (InteractionResolver.SECONDS_PER_ROUND).
 	return int(ceil(float(seconds) / 10.0))
+
+
+# ===========================================================================
+# Dialogue Phase 3 (The World Stage) + Q-5 — handlers & helpers
+# ===========================================================================
+
+# --- Exchange bookkeeping + NPC intent policy (§5.6) ---
+
+## One player-turn begins: advance the exchange counter and let NpcIntentPolicy
+## MAYBE attach one NPC-side move (capped ≤1 per ~3 exchanges). The selection is
+## woven into this turn's reply plan and surfaced on the transparency channel.
+func _begin_exchange(_params: Dictionary) -> void:
+	_exchange_index += 1
+	_pending_npc_move = _select_npc_move()
+
+
+func _select_npc_move() -> Variant:
+	var ctx := {
+		"exchange_index": _exchange_index,
+		"last_npc_act_exchange": _last_npc_act_exchange,
+		"attitude": _attitude,
+		"personality": _personality(),
+		"npc_capabilities": _npc_available_capabilities(),
+		"open_issue_stakes": _has_open_issue_stakes(),
+		"dice": _dice,
+	}
+	var mv: Variant = NpcIntentPolicy.select(ctx)
+	if mv == null:
+		return null
+	_last_npc_act_exchange = _exchange_index
+	EventBus.npc_intent_move_selected.emit(npc_id, session_id, mv)
+	_resolve_selected_npc_move(mv)
+	return mv
+
+
+## Resolve the side effects of a selected NPC move that HAPPEN this turn — v1: an
+## NPC charm cast on the designated speaker (§5.6 charm-on-PC). Other NPC moves
+## (offer/request/threaten) are performance-only until accepted by the player.
+func _resolve_selected_npc_move(mv: Dictionary) -> void:
+	if String(mv.get("move_id", "")) != NpcIntentPolicy.MOVE_USE_ABILITY:
+		return
+	var payload: Dictionary = mv.get("payload", {})
+	var cap := String(payload.get("capability_id", ""))
+	if cap == "charm_person" or cap == "charm_monster":
+		var target := _designated_speaker_id()
+		if not target.is_empty():
+			resolve_npc_charm_on_pc(target, npc_id)
+
+
+# --- Reply context (§9.4 lie decision, §13.11 beat, §5.5 effects, §5.6 npc_move) ---
+
+func _reply_ctx_for(outcome: Dictionary) -> Dictionary:
+	var c: Dictionary = CampaignRepository.get_character(npc_id)
+	var ctx := {
+		"attitude": _attitude,
+		"personality": _personality(),
+		"npc_class": _s(c.get("character_class"), ""),
+		"npc_role": _s(c.get("npc_role"), ""),
+		"dice": _dice,
+		"seed_hint": abs(String(session_id + str(_exchange_index)).hash()),
+		"active_effects": _active_effects.duplicate(true),
+		"npc_move": _pending_npc_move,
+	}
+	var kind := String(outcome.get("kind", ""))
+	if kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE \
+			or kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE_REFUSED:
+		var topic := String(outcome.get("topic", ""))
+		ctx["topic"] = topic
+		ctx["willingness"] = _knowledge_willingness(topic) if not topic.is_empty() else ""
+		var entry := _knowledge_entry(topic)
+		ctx["true_fact"] = String(entry.get("fact", ""))
+		ctx["false_variant"] = String(entry.get("false_variant", ""))
+		ctx["truth_costs_npc"] = _truth_costs_npc(outcome, entry)
+		ctx["deception_facts"] = _recall_deception_facts()
+	return ctx
+
+
+## Heuristic (§9.4): does the plain truth cost this NPC? never-share facts, facts
+## flagged sensitive, and any truth asked of a Hostile/Unfriendly/Fearful NPC that
+## would aid the party against them.
+func _truth_costs_npc(outcome: Dictionary, entry: Dictionary) -> bool:
+	if String(outcome.get("reason", "")) == "never":
+		return true
+	if bool(entry.get("sensitive", false)):
+		return true
+	return _attitude in [Attitude.HOSTILE, Attitude.UNFRIENDLY, Attitude.FEARFUL]
+
+
+## Flatten the `deception_by_npc` memories recalled at session open into
+## {lied_about, assert} fact dicts (for the §9.4 consistency check).
+func _recall_deception_facts() -> Array:
+	var out: Array = []
+	for mem in context.get("memories", []):
+		if mem == null:
+			continue
+		var mkind := ""
+		var facts: Array = []
+		if mem is Dictionary:
+			mkind = String((mem as Dictionary).get("kind", ""))
+			facts = (mem as Dictionary).get("facts", [])
+		else:
+			mkind = String(mem.kind)
+			facts = mem.facts
+		if mkind != "deception_by_npc":
+			continue
+		for f in facts:
+			if f is Dictionary:
+				out.append(f)
+	return out
+
+
+## Write a deception_by_npc memory when a lie fires (§9.4 consistency). Skips a
+## re-asserted (already-committed) lie to avoid duplicate rows.
+func _maybe_write_deception(plan: Dictionary, topic: String) -> void:
+	var lie: Variant = plan.get("lie_packet", null)
+	if not (lie is Dictionary):
+		return
+	if bool((lie as Dictionary).get("committed", false)):
+		return
+	var assert_text := String((lie as Dictionary).get("assert", ""))
+	var lie_topic := String((lie as Dictionary).get("topic", topic))
+	var mem := NpcMemoryData.new()
+	mem.campaign_id = campaign_id
+	mem.npc_id = npc_id
+	mem.party_id = party_id
+	mem.kind = "deception_by_npc"
+	mem.summary = "Told the party a falsehood about %s." % (
+		lie_topic if not lie_topic.is_empty() else "a matter")
+	mem.facts = [{"lied_about": lie_topic, "assert": assert_text}]
+	mem.attitude_after = _attitude
+	mem.importance = 3
+	mem.source_session_id = session_id
+	NpcMemoryStore.write_memory(mem)
+
+
+# --- Shared reply finisher (all Phase-3 / Q-5 outcomes) ---
+
+## Log the move, plan the reply (with reply_ctx), render, and return the reply
+## dict. Closes the session on a terminal outcome. The outcome may pre-set
+## `template_outcome` (the handler knows the resolved band/result).
+func _finish_generic_reply(move: Dictionary, outcome: Dictionary,
+		free_text: String) -> Dictionary:
+	last_outcome = outcome
+	_apply_outcome_log_only(move, outcome, free_text)
+	var plan := NpcReplyPlanner.plan_reply(npc_id, outcome, _reply_ctx_for(outcome))
+	_maybe_write_deception(plan, String(outcome.get("topic", "")))
+	var line := _templates.render(plan, _template_slots())
+	var reply := {
+		"rejected": false,
+		"plan": plan,
+		"line": line,
+		"outcome": outcome.get("kind", "none"),
+		"new_attitude": _attitude,
+		"terminal": bool(outcome.get("terminal", false)),
+		"becomes_combat": bool(outcome.get("becomes_combat", false)),
+		"npc_move": _pending_npc_move,
+	}
+	# Carry through the handler-specific fields tests/consumers read.
+	for k in ["result_band", "granted", "handoff", "directive", "strength",
+			"agreed", "reward", "recipient_pc_id", "offered_quest_ids",
+			"capability_id", "parley", "persuade"]:
+		if outcome.has(k):
+			reply[k] = outcome[k]
+	if reply["terminal"]:
+		close(outcome)
+	return reply
+
+
+func _reject_reply(reason: String) -> Dictionary:
+	return {"rejected": true, "reason": reason}
+
+
+# --- Q-5: quest & rumor adapters (§9.3, §11.1) ---
+
+func _submit_quest(move: Dictionary, resolution: String, free_text: String,
+		params: Dictionary) -> Dictionary:
+	if _quest_registry == null:
+		return _reject_reply("quest_registry_unavailable")
+	match resolution:
+		"quest_ask":
+			return _quest_ask(move, free_text)
+		"quest_accept":
+			return _quest_accept(move, free_text, params)
+		"quest_decline":
+			return _quest_decline(move, free_text, params)
+		"quest_turn_in":
+			return _quest_turn_in(move, free_text, params)
+	return _reject_reply("unknown_quest_move")
+
+
+func _quest_ask(move: Dictionary, free_text: String) -> Dictionary:
+	var quests: Array = _quest_registry.offerable_quests(npc_id, party_id, _attitude)
+	_offered_quests.clear()
+	var first_title := "the task"
+	for q in quests:
+		_offered_quests.append(String(q.id))
+		if first_title == "the task":
+			first_title = String(q.title) if not String(q.title).is_empty() else "a task"
+		EventBus.quest_offered.emit(String(q.id), npc_id)
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_QUEST,
+		"move_id": "quest_ask",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": "offered" if not quests.is_empty() else "none_available",
+		"quest_title": first_title,
+		"offered_quest_ids": _offered_quests.duplicate(),
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+func _quest_accept(move: Dictionary, free_text: String, params: Dictionary) -> Dictionary:
+	var quest_id := String(params.get("quest_id", ""))
+	var pc_id := String(params.get("pc_id", _default_employer_id()))
+	var ok: bool = _quest_registry.accept(quest_id, pc_id, Timekeeping.get_total_days())
+	if ok:
+		_accepted_quest_ids.append(quest_id)
+	var q = _quest_registry.get_quest(quest_id)
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_QUEST,
+		"move_id": "quest_accept",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": "accepted" if ok else "default",
+		"quest_title": (String(q.title) if q != null else "the task"),
+		"reward_summary": "a fair reward",
+		"accepted": ok, "terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+func _quest_decline(move: Dictionary, free_text: String, params: Dictionary) -> Dictionary:
+	var quest_id := String(params.get("quest_id", ""))
+	_quest_registry.decline(quest_id, party_id)
+	_write_transaction_memory("event", "Declined an offered quest.",
+		[{"declined_quest": quest_id}])
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_QUEST,
+		"move_id": "quest_decline",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": "declined",
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+func _quest_turn_in(move: Dictionary, free_text: String, params: Dictionary) -> Dictionary:
+	var quest_id := String(params.get("quest_id", ""))
+	var recipient := String(params.get("recipient_pc_id", _default_employer_id()))
+	if not _quest_registry.can_turn_in(quest_id):
+		var not_ready := {
+			"kind": DialogueAdjudicator.OUTCOME_QUEST, "move_id": "quest_turn_in",
+			"prior_attitude": _attitude, "new_attitude": _attitude,
+			"template_outcome": "not_ready", "terminal": false, "becomes_combat": false,
+		}
+		return _finish_generic_reply(move, not_ready, free_text)
+	var payload: Dictionary = _quest_registry.disburse_reward(
+		quest_id, recipient, Timekeeping.get_total_days())
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_QUEST, "move_id": "quest_turn_in",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": "turned_in" if not payload.is_empty() else "not_ready",
+		"reward_summary": _reward_summary_from_payload(payload),
+		"reward": payload, "recipient_pc_id": recipient,
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+func _reward_summary_from_payload(payload: Dictionary) -> String:
+	if payload.is_empty():
+		return "a fair reward"
+	var rtype := String(payload.get("reward_type", ""))
+	var xp := int(payload.get("xp_awarded", 0))
+	match rtype:
+		"gold", "mixed":
+			return "%d gp (%d XP)" % [int(payload.get("gold_value", 0)), xp]
+		"item":
+			return "%s (%d XP)" % [String(payload.get("item_id", "an item")), xp]
+		"domain":
+			return "a domain grant"
+		"political":
+			return "a favor of standing (%d XP)" % xp
+	return "%d gp value" % int(payload.get("total_gp_value", 0))
+
+
+## Q-5 ask_rumor: the real RumorRegistry per-band share (one rumor per band).
+func _submit_ask_rumor_real(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var topic := String(params.get("topic", ""))
+	var pool: Array = _rumor_registry.share_for_npc(npc_id, party_id, _attitude, topic)
+	var rumor_text := ""
+	var template_outcome := "refused"
+	if not pool.is_empty():
+		var chosen = pool[0]
+		_rumor_registry.mark_heard(String(chosen.id), "ask", Timekeeping.get_total_days())
+		rumor_text = String(chosen.narrated_text)
+		if rumor_text.is_empty():
+			rumor_text = String(chosen.content_hint)
+		template_outcome = "shared"
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_RUMOR, "move_id": "ask_rumor",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"rumor_text": rumor_text, "template_outcome": template_outcome,
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+# --- P3.0: request_action matrix (§10.1) ---
+
+func _submit_request_action(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var action_id := String(params.get("action_id", ""))
+	var matrix := _ensure_requestable_matrix()
+	# Rule 10.2: an unknown action id is rejected (schema-validated registry).
+	if not matrix.is_known(action_id):
+		return _reject_reply("unknown_action_id")
+	var row := _requestable_row(action_id)
+	if row.is_empty():
+		return _reject_reply("action_not_available")
+	# Attitude gate (§6.4) per row.
+	if _attitude_rank(_attitude) < _attitude_rank(String(row.get("min_attitude", "friendly"))):
+		return _reject_reply("attitude_gate")
+
+	var terms: Dictionary = params.get("terms", {})
+	var terms_mod := int(params.get("terms_modifier", 0))
+	var issue_key := "request_action:%s" % action_id
+	var resolver_ctx := _resolver_ctx(move)
+	var status_mod := _status_differential_for(_action_is_relevant(action_id))
+	var res := PerIssueResolver.resolve(String(row.get("tone", "diplomatic")),
+		_attitude, resolver_ctx, terms_mod, status_mod, _dice)
+	var band := String(res.get("result", PerIssueResolver.RESULT_REFUSE))
+
+	var issue := _load_or_make_issue(issue_key)
+	issue.attempt_count += 1
+	issue.last_result = PerIssueResolver.last_result_for_band(band)
+	var granted := PerIssueResolver.is_accept(band)
+	var handoff: Dictionary = {}
+	var template_outcome := "refused"
+	if granted:
+		issue.status = "granted"
+		issue.resolved_day = Timekeeping.get_total_days()
+		handoff = RequestActionHandoff.dispatch(row, npc_id, params, terms, _event_scheduler)
+		template_outcome = "granted"
+		EventBus.npc_agreement_reached.emit(npc_id, {
+			"issue_key": issue_key, "action_id": action_id, "terms": terms,
+			"result_band": band, "handoff": handoff})
+	elif band == PerIssueResolver.RESULT_NEGOTIABLE:
+		template_outcome = "negotiable"
+	elif band == PerIssueResolver.RESULT_REFUSE_FLAT:
+		# §6.6 offense: a flat refusal fires the offense check (recorded here).
+		template_outcome = "refused_offended"
+		issue.offense_fired = true
+	CampaignRepository.save_npc_issue(issue)
+	EventBus.request_action_resolved.emit(npc_id, action_id, band)
+
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_REQUEST_ACTION, "move_id": "request_action",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": template_outcome,
+		"action_id": action_id, "result_band": band, "granted": granted,
+		"handoff": handoff, "per_issue": res,
+		"detail": String(handoff.get("summary", "")),
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+## Relevance check (§6.5): is the ask related to the NPC's offered quests / faction
+## goals? v1 conservative default (false -> the NPC-outranks penalty applies);
+## richer relevance inference is a later pass / the §13.10 seam.
+func _action_is_relevant(_action_id: String) -> bool:
+	return false
+
+
+# --- P3.1: ruler audience — persuade_ruler (Seam B, §10.3) ---
+
+func _submit_ruler_audience(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var packet: Dictionary = params.get("packet", {})
+	var resolver_ctx := _resolver_ctx(move)
+	var crisis := _ruler_crisis_response()
+	var res := RulerAudience.persuade(
+		npc_id, packet, resolver_ctx, _attitude, crisis, _event_scheduler, _dice)
+	var template_outcome := "refused"
+	if bool(res.get("rejected", false)):
+		template_outcome = "reserved" if String(res.get("reason", "")) == "urge_offensive_war_is_v2" else "refused"
+	elif float(res.get("strength", 0.0)) > 0.0:
+		template_outcome = "persuaded"
+	EventBus.ruler_parley_resolved.emit(
+		npc_id, String(packet.get("direction", "dissuade")), float(res.get("strength", 0.0)))
+	var detail := ""
+	if not bool(res.get("rejected", false)) and int(res.get("cancelled_events", 0)) > 0:
+		detail = "Orders recalled."
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_RULER_AUDIENCE, "move_id": "persuade_ruler",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": template_outcome, "persuade": res,
+		"strength": float(res.get("strength", 0.0)), "detail": detail,
+		"terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+func _ruler_crisis_response() -> String:
+	var ruler_ctx: Dictionary = context.get("ruler_ctx", {})
+	if ruler_ctx.has("crisis_response"):
+		return String(ruler_ctx.get("crisis_response", ""))
+	var p := _personality()
+	return String(p.get("crisis_response", ""))
+
+
+# --- P3.2: army parley (§10.4) ---
+
+func _submit_army_parley(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var army_ctx: Dictionary = (context.get("army_ctx", {}) as Dictionary).duplicate(true)
+	if params.has("tribute_gp"):
+		army_ctx["tribute_gp"] = int(params["tribute_gp"])
+	var base_ctx := _resolver_ctx(move)
+	var terms_mod := int(params.get("terms_modifier", 0))
+	var demand_id := String(move.get("id", ""))
+	var res := ArmyParleyResolver.resolve_demand(
+		demand_id, army_ctx, base_ctx, _attitude, terms_mod, _dice)
+	var directive := String(res.get("directive", ArmyParleyResolver.DIRECTIVE_PROCEED))
+	var battle_owner := String(context.get("battle_owner_id", ""))
+	ArmyParleyResolver.apply_directive(
+		directive, res.get("followups", []), _event_scheduler, battle_owner)
+	EventBus.army_parley_resolved.emit(session_id, directive, res)
+	# Aftermath: a commander memory (adjust aggression via the ruler seams later).
+	_write_transaction_memory("event", "A parley at the field's edge.",
+		[{"parley": demand_id, "tier": res.get("success_tier", "")}])
+	var evidence: Array = res.get("evidence", [])
+	var terminal := directive == ArmyParleyResolver.DIRECTIVE_IMMEDIATE
+	if terminal:
+		_attitude = Attitude.HOSTILE
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_ARMY_PARLEY, "move_id": demand_id,
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": String(res.get("success_tier", "refused")),
+		"directive": directive, "parley": res,
+		"detail": " ".join(PackedStringArray(evidence)),
+		"terminal": terminal, "becomes_combat": terminal,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+# --- P3.2: post-combat surrender re-entry (§12.2) ---
+
+func _submit_surrender(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var resolver_ctx := _resolver_ctx(move)
+	var terms_mod := int(params.get("terms_modifier", 0))
+	var res := PerIssueResolver.resolve(
+		"diplomatic", _attitude, resolver_ctx, terms_mod, 0, _dice)
+	var band := String(res.get("result", PerIssueResolver.RESULT_REFUSE))
+	var agreed := PerIssueResolver.is_accept(band)
+	var template_outcome := "refused"
+	if agreed:
+		template_outcome = "agreed"
+	elif band == PerIssueResolver.RESULT_NEGOTIABLE:
+		template_outcome = "negotiable"
+	var ransom := int(params.get("ransom_gp", 0))
+	if agreed:
+		EventBus.npc_agreement_reached.emit(npc_id, {
+			"issue_key": "surrender", "terms": {"ransom_gp": ransom}, "result_band": band})
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_SURRENDER, "move_id": "negotiate_surrender",
+		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"template_outcome": template_outcome, "detail": "%d gp" % ransom,
+		"per_issue": res, "agreed": agreed, "terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+# --- P3.4: player-side capabilities (§5.5) ---
+
+func _submit_capability(move: Dictionary, free_text: String,
+		params: Dictionary) -> Dictionary:
+	var cap_id := String(params.get("capability_id", ""))
+	var reg := _ensure_capability_registry()
+	if not reg.has_capability(cap_id):
+		return _reject_reply("unknown_capability")
+	var cap := reg.get_capability(cap_id)
+	var effect := String(cap.get("dialogue_effect", ""))
+	var prior := _attitude
+	# Non-social casting mid-dialogue = combat (§5.6): session terminates as combat.
+	if bool(params.get("non_social", false)):
+		_attitude = Attitude.HOSTILE
+		var combat_outcome := {
+			"kind": DialogueAdjudicator.OUTCOME_COMBAT, "move_id": "use_ability",
+			"prior_attitude": prior, "new_attitude": _attitude,
+			"template_outcome": "combat", "capability_id": cap_id,
+			"terminal": true, "becomes_combat": true,
+		}
+		return _finish_generic_reply(move, combat_outcome, free_text)
+
+	var template_outcome := "ability_used"
+	var detail := ""
+	var active := {
+		"kind": effect, "capability_id": cap_id, "by": "party",
+		"target": String(params.get("target_npc", npc_id)),
+	}
+	match effect:
+		"charm":
+			# Player charms the NPC — save per RAW; on failure attitude override to
+			# Friendly toward the caster + offense suppression (§5.5). Compulsion
+			# ceiling is symmetric: it never forces the NPC's affirmative acts.
+			if _npc_saves_vs(params):
+				template_outcome = "resisted"
+			else:
+				_attitude = Attitude.FRIENDLY
+				active["directive"] = "regard the caster as a dear and trusted friend"
+				active["offense_suppressed"] = true
+				_active_effects.append(active)
+				detail = "%s now regards you as a trusted friend." % _npc_name()
+		"read_thoughts":
+			_active_effects.append(active)
+			detail = "You glimpse their surface thoughts; free-text bluffs read false to them."
+		"detect_hostile_intent", "detect_enchantment", "charm_like_glamour":
+			_active_effects.append(active)
+			detail = "The sight reveals what it may."
+		"beneficial_cast":
+			_active_effects.append(active)
+			detail = "The spell takes effect."
+		_:
+			_active_effects.append(active)
+	var outcome := {
+		"kind": DialogueAdjudicator.OUTCOME_CAPABILITY, "move_id": "use_ability",
+		"prior_attitude": prior, "new_attitude": _attitude,
+		"template_outcome": template_outcome, "capability_id": cap_id,
+		"detail": detail, "terminal": false, "becomes_combat": false,
+	}
+	return _finish_generic_reply(move, outcome, free_text)
+
+
+# --- P3.4: charm-on-PC + combat-roster defection (§5.6, §12.1) ---
+
+## An NPC charm lands on a PC. Resolves the save (per RAW; +5 easier when the PC
+## is threatened by the caster/allies). On FAILURE: records the charm, appends the
+## active effect, emits pc_charmed, and — when a combat_roster is present — moves
+## the charmed PC to the charmer's side (RAW "acts to protect its friend",
+## acore_spell_catalog_a-i_summary.xml:191). Returns
+## { saved, charmed, defected, save_roll, save_target }. A forced save_roll /
+## save_target makes tests deterministic.
+func resolve_npc_charm_on_pc(target_pc_id: String, charmer_npc_id: String,
+		save_roll: int = -1, save_target: int = 15, threatened: bool = false) -> Dictionary:
+	var roll := save_roll if save_roll >= 0 else _roll_d20()
+	var target := save_target - (5 if threatened else 0)   # +5 to the save = easier
+	var saved := roll >= target
+	var out := {
+		"saved": saved, "charmed": false, "defected": false,
+		"save_roll": roll, "save_target": target,
+	}
+	if saved:
+		return out
+	_charmed_pcs[target_pc_id] = charmer_npc_id
+	out["charmed"] = true
+	_active_effects.append({
+		"kind": "charmed", "charmed_pc": target_pc_id, "charmer": charmer_npc_id,
+		"directive": "regard %s as a dear and trusted friend" % _npc_name(),
+		"offense_suppressed": true,
+	})
+	EventBus.pc_charmed.emit(target_pc_id, charmer_npc_id, _charm_next_save_day())
+	if _combat_roster != null and _combat_roster.has_method("apply_charm_defection"):
+		out["defected"] = _combat_roster.apply_charm_defection(
+			target_pc_id, _charmer_side(charmer_npc_id), charmer_npc_id)
+	return out
+
+
+## End an active charm on a PC (repeat-save success, dispel, or scene end). Removes
+## the effect, restores the combat-roster side, emits pc_charm_ended. Returns true
+## when a charm was cleared.
+func end_charm_on_pc(target_pc_id: String) -> bool:
+	if not _charmed_pcs.has(target_pc_id):
+		return false
+	var charmer := String(_charmed_pcs[target_pc_id])
+	_charmed_pcs.erase(target_pc_id)
+	var kept: Array = []
+	for e in _active_effects:
+		if not (e is Dictionary and String((e as Dictionary).get("charmed_pc", "")) == target_pc_id):
+			kept.append(e)
+	_active_effects = kept
+	if _combat_roster != null and _combat_roster.has_method("end_charm_defection"):
+		_combat_roster.end_charm_defection(target_pc_id)
+	EventBus.pc_charm_ended.emit(target_pc_id, charmer)
+	return true
+
+
+func _charmer_side(charmer_npc_id: String) -> int:
+	# Read the charmer's side from the roster; default ENEMY (1) if not present.
+	if _combat_roster != null and _combat_roster.has_method("get_by_id"):
+		var cc = _combat_roster.get_by_id(charmer_npc_id)
+		if cc != null:
+			return int(cc.side)
+	return 1   # Combatant.Side.ENEMY
+
+
+func _charm_next_save_day() -> int:
+	# RAW repeat-save cadence depends on the target's INT; the exact clock is wired
+	# by the caller/scheduler. Default: no repeat save scheduled here (-1).
+	return -1
+
+
+func _speaker_charmed_by_interlocutor() -> bool:
+	return String(_charmed_pcs.get(_designated_speaker_id(), "")) == npc_id
+
+
+# --- Availability + gating helpers ---
+
+func _requestable_actions() -> Array:
+	if _requestable_cache != null:
+		return _requestable_cache
+	var npc: Dictionary = CampaignRepository.get_character(npc_id)
+	var profs: Array = CampaignRepository.get_character_proficiencies(npc_id)
+	# mobile / combat_capable default FALSE: the diplomatic-errand + join_fight
+	# actions surface only when the entry point declares them (else a plain NPC
+	# with no class/role/proficiency hook has an EMPTY requestable set and
+	# request_action stays hidden — §10.1 "surfaces only when non-empty").
+	var flags := {
+		"is_ruler": bool(context.get("is_ruler_audience", false)),
+		"is_commander": bool(context.get("is_army_parley", false)),
+		"mobile": bool(context.get("npc_mobile", false)),
+		"combat_capable": bool(context.get("npc_combat_capable", false)),
+	}
+	_requestable_cache = _ensure_requestable_matrix().requestable_actions(npc, profs, flags)
+	return _requestable_cache
+
+
+func _requestable_row(action_id: String) -> Dictionary:
+	for row in _requestable_actions():
+		if row is Dictionary and String((row as Dictionary).get("action_id", "")) == action_id:
+			return row
+	return {}
+
+
+func _player_capabilities() -> Array:
+	if _player_cap_cache != null:
+		return _player_cap_cache
+	var known: Array = context.get("player_capabilities", [])
+	_player_cap_cache = _ensure_capability_registry().player_capabilities(known)
+	return _player_cap_cache
+
+
+func _npc_available_capabilities() -> Array:
+	var known: Array = context.get("npc_capabilities", [])
+	if known.is_empty():
+		return []
+	return _ensure_capability_registry().npc_capabilities(known)
+
+
+func _has_offerable_quests() -> bool:
+	if _quest_registry == null:
+		return false
+	return not (_quest_registry.offerable_quests(npc_id, party_id, _attitude) as Array).is_empty()
+
+
+func _has_turninable_quest() -> bool:
+	if _quest_registry == null:
+		return false
+	var ids: Array = context.get("turninable_quest_ids", [])
+	for qid in ids:
+		if _quest_registry.can_turn_in(String(qid)):
+			return true
+	for qid in _accepted_quest_ids:
+		if _quest_registry.can_turn_in(String(qid)):
+			return true
+	return false
+
+
+func _has_open_issue_stakes() -> bool:
+	if bool(context.get("open_issue_stakes", false)):
+		return true
+	return not _offered_quests.is_empty() or _pending_terms_modifier != 0
+
+
+func _ensure_requestable_matrix() -> RequestableActionsMatrix:
+	if _requestable_matrix == null:
+		_requestable_matrix = RequestableActionsMatrix.new()
+	return _requestable_matrix
+
+
+func _ensure_capability_registry() -> CapabilityRegistry:
+	if _capability_registry == null:
+		_capability_registry = CapabilityRegistry.new()
+	return _capability_registry
+
+
+func _designated_speaker_id() -> String:
+	return String((context.get("party_side", {}) as Dictionary).get("designated_speaker_id", ""))
+
+
+func _attitude_rank(attitude: String) -> int:
+	const RANK := {
+		"hostile": 0, "unfriendly": 1, "neutral": 2, "fearful": 2, "cowed": 2,
+		"indifferent": 3, "friendly": 4,
+	}
+	return int(RANK.get(attitude, 2))
+
+
+func _npc_saves_vs(params: Dictionary) -> bool:
+	var roll := int(params.get("npc_save_roll", -1))
+	if roll < 0:
+		roll = _roll_d20()
+	return roll >= int(params.get("npc_save_target", 15))
+
+
+func _roll_d20() -> int:
+	if _dice != null and _dice.has_method("roll"):
+		return int(_dice.roll(1, 20))
+	return randi() % 20 + 1
+
+
+## Null-safe String coercion (conventions §106 — never String(null)).
+func _s(v: Variant, default_value: String = "") -> String:
+	return default_value if v == null else str(v)

@@ -52,8 +52,19 @@ func render(plan: Dictionary, slots: Dictionary = {}) -> String:
 		"rumor_text": plan.get("rumor_text", "something half-remembered"),
 		# --- Dialogue Phase 2 ---
 		"knowledge_fact": plan.get("knowledge_fact", "what they know"),
+		# --- Dialogue Phase 3 ---
+		"quest_title": plan.get("quest_title", "the task"),
+		"reward_summary": plan.get("reward_summary", "a fair reward"),
+		"detail": plan.get("detail", ""),
 	}
-	return _fill(tmpl, fills)
+	var line := _fill(tmpl, fills)
+	# --- Dialogue Phase 3 (§13.11) --- weave the demeanor beat into the reply.
+	# Templates render the cue verbatim so the mechanic is identical in mock mode;
+	# its mere presence is never a tell (every reply carries one).
+	var beat = plan.get("demeanor_beat", null)
+	if beat is Dictionary and String((beat as Dictionary).get("cue", "")) != "":
+		line += " %s %s." % [String(fills["npc_name"]), String((beat as Dictionary)["cue"])]
+	return line
 
 
 # ---------------------------------------------------------------------------

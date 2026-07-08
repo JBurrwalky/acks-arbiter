@@ -65,6 +65,13 @@ extends Node
 @onready var _dialogue_phase1_tests = $DialoguePhase1Tests
 # 2026-07-07 - NPC Dialogue Phase 2 ("Transactions"): status profile/ask_question/offer moves/hiring/slander/gather + exit test
 @onready var _dialogue_phase2_tests = $DialoguePhase2Tests
+# 2026-07-08 - NPC Dialogue Phase 3 ("The World Stage") + Q-5 (Track B of Wave 2)
+@onready var _dialogue_p3_quest_adapters_tests = $DialogueP3QuestAdaptersTests
+@onready var _dialogue_p3_request_action_tests = $DialogueP3RequestActionTests
+@onready var _dialogue_p3_ruler_audience_tests = $DialogueP3RulerAudienceTests
+@onready var _dialogue_p3_army_parley_tests = $DialogueP3ArmyParleyTests
+@onready var _dialogue_p3_lying_tests = $DialogueP3LyingTests
+@onready var _dialogue_p3_capabilities_charm_tests = $DialogueP3CapabilitiesCharmTests
 # 2026-07-07 - Quest & Rumor Q-1 (schema, registries, RewardValuator)
 @onready var _reward_valuator_tests = $RewardValuatorTests
 @onready var _quest_rumor_shared_types_tests = $QuestRumorSharedTypesTests
@@ -1302,6 +1309,13 @@ func run() -> void:
 			_dialogue_phase1_tests,
 			# 2026-07-07 — NPC Dialogue Phase 2 ("Transactions")
 			_dialogue_phase2_tests,
+			# 2026-07-08 — NPC Dialogue Phase 3 ("The World Stage") + Q-5 (Wave 2 Track B)
+			_dialogue_p3_quest_adapters_tests,
+			_dialogue_p3_request_action_tests,
+			_dialogue_p3_ruler_audience_tests,
+			_dialogue_p3_army_parley_tests,
+			_dialogue_p3_lying_tests,
+			_dialogue_p3_capabilities_charm_tests,
 			# 2026-07-07 — Quest & Rumor Q-1 (schema, registries, RewardValuator)
 			_reward_valuator_tests,
 			_quest_rumor_shared_types_tests,

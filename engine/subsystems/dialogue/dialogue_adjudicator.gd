@@ -39,6 +39,14 @@ const OUTCOME_HIRE := "hire"                 # hire attempt result (henchman/spe
 const OUTCOME_ISSUE := "issue"               # a generic per-issue (Track-2) resolution
 const OUTCOME_GATHER := "gather"             # gather-information entry (rumor payload is Q-3)
 
+# --- Dialogue Phase 3 (The World Stage) + Q-5 outcome kinds ---
+const OUTCOME_QUEST := "quest"               # Q-5 quest adapter (ask/accept/decline/turn_in)
+const OUTCOME_REQUEST_ACTION := "request_action"   # §10.1 request_action per-issue
+const OUTCOME_RULER_AUDIENCE := "ruler_audience"   # §10.3 persuade_ruler
+const OUTCOME_ARMY_PARLEY := "army_parley"   # §10.4 army parley demand
+const OUTCOME_CAPABILITY := "capability"     # §5.5 use_ability
+const OUTCOME_SURRENDER := "surrender"       # §12.2 post-combat surrender re-entry
+
 
 ## Resolve a move. Returns a Dictionary outcome:
 ##   { kind, move_id, prior_attitude, new_attitude, is_intimidated,

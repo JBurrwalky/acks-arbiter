@@ -82,12 +82,34 @@ func eligible_moves(context: Dictionary, session_state: Dictionary) -> Array:
 	var hireable_as: Array = session_state.get("hireable_as", [])
 	var has_knowledge: bool = bool(session_state.get("has_knowledge", false))
 	var in_settlement: bool = bool(session_state.get("in_settlement", false))
+	# --- Dialogue Phase 3 + Q-5 gating flags (context-driven) ---
+	var has_offerable_quests: bool = bool(session_state.get("has_offerable_quests", false))
+	var quest_in_play: bool = bool(session_state.get("quest_in_play", false))
+	var has_turninable_quest: bool = bool(session_state.get("has_turninable_quest", false))
+	var requestable_nonempty: bool = bool(session_state.get("requestable_nonempty", false))
+	var is_ruler_audience: bool = bool(session_state.get("is_ruler_audience", false))
+	var is_army_parley: bool = bool(session_state.get("is_army_parley", false))
+	var is_surrender_scene: bool = bool(session_state.get("is_surrender_scene", false))
+	var has_player_capability: bool = bool(session_state.get("has_player_capability", false))
+	var speaker_charmed: bool = bool(session_state.get("speaker_charmed_by_interlocutor", false))
 	var att_rank: int = int(_ATTITUDE_RANK.get(attitude, 2))
 	var is_hostile: bool = attitude == "hostile"
 
 	var out: Array = []
 	for row in _moves:
-		# Layer 2: Hostile NPCs are mid-escalation — only influence_*/provoke/farewell.
+		# Defensive: skip any non-move rows (empty id) — the catalog is data-defined.
+		var row_id: String = String(row.get("id", ""))
+		if row_id.is_empty():
+			continue
+		# Charm-on-PC (§5.6): a speaker charmed by THIS interlocutor cannot take a
+		# hostile-toward-target move against their "friend" (RAW acts-to-protect).
+		# Non-hostile moves and farewell stay available (compulsion ceiling — the
+		# player may still refuse or leave).
+		if speaker_charmed and bool(row.get("hostile_toward_target", false)):
+			continue
+		# Layer 2: Hostile NPCs are mid-escalation — only influence_*/provoke/farewell
+		# (plus the army-parley + surrender moves, which are the RAW surrender
+		# contexts where a Hostile side still talks, §6.4).
 		if is_hostile and not bool(row.get("hostile_permitted", false)):
 			continue
 		# Layer 1: min_attitude gate.
@@ -118,7 +140,30 @@ func eligible_moves(context: Dictionary, session_state: Dictionary) -> Array:
 				and not bool(session_state.get("allow_field_mercenary", false)):
 			continue
 		# gather_information is a settlement entry point (§4.2).
-		if row.get("id", "") == "gather_information" and not in_settlement:
+		if row_id == "gather_information" and not in_settlement:
+			continue
+		# --- Q-5 quest adapters: only surface when the registry has something ---
+		if row_id == "quest_ask" and not has_offerable_quests:
+			continue
+		if (row_id == "quest_accept" or row_id == "quest_decline") and not quest_in_play:
+			continue
+		if row_id == "quest_turn_in" and not has_turninable_quest:
+			continue
+		# --- Phase 3 context gates ---
+		# request_action surfaces only when requestable_actions(npc) is non-empty
+		# (§10.1); per-row min_attitude already refines via the min_attitude gate.
+		if bool(row.get("requires_requestable", false)) and not requestable_nonempty:
+			continue
+		# persuade_ruler only in a ruler audience; army-parley moves only at a
+		# collision/siege parley; use_ability only when the PC has an available
+		# capability; negotiate_surrender only in the post-combat surrender scene.
+		if bool(row.get("requires_ruler_audience", false)) and not is_ruler_audience:
+			continue
+		if bool(row.get("requires_army_parley", false)) and not is_army_parley:
+			continue
+		if bool(row.get("requires_capability", false)) and not has_player_capability:
+			continue
+		if bool(row.get("requires_surrender_scene", false)) and not is_surrender_scene:
 			continue
 		# Layer 3: time-ladder gate for influence_* — greyed until interval elapses.
 		if bool(row.get("requires_ladder", false)) and current_round < next_ok:

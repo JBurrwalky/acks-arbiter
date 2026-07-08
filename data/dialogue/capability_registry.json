@@ -1,0 +1,89 @@
+{
+  "_comment": "gdd-npc-dialogue.md §5.5 (player-side capability registry) + §5.6 (NPC-side effects-vs-PCs). Spells/proficiencies/powers with a social effect usable mid-dialogue. Data-defined per §5.5 (extensible by design: adding one is data + a dialogue-effect handler). Each entry: capability_id; source (spell|proficiency|power); actor_side (player|npc|both); targeting (npc|pc|self|party); save (the RAW save key, '' = none); dialogue_effect (the engine-applied effect tag the handler dispatches on); vs_pc (the PC-side bite when an NPC uses it on the party, §5.6); conceal (per-capability visibility flag — Jedidiah 2026-07-03: ships OFF, i.e. false = fully transparent in pre-alpha); raw anchor; notes. The engine resolution (saves, durations, slots) delegates to the real spell system at P4; P3 records the ENGINE DECISION (the effect state) on the mock path.",
+  "capabilities": [
+    {
+      "capability_id": "charm_person",
+      "source": "spell",
+      "actor_side": "both",
+      "targeting": "any",
+      "save": "save_spells",
+      "dialogue_effect": "charm",
+      "vs_pc": "charm_defection",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:176-207,191",
+      "notes": "Save negates (+5 if target currently threatened by caster/allies). On failure: charmed state — attitude override to Friendly toward the caster; §6.6 offense triggers suppressed; extraordinary orders trigger the RAW additional save. On a PC: hostile-vs-charmer moves blocked; the charmed PC DEFECTS to the charmer's side in the combat roster (§12.1). Compulsion ceiling: cannot compel an affirmative act."
+    },
+    {
+      "capability_id": "charm_monster",
+      "source": "spell",
+      "actor_side": "both",
+      "targeting": "any",
+      "save": "save_spells",
+      "dialogue_effect": "charm",
+      "vs_pc": "charm_defection",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:149-175",
+      "notes": "As charm_person for the mechanics tracked here."
+    },
+    {
+      "capability_id": "detect_evil",
+      "source": "spell",
+      "actor_side": "both",
+      "targeting": "party",
+      "save": "",
+      "dialogue_effect": "detect_hostile_intent",
+      "vs_pc": "reveal_hostile_intent",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:606-632",
+      "notes": "Reveals only ACTIVELY hostile intent existing as game state (an accepted quest targeting this NPC, a planned ambush, recent hostile acts) — NOT alignment (RAW :623-624)."
+    },
+    {
+      "capability_id": "detect_magic",
+      "source": "spell",
+      "actor_side": "both",
+      "targeting": "npc",
+      "save": "",
+      "dialogue_effect": "detect_enchantment",
+      "vs_pc": "",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:642-659",
+      "notes": "Reveals that an NPC is charmed or enspelled (not by whom); counterplay against charm (§5.6)."
+    },
+    {
+      "capability_id": "esp",
+      "source": "spell",
+      "actor_side": "both",
+      "targeting": "npc",
+      "save": "save_spells",
+      "dialogue_effect": "read_thoughts",
+      "vs_pc": "read_engine_known_facts",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:778-804",
+      "notes": "The RAW lie detector. On an NPC: each reply gains a surface-thought insert + the truth flag on any lie. On the party: the NPC learns ENGINE-KNOWN facts only (declared moves this session, active quests, visible intentions) — never private plans; grants a knows-your-mind per-issue bonus, flags free-text bluffs ineffective; aware PCs get the RAW save."
+    },
+    {
+      "capability_id": "cure_wounds",
+      "source": "spell",
+      "actor_side": "npc",
+      "targeting": "party",
+      "save": "",
+      "dialogue_effect": "beneficial_cast",
+      "vs_pc": "beneficial_cast",
+      "conceal": false,
+      "raw": "acore_spell_catalog_a-i_summary.xml:527-548",
+      "notes": "Requested of a divine NPC via request_action(cast_spell_for_hire) or offered via npc_offer: real HP restoration on acceptance; market fees or a Friendly per-issue favor."
+    },
+    {
+      "capability_id": "mystic_aura",
+      "source": "proficiency",
+      "actor_side": "both",
+      "targeting": "npc",
+      "save": "",
+      "dialogue_effect": "charm_like_glamour",
+      "vs_pc": "",
+      "conceal": false,
+      "raw": "proficiency_system_map §3.1",
+      "notes": "Already implemented via InteractionResolver._is_charm_like (12+ results read as charm-like in the target's presence). Registry entry for completeness."
+    }
+  ]
+}

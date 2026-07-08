@@ -29,6 +29,17 @@ var display_name: String = ""
 ## Which side this combatant is on (Side.PARTY or Side.ENEMY).
 var side: int = Side.PARTY
 
+## Charm defection (gdd-npc-dialogue.md §5.6, §12.1): when a PC is charmed by an
+## NPC and enters combat, RAW's "if the caster is attacked, the charmed creature
+## acts to protect its friend" (acore_spell_catalog_a-i_summary.xml:191) moves the
+## charmed PC to the charmer's side. `charmed_by_id` is the charmer NPC id (""
+## = not charm-defected); `pre_charm_side` is the side to restore when charm ends
+## (-1 = not defected). Applied/cleared by CombatRoster.apply_charm_defection /
+## end_charm_defection; the turn/targeting logic reads `side` (already switched),
+## so no other resolver changes are needed.
+var charmed_by_id: String = ""
+var pre_charm_side: int = -1
+
 ## True if this combatant is backed by a CharacterData (PC/henchman).
 var is_character: bool = false
 

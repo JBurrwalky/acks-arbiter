@@ -161,6 +161,141 @@
       "default": {
         "any": "{speaker_name} makes the rounds, listening for word worth having."
       }
+    },
+    "quest_ask": {
+      "offered": {
+        "any": "{npc_name} lowers their voice. \"As it happens, there's {quest_title}, if you're the sort who takes such work.\""
+      },
+      "none_available": {
+        "any": "{npc_name} shakes their head. \"No work for you just now.\""
+      },
+      "default": {
+        "any": "{npc_name} considers whether there's anything worth asking of {speaker_name}."
+      }
+    },
+    "quest_accept": {
+      "accepted": {
+        "any": "{npc_name} nods, satisfied. \"Then it's settled — {quest_title} is yours. {reward_summary} on completion.\""
+      },
+      "default": {
+        "any": "{npc_name} takes {speaker_name}'s word on the matter."
+      }
+    },
+    "quest_decline": {
+      "declined": {
+        "any": "{npc_name} shrugs. \"Suit yourself. The offer stands if you change your mind.\""
+      },
+      "default": {
+        "any": "{npc_name} accepts the refusal."
+      }
+    },
+    "quest_turn_in": {
+      "turned_in": {
+        "any": "{npc_name} claps {speaker_name} on the shoulder. \"Done, and done well. Here — {reward_summary}, as promised.\""
+      },
+      "not_ready": {
+        "any": "{npc_name} raises an eyebrow. \"It's not finished yet. Come back when it is.\""
+      },
+      "default": {
+        "any": "{npc_name} looks over what {speaker_name} brings."
+      }
+    },
+    "request_action": {
+      "granted": {
+        "any": "{npc_name} weighs it, then agrees. \"Very well — I'll see to it. {detail}\""
+      },
+      "negotiable": {
+        "any": "{npc_name} tilts their head. \"Perhaps. Make it worth my while and we'll talk.\""
+      },
+      "refused": {
+        "any": "{npc_name} declines. \"No. Not that.\""
+      },
+      "refused_offended": {
+        "any": "{npc_name}'s expression hardens. \"You dare ask that of me?\""
+      },
+      "default": {
+        "any": "{npc_name} considers the request."
+      }
+    },
+    "persuade_ruler": {
+      "persuaded": {
+        "any": "The ruler inclines their head slowly. \"You argue well. I will reconsider my course. {detail}\""
+      },
+      "refused": {
+        "any": "The ruler is unmoved. \"My decision stands.\""
+      },
+      "reserved": {
+        "any": "The ruler frowns. \"You ask me to march to war on your word? That is not a thing I will do lightly — nor now.\""
+      },
+      "default": {
+        "any": "The ruler hears {speaker_name}'s petition."
+      }
+    },
+    "demand_surrender": {
+      "cowed": {
+        "any": "The enemy commander's shoulders fall. \"Enough. We yield — spare my soldiers.\""
+      },
+      "partial": {
+        "any": "The commander spits. \"You'll get no surrender. Form up!\""
+      },
+      "collapse": {
+        "any": "The commander draws steel. \"Insolent dogs — at them, NOW!\""
+      },
+      "refused": {
+        "any": "The commander holds the line. \"We stand. Do your worst.\""
+      },
+      "default": {
+        "any": "The opposing commander weighs the demand."
+      }
+    },
+    "demand_tribute": {
+      "cowed": {"any": "The commander grimaces and signals for the coffers. \"Take your tribute and be gone.\""},
+      "partial": {"any": "The commander scoffs. \"Not a copper. We fight.\""},
+      "collapse": {"any": "The commander roars a charge — the parley is over."},
+      "refused": {"any": "The commander refuses. \"We owe you nothing.\""},
+      "default": {"any": "The commander considers the demand for tribute."}
+    },
+    "offer_passage": {
+      "cowed": {"any": "The commander nods, relieved. \"Safe passage, then. We've no quarrel worth this.\""},
+      "partial": {"any": "The commander hesitates, then declines. \"No. We hold the road.\""},
+      "collapse": {"any": "The commander takes the offer as weakness and attacks."},
+      "refused": {"any": "The commander refuses passage."},
+      "default": {"any": "The commander weighs the offer of passage."}
+    },
+    "offer_terms_parley": {
+      "cowed": {"any": "The commander clasps {speaker_name}'s forearm. \"Agreed. We withdraw on these terms.\""},
+      "partial": {"any": "The commander shakes their head. \"Not enough. We'll settle this in the field.\""},
+      "collapse": {"any": "The commander answers the terms with a war-cry."},
+      "refused": {"any": "The commander rejects the terms."},
+      "default": {"any": "The commander studies the terms {speaker_name} lays out."}
+    },
+    "use_ability": {
+      "ability_used": {
+        "any": "The air tightens as {speaker_name} works the effect. {detail}"
+      },
+      "resisted": {
+        "any": "{npc_name} shakes it off, eyes narrowing. \"I felt that. What did you just try?\""
+      },
+      "combat": {
+        "any": "{npc_name} recoils as the magic gathers — and the room erupts into violence."
+      },
+      "default": {
+        "any": "{speaker_name} calls upon a hidden art."
+      }
+    },
+    "negotiate_surrender": {
+      "agreed": {
+        "any": "{npc_name}, disarmed and spent, sags. \"Fine. Ransom, then — {detail}. Just let us live.\""
+      },
+      "negotiable": {
+        "any": "{npc_name} bargains from their knees. \"That's too much. Be reasonable.\""
+      },
+      "refused": {
+        "any": "{npc_name} sets their jaw. \"I'll die before I pay that.\""
+      },
+      "default": {
+        "any": "{npc_name} awaits {speaker_name}'s terms."
+      }
     }
   },
   "fallback": "{npc_name} responds."

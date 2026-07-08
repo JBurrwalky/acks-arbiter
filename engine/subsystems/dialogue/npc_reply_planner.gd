@@ -17,11 +17,20 @@ const VERBOSITY_CAP := 60   # §13.2 word cap
 
 
 ## Build a plan from a DialogueAdjudicator outcome. [param npc_id] identifies the
-## responder. Returns a Dictionary matching the §13.2 shape (Phase-1 subset).
-static func plan_reply(npc_id: String, outcome: Dictionary) -> Dictionary:
+## responder. [param reply_ctx] (Phase 3) carries the lie-decision + demeanor-beat
+## inputs and the active-effects / npc-move channels the session assembles:
+##   { attitude, personality, willingness, topic, true_fact, truth_costs_npc,
+##     deception_facts, false_variant, npc_class, npc_role, dice, seed_hint,
+##     active_effects, npc_move }
+## Returns a Dictionary matching the §13.2 shape.
+static func plan_reply(npc_id: String, outcome: Dictionary,
+		reply_ctx: Dictionary = {}) -> Dictionary:
 	var move_id: String = outcome.get("move_id", "")
 	var new_attitude: String = outcome.get("new_attitude", "neutral")
-	var template_outcome: String = _template_outcome_key(outcome)
+	# The session may pre-set the exact template key for a Phase-3/Q-5 outcome
+	# (it knows the resolved band/result); otherwise map from the Phase-1/2 kind.
+	var template_outcome: String = String(outcome.get("template_outcome", "")) \
+		if outcome.has("template_outcome") else _template_outcome_key(outcome)
 	var plan := {
 		"npc_id": npc_id,
 		"move_resolved": move_id,
@@ -32,9 +41,9 @@ static func plan_reply(npc_id: String, outcome: Dictionary) -> Dictionary:
 		"must_say": _must_say(outcome),
 		"must_not_reveal": [],
 		"lie_packet": null,
-		"demeanor_beat": null,          # Phase 3 (§13.11)
-		"active_effects": [],           # Phase 3 (§5.5)
-		"npc_move": null,               # Phase 3 (§5.6)
+		"demeanor_beat": null,          # Phase 3 (§13.11) — set below (always present)
+		"active_effects": reply_ctx.get("active_effects", []),   # Phase 3 (§5.5)
+		"npc_move": reply_ctx.get("npc_move", null),             # Phase 3 (§5.6)
 		"interjection": null,           # Phase 4 (§13.6)
 		"style": {
 			"register": "plain",
@@ -45,6 +54,11 @@ static func plan_reply(npc_id: String, outcome: Dictionary) -> Dictionary:
 	# ask_rumor carries its rumor text through for the template slot.
 	if outcome.has("rumor_text"):
 		plan["rumor_text"] = outcome.get("rumor_text", "")
+	# Phase-3/Q-5 template slots the session precomputed (quest title, reward,
+	# a per-move detail line for request_action / parley / surrender / ability).
+	for slot in ["quest_title", "reward_summary", "detail"]:
+		if outcome.has(slot):
+			plan[slot] = outcome.get(slot, "")
 	# --- Dialogue Phase 2 ---
 	# ask_question disclosure carries the fact through as a template slot; the
 	# entry's `accuracy` flows UNCHANGED (the NPC states what they believe, §9.1).
@@ -52,6 +66,22 @@ static func plan_reply(npc_id: String, outcome: Dictionary) -> Dictionary:
 		var entry: Dictionary = outcome.get("knowledge", {})
 		plan["knowledge_fact"] = String(entry.get("fact", ""))
 		plan["knowledge_accuracy"] = String(entry.get("accuracy", "true"))
+
+	# --- Dialogue Phase 3 (§9.4 lying + §13.11 demeanor beat) ---
+	# The lie decision is deterministic (DeceptionEngine): mark the reply a lie,
+	# fabricate the false content engine-side, and deliver it AS the disclosure
+	# (the NPC states the false fact confidently). The demeanor beat is present on
+	# EVERY reply — leak-vs-hold when lying, personality noise when honest.
+	var lie: Variant = DeceptionEngine.decide(npc_id, outcome, reply_ctx)
+	var is_lying := lie != null
+	if is_lying:
+		plan["lie_packet"] = lie
+		# Perform the lie AS a confident disclosure of the false fact.
+		plan["template_outcome"] = "disclosed"
+		plan["move_resolved"] = "ask_question"
+		plan["knowledge_fact"] = String((lie as Dictionary).get("assert", ""))
+		plan["knowledge_accuracy"] = "false"
+	plan["demeanor_beat"] = DeceptionEngine.compose_beat(reply_ctx, is_lying)
 	return plan
 
 
