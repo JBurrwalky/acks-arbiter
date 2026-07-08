@@ -47,6 +47,7 @@ func run_all_tests() -> void:
 	test_ask_question_if_paid_spawns_terms()
 	# offer moves.
 	test_offer_bribe_boosts_next_influence()
+	test_offer_bribe_gated_on_bribery_proficiency()
 	test_offer_terms_persists_to_issue()
 	# per-issue resolver.
 	test_per_issue_bands()
@@ -313,15 +314,54 @@ func test_ask_question_if_paid_spawns_terms() -> void:
 func test_offer_bribe_boosts_next_influence() -> void:
 	var npc := _make_npc("Guard", 10)
 	_set_attitude(npc, "unfriendly")
-	# A bribe of 500 gp (50000 cp) -> quality +2 (project band).
+	# Bribe bands are PER TARGET off the henchman monthly wage (Jedidiah 2026-07-08).
+	# _make_npc creates a LEVEL-1 target -> monthly wage 2500cp (25gp); +3 needs
+	# >= 1 month's pay (2500cp), so a 50000cp bribe (20 months' pay) is a full +3.
 	var s := DialogueSession.begin(_ctx(npc, false), FixedDice.new())
 	var rb := s.submit_move("offer_bribe", "", {"bribe_amount_cp": 50000})
 	check(rb.get("outcome", "") == DialogueAdjudicator.OUTCOME_BRIBE, "bribe outcome")
-	check(s._pending_bribe_quality == 2, "500gp bribe -> pending +2 for the next influence attempt")
+	check(s._pending_bribe_quality == 3, "50000cp vs a level-1 target (wage 2500cp) -> +3 (>= 1 month's pay)")
 	check(s._bribe_escrow_cp == 50000, "bribe gold escrowed")
 	# The next influence attempt consumes the bribe (quality resets after).
 	s.submit_move("influence_diplomatic")
 	check(s._pending_bribe_quality == 0, "bribe consumed by the influence attempt it modified")
+	# Per-target bands against a level-10 target (monthly wage 1,200,000cp;
+	# week = W/4 = 300,000cp; day = W/28 = 42,857cp banker's-rounded):
+	check(DialogueAdjudicator.bribe_quality_for_amount(0, 10) == 0, "0cp -> +0")
+	check(DialogueAdjudicator.bribe_quality_for_amount(42857, 10) == 1, ">= 1 day's pay -> +1")
+	check(DialogueAdjudicator.bribe_quality_for_amount(42856, 10) == 0, "just under a day's pay -> +0")
+	check(DialogueAdjudicator.bribe_quality_for_amount(300000, 10) == 2, ">= 1 week's pay -> +2")
+	check(DialogueAdjudicator.bribe_quality_for_amount(1199999, 10) == 2, "just under a month's pay -> +2")
+	check(DialogueAdjudicator.bribe_quality_for_amount(1200000, 10) == 3, ">= 1 month's pay -> +3")
+
+
+func test_offer_bribe_gated_on_bribery_proficiency() -> void:
+	# RAW gates the bribe reaction bonus on the SPEAKER holding Bribery
+	# (ax_reactions_and_influencing.xml:96). Same 500gp bribe, two speakers.
+	var npc := _make_npc("Sentry", 10)
+	_set_attitude(npc, "unfriendly")
+
+	# Speaker WITHOUT Bribery -> gold still escrowed, but has_bribery is false.
+	var plain := _make_pc("Cutpurse", 12)
+	var s1 := DialogueSession.begin(_ctx(npc, false, plain), FixedDice.new())
+	s1.submit_move("offer_bribe", "", {"bribe_amount_cp": 50000})
+	check(s1._pending_bribe_quality == 3, "bribe still pends without the proficiency")
+	check(s1._bribe_escrow_cp == 50000, "gold still escrowed without the proficiency")
+	var ctx1 := s1._resolver_ctx({})
+	check(bool(ctx1.get("has_bribery", false)) == false,
+		"no Bribery proficiency -> has_bribery false (resolver applies +0)")
+
+	# Speaker WITH Bribery -> has_bribery true, quality band carried.
+	var briber := _make_pc("Fixer", 12)
+	CampaignRepository.save_character_proficiencies(briber,
+		[{"proficiency_key": "bribery", "rank": 1}])
+	var s2 := DialogueSession.begin(_ctx(npc, false, briber), FixedDice.new())
+	s2.submit_move("offer_bribe", "", {"bribe_amount_cp": 50000})
+	var ctx2 := s2._resolver_ctx({})
+	check(bool(ctx2.get("has_bribery", false)) == true,
+		"speaker has Bribery -> has_bribery true")
+	check(int(ctx2.get("bribery_quality", 0)) == 3,
+		"bribery_quality carries the +3 band when gated true")
 
 
 func test_offer_terms_persists_to_issue() -> void:

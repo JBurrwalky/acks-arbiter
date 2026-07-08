@@ -165,22 +165,32 @@ static func _resolve_ask_question(move: Dictionary, session_state: Dictionary,
 static func _resolve_offer_bribe(_move: Dictionary, session_state: Dictionary,
 		out: Dictionary) -> Dictionary:
 	var amount_cp := int(session_state.get("bribe_amount_cp", 0))
+	var target_level := int(session_state.get("target_level", 1))
 	out["kind"] = OUTCOME_BRIBE
-	out["bribe_quality"] = bribe_quality_for_amount(amount_cp)
+	out["bribe_quality"] = bribe_quality_for_amount(amount_cp, target_level)
 	out["bribe_amount_cp"] = amount_cp
 	return out
 
 
-## Map a bribe amount (cp) to the +1..+3 quality band (ax_reactions:96). PROJECT
-## CALL bands, tunable: < 100 gp -> +1, < 1000 gp -> +2, else +3.
-static func bribe_quality_for_amount(amount_cp: int) -> int:
+## Map a bribe amount (cp) to the +1..+3 quality band (ax_reactions:96), PER TARGET
+## (Jedidiah ruling 2026-07-08). Bands are keyed to the target's henchman MONTHLY
+## WAGE BY LEVEL (rules/acore_henchmen_monthly_fee_table.xml, via
+## HenchmanTables.monthly_wage which returns CP = RAW gp x 100): +1 at >= 1 day's
+## pay (W/28), +2 at >= 1 week's pay (W/4), +3 at >= 1 month's pay (W). Amount and
+## wage are both CP, so no gp<->cp conversion. Banker's rounding on day/week.
+static func bribe_quality_for_amount(amount_cp: int, target_level: int) -> int:
 	if amount_cp <= 0:
 		return 0
-	if amount_cp < 10000:      # < 100 gp
-		return 1
-	if amount_cp < 100000:     # < 1000 gp
+	var month_cp := HenchmanTables.monthly_wage(target_level)   # cp (RAW gp x 100)
+	var week_cp := MathUtils.bankers_round(float(month_cp) / 4.0)
+	var day_cp := MathUtils.bankers_round(float(month_cp) / 28.0)
+	if amount_cp >= month_cp:
+		return 3
+	if amount_cp >= week_cp:
 		return 2
-	return 3
+	if amount_cp >= day_cp:
+		return 1
+	return 0
 
 
 ## offer_terms: sets the ±1 situational modifier (acore_equipment:672-676) and the

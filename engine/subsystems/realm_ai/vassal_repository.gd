@@ -28,6 +28,9 @@ const _UPDATE_FIELDS := [
 	"last_loyalty_outcome",
 	# --- Faction FF-3: realm diplomacy & rebellion (§5.3 compliance ladder) ---
 	"compliance_behavior",
+	# --- RAW §2.2 loyalty dice carryover (migration 194) ---
+	"loyalty_is_fanatic",
+	"loyalty_grudging_pending",
 ]
 
 
@@ -141,6 +144,20 @@ static func record_loyalty_roll(id: String, outcome: String, calendar_day: int) 
 		SET last_loyalty_outcome = ?, last_loyalty_roll_day = ?, updated_at = datetime('now')
 		WHERE id = ?
 	""", [outcome, calendar_day, id])
+
+
+## RAW §2.2 loyalty dice carryover (migration 194): persist the PERSISTENT
+## Fanatic flag (+2 all future rolls) and the ONE-SHOT Grudging flag (−1 next
+## roll) on the vassal edge, mirroring henchman_state.is_fanatic / is_grudging.
+## bool→SQLite is written as 1/0.
+static func record_loyalty_state(id: String, is_fanatic: bool, grudging_pending: bool) -> bool:
+	if id.is_empty():
+		return false
+	return CampaignRepository.db.query_with_bindings("""
+		UPDATE vassal_assignments
+		SET loyalty_is_fanatic = ?, loyalty_grudging_pending = ?, updated_at = datetime('now')
+		WHERE id = ?
+	""", [1 if is_fanatic else 0, 1 if grudging_pending else 0, id])
 
 
 # --- Faction FF-3: realm diplomacy & rebellion (§5.3 compliance ladder) ---

@@ -4432,3 +4432,14 @@ ALTER TABLE vassal_assignments ADD COLUMN compliance_behavior TEXT NOT NULL DEFA
         'resignation_seeking', 'rebellious'));
 ALTER TABLE faction_plots ADD COLUMN ready_since_day INTEGER NOT NULL DEFAULT 0;
 
+-- ===========================================================================
+-- Vassal loyalty dice carryover (migration 194)
+-- Doc-sync copy of db/migrations/194_vassal_loyalty_dice_carryover.sql. RAW
+-- §2.2 Fanatic/Grudging carryover state on the liege<->vassal edge, mirroring
+-- henchman_state.is_fanatic / is_grudging. See rules/acore_equipment.xml:806-808.
+-- ===========================================================================
+ALTER TABLE vassal_assignments ADD COLUMN loyalty_is_fanatic INTEGER NOT NULL DEFAULT 0
+    CHECK(loyalty_is_fanatic IN (0, 1));
+ALTER TABLE vassal_assignments ADD COLUMN loyalty_grudging_pending INTEGER NOT NULL DEFAULT 0
+    CHECK(loyalty_grudging_pending IN (0, 1));
+

@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	test_diplomatic_table_mapping()
 	test_intimidation_table_mapping()
 	test_seduction_table_mapping()
+	test_seduction_noble_rank_status()
 	test_diplomatic_modifiers()
 	test_intimidation_modifiers()
 	test_already_attitude_modifier()
@@ -56,6 +57,21 @@ func test_intimidation_table_mapping() -> void:
 func test_seduction_table_mapping() -> void:
 	check(_resolve_initial("seduction", 12).resulting_attitude == Attitude.FRIENDLY, "seduce 12 -> friendly")
 	check(_resolve_initial("seduction", 10).resulting_attitude == Attitude.INDIFFERENT, "seduce 10 -> indifferent")
+
+
+func test_seduction_noble_rank_status() -> void:
+	# RAW ax_reactions_and_influencing.xml:253-254 — +1 per noble rank, SEDUCTION only.
+	var r := _resolve_initial("seduction", 7, {"noble_ranks": 2})
+	check(r.total_modifier == 2, "seduction noble_ranks=2 -> +2, got %d" % r.total_modifier)
+	# The status line must NOT leak into the diplomatic or intimidation stacks.
+	var rd := _resolve_initial("diplomatic", 7, {"noble_ranks": 2})
+	check(rd.total_modifier == 0, "diplomatic ignores noble_ranks, got %d" % rd.total_modifier)
+	var ri := _resolve_initial("intimidation", 7, {"noble_ranks": 2})
+	check(ri.total_modifier == 0, "intimidation ignores noble_ranks, got %d" % ri.total_modifier)
+	# The noble-rank line counts toward the Seduction-proficiency +1 threshold:
+	# 1 (rank) satisfies ">= +1", so Seduction adds +2 -> 1 + 2 = +3.
+	var rs := _resolve_initial("seduction", 7, {"noble_ranks": 1, "has_seduction": true})
+	check(rs.total_modifier == 3, "noble rank enables Seduction +2: 1+2=+3, got %d" % rs.total_modifier)
 
 
 func test_diplomatic_modifiers() -> void:

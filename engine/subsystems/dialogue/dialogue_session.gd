@@ -215,6 +215,7 @@ func _session_state(params: Dictionary = {}) -> Dictionary:
 	# adjudicator via the session_state it reads.
 	if params.has("bribe_amount_cp"):
 		state_dict["bribe_amount_cp"] = int(params.get("bribe_amount_cp", 0))
+		state_dict["target_level"] = _npc_level()
 	if params.has("terms_modifier"):
 		state_dict["terms_modifier"] = int(params.get("terms_modifier", 0))
 	if params.has("terms"):
@@ -814,11 +815,15 @@ func _resolver_ctx(_move: Dictionary) -> Dictionary:
 		for k in evidence:
 			ctx[k] = evidence[k]
 	# A pending bribe (offer_bribe) applies its +1..+3 to THIS influence attempt
-	# and is consumed. The offer IS the bribe, so has_bribery is set regardless of
-	# the speaker's proficiency (the GDD's §5.2 "Bribery-style modifier"; the
-	# resolver gates bribery_quality on has_bribery). PROJECT CALL.
+	# and is consumed. RAW gates the bribe reaction bonus on the SPEAKER actually
+	# holding the Bribery proficiency (ax_reactions_and_influencing.xml:96 —
+	# "Character has Bribery and offers appropriate bribe."). Jedidiah's ruling:
+	# RAW gates on the proficiency, so we do too. The gold is still escrowed/offered
+	# even without it (see _apply_phase2_outcome OUTCOME_BRIBE); only the reaction
+	# bonus is gated. The resolver applies +0 when has_bribery is false — the
+	# prof_bribery block in interaction_resolver.gd _apply_diplomatic is skipped.
 	if _pending_bribe_quality > 0:
-		ctx["has_bribery"] = true
+		ctx["has_bribery"] = _speaker_has_bribery()
 		ctx["bribery_quality"] = _pending_bribe_quality
 	return ctx
 
@@ -834,6 +839,12 @@ func _template_slots() -> Dictionary:
 		"npc_name": _npc_name(),
 		"speaker_name": _speaker_name(),
 	}
+
+
+## The interlocutor NPC's class level, for the per-target bribe bands (§5.2).
+func _npc_level() -> int:
+	var c: Dictionary = CampaignRepository.get_character(npc_id)
+	return int(c.get("level", 1))
 
 
 func _npc_name() -> String:
@@ -866,6 +877,21 @@ func _speaker_cha_modifier() -> int:
 	if c.is_empty():
 		return 0
 	return AbilityUtils.get_reaction_modifier(int(c.get("charisma", 10)))
+
+
+func _speaker_has_bribery() -> bool:
+	# RAW gates the +1..+3 bribe reaction bonus on the designated speaker HAVING
+	# the Bribery proficiency (ax_reactions_and_influencing.xml:96). Catalog key
+	# is "bribery" (data/proficiencies/proficiency_catalog.json); rank >= 1 counts.
+	var party_side: Dictionary = context.get("party_side", {})
+	var sid: String = party_side.get("designated_speaker_id", "")
+	if sid.is_empty():
+		return false
+	for prof: Dictionary in CampaignRepository.get_character_proficiencies(sid):
+		if String(prof.get("proficiency_key", "")) == "bribery" \
+				and int(prof.get("rank", 0)) >= 1:
+			return true
+	return false
 
 
 func _current_round() -> int:

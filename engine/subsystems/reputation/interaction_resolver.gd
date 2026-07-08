@@ -142,6 +142,7 @@ static func _build_stack(tone: String, target: Dictionary, context: Dictionary,
 ##   character_brandishing_magic: bool
 ##   character_in_own_lair:  bool
 ##   ## Seduction extras
+##   noble_ranks:            int    — character's noble rank count (RAW status line, ax_reactions:254; seduction only)
 ##   has_performance_or_art: bool
 ##   has_seduction:          bool
 ##   has_taken_advantage_of_friends: bool
@@ -301,6 +302,16 @@ static func _apply_intimidation(stack: ModifierStack, ctx: Dictionary) -> void:
 
 
 static func _apply_seduction(stack: ModifierStack, ctx: Dictionary) -> void:
+	# Status: +1 per noble rank or equivalent — RAW ax_reactions_and_influencing.xml
+	# :253-254. This status line lives ONLY in the seduction modifier block; the
+	# diplomatic (:77-113) and intimidation (:165-205) stacks have no noble-rank
+	# line, so this modifier is scoped here (and only here) by design. Added before
+	# the Seduction-proficiency check below so it counts toward that line's
+	# "otherwise has at least +1 in modifiers" threshold — RAW orders the status
+	# category (:253) ahead of ability_scores_and_proficiencies (:272-276).
+	var noble_ranks: int = int(ctx.get("noble_ranks", 0))
+	if noble_ranks > 0:
+		stack.add_modifier(_mk("noble_rank_status", "status", noble_ranks, "status_noble_rank"))
 	if ctx.get("has_performance_or_art", false):
 		stack.add_modifier(_mk("prof_performance_or_art", "proficiency", 1, "prof_performance"))
 	if ctx.get("has_mystic_aura", false):

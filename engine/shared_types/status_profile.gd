@@ -79,6 +79,12 @@ func to_resolver_context() -> Dictionary:
 		"brandishing_weapon": brandishing_weapon,
 		"character_brandishing_magic": brandishing_magic,
 	}
+	if noble_ranks > 0:
+		# RAW seduction status line: +1 per noble rank (ax_reactions:253-254).
+		# Tone-scoped in InteractionResolver._apply_seduction — the diplomatic
+		# and intimidation stacks have NO noble-rank line (verified RAW), so this
+		# key is inert for those tones even though it rides in the shared context.
+		ctx["noble_ranks"] = noble_ranks
 	if legal_authority_over_target:
 		ctx["has_legal_authority"] = true
 	if favors_owed_by_party > 0:

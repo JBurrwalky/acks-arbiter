@@ -89,14 +89,34 @@ static func roll_for_trigger(assignment: Dictionary, trigger: String, calendar_d
 	var combined_extra: Dictionary = extra_modifiers.duplicate()
 	combined_extra["project_5_2"] = project_mod
 
+	# RAW §2.2 dice carryover (rules/acore_equipment.xml:806-808): read the
+	# PERSISTENT Fanatic flag (+2 all future rolls) and the ONE-SHOT Grudging
+	# flag (−1 next roll) stored on the edge, mirroring henchman_state.
+	var is_fanatic: bool = int(assignment.get("loyalty_is_fanatic", 0)) == 1
+	var is_grudging: bool = int(assignment.get("loyalty_grudging_pending", 0)) == 1
+
 	var result: Dictionary = HenchmanLoyaltyResolver.resolve_loyalty_check(
-		base_mod, false, false, dice, combined_extra)
+		base_mod, is_grudging, is_fanatic, dice, combined_extra)
 	var outcome: String = String(result.get("outcome", ""))
 	var behavior: String = behavior_for_outcome(outcome)
 
-	# Persist the roll outcome + the compliance tag on the edge.
+	# Roll the RAW state transition forward, mirroring the henchman consumer
+	# (HenchmanLifecycleManager.trigger_loyalty_check): Fanatic is sticky
+	# (persists until broken); Grudging is set on a Grudging result and cleared
+	# on a Loyal/Fanatic result (resolver keys set_fanatic / clear_grudging).
+	var new_fanatic := is_fanatic
+	var new_grudging := is_grudging
+	if bool(result.get("clear_grudging", false)):
+		new_grudging = false
+	if bool(result.get("set_fanatic", false)):
+		new_fanatic = true
+	if outcome == HenchmanTables.LOYALTY_GRUDGING:
+		new_grudging = true
+
+	# Persist the roll outcome + the compliance tag + the RAW carryover flags.
 	VassalRepository.record_loyalty_roll(assn_id, outcome, calendar_day)
 	VassalRepository.db_set_compliance(assn_id, behavior)
+	VassalRepository.record_loyalty_state(assn_id, new_fanatic, new_grudging)
 
 	if EventBus.has_signal("vassal_loyalty_resolved"):
 		EventBus.emit_signal("vassal_loyalty_resolved", assn_id, outcome, behavior)
@@ -112,6 +132,8 @@ static func roll_for_trigger(assignment: Dictionary, trigger: String, calendar_d
 		"project_modifier": project_mod,
 		"project_breakdown": breakdown,
 		"base_modifier": base_mod,
+		"loyalty_is_fanatic": new_fanatic,
+		"loyalty_grudging_pending": new_grudging,
 	}
 
 

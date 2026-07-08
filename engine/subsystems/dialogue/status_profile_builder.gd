@@ -15,11 +15,17 @@ extends RefCounted
 ## (ax_reactions:101-105). status_tier is reputation tier + noble rank + dress
 ## band + entourage. Deterministic; no RNG.
 
-# --- dress-quality value bands (worn-equipment total value in cp), PROJECT CALL ---
-const DRESS_MEAN_MAX_CP := 5000        # < 50 gp of worn gear -> "mean"
-const DRESS_COMMON_MAX_CP := 50000     # < 500 gp -> "common"
-const DRESS_FINE_MAX_CP := 500000      # < 5000 gp -> "fine"
-# >= 5000 gp -> "sumptuous"
+# --- dress-quality value bands (worn-equipment total value in cp) ---
+# Anchored to the RAW clothing catalog (acore_equipment.xml:220-244): a serf's
+# tunic & pants is 2gp, a crafter/freeholder outfit ~4gp, an armiger outfit 20gp,
+# a noble tunic/gown 100gp, a duchess's gown 1000gp. A full WORN outfit is the sum
+# of several pieces, so the bands sit at the natural gaps between those station
+# outfits. (The prior 50/500/5000gp cutoffs were an un-designed guess -- 5000gp of
+# worn clothing has no basis in the catalog.)
+const DRESS_MEAN_MAX_CP := 500         # < 5 gp of worn gear -> "mean" (serf)
+const DRESS_COMMON_MAX_CP := 2500      # < 25 gp -> "common" (townsfolk / crafter)
+const DRESS_FINE_MAX_CP := 10000       # < 100 gp -> "fine" (armiger / gentry)
+# >= 100 gp -> "sumptuous" (noble raiment; a duchess's gown alone is 1000gp)
 const DRESS_DEFAULT_ITEM_CP := 100     # value fallback for a worn item with value_cp = -1
 
 # worn (non-pack) equipment slots that read as "dress" for the appearance line.

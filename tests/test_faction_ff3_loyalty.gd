@@ -30,6 +30,7 @@ func run_all_tests() -> void:
 	test_behavior_for_outcome_map()
 	test_muster_scalar_per_band()
 	test_roll_deterministic_and_writes_compliance()
+	test_loyalty_carryover_fanatic_persists_prevents_swing()
 	test_trigger_routes_hostility_to_plot_seed()
 	test_trigger_routes_resignation_to_petition()
 	if not has_failures():
@@ -150,6 +151,43 @@ func test_roll_deterministic_and_writes_compliance() -> void:
 	var reread := VassalRepository.get_assignment(String(assn.get("id", "")))
 	check(String(reread.get("compliance_behavior", "")) == VassalLoyaltyResolver.BEHAVIOR_OVER,
 		"compliance tag written to the edge")
+
+
+func test_loyalty_carryover_fanatic_persists_prevents_swing() -> void:
+	# RAW §2.2 dice carryover (rules/acore_equipment.xml:806-808): a Fanatic result
+	# grants +2 to ALL future loyalty rolls (persistent), which prevents an insane
+	# one-roll swing from Fanatic to Hostile — the compliance tag alone does NOT do
+	# this (many requests still prompt a fresh loyalty roll).
+	var liege := _character("LiegeC", "neutral")
+	var vassal := _character("VassalC", "neutral")
+	var lr := _realm("RealmC", liege, "neutral")
+	var vr := _realm("SubC", vassal, "neutral")
+	var ld := _domain_for("CrownC", liege, lr)
+	var vd := _domain_for("FiefC", vassal, vr, ld)
+	var assn := _assignment(liege, vassal, vd, true, 0)   # henchman base 0, project mods 0
+	# First roll: Fanatic (12) -> persists loyalty_is_fanatic on the edge.
+	var dice := FakeDice.new()
+	dice.d2d6 = 12
+	VassalLoyaltyResolver.roll_for_trigger(assn, "test", 30, dice)
+	var after1 := VassalRepository.get_assignment(String(assn.get("id", "")))
+	check(int(after1.get("loyalty_is_fanatic", 0)) == 1, "Fanatic result persists loyalty_is_fanatic=1")
+	# Second roll: a raw 7 that WITHOUT the carryover would land Grudging (6-8),
+	# but the persisted +2 lifts the total by exactly 2 into Loyalty (9-11). The
+	# anti-swing: a fanatic rolling mediocre stays Loyal, not Grudging. Assert the
+	# +2 against the resolver's own reported base/project modifiers (the fixture's
+	# same-alignment edge carries a +1, so an exact literal total would be brittle).
+	var dice2 := FakeDice.new()
+	dice2.d2d6 = 7
+	var r2 := VassalLoyaltyResolver.roll_for_trigger(after1, "test", 60, dice2)
+	var expected := 7 + int(r2.get("base_modifier", 0)) + int(r2.get("project_modifier", 0)) + 2
+	check(int(r2.get("total", 0)) == expected,
+		"Fanatic +2 carryover is in the total: expected %d, got %d" % [expected, int(r2.get("total", 0))])
+	check(String(r2.get("behavior", "")) == VassalLoyaltyResolver.BEHAVIOR_FULL,
+		"a fanatic's mediocre roll stays Loyal, not Grudging (anti-swing)")
+	# Fanatic is sticky: a subsequent Loyal result keeps the flag (clear_grudging
+	# fires but there is no clear_fanatic).
+	var after2 := VassalRepository.get_assignment(String(assn.get("id", "")))
+	check(int(after2.get("loyalty_is_fanatic", 0)) == 1, "Fanatic persists (sticky) after a Loyal roll")
 
 
 func test_trigger_routes_hostility_to_plot_seed() -> void:
