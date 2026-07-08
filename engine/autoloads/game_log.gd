@@ -902,6 +902,13 @@ func _flush_ruler_slots() -> void:
 ## a tithe re-apportionment so a same-day decree does not alias its cache slot.
 func _on_faction_action_taken(faction_id: String, action_id: String,
 		outcome: Dictionary) -> void:
+	# §10.3 relevance gate: suppress narration of factions the party has no
+	# connection to (met via reputation, or a party member is a member) — the
+	# anti-spam rule the ruler seam proved. Same-settlement co-location is not
+	# gated here (the party's location isn't available at this seam); met/member
+	# is the floor, and under-narrating a co-located-but-unmet org is the safe side.
+	if not FactionActionNarrator.is_player_relevant(faction_id, _resolve_party_id(""), ""):
+		return
 	var variant_key: String = String(outcome.get("decree_kind", ""))
 	var calendar_day: int = Timekeeping.get_calendar_day()
 	var env: ResponseEnvelope = FactionActionNarrator.narrate_action(

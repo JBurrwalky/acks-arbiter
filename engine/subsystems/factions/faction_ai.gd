@@ -473,8 +473,9 @@ static func _leader_cha_mod(leader_id: String) -> int:
 	if ch.is_empty():
 		return DEFAULT_CHA_MOD
 	if ch.has("charisma"):
-		var cha: int = int(ch.get("charisma", 10))
-		return int(floor(float(cha - 10) / 3.0))   # ACKS-ish spread; PROJECT CALL
+		# Reuse the RAW ACKS ability-modifier table — do NOT re-derive it (a
+		# hand-rolled floor((cha-10)/3) gives wrong values, e.g. CHA 9 -> -1 vs 0).
+		return CharacterData.ability_modifier(int(ch.get("charisma", 10)))
 	return DEFAULT_CHA_MOD
 
 

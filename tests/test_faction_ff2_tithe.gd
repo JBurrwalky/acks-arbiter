@@ -24,6 +24,7 @@ func run_all_tests() -> void:
 	test_distribute_month_bankers()
 	test_apply_rejects_bad_sum()
 	test_apply_rejects_absent_faction()
+	test_apply_rejects_partial_coverage()
 	test_apply_writes_patronage_and_grievance_ledger()
 	test_issue_decree_tithe_apportionment_shared_path()
 	test_panel_model_shape()
@@ -122,6 +123,18 @@ func test_apply_rejects_absent_faction() -> void:
 	var res: Dictionary = TitheApportionment.apply(
 		_campaign_id, _domain_id, {"not_a_temple": 100}, 20)
 	check(not bool(res.get("ok", true)), "apply rejects a non-present faction")
+
+
+func test_apply_rejects_partial_coverage() -> void:
+	# A map that OMITS a present temple must be rejected: the omitted temple keeps
+	# its stale persisted row, so distribute_month would pay it on TOP of the
+	# supplied shares — over-distributing the pool past 100%.
+	var res: Dictionary = TitheApportionment.apply(
+		_campaign_id, _domain_id, {_temple_a: 60, _temple_b: 40}, 20)
+	check(not bool(res.get("ok", true)),
+		"a partial map (2 of the 3 present temples, summing to 100) is rejected")
+	check(String(res.get("reason", "")).begins_with("missing_temple"),
+		"the rejection reason names the omitted temple")
 
 
 func test_apply_writes_patronage_and_grievance_ledger() -> void:

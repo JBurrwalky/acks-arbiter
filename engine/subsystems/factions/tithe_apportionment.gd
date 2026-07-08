@@ -261,8 +261,12 @@ static func apply(campaign_id: String, domain_id: String, shares: Dictionary,
 		present[String((t as Dictionary).get("id", ""))] = t
 	if present.is_empty():
 		return {"ok": false, "reason": "no_temples"}
-	# Validate membership + non-negative + sum.
+	# Validate membership + non-negative + sum, AND completeness: every temple
+	# present in the domain must appear in `shares` (0 if starved). An omitted
+	# temple keeps its stale persisted row, so distribute_month would pay it on top
+	# of the supplied shares — over-distributing the pool past 100%.
 	var total: int = 0
+	var supplied: Dictionary = {}
 	for fid_v in shares:
 		var fid: String = String(fid_v)
 		if not present.has(fid):
@@ -270,9 +274,13 @@ static func apply(campaign_id: String, domain_id: String, shares: Dictionary,
 		var pct: int = int(shares[fid_v])
 		if pct < 0:
 			return {"ok": false, "reason": "negative_share:%s" % fid}
+		supplied[fid] = true
 		total += pct
 	if total != 100:
 		return {"ok": false, "reason": "sum_not_100:%d" % total}
+	for pid_v in present:
+		if not supplied.has(String(pid_v)):
+			return {"ok": false, "reason": "missing_temple:%s" % String(pid_v)}
 
 	# Previous shares for delta / ledger.
 	var previous: Dictionary = {}

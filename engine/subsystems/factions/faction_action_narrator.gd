@@ -127,10 +127,16 @@ static func is_player_relevant(faction_id: String, party_id: String,
 		return true
 	if party_id == "":
 		return false
-	# Met (reputation) or a party member is a member.
+	# Met (reputation) OR a party member holds a membership in it.
 	for r in CampaignRepository.list_reputation_entries(party_id):
 		if String((r as Dictionary).get("scope_type", "")) == "faction" \
 				and String((r as Dictionary).get("scope_id", "")) == faction_id:
+			return true
+	# A party member's membership (incl. secret infiltration) — matches
+	# FactionJournal's "met" definition so the two read-models agree.
+	for m in CampaignRepository.get_party_members(party_id):
+		var cid: String = String((m as Dictionary).get("character_id", ""))
+		if cid != "" and not CampaignRepository.ff_get_membership(faction_id, cid).is_empty():
 			return true
 	return false
 

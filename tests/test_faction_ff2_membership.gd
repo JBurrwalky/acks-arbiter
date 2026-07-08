@@ -120,6 +120,12 @@ func test_narrator_relevance_gate() -> void:
 		"same-settlement faction is player-relevant")
 	check(not FactionActionNarrator.is_player_relevant(_faction_id, "", "elsewhere"),
 		"a faction with no awareness link is not relevant")
+	# A party member's membership makes the faction relevant even AWAY from its
+	# seat settlement (the branch is_player_relevant previously never implemented).
+	OrgMembershipService.join(_faction_id, _member_id, 1)
+	OrgMembershipService.confirm_member(_faction_id, _member_id)
+	check(FactionActionNarrator.is_player_relevant(_faction_id, _party_id, "elsewhere"),
+		"a faction a party member has joined is relevant even away from its seat")
 
 
 func test_narrator_context_has_no_true_stance() -> void:

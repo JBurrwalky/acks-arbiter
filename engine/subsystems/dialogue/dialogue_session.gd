@@ -1435,11 +1435,14 @@ func _submit_army_parley(move: Dictionary, free_text: String,
 		[{"parley": demand_id, "tier": res.get("success_tier", "")}])
 	var evidence: Array = res.get("evidence", [])
 	var terminal := directive == ArmyParleyResolver.DIRECTIVE_IMMEDIATE
+	# Snapshot the true pre-parley attitude BEFORE the HOSTILE flip, so the memory
+	# summary records the real transition (neutral -> hostile), not hostile->hostile.
+	var prior_attitude := _attitude
 	if terminal:
 		_attitude = Attitude.HOSTILE
 	var outcome := {
 		"kind": DialogueAdjudicator.OUTCOME_ARMY_PARLEY, "move_id": demand_id,
-		"prior_attitude": _attitude, "new_attitude": _attitude,
+		"prior_attitude": prior_attitude, "new_attitude": _attitude,
 		"template_outcome": String(res.get("success_tier", "refused")),
 		"directive": directive, "parley": res,
 		"detail": " ".join(PackedStringArray(evidence)),
