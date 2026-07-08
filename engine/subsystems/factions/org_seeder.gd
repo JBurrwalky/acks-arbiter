@@ -101,6 +101,7 @@ static func promote_syndicate_seeds(campaign_id: String) -> Array:
 		f.alignment = _synd_alignment(synd as Dictionary)
 		f.leader_npc_id = _s((synd as Dictionary).get("boss_character_id"))
 		f.member_count_abstract = member_count
+		f.treasury_gp = _passthrough_start_gp(member_count)
 		f.goal_primary = OrgTypeCatalog.default_goal_primary("syndicate")
 		f.goal_secondary = OrgTypeCatalog.default_goal_secondary("syndicate")
 		f.status = "active"
@@ -217,6 +218,12 @@ static func _maybe_seed_gated(campaign_id: String, settlement: Dictionary,
 	f.home_domain_id = domain_id
 	f.seat_settlement_id = settlement_id
 	f.member_count_abstract = _abstract_size(type, rng)
+	# Passthrough orgs (syndicate/merchant_guild) have their real treasury resolved
+	# OUTSIDE the ¼-wages ledger, so it is never accrued into factions.treasury_gp;
+	# seed a starting operating float so the §6.6 affordability gate reads a real
+	# number instead of a perpetual 0 (PROJECT CALL).
+	if OrgTypeCatalog.is_passthrough_income(type):
+		f.treasury_gp = _passthrough_start_gp(f.member_count_abstract)
 	f.goal_primary = OrgTypeCatalog.default_goal_primary(type)
 	f.goal_secondary = OrgTypeCatalog.default_goal_secondary(type)
 	f.status = "active"
@@ -240,6 +247,12 @@ static func _maybe_seed_gated(campaign_id: String, settlement: Dictionary,
 static func _abstract_size(type: String, rng: RandomNumberGenerator) -> int:
 	var tier: int = OrgTypeCatalog.size_tier(type)
 	return tier * 4 + rng.randi_range(1, tier * 4)
+
+
+## Starting operating float for a passthrough org (§6.6): ~one month of its
+## notional wage scale, so the affordability gate sees real coin from creation.
+static func _passthrough_start_gp(members: int) -> int:
+	return MathUtils.bankers_round(OrgTypeCatalog.abstract_wage_sum_gp(members))
 
 
 # ---------------------------------------------------------------------------

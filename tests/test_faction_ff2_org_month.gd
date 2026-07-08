@@ -16,6 +16,7 @@ func run_all_tests() -> void:
 	test_syndicate_passthrough_no_accrual()
 	test_unpaid_faithful_contribute_zero()
 	test_affordability_gate_blocks_unaffordable()
+	test_broke_org_still_scores_free_actions()
 	test_ff4_stubs_never_selected()
 	test_hold_is_a_candidate_floor()
 	test_negative_treasury_departures_and_survive()
@@ -69,7 +70,7 @@ func test_affordability_gate_blocks_unaffordable() -> void:
 		"member_count_abstract": 10, "treasury_gp": 0,
 		"goal_primary": "grow_membership", "goal_secondary": "gain_influence",
 		"volatility": 1.0}
-	var cands: Array = FactionAI._score_candidates(faction, false, 0, 0, 1)
+	var cands: Array = FactionAI._score_candidates(faction, false, 0, 1)
 	check(not _has_action(cands, "proselytize"),
 		"unaffordable proselytize is gated out")
 	check(_has_action(cands, "hold"), "hold remains as the anti-thrash floor")
@@ -80,7 +81,7 @@ func test_ff4_stubs_never_selected() -> void:
 		"member_count_abstract": 20, "treasury_gp": 5000,
 		"goal_primary": "suppress_rival", "goal_secondary": "accumulate_wealth",
 		"volatility": 2.0}
-	var cands: Array = FactionAI._score_candidates(faction, false, 5000, 100, 1)
+	var cands: Array = FactionAI._score_candidates(faction, false, 5000, 1)
 	check(not _has_action(cands, "undermine_rival"), "undermine_rival is an inert FF-4 stub")
 	check(not _has_action(cands, "declare_stance"), "declare_stance is an inert FF-4 stub")
 
@@ -89,8 +90,25 @@ func test_hold_is_a_candidate_floor() -> void:
 	var faction := {"id": "f_hold", "faction_type": "mage_guild",
 		"member_count_abstract": 5, "treasury_gp": 10,
 		"goal_primary": "gain_influence", "volatility": 1.0}
-	var cands: Array = FactionAI._score_candidates(faction, false, 10, 5, 1)
+	var cands: Array = FactionAI._score_candidates(faction, false, 10, 1)
 	check(_has_action(cands, "hold"), "hold is always a candidate")
+
+
+func test_broke_org_still_scores_free_actions() -> void:
+	# A negative-treasury org must still get its cost-0 candidates (hold /
+	# raise_funds / survival moves) — the affordability gate must NOT filter free
+	# actions when broke (previously `0 > treasury+income` dropped even hold).
+	var faction := {"id": "f_broke_gate", "faction_type": "temple",
+		"member_count_abstract": 10, "treasury_gp": -100,
+		"goal_primary": "survive", "goal_secondary": "", "volatility": 1.0}
+	var cands: Array = FactionAI._score_candidates(faction, true, -100, 1)
+	check(not cands.is_empty(), "a broke org still has candidates")
+	check(_has_action(cands, "hold"), "hold survives the gate at negative treasury")
+	check(_has_action(cands, "raise_funds"), "cost-0 raise_funds survives when broke")
+	check(not _has_action(cands, "proselytize"),
+		"an unaffordable costed action (proselytize 1000) is still filtered")
+	check(not _has_action(cands, "court_patron"),
+		"court_patron (cost 100) is filtered at -100 gp")
 
 
 func test_negative_treasury_departures_and_survive() -> void:
@@ -110,7 +128,12 @@ func test_negative_treasury_departures_and_survive() -> void:
 	check(int(res.get("departed", 0)) > 0, "unpaid members depart 1d10/1000gp")
 	var after: Dictionary = CampaignRepository.get_faction(fid)
 	check(int(after.get("member_count_abstract", 99)) < 30, "roster shrank from departures")
-	check(String(after.get("goal_primary", "")) == "survive", "survive goal activates")
+	# The month's forced-survive posture is REPORTED, but the authored goal is NOT
+	# permanently overwritten (survive is condition-derived from treasury each month;
+	# a single deficit must not erase the org's identity — no restoration path exists).
+	check(String(res.get("goal", "")) == "survive", "the month reports a forced-survive posture")
+	check(String(after.get("goal_primary", "")) == "accumulate_wealth",
+		"the authored goal_primary is PRESERVED, not destroyed by one deficit month")
 
 
 func test_process_campaign_month_emits_action() -> void:

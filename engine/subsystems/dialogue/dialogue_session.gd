@@ -493,6 +493,13 @@ func close(terminal_outcome: Dictionary = {}) -> Dictionary:
 		return close_outcome
 	state = STATE_CLOSED
 
+	# §5.6: a non-combat session end releases any active PC charms — restore the
+	# combat-roster side and notify UI via pc_charm_ended. A charm carrying INTO
+	# combat is kept (the charmed PC fights for the charmer this battle).
+	if not bool(terminal_outcome.get("becomes_combat", false)):
+		for pc_id in _charmed_pcs.keys():
+			end_charm_on_pc(String(pc_id))
+
 	# Persist relationship state.
 	_relationship.attitude = _attitude
 	_relationship.is_intimidated = _is_intimidated
@@ -1042,11 +1049,12 @@ func _reply_ctx_for(outcome: Dictionary) -> Dictionary:
 			or kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE_REFUSED:
 		var topic := String(outcome.get("topic", ""))
 		ctx["topic"] = topic
-		ctx["willingness"] = _knowledge_willingness(topic) if not topic.is_empty() else ""
+		var willingness := _knowledge_willingness(topic) if not topic.is_empty() else ""
+		ctx["willingness"] = willingness
 		var entry := _knowledge_entry(topic)
 		ctx["true_fact"] = String(entry.get("fact", ""))
 		ctx["false_variant"] = String(entry.get("false_variant", ""))
-		ctx["truth_costs_npc"] = _truth_costs_npc(outcome, entry)
+		ctx["truth_costs_npc"] = _truth_costs_npc(outcome, entry, willingness)
 		ctx["deception_facts"] = _recall_deception_facts()
 	return ctx
 
@@ -1054,11 +1062,17 @@ func _reply_ctx_for(outcome: Dictionary) -> Dictionary:
 ## Heuristic (§9.4): does the plain truth cost this NPC? never-share facts, facts
 ## flagged sensitive, and any truth asked of a Hostile/Unfriendly/Fearful NPC that
 ## would aid the party against them.
-func _truth_costs_npc(outcome: Dictionary, entry: Dictionary) -> bool:
+func _truth_costs_npc(outcome: Dictionary, entry: Dictionary, willingness: String = "") -> bool:
 	if String(outcome.get("reason", "")) == "never":
 		return true
 	if bool(entry.get("sensitive", false)):
 		return true
+	# A hostile/frightened NPC lies only about GUARDED facts. A freely-shareable
+	# public fact is surrendered even under intimidation (§9.4: the lie must be one
+	# whose truth AIDS the party against them — not merely any answer, and never an
+	# innocuous public fact a coerced/Fearful NPC would readily give up).
+	if willingness == NpcKnowledgeReader.WILLINGNESS_FREELY:
+		return false
 	return _attitude in [Attitude.HOSTILE, Attitude.UNFRIENDLY, Attitude.FEARFUL]
 
 
@@ -1073,16 +1087,29 @@ func _recall_deception_facts() -> Array:
 		var facts: Array = []
 		if mem is Dictionary:
 			mkind = String((mem as Dictionary).get("kind", ""))
-			facts = (mem as Dictionary).get("facts", [])
+			facts = _coerce_facts_array((mem as Dictionary).get("facts", []))
 		else:
 			mkind = String(mem.kind)
-			facts = mem.facts
+			facts = _coerce_facts_array(mem.facts)
 		if mkind != "deception_by_npc":
 			continue
 		for f in facts:
 			if f is Dictionary:
 				out.append(f)
 	return out
+
+
+## npc_memories rows arrive from the DB with `facts` serialized as a JSON STRING
+## (NpcMemoryData.to_dict stores JSON.stringify), while in-memory NpcMemoryData
+## objects carry a real Array. Coerce either form into an Array so the typed local
+## above never takes a String assignment (which is a hard runtime crash).
+static func _coerce_facts_array(raw: Variant) -> Array:
+	if raw is Array:
+		return raw
+	if raw is String:
+		var parsed: Variant = JSON.parse_string(raw)
+		return parsed if parsed is Array else []
+	return []
 
 
 ## Write a deception_by_npc memory when a lie fires (§9.4 consistency). Skips a

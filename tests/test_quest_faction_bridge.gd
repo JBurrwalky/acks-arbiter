@@ -21,6 +21,8 @@ func run_all_tests() -> void:
 	test_faction_goal_completion_fires_once()
 	test_turn_in_debits_treasury_and_writes_standing()
 	test_advances_faction_goal()
+	test_create_faction_quest_valid_threat_type_all_goals()
+	test_faction_goal_satisfied_by_production_trigger()
 	if not has_failures():
 		print("QuestFactionBridge: all tests passed.")
 
@@ -120,3 +122,43 @@ func test_advances_faction_goal() -> void:
 		"the exact goal string advances it")
 	check(not _registry.advances_faction_goal("weather", _faction_id),
 		"an unrelated issue does not advance the goal")
+
+
+func test_create_faction_quest_valid_threat_type_all_goals() -> void:
+	# Every faction goal must map to a VALID quests.threat_type (the CHECK), so
+	# create_faction_quest never silently fails. suppress_rival/survive were mapped
+	# to the invalid 'monster' value, which the INSERT rejected.
+	for goal in ["accumulate_wealth", "grow_membership", "gain_influence",
+			"suppress_rival", "defend_patron", "spread_doctrine", "survive"]:
+		var qid: String = _registry.create_faction_quest(
+			_faction_id, "", goal, {"reward_gp": 50})
+		check(qid != "", "create_faction_quest(%s) mints a valid quest (not rejected)" % goal)
+
+
+func test_faction_goal_satisfied_by_production_trigger() -> void:
+	# The Q-6 loop must NOT depend on a test calling set_faction_goal_satisfied:
+	# a faction advancing its OWN aim satisfies its open posted jobs (the real
+	# production trigger, FactionAI._maybe_satisfy_posted_jobs).
+	var qid: String = _registry.create_faction_quest(
+		_faction_id, "", "accumulate_wealth", {"reward_gp": 50})
+	check(qid != "", "job posted")
+	check(_registry.accept(qid, _pc_id, 2), "party accepts the job")
+	var faction: Dictionary = CampaignRepository.get_faction(_faction_id)
+	# A successful raise_funds advances accumulate_wealth -> satisfies the job.
+	FactionAI._maybe_satisfy_posted_jobs(_campaign_id, faction, "raise_funds", {"raised_gp": 100})
+	check(bool(_registry.get_quest(qid).progress.get("goal_satisfied", false)),
+		"the faction's own progress satisfied the posted job (no direct satisfier call)")
+	check(QuestCompletionWatcher.new(_registry, CampaignRepository, _campaign_id)
+		.poll_faction_goals(3) >= 1, "the monthly poll completes the satisfied job")
+	check(_registry.get_quest(qid).is_complete,
+		"the posted job the party accepted is now complete")
+	# A failed action (raised 0) and a goal-mismatched action satisfy nothing.
+	var qid2: String = _registry.create_faction_quest(
+		_faction_id, "", "gain_influence", {"reward_gp": 50})
+	check(_registry.accept(qid2, _pc_id, 4), "second (gain_influence) job accepted")
+	FactionAI._maybe_satisfy_posted_jobs(_campaign_id, faction, "raise_funds", {"raised_gp": 0})
+	check(not bool(_registry.get_quest(qid2).progress.get("goal_satisfied", false)),
+		"a failed action (raised 0 gp) satisfies nothing")
+	FactionAI._maybe_satisfy_posted_jobs(_campaign_id, faction, "raise_funds", {"raised_gp": 100})
+	check(not bool(_registry.get_quest(qid2).progress.get("goal_satisfied", false)),
+		"an action advancing a DIFFERENT goal does not satisfy a gain_influence job")

@@ -28,6 +28,7 @@ func run_all_tests() -> void:
 	test_composure_leak_vs_hold_seeded()
 	test_honest_false_positive_beat()
 	test_session_lie_writes_memory_and_stays_consistent()
+	test_coerce_facts_array_handles_db_json_string()
 	if not has_failures():
 		print("DialogueP3Lying: all tests passed.")
 
@@ -210,6 +211,21 @@ func _dice_of(total: int) -> FixedDice:
 	var d := FixedDice.new()
 	d.fixed_total = total
 	return d
+
+
+## Regression: npc_memories rows come from the DB with `facts` as a JSON STRING,
+## and _recall_deception_facts assigned it into a typed Array — a hard crash on
+## any question asked of an NPC with >=1 memory row. Coercion must handle both the
+## DB-string form and the in-memory Array form.
+func test_coerce_facts_array_handles_db_json_string() -> void:
+	var from_string = DialogueSession._coerce_facts_array('[{"lied_about":"x","assert":"y"}]')
+	check(from_string is Array and from_string.size() == 1, "JSON-string facts parse to an Array")
+	var from_array = DialogueSession._coerce_facts_array([{"a": 1}])
+	check(from_array is Array and from_array.size() == 1, "a real Array passes through unchanged")
+	var from_garbage = DialogueSession._coerce_facts_array("not json at all")
+	check(from_garbage is Array and from_garbage.is_empty(), "a non-JSON string yields []")
+	var from_null = DialogueSession._coerce_facts_array(null)
+	check(from_null is Array and from_null.is_empty(), "null yields [] (no crash)")
 
 
 func _ctx(npc_id: String, personality: Dictionary) -> Dictionary:

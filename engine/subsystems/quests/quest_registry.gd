@@ -452,10 +452,10 @@ const _GOAL_THREAT_TYPE: Dictionary = {
 	"accumulate_wealth": "recovery",
 	"grow_membership": "escort",
 	"gain_influence": "delivery",
-	"suppress_rival": "monster",
+	"suppress_rival": "brigand",
 	"defend_patron": "escort",
 	"spread_doctrine": "delivery",
-	"survive": "monster",
+	"survive": "recovery",
 }
 
 ## Dialogue issues that advance each faction goal (§6.5 status-differential
@@ -531,6 +531,37 @@ func set_faction_goal_satisfied(quest_id: String) -> bool:
 		return false
 	quest.progress["goal_satisfied"] = true
 	return save_quest(quest)
+
+
+## Q-6 production trigger (§11.2): satisfy a faction's OPEN posted jobs whose goal
+## the faction just advanced. [param goals] filters by the job's faction_goal key
+## (empty = satisfy all of the faction's open jobs). Returns the count satisfied.
+## The monthly poll_faction_goals then flips is_complete once. Called by FactionAI
+## when an org action advances its aim; on a fake/db-less repo it no-ops safely.
+func satisfy_faction_goal_quests(faction_id: String, goals: Array = []) -> int:
+	if faction_id == "":
+		return 0
+	var db_ref = _repo.get("db")
+	if db_ref == null:
+		return 0
+	# Only jobs the party ACCEPTED complete on faction progress — an untaken
+	# posted job must not auto-complete (nobody performed it, nobody to reward).
+	if not db_ref.query_with_bindings(
+			"""SELECT * FROM quests
+			   WHERE campaign_id = ? AND questgiver_faction_id = ?
+			     AND completion_type = 'faction_goal' AND is_complete = 0
+			     AND status = 'accepted'
+			   ORDER BY id ASC""", [_campaign_id, faction_id]):
+		return 0
+	var rows: Array = db_ref.query_result.duplicate()
+	var count: int = 0
+	for row in rows:
+		var q := QuestData.from_dict(row)
+		var goal_key: String = String(q.progress.get("faction_goal", ""))
+		if goals.is_empty() or goals.has(goal_key):
+			if set_faction_goal_satisfied(q.id):
+				count += 1
+	return count
 
 
 ## Dialogue status-differential relevance check (§11.2, faction §6.5): true when

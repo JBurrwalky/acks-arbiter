@@ -113,10 +113,11 @@ static func _take_turn(campaign_id: String, faction: Dictionary, calendar_day: i
 	var forced_survive: bool = float(ledger.get("months_of_reserve", 99.0)) < 3.0 \
 		or bool(ledger.get("went_negative", false))
 
-	# 4) Score candidates + pick within means.
+	# 4) Score candidates + pick within means. treasury already reflects this
+	# month's banked income (the ledger's treasury_after), so it IS the spend base
+	# — do NOT add income again (that double-counts the month's earnings).
 	var treasury: int = int(faction.get("treasury_gp", 0))
-	var expected_net: int = int(ledger.get("total_income_gp", 0))
-	var candidates: Array = _score_candidates(faction, forced_survive, treasury, expected_net, calendar_day)
+	var candidates: Array = _score_candidates(faction, forced_survive, treasury, calendar_day)
 	if candidates.is_empty():
 		report["skipped_reason"] = "no_candidates"
 		return report
@@ -140,7 +141,39 @@ static func _take_turn(campaign_id: String, faction: Dictionary, calendar_day: i
 		})
 		if EventBus.has_signal("faction_action_taken"):
 			EventBus.faction_action_taken.emit(faction_id, action_id, outcome)
+		# Q-6 completion: a faction visibly advancing its aim satisfies its OWN open
+		# posted jobs for that goal — the hired agents' objective is met, so the
+		# party who accepted the job can now turn it in for the reward + standing.
+		_maybe_satisfy_posted_jobs(campaign_id, faction, action_id, outcome)
 	return report
+
+
+## Q-6 production trigger for post_job completion (§11.2). When an org's monthly
+## action actually advances one of its goals, satisfy that org's open posted jobs
+## for the goal(s) advanced (poll_faction_goals then completes them, idempotently).
+## NOTE: v1 ties completion to the FACTION making visible progress; a richer model
+## where the party performs a concrete named deed is deferred (flagged for design).
+static func _maybe_satisfy_posted_jobs(campaign_id: String, faction: Dictionary,
+		action_id: String, outcome: Dictionary) -> void:
+	if action_id == "post_job" or not _action_succeeded(action_id, outcome):
+		return
+	var advances: Array = (ACTION_DEFS.get(action_id, {}) as Dictionary).get("advances", [])
+	if advances.is_empty():
+		return
+	var registry := QuestRegistry.new(CampaignRepository, campaign_id)
+	registry.satisfy_faction_goal_quests(String(faction.get("id", "")), advances)
+
+
+## True when a goal-advancing org action made real progress this month (so a
+## posted job tied to that goal can be treated as fulfilled).
+static func _action_succeeded(action_id: String, outcome: Dictionary) -> bool:
+	match action_id:
+		"proselytize": return int(outcome.get("congregants_gained", 0)) > 0
+		"court_patron": return bool(outcome.get("granted", false))
+		"aid_faction": return bool(outcome.get("aided", false))
+		"recruit_members": return int(outcome.get("members_added", 0)) > 0
+		"raise_funds": return int(outcome.get("raised_gp", 0)) > 0
+		_: return false
 
 
 static func _actions_this_month(faction: Dictionary) -> int:
@@ -154,7 +187,7 @@ static func _actions_this_month(faction: Dictionary) -> int:
 # ---------------------------------------------------------------------------
 
 static func _score_candidates(faction: Dictionary, forced_survive: bool,
-		treasury: int, expected_net: int, calendar_day: int) -> Array:
+		treasury: int, calendar_day: int) -> Array:
 	var type: String = String(faction.get("faction_type", ""))
 	var goal_primary: String = "survive" if forced_survive else _s(faction.get("goal_primary"))
 	var goal_secondary: String = _s(faction.get("goal_secondary"))
@@ -164,9 +197,12 @@ static func _score_candidates(faction: Dictionary, forced_survive: bool,
 		var def: Dictionary = ACTION_DEFS[action_id_v]
 		if not _action_available(action_id, faction, type):
 			continue
-		# Affordability gate (§6.6): candidate only if cost <= treasury + expected_net.
+		# Affordability gate (§6.6): a COSTED action is a candidate only if the
+		# treasury (which already banked this month's income) covers it. Cost-0
+		# fallbacks (hold, raise_funds, survival moves) are ALWAYS affordable, so a
+		# broke org can still act — hold stays a floor (below) even at negative gp.
 		var cost: int = int(def.get("cost", 0))
-		if cost > treasury + expected_net:
+		if cost > 0 and cost > treasury:
 			continue
 		var goal_relevance: float = _goal_relevance(def, goal_primary, goal_secondary)
 		if goal_relevance <= 0.0 and action_id != "hold":
@@ -319,6 +355,12 @@ static func _do_court_patron(campaign_id: String, faction: Dictionary, calendar_
 	var domain_id: String = _s(faction.get("home_domain_id"))
 	if domain_id == "":
 		return {"summary": "%s finds no court to petition." % faction.get("name", "The faction")}
+	# Pay the courting cost (gifts, entertainment) — the declared ACTION_DEFS cost,
+	# spent whether or not the petition lands (the affordability gate guaranteed the
+	# treasury covers it). Without this the win-a-tithe-share was free every month.
+	var court_cost: int = int((ACTION_DEFS.get("court_patron", {}) as Dictionary).get("cost", 100))
+	_set_treasury(faction, int(faction.get("treasury_gp", 0)) - court_cost)
+	faction["treasury_gp"] = int(faction.get("treasury_gp", 0)) - court_cost
 	# Influence attempt: 2d6 + fairness (congregant vs current) + alignment match.
 	var rng := _monthly_rng(faction_id + "|court", calendar_day)
 	var roll: int = rng.randi_range(1, 6) + rng.randi_range(1, 6)
@@ -398,11 +440,15 @@ static func _apply_negative_treasury(_campaign_id: String, faction: Dictionary,
 	for i in thousands:
 		departed += rng.randi_range(1, 10)
 	var new_count: int = maxi(0, int(faction.get("member_count_abstract", 0)) - departed)
+	# Only the roster shrinks here. The survive BEHAVIOR is condition-derived each
+	# month from the treasury (forced_survive in _take_turn), so do NOT overwrite the
+	# org's authored goal_primary — a single deficit month would otherwise erase the
+	# org's identity permanently (no restoration path). "goal":"survive" in the
+	# return still reports this month's forced-survive posture.
 	CampaignRepository.db.query_with_bindings(
-		"UPDATE factions SET member_count_abstract = ?, goal_primary = 'survive' WHERE id = ?",
+		"UPDATE factions SET member_count_abstract = ? WHERE id = ?",
 		[new_count, faction.get("id", "")])
 	faction["member_count_abstract"] = new_count
-	faction["goal_primary"] = "survive"
 	return {"departed": departed, "deficit_gp": deficit, "goal": "survive"}
 
 
