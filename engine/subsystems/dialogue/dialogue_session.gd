@@ -1134,7 +1134,7 @@ func _finish_generic_reply(move: Dictionary, outcome: Dictionary,
 	# Carry through the handler-specific fields tests/consumers read.
 	for k in ["result_band", "granted", "handoff", "directive", "strength",
 			"agreed", "reward", "recipient_pc_id", "offered_quest_ids",
-			"capability_id", "parley", "persuade"]:
+			"capability_id", "parley", "persuade", "accepted", "template_outcome"]:
 		if outcome.has(k):
 			reply[k] = outcome[k]
 	if reply["terminal"]:
@@ -1641,7 +1641,11 @@ func _has_turninable_quest() -> bool:
 	for qid in _accepted_quest_ids:
 		if _quest_registry.can_turn_in(String(qid)):
 			return true
-	return false
+	# Q-5: a quest completed OUT of session (accept -> adventure -> return, the
+	# common flow) surfaces via THIS questgiver's own turn-in-able quests, not
+	# just the ids accepted this session. This is the eligibility source of
+	# truth (the context `turninable_quest_ids` hint is an optional fast-path).
+	return not _quest_registry.turninable_for_questgiver(npc_id).is_empty()
 
 
 func _has_open_issue_stakes() -> bool:

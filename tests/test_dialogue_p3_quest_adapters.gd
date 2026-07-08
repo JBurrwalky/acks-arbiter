@@ -205,6 +205,7 @@ func _make_quest(title: String, npc_id: String, posting: String, status: String)
 	q.status = status
 	q.posting_type = posting
 	q.threat_type = "monster_lair"
+	q.completion_type = "clear_lair"
 	return _quests.create_quest(q)
 
 

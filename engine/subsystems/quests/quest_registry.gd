@@ -204,6 +204,22 @@ func can_turn_in(quest_id: String) -> bool:
 	return quest.is_complete and not _is_terminal(quest.status)
 
 
+## §11.1 turn-in eligibility SOURCE OF TRUTH for the dialogue layer: the ids of
+## THIS questgiver's quests that are turn-in-able right now (complete +
+## non-terminal). Independent of what the party accepted in the current
+## session, so an accept→adventure→return flow (completed out of session)
+## still surfaces the turn-in move.
+func turninable_for_questgiver(npc_id: String) -> Array:
+	var out: Array = []
+	if npc_id == "":
+		return out
+	for row in _repo.list_quests_by_questgiver(npc_id, _campaign_id):
+		var qid := String((row as Dictionary).get("id", ""))
+		if qid != "" and can_turn_in(qid):
+			out.append(qid)
+	return out
+
+
 ## §9.5/§9.6/§8.2 reward disbursement (ACCEPTED path). Applies the reward to
 ## the recipient PC, awards XP = reward GP value (domain XP-exempt),
 ## transitions status→completed, stales quest-sourced rumors, emits

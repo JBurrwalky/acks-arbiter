@@ -134,23 +134,23 @@ func test_npc_intent_cap_per_three_exchanges() -> void:
 	var personality := {"expressiveness": 5, "in_group_loyalty": 8, "self_interest": 5}
 	# Friendly + high in-group -> the policy wants to npc_offer; the seeded roll
 	# (9 >= threshold 8) passes; the cap gates repeats.
-	var act3 := NpcIntentPolicy.select({
+	var act3 = NpcIntentPolicy.select({
 		"exchange_index": 3, "last_npc_act_exchange": -999, "attitude": "friendly",
 		"personality": personality, "npc_capabilities": [], "open_issue_stakes": false,
 		"dice": _dice_of(9)})
 	check(act3 != null, "the NPC acts when eligible and the roll passes")
-	var capped := NpcIntentPolicy.select({
+	var capped = NpcIntentPolicy.select({
 		"exchange_index": 4, "last_npc_act_exchange": 3, "attitude": "friendly",
 		"personality": personality, "npc_capabilities": [], "open_issue_stakes": false,
 		"dice": _dice_of(9)})
 	check(capped == null, "no second act within ~3 exchanges of the last (cap holds)")
-	var act_again := NpcIntentPolicy.select({
+	var act_again = NpcIntentPolicy.select({
 		"exchange_index": 6, "last_npc_act_exchange": 3, "attitude": "friendly",
 		"personality": personality, "npc_capabilities": [], "open_issue_stakes": false,
 		"dice": _dice_of(9)})
 	check(act_again != null, "the NPC may act again once the interval elapses")
 	# A low seeded roll never acts (seeded/deterministic).
-	var no_act := NpcIntentPolicy.select({
+	var no_act = NpcIntentPolicy.select({
 		"exchange_index": 9, "last_npc_act_exchange": -999, "attitude": "friendly",
 		"personality": personality, "npc_capabilities": [], "open_issue_stakes": false,
 		"dice": _dice_of(4)})
