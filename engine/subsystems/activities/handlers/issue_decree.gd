@@ -18,6 +18,12 @@ extends RefCounted
 
 const _ALLOWED_DECREE_KINDS: Array = [
 	"tax", "liturgy", "tithe", "religion_change", "rename", "other",
+	# Faction FF-2.3: tithe apportionment among the domain's temple factions
+	# (gdd-faction-framework.md §6.4). A NEW decree KIND riding this handler —
+	# additive, not a fork. params carry {"shares": {faction_id: pct}} summing
+	# to 100; the write goes through TitheApportionment.apply (the ONE shared
+	# player/NPC path), NOT update_domain_settings.
+	"tithe_apportionment",
 ]
 
 
@@ -54,6 +60,20 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		"rename":
 			settings["name"] = String(value) if value != null else ""
 			summary = "Domain renamed to '%s'" % settings["name"]
+		"tithe_apportionment":
+			# The shared player/NPC re-apportionment path (§6.4). params.shares is
+			# {faction_id: pct}; TitheApportionment.apply validates (temples present,
+			# sum == 100), persists domain_tithe_shares, and writes the ledger.
+			var shares_v: Variant = params.get("shares", {})
+			var shares: Dictionary = shares_v if shares_v is Dictionary else {}
+			var domain_row: Dictionary = CampaignRepository.get_domain(domain_id)
+			var campaign_id: String = String(domain_row.get("campaign_id", ""))
+			var res: Dictionary = TitheApportionment.apply(
+				campaign_id, domain_id, shares, _calendar_day(), character_id)
+			if bool(res.get("ok", false)):
+				summary = "Tithe reapportioned among %d temple(s)." % shares.size()
+			else:
+				summary = "Tithe reapportionment rejected (%s)." % String(res.get("reason", ""))
 		_:
 			summary = "Decree issued: %s" % kind
 

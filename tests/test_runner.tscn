@@ -536,6 +536,11 @@
 [ext_resource type="Script" path="res://tests/test_phase_f_npc_siege.gd" id="493_phase_f_npc_siege_tests"]
 [ext_resource type="Script" path="res://tests/test_ruler_ai_capstone.gd" id="494_ruler_ai_capstone_tests"]
 [ext_resource type="Script" path="res://tests/test_militia_casualty_persistence.gd" id="495_militia_casualty_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff2_seeding.gd" id="529_faction_ff2_seeding_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff2_org_month.gd" id="530_faction_ff2_org_month_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff2_tithe.gd" id="531_faction_ff2_tithe_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff2_membership.gd" id="532_faction_ff2_membership_tests"]
+[ext_resource type="Script" path="res://tests/test_quest_faction_bridge.gd" id="533_quest_faction_bridge_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2144,3 +2149,18 @@ script = ExtResource("527_quest_completion_lifecycle_tests")
 
 [node name="RumorDeliveryTests" type="Node" parent="."]
 script = ExtResource("528_rumor_delivery_tests")
+
+[node name="FactionFF2SeedingTests" type="Node" parent="."]
+script = ExtResource("529_faction_ff2_seeding_tests")
+
+[node name="FactionFF2OrgMonthTests" type="Node" parent="."]
+script = ExtResource("530_faction_ff2_org_month_tests")
+
+[node name="FactionFF2TitheTests" type="Node" parent="."]
+script = ExtResource("531_faction_ff2_tithe_tests")
+
+[node name="FactionFF2MembershipTests" type="Node" parent="."]
+script = ExtResource("532_faction_ff2_membership_tests")
+
+[node name="QuestFactionBridgeTests" type="Node" parent="."]
+script = ExtResource("533_quest_faction_bridge_tests")

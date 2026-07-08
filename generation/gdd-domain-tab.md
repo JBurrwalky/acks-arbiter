@@ -1576,6 +1576,42 @@ Public API:
 
 ---
 
+## 21.6 Tithe Apportionment panel (Faction FF-2.3 — added 2026-07-08)
+
+A panel in the Treasury/Realm area of the Domain tab, shown for any domain the
+PLAYER rules that has one or more temple factions present. It lets the ruler
+divide the domain's RAW tithe expense stream (1 gp/family/month) among those
+temples — the persecution/patronage lever of `gdd-faction-framework.md` §6.4.
+**That GDD owns the data contract; this section owns only the layout note.**
+
+**Data source.** `TitheApportionment.panel_model(domain_id)` returns:
+`{domain_id, pool_gp, shares_sum, has_temples, temples: [ {faction_id, name,
+religion_id, congregants, congregant_share_pct, current_share_pct, gp_preview} ]}`.
+- `congregant_share_pct` is the **fairness reference** (what a pure congregant
+  split would give) — display it beside each temple as the "fair share" anchor.
+- `current_share_pct` is the ruler's decreed apportionment (the editable value).
+- `gp_preview` is `TitheApportionment.preview_gp(pool_gp, share_pct)` (banker's
+  rounding) — recompute per temple as the player moves the steppers.
+
+**Controls.** One integer-point stepper per temple, constrained so the points
+**sum to exactly 100** (the Confirm button is disabled while `Σ ≠ 100`). Show a
+live gp/month preview per temple (`preview_gp`) and the pool total.
+
+**Confirm.** Issues the SAME shared path NPC rulers use — an
+`issue_decree` activity with `decree_kind = "tithe_apportionment"` and
+`params.shares = {faction_id: pct}` (the handler routes to
+`TitheApportionment.apply`, which re-validates sum-100 + temple-present, persists
+`domain_tithe_shares`, writes the ledger, and logs to the event log like any
+other decree). Temple reactions (ledger, lobbying) fire identically regardless
+of who decreed. No new engine path — the panel is a thin client over the FF-2.3
+engine.
+
+**Empty state.** When `has_temples` is false, show "No temples hold congregations
+in this domain — the tithe resolves with no recipient" (RAW-consistent: the
+faction layer only adds recipients, never changes the expense).
+
+---
+
 ## 22. Open questions
 
 - **O-D1.** ~~Manual-override toggle for "active adventuring"~~ **Resolved (v1.5):** No manual flag — heuristic only. The ruler is "active this month" if BOTH (1) they physically left their stronghold during the month AND (2) at least one of: wilderness encounter, entered a dungeon or lair, fought a battle, or fought a siege. Spec implemented in §6.2 Overview Active Adventuring detection.

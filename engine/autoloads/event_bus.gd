@@ -2216,6 +2216,25 @@ signal rebellion_launched(plot_id: String, rebel_realm_id: String, liege_realm_i
 signal realm_petition_resolved(petition_id: String, kind: String, resolution: String)
 
 
+# ---------------------------------------------------------------------------
+# --- Wave 2 FF-2 --- organization layer (gdd-faction-framework.md §6/§8/§10)
+# Emitted by FactionAI (org month) and OrgMembershipService. Consumers: GameLog
+# -> FactionActionNarrator (Seam-A, relevance-gated), the faction journal, and
+# the dialogue/quest surfaces. Deterministic; the LLM only decorates.
+# ---------------------------------------------------------------------------
+
+## An organization executed one of its §6.5 monthly actions (recruit_members /
+## raise_funds / proselytize / court_patron / post_job / aid_faction /
+## go_underground / relocate / hold). outcome is the structured handler result
+## (summary + action-specific fields; may carry decree_kind for tithe shifts).
+## GameLog applies the §10.3 relevance gate before narrating.
+signal faction_action_taken(faction_id: String, action_id: String, outcome: Dictionary)
+
+## A faction membership row changed status (§8.1/§8.2): petitioner/member/
+## suspended/expelled/left/deceased. Emitted by OrgMembershipService.
+signal faction_membership_changed(character_id: String, faction_id: String, status: String)
+
+
 # --- Live LLM L-3 ---
 ## NarrativeUpgrader progress (gdd-live-llm-integration.md §13.2): emitted once
 ## per attempted setting_narrative block during a live upgrade/backfill pass, so
