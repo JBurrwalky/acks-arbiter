@@ -28,6 +28,12 @@
 [ext_resource type="Script" path="res://tests/test_quest_seeder.gd" id="526_quest_seeder_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_completion_lifecycle.gd" id="527_quest_completion_lifecycle_tests"]
 [ext_resource type="Script" path="res://tests/test_rumor_delivery.gd" id="528_rumor_delivery_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_quest_adapters.gd" id="540_dialogue_p3_quest_adapters_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_request_action.gd" id="541_dialogue_p3_request_action_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_ruler_audience.gd" id="542_dialogue_p3_ruler_audience_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_army_parley.gd" id="543_dialogue_p3_army_parley_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_lying.gd" id="544_dialogue_p3_lying_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p3_capabilities_charm.gd" id="545_dialogue_p3_capabilities_charm_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2141,6 +2147,24 @@ script = ExtResource("526_quest_seeder_tests")
 
 [node name="QuestCompletionLifecycleTests" type="Node" parent="."]
 script = ExtResource("527_quest_completion_lifecycle_tests")
+
+[node name="DialogueP3QuestAdaptersTests" type="Node" parent="."]
+script = ExtResource("540_dialogue_p3_quest_adapters_tests")
+
+[node name="DialogueP3RequestActionTests" type="Node" parent="."]
+script = ExtResource("541_dialogue_p3_request_action_tests")
+
+[node name="DialogueP3RulerAudienceTests" type="Node" parent="."]
+script = ExtResource("542_dialogue_p3_ruler_audience_tests")
+
+[node name="DialogueP3ArmyParleyTests" type="Node" parent="."]
+script = ExtResource("543_dialogue_p3_army_parley_tests")
+
+[node name="DialogueP3LyingTests" type="Node" parent="."]
+script = ExtResource("544_dialogue_p3_lying_tests")
+
+[node name="DialogueP3CapabilitiesCharmTests" type="Node" parent="."]
+script = ExtResource("545_dialogue_p3_capabilities_charm_tests")
 
 [node name="RumorDeliveryTests" type="Node" parent="."]
 script = ExtResource("528_rumor_delivery_tests")

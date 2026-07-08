@@ -151,6 +151,70 @@ func move_to_side(combatant_id: String, new_side: int) -> bool:
 	return true
 
 
+# ---------------------------------------------------------------------------
+# Charm defection (gdd-npc-dialogue.md §5.6, §12.1) — the ONE combat-system
+# capability Dialogue Phase 3 needs. A charmed PC "acts to protect its friend"
+# (RAW acore_spell_catalog_a-i_summary.xml:191): it enters combat on the
+# charmer's side, and reverts when the charm ends (repeat save / dispel /
+# session end). This reuses the mutable `side` field (like move_to_side) but
+# RECORDS the original side on the combatant so the flip is reversible, and
+# tags the combatant with the charmer id so callers can distinguish a charm
+# defection from an elemental/stalker flip. Additive + guarded + restore-on-end.
+# ---------------------------------------------------------------------------
+
+## Move the charmed PC identified by [param combatant_id] to the charmer's side
+## (RAW :191). [param charmer_side] is the side the charmer fights on
+## (Combatant.Side.*); [param charmer_id] is recorded for restore + audit.
+## Idempotent: re-applying to an already-defected-to-this-charmer combatant is a
+## no-op that returns true. No-op false when the id is missing. Restore via
+## end_charm_defection. Returns true when the combatant is (now) defected.
+func apply_charm_defection(combatant_id: String, charmer_side: int,
+		charmer_id: String) -> bool:
+	var c: Combatant = _combatants.get(combatant_id, null)
+	if c == null:
+		return false
+	if not c.charmed_by_id.is_empty() and c.charmed_by_id == charmer_id \
+			and c.side == charmer_side:
+		return true   # already defected to this charmer
+	# Record the ORIGINAL side only the first time we flip (so a second
+	# apply — e.g. re-charm before end — never overwrites the true origin).
+	if c.pre_charm_side < 0:
+		c.pre_charm_side = c.side
+	c.charmed_by_id = charmer_id
+	c.side = charmer_side
+	return true
+
+
+## Restore a charm-defected combatant to its pre-charm side (charm ended). No-op
+## false when the id is missing or the combatant is not charm-defected. Returns
+## true on a successful restore.
+func end_charm_defection(combatant_id: String) -> bool:
+	var c: Combatant = _combatants.get(combatant_id, null)
+	if c == null or c.charmed_by_id.is_empty():
+		return false
+	if c.pre_charm_side >= 0:
+		c.side = c.pre_charm_side
+	c.pre_charm_side = -1
+	c.charmed_by_id = ""
+	return true
+
+
+## True when the combatant identified by [param combatant_id] is currently
+## charm-defected (on someone else's side by charm).
+func is_charm_defected(combatant_id: String) -> bool:
+	var c: Combatant = _combatants.get(combatant_id, null)
+	return c != null and not c.charmed_by_id.is_empty()
+
+
+## All currently charm-defected combatants (for UI / audit).
+func charm_defectors() -> Array[Combatant]:
+	var result: Array[Combatant] = []
+	for c: Combatant in _combatants.values():
+		if not c.charmed_by_id.is_empty():
+			result.append(c)
+	return result
+
+
 func get_party_combatants() -> Array[Combatant]:
 	return get_alive_on_side(Combatant.Side.PARTY)
 

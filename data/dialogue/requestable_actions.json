@@ -1,0 +1,115 @@
+{
+  "_comment": "gdd-npc-dialogue.md §10.1 — the request_action eligibility matrix. Data-defined per §5.1/§10.2 (rule 1: every request_action id must exist in this registry; LLM-suggested actions are schema-validated and rejected if unknown). Each row: action_id + a class/role/proficiency PREDICATE (any matching sub-clause qualifies) + the owning-subsystem handoff target + whether payment applies (drives the offer_terms negotiation) + the per-issue framing tone + min_attitude gate (§6.4) + RAW anchor. RequestableActionsMatrix.requestable_actions(npc, profs, flags) evaluates the predicates deterministically. Predicate keys (all optional, OR'd across keys, values are any-of arrays unless noted): progressions (combat_progression in), classes (character_class in), roles (npc_role in), proficiencies (has ANY of), min_level (int, NPC level >=), flag (a context flag that must be true: is_ruler|is_commander|mobile|combat_capable). A row with an empty predicate never matches (defensive).",
+  "actions": [
+    {
+      "action_id": "cast_spell_for_hire",
+      "predicate": {"progressions": ["mage", "cleric"]},
+      "handoff": "spell_system",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "indifferent",
+      "raw": "acore_equipment:967-978",
+      "notes": "Arcane/divine caster casts a spell on a party member for a fee. Clerics never cast for opposite alignment; double fee outside their faith (RAW)."
+    },
+    {
+      "action_id": "research_spell",
+      "predicate": {"progressions": ["mage", "cleric"], "min_level": 5},
+      "handoff": "magic_research",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "indifferent",
+      "raw": "acore-campaign-general-and-magic-research:64-250",
+      "notes": "Commission contract; duration & cost per magic research rules; completion event scheduled."
+    },
+    {
+      "action_id": "craft_magic_item",
+      "predicate": {"progressions": ["mage", "cleric"], "min_level": 5},
+      "handoff": "magic_research",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "indifferent",
+      "raw": "acore-campaign-general-and-magic-research:64-250",
+      "notes": "Same research pipeline as research_spell."
+    },
+    {
+      "action_id": "perform_hijink",
+      "predicate": {"classes": ["assassin", "nightblade", "thief", "ruffian"], "proficiencies": ["skulking"]},
+      "handoff": "hijink_system",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "friendly",
+      "raw": "acore-campaign-hijinks:48-238",
+      "notes": "Employment as ruffian/henchman first, then hijink assignment per rules; capture consequences owned by the hijink system. The (type) param picks the hijink kind."
+    },
+    {
+      "action_id": "sage_research",
+      "predicate": {"classes": ["sage"], "roles": ["specialist"]},
+      "handoff": "specialist_commission",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "indifferent",
+      "raw": "acore_equipment:960-966",
+      "notes": "Existing specialist-commission path. The (topic) param picks the research subject."
+    },
+    {
+      "action_id": "carry_message",
+      "predicate": {"flag": "mobile"},
+      "handoff": "scheduled_travel",
+      "payment": false,
+      "tone": "diplomatic",
+      "min_attitude": "friendly",
+      "raw": "project-designed",
+      "notes": "Any mobile NPC, Friendly. Scheduled travel event."
+    },
+    {
+      "action_id": "broker_introduction",
+      "predicate": {"flag": "mobile"},
+      "handoff": "scheduled_travel",
+      "payment": false,
+      "tone": "diplomatic",
+      "min_attitude": "friendly",
+      "raw": "project-designed",
+      "notes": "Introduction seeds a new npc_relationships row with a +favor."
+    },
+    {
+      "action_id": "join_fight",
+      "predicate": {"flag": "combat_capable"},
+      "handoff": "combat_ally",
+      "payment": false,
+      "tone": "diplomatic",
+      "min_attitude": "friendly",
+      "raw": "acore_adventures:957",
+      "notes": "Temporary ally: joins the party side for the pending encounter only; NOT a hire. Cowed also qualifies (adjudicated by the attitude gate)."
+    },
+    {
+      "action_id": "trade_venture",
+      "predicate": {"classes": ["venturer", "merchant"]},
+      "handoff": "mercantile",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "indifferent",
+      "raw": "ax_venturer_class.xml",
+      "notes": "Mercantile-system hook (Phase 10b trade block)."
+    },
+    {
+      "action_id": "ruler_action",
+      "predicate": {"flag": "is_ruler"},
+      "handoff": "ruler_seam_b",
+      "payment": true,
+      "tone": "diplomatic",
+      "min_attitude": "neutral",
+      "raw": "gdd-ruler-ai.md §5",
+      "notes": "Routes to persuade_ruler (§10.3). The (action_id) param names a RulerActionCatalog action; Seam-B validates it."
+    },
+    {
+      "action_id": "commander_order",
+      "predicate": {"flag": "is_commander"},
+      "handoff": "army_parley",
+      "payment": false,
+      "tone": "diplomatic",
+      "min_attitude": "neutral",
+      "raw": "gdd-army-warfare.md",
+      "notes": "Routes to the army-parley demand set (§10.4)."
+    }
+  ]
+}

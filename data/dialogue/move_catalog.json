@@ -1,5 +1,5 @@
 {
-  "_comment": "Dialogue move catalog (gdd-npc-dialogue.md §5.2). Phase 1 = converse/ask_rumor/influence_*/provoke/farewell. Phase 2 (Transactions) ADDS ask_question, offer_bribe, offer_terms, offer_hire_henchman/specialist/mercenary, gather_information. This JSON is the action-vocabulary registration site for dialogue moves (the formal action_vocabulary.gd does not yet exist per conventions §10.1; moves are data-defined per §5.1). Phase 3 moves (request_action, quest_*, persuade_ruler, use_ability, army-parley) remain intentionally absent.",
+  "_comment": "Dialogue move catalog (gdd-npc-dialogue.md §5.2). Phase 1 = converse/ask_rumor/influence_*/provoke/farewell. Phase 2 (Transactions) ADDED ask_question, offer_bribe, offer_terms, offer_hire_henchman/specialist/mercenary, gather_information. Phase 3 (The World Stage) ADDS: the Q-5 QUEST/RUMOR ADAPTER block (quest_ask/quest_accept/quest_decline/quest_turn_in; ask_rumor's stub body swapped for the real registry) and the ACTION-REQUEST block (request_action; persuade_ruler; the army-parley demand set demand_surrender/demand_tribute/offer_passage/offer_terms_parley; use_ability; negotiate_surrender). These two blocks are kept clearly separated below. This JSON is the action-vocabulary registration site for dialogue moves (no formal action_vocabulary.gd per conventions §10.1; moves are data-defined per §5.1).",
   "moves": [
     {
       "id": "converse",
@@ -51,7 +51,8 @@
       "requires_ladder": true,
       "min_attitude": "hostile",
       "hostile_permitted": true,
-      "notes": "Intimidation tone (ax_reactions:151-241); Fearful/Cowed substitutions. Result 2 -> combat."
+      "hostile_toward_target": true,
+      "notes": "Intimidation tone (ax_reactions:151-241); Fearful/Cowed substitutions. Result 2 -> combat. Blocked when the speaker is charmed by the interlocutor (§5.6)."
     },
     {
       "id": "influence_seduce",
@@ -78,7 +79,8 @@
       "requires_ladder": false,
       "min_attitude": "hostile",
       "hostile_permitted": true,
-      "notes": "No roll to anger: attitude shifts 1 step toward Hostile per use (PROJECT CALL). On reaching Hostile, NPC attacks immediately (acore_adventures:952-954)."
+      "hostile_toward_target": true,
+      "notes": "No roll to anger: attitude shifts 1 step toward Hostile per use (PROJECT CALL). On reaching Hostile, NPC attacks immediately (acore_adventures:952-954). Blocked when the speaker is charmed by the interlocutor (§5.6)."
     },
     {
       "id": "ask_question",
@@ -175,7 +177,175 @@
       "requires_ladder": false,
       "min_attitude": "neutral",
       "hostile_permitted": false,
-      "notes": "Settlement Gather-Information entry (§4.2). Dual path: a short session with a generated Tier-C interlocutor OR menu quick-resolve. The rumor PAYLOAD is Quest-Rumor Q-3 (sibling track) — this shell is stub-tolerant."
+      "notes": "Settlement Gather-Information entry (§4.2). Dual path: a short session with a generated Tier-C interlocutor OR menu quick-resolve. Q-5 wires the real RumorRegistry when injected via context.deps.rumor_registry; else stub-tolerant."
+    },
+
+    {
+      "id": "quest_ask",
+      "category": "quest",
+      "label": "Ask About Work",
+      "resolution": "quest_ask",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "notes": "QuestRegistry.offerable_quests(npc_id, party_id, attitude). Attitude-gated (§9.3): Friendly unlocks personal-posting; Neutral only posted/broadcast. Emits quest_offered per surfaced quest. Hidden when the NPC has no offerable quests (has_offerable_quests gate)."
+    },
+    {
+      "id": "quest_accept",
+      "category": "quest",
+      "label": "Accept the Quest",
+      "resolution": "quest_accept",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "notes": "QuestRegistry.accept(quest_id, pc_id, calendar_day). params: {quest_id, pc_id}. Emits quest_accepted. Surfaces only when a quest was offered this session."
+    },
+    {
+      "id": "quest_decline",
+      "category": "quest",
+      "label": "Decline the Quest",
+      "resolution": "quest_decline",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "notes": "QuestRegistry.decline(quest_id, party_id). params: {quest_id}. No status change; dialogue records the decline memory. Emits quest_declined."
+    },
+    {
+      "id": "quest_turn_in",
+      "category": "quest",
+      "label": "Turn In the Quest",
+      "resolution": "quest_turn_in",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "notes": "QuestRegistry.can_turn_in then disburse_reward(quest_id, recipient_pc_id) with reward-recipient selection (§9.6). params: {quest_id, recipient_pc_id}. Emits quest_turned_in."
+    },
+
+    {
+      "id": "request_action",
+      "category": "request",
+      "label": "Ask a Favor of Consequence",
+      "resolution": "request_action",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "indifferent",
+      "hostile_permitted": false,
+      "requires_requestable": true,
+      "notes": "§10.1 matrix. params: {action_id (must be in requestable_actions), terms?}. Attitude gate -> PerIssueResolver -> deterministic handoff to the owning subsystem -> EventScheduler carries deferred completion. Unknown action_id rejected (rule 10.2). Surfaces only when requestable_actions(npc) is non-empty; per-row min_attitude refines the gate."
+    },
+    {
+      "id": "persuade_ruler",
+      "category": "request",
+      "label": "Petition the Ruler",
+      "resolution": "ruler_audience",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "neutral",
+      "hostile_permitted": false,
+      "requires_ruler_audience": true,
+      "notes": "§10.3 Seam B. params: packet {target_action_id (RulerActionCatalog), direction dissuade|urge, terms, expires_after_months}. Deterministic persuasion_strength; dissuade cancels/postpones scheduled events; urge (v1 defensive/economic only) biases utility. Routes through RulerStrategyReassessor.apply_validated (validation NOT relaxed). Surfaces only in a ruler audience."
+    },
+    {
+      "id": "demand_surrender",
+      "category": "parley",
+      "label": "Demand Surrender",
+      "resolution": "army_parley",
+      "tone": "intimidation",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "hostile_toward_target": true,
+      "requires_army_parley": true,
+      "notes": "§10.4. Intimidation per-issue; ArmyParleyResolver stacks RAW evidence from real BR/morale/loss-of-face/siege. Success cancels battle events + schedules withdrawal; roll of 2 collapses to immediate battle. Dialogue never touches battle math."
+    },
+    {
+      "id": "demand_tribute",
+      "category": "parley",
+      "label": "Demand Tribute",
+      "resolution": "army_parley",
+      "tone": "intimidation",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "hostile_toward_target": true,
+      "requires_army_parley": true,
+      "notes": "§10.4. As demand_surrender; success schedules tribute collection. params: {tribute_gp}."
+    },
+    {
+      "id": "offer_passage",
+      "category": "parley",
+      "label": "Offer Safe Passage",
+      "resolution": "army_parley",
+      "tone": "diplomatic",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "requires_army_parley": true,
+      "notes": "§10.4. Diplomatic per-issue with favors/authority lines. Success schedules withdrawal."
+    },
+    {
+      "id": "offer_terms_parley",
+      "category": "parley",
+      "label": "Offer Terms (Parley)",
+      "resolution": "army_parley",
+      "tone": "diplomatic",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "requires_army_parley": true,
+      "notes": "§10.4. Diplomatic parley terms (distinct id from the transaction offer_terms so gating/dispatch stay unambiguous). Success schedules withdrawal."
+    },
+    {
+      "id": "use_ability",
+      "category": "capability",
+      "label": "Use an Ability",
+      "resolution": "capability",
+      "tone": "",
+      "terminal": false,
+      "extraordinary": false,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "requires_capability": true,
+      "notes": "§5.5. params: {capability_id, target_pc_id?/target_npc?}. Player-side dialogue-usable ability (charm/esp/detect/cure). Non-social casting mid-dialogue = combat (session terminates with outcome combat). Gated by real availability (player_capabilities non-empty)."
+    },
+    {
+      "id": "negotiate_surrender",
+      "category": "parley",
+      "label": "Negotiate Surrender Terms",
+      "resolution": "surrender_terms",
+      "tone": "diplomatic",
+      "terminal": false,
+      "extraordinary": true,
+      "requires_ladder": false,
+      "min_attitude": "hostile",
+      "hostile_permitted": true,
+      "requires_surrender_scene": true,
+      "notes": "§12.2 post-combat surrender re-entry. Diplomatic per-issue resolving ransom/terms with survivors who yielded (attitude seeded Fearful/Cowed). params: {ransom_gp?}."
     },
     {
       "id": "farewell",

@@ -2122,6 +2122,46 @@ signal npc_agreement_reached(npc_id: String, agreement: Dictionary)
 signal npc_memory_written(npc_id: String, memory_id: String, kind: String)
 
 
+# --- Wave 2 Dialogue P3 ---
+# gdd-npc-dialogue.md §10 (request_action / ruler audience / army parley) + §5.6
+# (NPC intent policy + charm defection). All emitted by the Phase-3 dialogue
+# handlers on the mock/template path (P4 wires the live performer). The per-issue
+# GRANT reuses npc_agreement_reached above; these are the additional P3 channels.
+# Complete mechanical transparency in pre-alpha (§5.6): the intent-policy channel
+# is a debug/dice-log surface, always on in pre-alpha.
+
+## A request_action(action_id) per-issue ask resolved (§10.1). [param result_band]
+## is the PerIssueResolver band (refuse_flat|refuse|negotiable|accept|
+## accept_enthusiastic). A grant additionally emits npc_agreement_reached.
+signal request_action_resolved(npc_id: String, action_id: String, result_band: String)
+
+## A ruler audience parley resolved (§10.3). [param direction] is "dissuade" |
+## "urge"; [param strength] is the computed persuasion_strength (0.0-1.0). The
+## Seam-B situational nudge (dissuade) additionally emits ruler_strategy_reassessed.
+signal ruler_parley_resolved(ruler_npc_id: String, direction: String, strength: float)
+
+## An army pre-battle / siege-lull parley resolved (§10.4). [param directive] is
+## the battle directive ("cancel" | "proceed" | "immediate"); [param outcome]
+## carries the demand, success tier, evidence, and scheduled follow-ups. Consumers:
+## the collision handler (acts on the directive), army-warfare log.
+signal army_parley_resolved(session_id: String, directive: String, outcome: Dictionary)
+
+## NpcIntentPolicy attached an NPC-side move to a reply (§5.6). [param npc_move]
+## is the selected move ({move_id, payload, resolution}). Debug/dice-log channel —
+## complete mechanical transparency in pre-alpha (visibility flag ships OFF).
+signal npc_intent_move_selected(npc_id: String, session_id: String, npc_move: Dictionary)
+
+## A PC was charmed by an NPC (charm_person on a PC, §5.6). [param expires_day] is
+## the absolute calendar day the next repeat save is due (-1 = none scheduled).
+## Consumers: combat roster (side-switch on combat entry, §12.1), dialogue menu
+## (blocks hostile-vs-charmer moves), UI charm indicator.
+signal pc_charmed(pc_id: String, charmer_npc_id: String, expires_day: int)
+
+## A PC's charm ended (repeat-save success, dispel, or session end without combat).
+## Consumers: combat roster (restore original side), dialogue menu, UI.
+signal pc_charm_ended(pc_id: String, charmer_npc_id: String)
+
+
 # ---------------------------------------------------------------------------
 # Quest & Rumor (Session Q-1; generation/gdd-quest-rumor-system.md §11.6)
 # ---------------------------------------------------------------------------
