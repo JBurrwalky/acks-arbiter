@@ -38567,3 +38567,16 @@ on-tick dispatch.
 **Tests added/updated:** `test_faction_ff2_org_month::test_wage_table_matches_henchman_tables` (WAGE drift-guard).
 **Known issues:** All 15 scoped-review findings resolved; 5 of 6 below-cap cleanup items done. Cleanup #3 (dialogue quest caching) deliberately deferred (stale-menu risk > benefit). The **Q-6 concrete-party-deed model** remains a design question for Jedidiah (current v1 completes a posted job when the issuing faction visibly advances the goal).
 **Next session should:** Wave 3 (Dialogue P4, Faction FF-4, Dungeon Factions Track D, FF-5, Faction↔Dialogue seam) pending go-ahead; or the Q-6 concrete-deed design pass if Jedidiah wants richer faction jobs.
+
+
+## Session 2026-07-09 -- Design-only: Concrete Faction Jobs (Q-6 follow-up)
+
+**Task:** DESIGN/PLANNING ONLY (no engine code). How faction post_jobs become concrete, party-completable deeds routed through the existing signal-driven quest completion, keeping the v1 faction_goal model as fallback.
+**Model used:** Opus (design).
+**Completed:** Authored docs/handoff-faction-concrete-jobs.md -- goal->deed->target model, deterministic LOD-respecting target-selection algorithm (FactionJobTargeter proposal), completion wiring (reuse the existing 5-signal watcher + _apply_faction_turn_in, which keys off questgiver_faction_id not completion_type), fallback rule, reward composition (RewardValuator deed basis clamped GiverKind.FACTION), a phased increment plan, 8 open questions for Jedidiah, and a v1.5 build recipe.
+**Decisions made (PROPOSED, pending Jedidiah):** A concrete faction job = an ordinary TYPED quest carrying questgiver_faction_id (completion_type != 'faction_goal'), so the existing watcher auto-completes it and turn-in side-effects already fire -- strictly additive, v1 faction_goal stays as fallback, no double-completion. v1.5 concrete slice = suppress_rival / defend_patron / survive via clear_lair + kill_target (already wired, points at existing lairs/PoIs, zero minted content). Errand goals stay on fallback until watcher handlers for retrieve_item/deliver_item/escort exist.
+**Interfaces:** None built. Proposed (unbuilt): FactionJobTargeter.pick(faction, goal, campaign_id, day, active_settlements); optional repo read-query list_active_lairs_near(...).
+**Database changes:** None.
+**Tests added/updated:** None.
+**Known issues / gaps found:** QuestCompletionWatcher wires only lair_cleared/combat_ended/combatant_downed/hex_entered/poi_discovered -- retrieve_item/deliver_item/hold_territory/build_structure have NO handler yet (blocks the errand-goal concrete deeds). v1 reward affordability is checked at mint but debited at turn-in (can push treasury negative) -- flagged O-5.
+**Next session should:** Await Jedidiah's rulings on O-1..O-8 (esp. O-1 target aggressiveness, O-2 outlaw-only kill_target, O-4 not-player guard, O-6 deed-valued reward), then build v1.5 per doc section 10. Do NOT build before O-1..O-6 are ruled. Working tree left clean (design doc only).
