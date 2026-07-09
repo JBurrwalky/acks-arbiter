@@ -647,8 +647,8 @@ Per failed request, exactly one `push_warning`:
 | `setting_narrative:*` (`timeline/brief/realm/culture/dungeon/poi`) | NarrativeUpgrader | prose (cap 1,200 ch) | batch | 3K | 500 | `setting_narrative` | **YES** |
 | `setting_narrative:religion/quest/rumor/region` | (reserved kinds, migration 159) | prose | batch | 3K | 500 | `setting_narrative` | no — blocked on substrate (§18) |
 | `npc_personality_summary` | PersonalitySummaryUpgrader | JSON `{personality_summary, speech_notes}` | batch | 1.5K | 250 | `characters.personality` + provenance | optional (Phase L-4) |
-| `npc_dialogue_reply` | DialogueSession (unbuilt) | tagged prose (≤60 words + `#mood:`/`#social_flag:` lines; deliberately NOT JSON — `gdd-npc-dialogue.md:679`) | interactive | 2–4K | 150 | none | no — dialogue Phase 4 |
-| `npc_dialogue_summary` | DialogueSession (unbuilt) | strict JSON | interactive | 4K | 400 | `npc_memories` (unbuilt) | no |
+| `npc_dialogue_reply` | DialogueSession (P4, built 2026-07-09) | tagged prose (≤60 words + beat + `#mood:`/`#social_flag:` lines; deliberately NOT JSON — `gdd-npc-dialogue.md:679`; cap_chars 700) | interactive | 3K | 150 | none | **YES** (v1_enabled; DialoguePerformer + DialoguePromptContext, Tier-0 fallback) |
+| `npc_dialogue_summary` | DialogueSession (P4, built 2026-07-09) | strict JSON | interactive | 4K | 400 | `npc_memories` (summary prose only, facts untouched) | **YES** (v1_enabled; template fallback) |
 | `interpret_player_input` | J-5 (undesigned) | strict JSON → ActionPayload | interactive | 1–2K | 200 | none | no |
 | `session_summary` | session end (undesigned; no session-log store) | prose | batch | 4–8K | 800 | TBD | no |
 | `faction_action_narration` | FactionActionNarrator (FF-2 clone of Seam A) | prose | decoration | 1.5K | 120 | needs a faction-side cache home (§18) | no |

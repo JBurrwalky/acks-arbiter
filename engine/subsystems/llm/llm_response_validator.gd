@@ -140,3 +140,14 @@ static func _strip_code_fences(text: String) -> String:
 ## (§11.2 exact wording pattern).
 static func build_json_reprompt(parse_error_reason: String) -> String:
 	return "Your previous reply was not valid JSON: %s. Output only the JSON object." % parse_error_reason
+
+
+## Builds the single re-prompt for a prose CONSUMER-validator failure that names
+## the violation (gdd-npc-dialogue.md §13.4: "one re-prompt with the violation
+## named, then Tier-0 fallback"; CLAUDE.md "re-prompt if appropriate"). Kept
+## generic so any prose consumer with a validator (dialogue today) gets the same
+## single-retry behavior the JSON path already has.
+static func build_prose_reprompt(violation_reason: String) -> String:
+	return ("Your previous reply broke a rule (%s). Rewrite it: stay strictly in "
+		+ "character, reveal nothing you were told to withhold, never speak as the "
+		+ "player, and never label your own manner. Reply again now.") % violation_reason

@@ -34,6 +34,8 @@
 [ext_resource type="Script" path="res://tests/test_dialogue_p3_army_parley.gd" id="543_dialogue_p3_army_parley_tests"]
 [ext_resource type="Script" path="res://tests/test_dialogue_p3_lying.gd" id="544_dialogue_p3_lying_tests"]
 [ext_resource type="Script" path="res://tests/test_dialogue_p3_capabilities_charm.gd" id="545_dialogue_p3_capabilities_charm_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p4_prompt_and_validation.gd" id="546_dialogue_p4_prompt_validation_tests"]
+[ext_resource type="Script" path="res://tests/test_dialogue_p4_live.gd" id="547_dialogue_p4_live_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
@@ -2170,6 +2172,12 @@ script = ExtResource("544_dialogue_p3_lying_tests")
 
 [node name="DialogueP3CapabilitiesCharmTests" type="Node" parent="."]
 script = ExtResource("545_dialogue_p3_capabilities_charm_tests")
+
+[node name="DialogueP4PromptValidationTests" type="Node" parent="."]
+script = ExtResource("546_dialogue_p4_prompt_validation_tests")
+
+[node name="DialogueP4LiveTests" type="Node" parent="."]
+script = ExtResource("547_dialogue_p4_live_tests")
 
 [node name="RumorDeliveryTests" type="Node" parent="."]
 script = ExtResource("528_rumor_delivery_tests")

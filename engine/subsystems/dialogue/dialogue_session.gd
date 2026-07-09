@@ -76,6 +76,17 @@ var _charmed_pcs: Dictionary = {}                 # pc_id -> charmer_npc_id (§5
 var _requestable_cache = null                     # cached requestable_actions (Array) or null
 var _player_cap_cache = null                      # cached player capabilities (Array) or null
 
+# --- Wave 3 Dialogue P4 (The Performance Layer) state ---
+var _transcript: Array = []                       # [{role, name, text}] running scene transcript
+var _last_exchange_start: int = 0                 # index in _transcript where THIS exchange began
+var _last_reply_plan: Dictionary = {}             # the just-produced NpcReplyPlan (§13.2)
+var _last_reply_slots: Dictionary = {}            # {npc_name, speaker_name} for the last reply
+var _last_player_move: String = ""                # move id of the last submitted move
+var _last_free_text: String = ""                  # the last untrusted free-text rider
+var _pending_interjection = null                  # this exchange's henchman interjection (§13.6) or null
+var _last_interjection_exchange: int = -999       # cadence cap bookkeeping (§13.6 ~1/4)
+var _social_flags_fired: Dictionary = {}          # kind -> true; dedupe accepted #social_flags (§13.10)
+
 
 ## Static factory (§4.1). Builds the session from a context Dictionary produced by
 ## DialogueContextBuilder, resolves the initial interaction (or loads the persisted
@@ -294,37 +305,41 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 
 	# --- Dialogue Phase 2 ---
 	# Hiring is stateful (wraps the henchman pipeline); route it to its own handler.
+	# --- Wave 3 Dialogue P4 --- every reply-producing path is routed through
+	# _capture_reply(): it records the running transcript (§13.3 tail) and stashes
+	# the plan/slots so perform_reply_live() can UPGRADE the just-shown Tier-0 line
+	# with model prose. The early rejected/ineligible returns above are NOT wrapped.
 	var resolution := String(move.get("resolution", ""))
 	if resolution == "hire":
-		return _submit_hire(move, free_text, params)
+		return _capture_reply(_submit_hire(move, free_text, params), move_id, free_text)
 	# Gather-information routes to its dual-path handler (§4.2). The menu-click path
 	# defaults to the quick-resolve fork; an entry point wanting the session fork
 	# calls gather_information("session") directly.
 	if resolution == "gather":
 		var g := gather_information(String(params.get("mode", "quick")), params)
-		return {
+		return _capture_reply({
 			"rejected": false, "plan": {}, "line": _gather_line(g),
 			"outcome": DialogueAdjudicator.OUTCOME_GATHER, "gather": g,
 			"new_attitude": _attitude, "terminal": false, "becomes_combat": false,
-		}
+		}, move_id, free_text)
 	# --- Dialogue Phase 3 + Q-5 --- the world-stage moves route to their handlers.
 	match resolution:
 		"quest_ask", "quest_accept", "quest_decline", "quest_turn_in":
-			return _submit_quest(move, resolution, free_text, params)
+			return _capture_reply(_submit_quest(move, resolution, free_text, params), move_id, free_text)
 		"request_action":
-			return _submit_request_action(move, free_text, params)
+			return _capture_reply(_submit_request_action(move, free_text, params), move_id, free_text)
 		"ruler_audience":
-			return _submit_ruler_audience(move, free_text, params)
+			return _capture_reply(_submit_ruler_audience(move, free_text, params), move_id, free_text)
 		"army_parley":
-			return _submit_army_parley(move, free_text, params)
+			return _capture_reply(_submit_army_parley(move, free_text, params), move_id, free_text)
 		"surrender_terms":
-			return _submit_surrender(move, free_text, params)
+			return _capture_reply(_submit_surrender(move, free_text, params), move_id, free_text)
 		"capability":
-			return _submit_capability(move, free_text, params)
+			return _capture_reply(_submit_capability(move, free_text, params), move_id, free_text)
 	# ask_rumor: Q-5 swaps the Phase-1 stub pool for the real RumorRegistry
 	# (per-band share) when one is injected via context.deps.rumor_registry.
 	if resolution == "rumor" and _rumor_registry != null:
-		return _submit_ask_rumor_real(move, free_text, params)
+		return _capture_reply(_submit_ask_rumor_real(move, free_text, params), move_id, free_text)
 
 	# ADJUDICATE. The resolver context is enriched per-move (ask_question needs the
 	# pre-read willingness/entry; the rest read session_state + StatusProfile).
@@ -342,7 +357,9 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 		if willingness == NpcKnowledgeReader.WILLINGNESS_IF_PAID:
 			var issue_key := "ask_question:%s" % topic
 			if _has_pending_terms_for(issue_key):
-				return _resolve_paid_knowledge(move, topic, issue_key, resolver_ctx, free_text)
+				return _capture_reply(
+					_resolve_paid_knowledge(move, topic, issue_key, resolver_ctx, free_text),
+					move_id, free_text)
 	var outcome: Dictionary = DialogueAdjudicator.resolve(
 		move, _session_state(params), resolver_ctx, _reputation_target(), _rep_system, _dice)
 	last_outcome = outcome
@@ -369,6 +386,10 @@ func submit_move(move_id: String, free_text: String = "", params: Dictionary = {
 		"becomes_combat": bool(outcome.get("becomes_combat", false)),
 		"npc_move": _pending_npc_move,
 	}
+
+	# --- Wave 3 Dialogue P4 --- record the transcript + stash the plan (BEFORE a
+	# terminal close, so the tail is complete for a live upgrade/summary).
+	_capture_reply(reply, move_id, free_text)
 
 	# CLOSE on terminal move/outcome (§4.4 step 7).
 	if reply["terminal"]:
@@ -488,7 +509,11 @@ func _open_issue(issue_key: String) -> void:
 ## emits dialogue_ended. Idempotent — safe to call once; further calls no-op.
 ## [param terminal_outcome] optionally carries the terminal adjudication (e.g. the
 ## combat outcome) so the emitted signal includes the combat seed.
-func close(terminal_outcome: Dictionary = {}) -> Dictionary:
+## [param summary_override] (Wave 3 Dialogue P4, §8.2 step 2): when non-empty,
+## the LLM-rewritten summary PROSE replaces the deterministic template summary —
+## the engine-derived `facts` are untouched (§104). Omit it (deterministic
+## default) for the always-available mock path. close_live() computes it.
+func close(terminal_outcome: Dictionary = {}, summary_override: String = "") -> Dictionary:
 	if state == STATE_CLOSED:
 		return close_outcome
 	state = STATE_CLOSED
@@ -510,9 +535,10 @@ func close(terminal_outcome: Dictionary = {}) -> Dictionary:
 		_relationship.first_met_day = _relationship.last_interaction_day
 	NpcMemoryStore.save_relationship(_relationship)
 
-	# Deterministic memory write (mock path, always).
+	# Deterministic memory write (mock path, always). A Phase-4 LLM prose rewrite
+	# rides in via summary_override; the facts stay engine-derived (§8.2/§104).
 	NpcMemoryStore.summarize_move_log(
-		campaign_id, npc_id, party_id, session_id, move_log, _attitude)
+		campaign_id, npc_id, party_id, session_id, move_log, _attitude, summary_override)
 
 	# Build the close outcome for dialogue_ended.
 	var kind := "farewell"
@@ -1043,6 +1069,8 @@ func _reply_ctx_for(outcome: Dictionary) -> Dictionary:
 		"seed_hint": abs(String(session_id + str(_exchange_index)).hash()),
 		"active_effects": _active_effects.duplicate(true),
 		"npc_move": _pending_npc_move,
+		# --- Wave 3 Dialogue P4 (§13.6) --- a present henchman may cut in.
+		"interjection": _select_interjection(outcome),
 	}
 	var kind := String(outcome.get("kind", ""))
 	if kind == DialogueAdjudicator.OUTCOME_KNOWLEDGE \
@@ -1721,3 +1749,202 @@ func _roll_d20() -> int:
 ## Null-safe String coercion (conventions §106 — never String(null)).
 func _s(v: Variant, default_value: String = "") -> String:
 	return default_value if v == null else str(v)
+
+
+# ===========================================================================
+# Wave 3 Dialogue P4 — The Performance Layer (gdd-npc-dialogue.md §13)
+# ===========================================================================
+#
+# The deterministic reply produced in submit_move() is the INSTANT answer
+# (Tier-0 template, always available, mock-safe). When a provider is configured
+# the UI calls perform_reply_live() to UPGRADE the displayed line with model
+# prose; the conversation never blocks on the network (§13.1). At session close
+# the UI may call close_live() for the one JSON summarization call. Both live
+# entry points execute ZERO awaits when unconfigured (the §5.1.1 no-variance bar,
+# mirroring RulerActionNarrator.narrate_action_live, §107).
+
+## Records a produced reply into the running transcript and stashes the plan +
+## slots for a later live upgrade. Returns [param reply] unchanged so callers can
+## `return _capture_reply(...)`. Rejected replies are pass-through no-ops.
+func _capture_reply(reply: Dictionary, move_id: String, free_text: String) -> Dictionary:
+	if bool(reply.get("rejected", false)):
+		return reply
+	_last_reply_plan = reply.get("plan", {})
+	_last_reply_slots = _template_slots()
+	_last_player_move = move_id
+	_last_free_text = free_text
+	_last_exchange_start = _transcript.size()
+	var player_text := free_text.strip_edges()
+	if player_text.is_empty():
+		player_text = "(%s)" % move_id.replace("_", " ")
+	_append_transcript("player", _speaker_name(), player_text)
+	_append_transcript("npc", _npc_name(), String(reply.get("line", "")))
+	return reply
+
+
+func _append_transcript(role: String, name: String, text: String) -> void:
+	_transcript.append({"role": role, "name": name, "text": text})
+
+
+## The prior-exchanges transcript tail for the reply prompt (§13.3): everything
+## BEFORE the current exchange (whose player move + free text are passed to the
+## prompt separately, so we don't duplicate them), capped to the last 12 lines.
+func _transcript_for_prompt() -> Array:
+	var prior: Array = _transcript.slice(0, _last_exchange_start)
+	if prior.size() > 12:
+		return prior.slice(prior.size() - 12)
+	return prior
+
+
+## Replace the most recent NPC transcript line's text with the live prose (the
+## in-place upgrade of the Tier-0 placeholder).
+func _replace_last_npc_line(text: String) -> void:
+	for i in range(_transcript.size() - 1, -1, -1):
+		if String((_transcript[i] as Dictionary).get("role", "")) == "npc":
+			(_transcript[i] as Dictionary)["text"] = text
+			return
+
+
+## §13.6: pick at most one present-henchman interjection for this exchange
+## (deterministic, cadence-capped, settings off-switch). Sets _pending_interjection
+## and advances the cadence marker when one fires. Returns the interjection or null.
+func _select_interjection(outcome: Dictionary):
+	var party_side: Dictionary = context.get("party_side", {})
+	var itj = InterjectionSelector.select({
+		"present_member_ids": party_side.get("present_member_ids", []),
+		"speaker_id": _designated_speaker_id(),
+		"npc_id": npc_id,
+		"outcome": outcome,
+		"exchange_index": _exchange_index,
+		"last_interjection_exchange": _last_interjection_exchange,
+		"enabled": _interjections_enabled(),
+		"seed_hint": abs(String(session_id + str(_exchange_index)).hash()),
+	})
+	if itj != null:
+		_pending_interjection = itj
+		_last_interjection_exchange = _exchange_index
+	return itj
+
+
+func _interjections_enabled() -> bool:
+	# The off-switch lives in LlmSettings (a preference, §13.6). Guard defensively
+	# for a bare unit context where the autoload's settings might be absent.
+	if LLMManager == null or LLMManager.settings == null:
+		return true
+	return LLMManager.settings.dialogue_interjections_enabled
+
+
+## Awaitable live upgrade of the just-produced reply (§13.1). Returns
+##   { text, is_fallback, mood, social_flag, provider, performed }.
+## Unconfigured / forced-mock: ZERO awaits, returns the Tier-0 line (already
+## shown). Configured: one interactive generate() call, validated (§13.4); on
+## success the transcript line is upgraded and any accepted #social_flag applied.
+func perform_reply_live() -> Dictionary:
+	if _last_reply_plan.is_empty():
+		return {"text": "", "is_fallback": true, "mood": "neutral",
+			"social_flag": null, "provider": "mock", "performed": false}
+	# Unconfigured / forced-mock: ZERO awaits — use the sync Tier-0 result and
+	# return same-frame (the no-variance bar, §5.1.1; the line already shown by
+	# submit_move stands unchanged). This branch never executes an `await`.
+	if not LLMManager.is_configured():
+		var fb := DialoguePerformer.fallback_result(_last_reply_plan, _templates, _last_reply_slots)
+		EventBus.dialogue_reply_performed.emit(session_id, npc_id, String(fb.get("text", "")), true)
+		fb["performed"] = true
+		return fb
+	EventBus.dialogue_reply_pending.emit(session_id, npc_id)
+	var result: Dictionary = await DialoguePerformer.perform_reply_live(
+		_last_reply_plan, context, _templates, _last_reply_slots,
+		_transcript_for_prompt(), _last_player_move, _last_free_text)
+	var text := String(result.get("text", ""))
+	var is_fallback := bool(result.get("is_fallback", true))
+	if not is_fallback:
+		_apply_social_flag(result.get("social_flag", null))
+		_replace_last_npc_line(text)
+	EventBus.dialogue_reply_performed.emit(session_id, npc_id, text, is_fallback)
+	result["performed"] = true
+	return result
+
+
+## §13.10 offense/enticement seam. Validates a model-emitted #social_flag BEFORE
+## applying (SocialFlagValidator — the Seam-B validate-before-apply contract) and,
+## if accepted, the ENGINE applies the ≤1-step tone shift. The LLM never writes a
+## relationship score. No-op on the mock path (no flag is ever emitted).
+func _apply_social_flag(flag) -> void:
+	if not (flag is Dictionary):
+		return
+	var kind := _s((flag as Dictionary).get("kind"))   # model-authored — null-safe (§106)
+	var res: Dictionary = SocialFlagValidator.validate(flag, {
+		"personality": _personality(),
+		"attitude": _attitude,
+		"move_id": _last_player_move,
+		"deterministic_trigger_fired": _deterministic_offense_fired(),
+		"already_fired": _social_flags_fired.has(kind),
+	})
+	if not bool(res.get("accepted", false)):
+		return
+	var steps := int(res.get("tone_steps", 0))
+	if steps == 0:
+		return
+	_social_flags_fired[kind] = true
+	_attitude = Attitude.shift_tier(_attitude, steps)
+	if _relationship != null:
+		_relationship.attitude = _attitude
+	EventBus.npc_social_flag_applied.emit(npc_id, String(res.get("kind", kind)), steps)
+
+
+## True if a deterministic §6.6 offense trigger fired this exchange — the gate
+## that lets a #social_flag reach severity 2 (§13.10).
+func _deterministic_offense_fired() -> bool:
+	if last_outcome.is_empty():
+		return false
+	if bool(last_outcome.get("becomes_combat", false)):
+		return true
+	return String(last_outcome.get("template_outcome", "")) == "refused_offended"
+
+
+## Awaitable close (§13.1, §8.2). Runs the deterministic close ALWAYS (facts +
+## template summary written); when configured, one JSON summarization call
+## rewrites only the summary PROSE (facts untouched, §104). Zero awaits when
+## unconfigured. Falls back to the template summary on any failure.
+func close_live(terminal_outcome: Dictionary = {}) -> Dictionary:
+	if state == STATE_CLOSED:
+		return close_outcome
+	var override := ""
+	if LLMManager.is_configured() and not move_log.is_empty():
+		override = await _generate_summary_override()
+	return close(terminal_outcome, override)
+
+
+func _generate_summary_override() -> String:
+	var fact_lines := NpcMemoryStore.fact_lines_from_log(move_log)
+	var full_tail: Array = _transcript
+	if full_tail.size() > 12:
+		full_tail = full_tail.slice(full_tail.size() - 12)
+	var sctx := DialoguePromptContext.build_summary_context(
+		_npc_name(), _attitude, fact_lines, full_tail)
+	var env: ResponseEnvelope = await LLMManager.generate(sctx, {
+		"qos": "interactive", "response_mode": "json"})
+	if env == null or not env.success or env.is_fallback:
+		return ""
+	var parsed: Variant = JSON.parse_string(env.text)
+	if parsed is Dictionary:
+		# Model-authored field — null-safe (§106; a null 'summary' must not crash).
+		return _s((parsed as Dictionary).get("summary"))
+	return ""
+
+
+# --- Test / UI accessors (read-only) ---
+
+## The running scene transcript ([{role, name, text}]).
+func transcript() -> Array:
+	return _transcript
+
+
+## The last produced NpcReplyPlan (§13.2), or {} before any move.
+func last_reply_plan() -> Dictionary:
+	return _last_reply_plan
+
+
+## The public faction_context block for the responding NPC (§10.2), or {}.
+func faction_context() -> Dictionary:
+	return context.get("faction_context", {})

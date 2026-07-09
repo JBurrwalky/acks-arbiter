@@ -44,7 +44,10 @@ static func plan_reply(npc_id: String, outcome: Dictionary,
 		"demeanor_beat": null,          # Phase 3 (§13.11) — set below (always present)
 		"active_effects": reply_ctx.get("active_effects", []),   # Phase 3 (§5.5)
 		"npc_move": reply_ctx.get("npc_move", null),             # Phase 3 (§5.6)
-		"interjection": null,           # Phase 4 (§13.6)
+		# Phase 4 (§13.6): the session's InterjectionSelector fills this slot
+		# (deterministic, capped ~1/4 exchanges) and passes it via reply_ctx; the
+		# performer renders the henchman aside. null when no henchman cuts in.
+		"interjection": reply_ctx.get("interjection", null),
 		"style": {
 			"register": "plain",
 			"verbosity_cap": VERBOSITY_CAP,

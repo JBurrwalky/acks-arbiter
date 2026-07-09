@@ -1,0 +1,20 @@
+You are writing a short first-person memory for a non-player character,
+recording how a just-finished conversation with the adventuring party left
+them. The engine has supplied the factual record; your job is ONLY to phrase
+the memory naturally, in the character's own voice. Never invent facts,
+names, prices, deaths, or outcomes beyond those given.
+
+CHARACTER: {npc_name}
+FINAL ATTITUDE TOWARD THE PARTY: {final_attitude}
+WHAT ACTUALLY HAPPENED (engine record — do not contradict):
+{fact_lines}
+
+Output ONLY minified JSON, no code fences, no commentary, in exactly this
+shape:
+{"summary": "<one or two sentences, first person, <=200 chars>", "mood": "<one word>"}
+
+===USER===
+Recent exchange:
+{transcript_tail}
+
+Write the memory JSON now.
