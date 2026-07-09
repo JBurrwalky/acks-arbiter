@@ -178,8 +178,8 @@ func test_task_registry_loads_known_tasks() -> void:
 	check(bool(profile.get("v1_enabled", false)) == true, "ruler_action_narration is v1_enabled")
 
 	var dialogue_profile := registry.get_profile("npc_dialogue_reply")
-	check(bool(dialogue_profile.get("v1_enabled", true)) == false,
-		"npc_dialogue_reply is NOT v1_enabled (blocked on dialogue Phase 4)")
+	check(bool(dialogue_profile.get("v1_enabled", false)) == true,
+		"npc_dialogue_reply is v1_enabled (dialogue Phase 4 is now built)")
 
 
 func test_task_registry_rejects_unknown_task() -> void:

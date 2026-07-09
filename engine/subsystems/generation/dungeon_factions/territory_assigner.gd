@@ -138,10 +138,12 @@ static func assign(input: DungeonFactionInput, factions: Array,
 
 static func _classify_frontiers(input: DungeonFactionInput, factions: Array,
 		faction_by_id: Dictionary, tmap: DungeonTerritoryMap, contested: Dictionary) -> void:
-	# Reset the derived lists (assign() may be called once; be idempotent anyway).
+	# Reset the derived lists in place (they are typed Array[int]; assigning a plain
+	# untyped [] is an "Invalid assignment" runtime error that aborts this pass, so
+	# the frontier/patrol classification never runs — clear() keeps the element type).
 	for f in factions:
-		f.patrol_room_ids = []
-		f.frontier_room_ids = []
+		f.patrol_room_ids.clear()
+		f.frontier_room_ids.clear()
 
 	# Every controlled room (core + patrol) evaluated for boundary adjacency.
 	for rid in tmap.room_assignments.keys():
