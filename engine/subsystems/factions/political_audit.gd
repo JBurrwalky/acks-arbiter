@@ -20,11 +20,51 @@ extends RefCounted
 const SETTING_FLAG: String = "acks/factions/debug_political_audit"
 const AUDIT_PATH: String = "user://political_audit.jsonl"
 
+## §11.7 tuning counters — rolling per-run stats (feigns chosen, betrayals fired,
+## plots opened/exposed, covert ops run/discovered, allegiance evaluations, divided-
+## loyalty conflicts). In-memory only (no file weight, no savegame weight); dumped by
+## the `faction_stats` console command via counters_summary(). Gated by the same flag
+## so the counters cost nothing when audit is off, and NOT written into the trace
+## stream — so the determinism harness (which compares the JSONL) is unaffected by
+## them (a byte-identical replay only requires the evaluation-trace lines to match).
+static var _counters: Dictionary = {}
+
 
 ## Is the audit flag on? Cheap; every write path calls this first so a disabled
 ## flag means genuinely zero I/O.
 static func is_enabled() -> bool:
 	return bool(ProjectSettings.get_setting(SETTING_FLAG, false))
+
+
+## Increment a §11.7 tuning counter (feigns_chosen, betrayals_fired, plots_opened,
+## plots_exposed, covert_ops_run, covert_ops_discovered, allegiance_evaluations,
+## party_loyalty_conflicts, …). No-op when the audit flag is off (zero cost).
+static func bump_counter(counter_name: String, delta: int = 1) -> void:
+	if not is_enabled():
+		return
+	_counters[counter_name] = int(_counters.get(counter_name, 0)) + delta
+
+
+## The current tuning-counter tally (a copy). The rebalance dashboard: e.g.
+## "feigns chosen in 40% of allegiance decisions" is immediately visible.
+static func counters_summary() -> Dictionary:
+	return _counters.duplicate()
+
+
+## `faction_stats` console command backing: counters plus derived rates (§11.7).
+static func faction_stats() -> Dictionary:
+	var c: Dictionary = _counters.duplicate()
+	var evals: int = int(c.get("allegiance_evaluations", 0))
+	var feigns: int = int(c.get("feigns_chosen", 0))
+	var stats: Dictionary = {"counters": c}
+	if evals > 0:
+		stats["feign_rate"] = float(feigns) / float(evals)
+	return stats
+
+
+## Reset the in-memory counters (a fresh determinism/tuning window).
+static func reset_counters() -> void:
+	_counters = {}
 
 
 ## Append one trace record. [param kind] is the record type ("stance_evaluate",
@@ -79,6 +119,7 @@ static func _append_line(line: String) -> void:
 
 ## Test/dev helper: wipe the audit file so a determinism run starts clean.
 static func clear() -> void:
+	reset_counters()
 	if FileAccess.file_exists(AUDIT_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(AUDIT_PATH))
 	# globalize_path can fail for user:// on some setups; also try the direct API.

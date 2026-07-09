@@ -15,8 +15,10 @@ extends RefCounted
 ## execution, emit faction_action_taken(faction_id, action_id, outcome), and
 ## retroactive Seam-A narration (via GameLog's relevance-gated hook).
 ##
-## FF-2/FF-4 line: undermine_rival and declare_stance are REGISTERED but inert
-## (goal_relevance 0 -> never selected; handler logs "deferred to FF-4").
+## FF-4 line (LIT UP): undermine_rival is a §6.7 covert op; declare_stance runs the
+## §7 allegiance evaluator. Both now carry real goal-relevance + handlers and are
+## availability-gated (a rival must exist / an active conflict must expose the org),
+## so they stay inert until the world actually calls for them.
 
 ## The buildable action vocabulary (§6.5). base_value + which goal each advances.
 const ACTION_DEFS: Dictionary = {
@@ -29,8 +31,13 @@ const ACTION_DEFS: Dictionary = {
 	"go_underground": {"base": 0.6, "advances": ["survive"], "cost": 0},
 	"relocate": {"base": 0.5, "advances": ["survive"], "cost": 0},
 	"hold": {"base": 0.4, "advances": [], "cost": 0},
-	"undermine_rival": {"base": 0.0, "advances": [], "cost": 0, "ff4_stub": true},
-	"declare_stance": {"base": 0.0, "advances": [], "cost": 0, "ff4_stub": true},
+	# FF-4: a covert op against a rival (§6.7). Availability-gated on a rival existing.
+	"undermine_rival": {"base": 1.1, "advances": ["suppress_rival"], "cost": 0},
+	# FF-4: run the allegiance evaluator during an active conflict (§7). High base so a
+	# live conflict pulls the org's attention; availability-gated on a conflict that
+	# actually exposes this org (§7.1). Off-goal relevance is fine — the conflict gate
+	# is what makes it the top pick when it matters.
+	"declare_stance": {"base": 1.4, "advances": [], "cost": 0},
 }
 ## Temples/orders only for proselytize (§6.5).
 const PROSELYTIZE_TYPES: Array = ["temple", "holy_order"]
@@ -173,6 +180,7 @@ static func _action_succeeded(action_id: String, outcome: Dictionary) -> bool:
 		"aid_faction": return bool(outcome.get("aided", false))
 		"recruit_members": return int(outcome.get("members_added", 0)) > 0
 		"raise_funds": return int(outcome.get("raised_gp", 0)) > 0
+		"undermine_rival": return bool(outcome.get("undermined", false))
 		_: return false
 
 
@@ -230,13 +238,17 @@ static func _action_available(action_id: String, faction: Dictionary, type: Stri
 			return type in PROSELYTIZE_TYPES
 		"go_underground":
 			return String(faction.get("status", "active")) != "underground"
+		"undermine_rival":
+			# FF-4: only when a rival (an instantiated stance <= unfriendly) exists.
+			return not _find_rival(faction).is_empty()
+		"declare_stance":
+			# FF-4: only when an active conflict actually exposes this org (§7.1).
+			return not _active_conflict_for(faction).is_empty()
 		_:
 			return true
 
 
 static func _goal_relevance(def: Dictionary, goal_primary: String, goal_secondary: String) -> float:
-	if bool(def.get("ff4_stub", false)):
-		return 0.0   # FF-4 line held
 	var advances: Array = def.get("advances", [])
 	if advances.has(goal_primary):
 		return 1.5
@@ -249,9 +261,13 @@ static func _situational(action_id: String, faction: Dictionary, forced_survive:
 	var product: float = 1.0
 	if forced_survive and action_id in ["hold", "go_underground", "relocate", "raise_funds"]:
 		product *= 1.5
-	# Volatility (§11.4) nudges the assertive actions.
-	if action_id in ["post_job", "court_patron", "proselytize"]:
+	# Volatility (§11.4) nudges the assertive actions (including the FF-4 covert op).
+	if action_id in ["post_job", "court_patron", "proselytize", "undermine_rival"]:
 		product *= maxf(0.5, float(faction.get("volatility", 1.0)))
+	# FF-4: a live conflict is urgent — declaring allegiance dominates the turn (it is
+	# only available at all when a conflict exposes the org, so this boost is scoped).
+	if action_id == "declare_stance":
+		product *= 2.0
 	return product
 
 
@@ -277,10 +293,8 @@ static func _execute(campaign_id: String, faction: Dictionary, action_id: String
 		"go_underground": return _do_status_flip(faction, "underground")
 		"relocate": return {"summary": "%s shifts its seat." % faction.get("name", "The faction")}
 		"hold": return {"summary": "%s banks its treasury." % faction.get("name", "The faction")}
-		"undermine_rival", "declare_stance":
-			# FF-4 line: inert stub — logged, no effect, never actually reached
-			# (goal_relevance 0), but defended here in case a caller forces it.
-			return {"summary": "%s (deferred to FF-4)" % action_id, "deferred_to": "FF-4"}
+		"undermine_rival": return _do_undermine_rival(campaign_id, faction, calendar_day)
+		"declare_stance": return _do_declare_stance(campaign_id, faction, calendar_day)
 		_:
 			return {"summary": "unknown action %s" % action_id}
 
@@ -422,6 +436,124 @@ static func _do_status_flip(faction: Dictionary, status: String) -> Dictionary:
 		"UPDATE factions SET status = ? WHERE id = ?", [status, faction.get("id", "")])
 	faction["status"] = status
 	return {"summary": "%s goes %s." % [faction.get("name", "The faction"), status]}
+
+
+## FF-4 §6.7: run a covert op against the org's worst rival. In-house by default —
+## which means a non-thief org acts AS A 1st-LEVEL THIEF (brutal caught-rate); a
+## competent org would outsource via CovertOps.quote_for_hire, but the org turn's
+## v1 move is the in-house sabotage. Deterministic (CovertOps builds a per-op
+## SeededDice when dice is null).
+static func _do_undermine_rival(campaign_id: String, faction: Dictionary, calendar_day: int) -> Dictionary:
+	var rival: Dictionary = _find_rival(faction)
+	if rival.is_empty():
+		return {"summary": "%s finds no rival to undermine." % faction.get("name", "The faction"),
+			"undermined": false}
+	var rival_id: String = String(rival.get("id", ""))
+	var report: Dictionary = CovertOps.run_op(
+		campaign_id, "sabotage", faction, rival_id, calendar_day, null,
+		{"hirer_faction_id": String(faction.get("id", ""))})
+	var ok: bool = bool(report.get("success", false))
+	return {
+		"summary": "%s moves against a rival in the shadows." % faction.get("name", "The faction"),
+		"undermined": ok, "caught": bool(report.get("caught", false)),
+		"target_faction_id": rival_id, "op": report,
+	}
+
+
+## FF-4 §7: declare allegiance in the active conflict exposing this org. Runs the
+## AllegianceEvaluator (support stack -> open / lean / neutral / FEIGN) and persists
+## the decision (public + hidden true_stance + betrayal_condition on a feign).
+static func _do_declare_stance(campaign_id: String, faction: Dictionary, calendar_day: int) -> Dictionary:
+	var conflict: Dictionary = _active_conflict_for(faction)
+	if conflict.is_empty():
+		return {"summary": "%s stays out of it." % faction.get("name", "The faction"), "declared": false}
+	var side_a: String = String(conflict.get("side_a_mirror", ""))
+	var side_b: String = String(conflict.get("side_b_mirror", ""))
+	var result: Dictionary = AllegianceEvaluator.evaluate(
+		faction, side_a, side_b, conflict, calendar_day)
+	AllegianceEvaluator.apply_decision(campaign_id, result, calendar_day)
+	return {
+		"summary": "%s declares its allegiance." % faction.get("name", "The faction"),
+		"declared": true, "decision": result.get("decision", ""),
+		"professed_side_mirror": result.get("professed_side_mirror", ""),
+		"conflict_id": conflict.get("conflict_id", ""),
+	}
+
+
+## The org's worst instantiated rival: the faction it holds at <= unfriendly with the
+## most-hostile public band (deterministic: lowest band index, then id). {} if none.
+static func _find_rival(faction: Dictionary) -> Dictionary:
+	var faction_id: String = String(faction.get("id", ""))
+	if faction_id == "":
+		return {}
+	var worst: Dictionary = {}
+	var worst_idx: int = 99
+	for row in CampaignRepository.ff_list_stances_from(faction_id):
+		var band: String = String((row as Dictionary).get("public_stance", "neutral"))
+		var idx: int = FactionStanceData.BANDS.find(band)
+		if idx < 0 or idx > 1:   # keep only hostile(0) / unfriendly(1)
+			continue
+		var target_id: String = String((row as Dictionary).get("faction_b_id", ""))
+		var target: Dictionary = CampaignRepository.get_faction(target_id)
+		if target.is_empty() or String(target.get("status", "")) in ["disbanded", "destroyed", "absorbed"]:
+			continue
+		if idx < worst_idx:
+			worst_idx = idx
+			worst = target
+	return worst
+
+
+## The active conflict this org is exposed to (§7.1): a launched rebellion whose rebel
+## or liege realm is the org's seat realm. Returns {conflict_id, side_a_mirror,
+## side_b_mirror, kind, legitimate_side, instigator_side, side_a_realm_id,
+## side_b_realm_id}, or {} when the org sits outside any live conflict.
+static func _active_conflict_for(faction: Dictionary) -> Dictionary:
+	var seat_realm: String = _seat_realm(faction)
+	if seat_realm == "":
+		return {}
+	var campaign_id: String = String(faction.get("campaign_id", ""))
+	for plot in CampaignRepository.ff_list_plots_for_campaign(campaign_id, ["launched"]):
+		var p: Dictionary = plot
+		var liege_mirror: String = String(p.get("target_faction_id", ""))
+		# The rebel realm-mirror is the one the launch minted; resolve both realms.
+		var liege_realm: String = _mirror_realm(liege_mirror)
+		var rebel_realm: String = _rebel_realm_for_plot(p)
+		if seat_realm == liege_realm or seat_realm == rebel_realm:
+			var rebel_mirror: String = FactionRegistry.get_realm_mirror_id(campaign_id, rebel_realm)
+			return {
+				"conflict_id": "rebellion:%s" % String(p.get("id", "")),
+				"kind": "rebellion",
+				"side_a_mirror": rebel_mirror, "side_b_mirror": liege_mirror,
+				"side_a_realm_id": rebel_realm, "side_b_realm_id": liege_realm,
+				"legitimate_side": liege_mirror, "instigator_side": rebel_mirror,
+			}
+	return {}
+
+
+static func _seat_realm(faction: Dictionary) -> String:
+	var dom_id: String = _s(faction.get("home_domain_id"))
+	if dom_id == "":
+		return ""
+	var dom: Dictionary = CampaignRepository.get_domain(dom_id)
+	return _s(dom.get("realm_id")) if not dom.is_empty() else ""
+
+
+static func _mirror_realm(mirror_id: String) -> String:
+	if mirror_id == "":
+		return ""
+	var f: Dictionary = CampaignRepository.get_faction(mirror_id)
+	return _s(f.get("realm_id"))
+
+
+## The rebel realm a launched plot minted: the committed instigator faction's leader
+## now heads a rebel realm; resolve it from any committed member's re-pointed domain.
+static func _rebel_realm_for_plot(plot: Dictionary) -> String:
+	var instigator_mirror: String = String(plot.get("instigator_faction_id", ""))
+	var head: String = _s(CampaignRepository.get_faction(instigator_mirror).get("leader_npc_id"))
+	if head == "":
+		return ""
+	var realm: Dictionary = RealmRepository.get_realm_for_character(head)
+	return _s(realm.get("id"))
 
 
 # ---------------------------------------------------------------------------

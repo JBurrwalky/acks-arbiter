@@ -474,6 +474,8 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM treaties WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM realm_petitions WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM domain_tithe_shares WHERE campaign_id = ?", [campaign_id])
+	# --- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198) ---
+	db.query_with_bindings("DELETE FROM party_loyalty_conflicts WHERE campaign_id = ?", [campaign_id])
 
 	# Tier 1 ── direct campaign_id tables (63 tables) ─────────────────────────
 	db.query_with_bindings("DELETE FROM characters WHERE campaign_id = ?", [campaign_id])
@@ -5381,6 +5383,8 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	# faction_plot_members scopes via faction_plots (a _via entry above), not here. ---
 	"faction_stances", "treaties", "faction_events", "faction_plots",
 	"realm_petitions", "domain_tithe_shares",
+	# --- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198) ---
+	"party_loyalty_conflicts",
 	# --- Dialogue subsystem (Phase 1): npc memory tables (migration 191) ---
 	# All three are campaign-scoped LEAF tables (nothing FKs into them yet), so
 	# they purge as direct-campaign entries. Kept as their own labeled block for
@@ -6247,6 +6251,14 @@ func ff_list_members(faction_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+## Every faction membership a character (PC or NPC) holds — the divided-loyalty
+## detector reads this to find a party member's competing affiliations (§8.4).
+func ff_list_memberships_for_character(npc_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_memberships WHERE npc_id = ? ORDER BY faction_id ASC", [npc_id])
+	return db.query_result.duplicate()
+
+
 # --- faction_stances (§4.2) ------------------------------------------------
 
 ## Fetch the raw instantiated stance row for a directed pair (A→B), or {} if
@@ -6305,6 +6317,26 @@ func ff_upsert_stance(stance: FactionStanceData) -> String:
 func ff_list_stances(campaign_id: String) -> Array:
 	db.query_with_bindings(
 		"SELECT * FROM faction_stances WHERE campaign_id = ?", [campaign_id])
+	return db.query_result.duplicate()
+
+
+## Every instantiated stance A holds (A's outgoing views). Used by the covert-op spy
+## product to enumerate a target's hidden two-faced stances (§6.7 / FF-4).
+func ff_list_stances_from(faction_a_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM faction_stances WHERE faction_a_id = ? ORDER BY faction_b_id ASC",
+		[faction_a_id])
+	return db.query_result.duplicate()
+
+
+## Every stance in the campaign carrying an armed betrayal_condition (a live feign).
+## The BetrayalResolver scans these on each world event to fire the flip (§7.3).
+func ff_list_stances_with_betrayal(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT * FROM faction_stances
+		   WHERE campaign_id = ? AND betrayal_condition IS NOT NULL AND betrayal_condition != ''
+		   ORDER BY id ASC""",
+		[campaign_id])
 	return db.query_result.duplicate()
 
 
@@ -6600,6 +6632,62 @@ func ff_list_petitions_for_campaign(campaign_id: String) -> Array:
 		"SELECT * FROM realm_petitions WHERE campaign_id = ? ORDER BY filed_day ASC, id ASC",
 		[campaign_id])
 	return db.query_result.duplicate()
+
+
+# --- party_loyalty_conflicts (§8.4 — FF-4, migration 198) -------------------
+
+## Upsert a divided-loyalty conflict (deduped on UNIQUE(campaign_id, signature)).
+## `id` minted when absent. member_b_id / conflict_ref may be empty (→ NULL).
+## Returns the row id, or "".
+func ff_upsert_party_conflict(data: Dictionary) -> String:
+	var id_v: String = String(data.get("id", ""))
+	if id_v == "":
+		id_v = generate_id()
+	var member_b_v: Variant = data.get("member_b_id", null)
+	if member_b_v != null and String(member_b_v) == "":
+		member_b_v = null
+	var conflict_ref_v: Variant = data.get("conflict_ref", null)
+	if conflict_ref_v != null and String(conflict_ref_v) == "":
+		conflict_ref_v = null
+	var resolved_v: Variant = data.get("resolved_day", null)
+	var ok := db.query_with_bindings(
+		"""INSERT OR REPLACE INTO party_loyalty_conflicts
+			(id, campaign_id, cause, signature, member_a_id, member_b_id,
+			 faction_a_id, faction_b_id, conflict_ref, status, detected_day, resolved_day)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[id_v, String(data.get("campaign_id", "")), String(data.get("cause", "")),
+		 String(data.get("signature", "")), String(data.get("member_a_id", "")), member_b_v,
+		 String(data.get("faction_a_id", "")), String(data.get("faction_b_id", "")),
+		 conflict_ref_v, String(data.get("status", "detected")),
+		 int(data.get("detected_day", 0)), resolved_v])
+	if not ok:
+		push_error("CampaignRepository.ff_upsert_party_conflict: failed cause=%s" % data.get("cause", ""))
+		return ""
+	return id_v
+
+
+func ff_get_party_conflict_by_signature(campaign_id: String, signature: String) -> Dictionary:
+	if db.query_with_bindings(
+			"SELECT * FROM party_loyalty_conflicts WHERE campaign_id = ? AND signature = ?",
+			[campaign_id, signature]) and not db.query_result.is_empty():
+		return db.query_result[0]
+	return {}
+
+
+## Divided-loyalty conflicts for a campaign, optionally filtered to [param statuses]
+## (empty = all), oldest-first.
+func ff_list_party_conflicts(campaign_id: String, statuses: Array = []) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM party_loyalty_conflicts WHERE campaign_id = ? ORDER BY detected_day ASC, id ASC",
+		[campaign_id])
+	var rows: Array = db.query_result.duplicate()
+	if statuses.is_empty():
+		return rows
+	var out: Array = []
+	for r in rows:
+		if statuses.has(String((r as Dictionary).get("status", ""))):
+			out.append(r)
+	return out
 
 
 func fetch_reputation_entry(party_id: String, scope_type: String, scope_id: String) -> Dictionary:
