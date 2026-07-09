@@ -283,7 +283,7 @@ func test_capability_3_instructed_falsehood() -> void:
 		"a naturally-delivered instructed falsehood passes validation")
 	check(not String(result.get("text", "")).to_lower().contains(", lying"),
 		"the performed lie is not editorialized")
-	_ = reply
+	check(reply is Dictionary, "submit_move returned a reply dict")
 	_restore_neutral_state(saved)
 
 
@@ -306,7 +306,7 @@ func test_capability_4_injection_resistance() -> void:
 		"an injected leak is caught by the validator and falls back")
 	check(s._attitude == attitude_before,
 		"the injection changed no game state (adjudication already happened)")
-	_ = reply
+	check(reply is Dictionary, "submit_move returned a reply dict")
 	_restore_neutral_state(saved)
 
 
