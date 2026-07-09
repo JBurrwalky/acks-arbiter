@@ -38567,3 +38567,36 @@ on-tick dispatch.
 **Tests added/updated:** `test_faction_ff2_org_month::test_wage_table_matches_henchman_tables` (WAGE drift-guard).
 **Known issues:** All 15 scoped-review findings resolved; 5 of 6 below-cap cleanup items done. Cleanup #3 (dialogue quest caching) deliberately deferred (stale-menu risk > benefit). The **Q-6 concrete-party-deed model** remains a design question for Jedidiah (current v1 completes a posted job when the issuing faction visibly advances the goal).
 **Next session should:** Wave 3 (Dialogue P4, Faction FF-4, Dungeon Factions Track D, FF-5, Faction↔Dialogue seam) pending go-ahead; or the Q-6 concrete-deed design pass if Jedidiah wants richer faction jobs.
+
+## Session 2026-07-09 — Wave 3 Track D: Dungeon Faction Generation
+
+**Task:** Build the Dungeon Faction Generation subsystem (gdd-dungeon-factions.md, whole doc) — the prerequisite for Faction FF-5. Parallel-wave worktree build; no Godot/test runs permitted.
+**Model used:** Opus 4.8 (planning + implementation + review).
+**Completed:**
+- New subsystem `engine/subsystems/generation/dungeon_factions/`: `faction_identifier.gd` (§3 candidate grouping, intelligence filter, controller attach, beastman/eclectic merges via union-find, rival-clan component split, solitary-threat reclassification), `territory_assigner.gd` (§4 multi-source flood-fill through wide-open passages, chokepoint stop, core/patrol/frontier/contested/unclaimed/threat classification), `relationship_generator.gd` (§5 awareness gate + alignment/species/power biases + seeded weighted roll), `faction_wandering.gd` (§6 source selection + depletion/replenishment + morale thresholds), `alert_propagation.gd` (§8 escalate/propagate/cross-faction/decay), `faction_names.gd` (§9 templates), `faction_personality_bias.gd` (§2.2 twelve-axis), `faction_graph.gd` (BFS/components/bridges/awareness toolkit), `dungeon_faction_generator.gd` (orchestrator entry point), `monster_faction_traits.gd` (catalog trait loader), `dungeon_faction_input_builder.gd` (DG-V1 `DungeonLayout` → input adapter), `dungeon_faction_repository.gd` (save/load).
+- New shared types in `engine/shared_types/`: `dungeon_faction.gd` (§7.1 record), `dungeon_faction_relationship.gd` (§7.3), `dungeon_solitary_threat.gd` (§7.2), `dungeon_territory_map.gd` + `dungeon_territory_entry.gd` (§7.4), `dungeon_faction_input.gd` + `dungeon_faction_room_input.gd` + `dungeon_faction_monster_placement.gd` + `dungeon_faction_edge.gd` (input contract), `dungeon_faction_result.gd` (output bundle).
+- Migration `201_dungeon_factions.sql` (3 dungeon-scoped tables) + `db/schema.sql` doc-sync + registered in `CampaignRepository`'s `dungeon_scoped` purge block.
+- `event_bus.gd`: one `# --- Wave 3 Dungeon Factions ---` block (3 signals).
+- Tests (registered, NOT run): `test_dungeon_faction_golden.gd` (§12 worked example + determinism), `test_dungeon_faction_units.gd`, `test_dungeon_faction_persistence.gd` — ext_resource ids 560/561/562, wired into `test_runner.tscn` + `test_runner.gd`.
+**Decisions made:**
+- Generator is PURE and works off an abstract room graph (`DungeonFactionInput`), decoupled from DG-V1's grid; the grid adapter is a separate seam. Deterministic with isolated name/relationship RNG sub-streams.
+- Persistence is dungeon-CONTENT (keyed on dungeon_id, purged dungeon-scoped like `monster_groups`), NOT campaign-direct — factions belong to a dungeon and carry runtime-mutable state that round-trips through savegame.
+- Awareness gate synthesizes §4.3 + §5.2 (strong-boundary doors → unaware), reproducing the §12 example (the literal §5.2 secret-door-only rule would not).
+- Solitary threats: reclassify lone-creature candidates (1 creature/room/species/placement) with 4+ HD or special abilities; groups and controllers stay factions.
+**Interfaces defined or changed:**
+- `DungeonFactionGenerator.generate(input: DungeonFactionInput, seed: int) -> DungeonFactionGenerationResult` (the FF-5 entry point).
+- `DungeonFaction` record shape (see coding_conventions §112) — additively extensible for FF-5's `parent_faction_id` + `allegiance_kind`.
+- `DungeonFactionRepository.save(result) -> bool` / `.load(dungeon_id) -> DungeonFactionGenerationResult`.
+- `DungeonFactionInputBuilder.from_layout(layout: DungeonLayout, dungeon_id: String) -> DungeonFactionInput`.
+- Signals: `dungeon_factions_generated(dungeon_id, faction_count)`, `dungeon_faction_alert_changed(dungeon_id, faction_id, old_state, new_state)`, `dungeon_faction_wiped_out(dungeon_id, faction_id)`.
+**Database changes:**
+- Migration 201: `dungeon_factions`, `dungeon_faction_relationships`, `dungeon_solitary_threats` (dungeon-scoped, JSON int-array room refs). No `dungeons` FK (dungeon id lives in `dungeon_entrances.dungeon_data` JSON, per the DG-V1 pattern).
+**Tests added/updated:**
+- Golden §12 mine (3 factions, territory map, relationships, byte-identical determinism); units (rival-clan split, coalition merge, uncontrolled-undead exclusion, solitary threat, alert ladder/decay/propagation, wandering/depletion/replenishment, biases, names, dice); persistence round-trip incl. runtime-state.
+**Known issues:**
+- NOT compiled/run (hard constraint). Needs a headless suite pass. [NEEDS-OPUS-REVIEW] the DG-V1 adapter (`dungeon_faction_input_builder.gd`) — corridor-component adjacency — is the untested integration seam; verify in-engine against real DG-V1 output.
+- Deviation from GDD §12 printed territory map on rooms 6 & 12 (the map self-contradicts its faction summaries); flood-fill matches the summaries (14/15 rooms match the printed map). Documented in the golden test + conventions §112.
+- Truly-contested (unowned) rooms only persist when captured on a rival/hostile relationship's `contested_room_ids`; a non-adversarial contested room reloads as unclaimed (minor fidelity gap).
+- DG-V1 stocking emits no controller relation, so the adapter cannot infer necromancer←skeleton control; uncontrolled undead therefore form no faction until stocking notes carry `controlled_by`.
+**Next session should:**
+- Run the headless suite; fix any parse/logic errors surfaced by the 3 new suites (esp. the adapter). Then build FF-5 (add `parent_faction_id` + `allegiance_kind` to `DungeonFaction` + migration) on top of this.

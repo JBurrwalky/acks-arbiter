@@ -94,6 +94,10 @@ extends Node
 @onready var _faction_ff2_tithe_tests = $FactionFF2TitheTests
 @onready var _faction_ff2_membership_tests = $FactionFF2MembershipTests
 @onready var _quest_faction_bridge_tests = $QuestFactionBridgeTests
+# Wave 3 Track D — Dungeon Faction Generation (gdd-dungeon-factions.md)
+@onready var _dungeon_faction_golden_tests = $DungeonFactionGoldenTests
+@onready var _dungeon_faction_units_tests = $DungeonFactionUnitsTests
+@onready var _dungeon_faction_persistence_tests = $DungeonFactionPersistenceTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -1337,7 +1341,11 @@ func run() -> void:
 			_faction_ff2_org_month_tests,
 			_faction_ff2_tithe_tests,
 			_faction_ff2_membership_tests,
-			_quest_faction_bridge_tests]:
+			_quest_faction_bridge_tests,
+			# Wave 3 Track D — Dungeon Faction Generation
+			_dungeon_faction_golden_tests,
+			_dungeon_faction_units_tests,
+			_dungeon_faction_persistence_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

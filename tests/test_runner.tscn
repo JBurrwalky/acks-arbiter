@@ -547,6 +547,9 @@
 [ext_resource type="Script" path="res://tests/test_faction_ff2_tithe.gd" id="531_faction_ff2_tithe_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff2_membership.gd" id="532_faction_ff2_membership_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_faction_bridge.gd" id="533_quest_faction_bridge_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_golden.gd" id="560_dungeon_faction_golden_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_units.gd" id="561_dungeon_faction_units_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_persistence.gd" id="562_dungeon_faction_persistence_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2188,3 +2191,12 @@ script = ExtResource("532_faction_ff2_membership_tests")
 
 [node name="QuestFactionBridgeTests" type="Node" parent="."]
 script = ExtResource("533_quest_faction_bridge_tests")
+
+[node name="DungeonFactionGoldenTests" type="Node" parent="."]
+script = ExtResource("560_dungeon_faction_golden_tests")
+
+[node name="DungeonFactionUnitsTests" type="Node" parent="."]
+script = ExtResource("561_dungeon_faction_units_tests")
+
+[node name="DungeonFactionPersistenceTests" type="Node" parent="."]
+script = ExtResource("562_dungeon_faction_persistence_tests")

@@ -3676,6 +3676,76 @@ CREATE INDEX IF NOT EXISTS idx_key_items_dungeon ON key_items(dungeon_id);
 
 
 -- ===========================================================================
+-- Dungeon Faction Generation (Wave 3 Track D; migration 201).
+-- gdd-dungeon-factions.md §7 output records. Dungeon-CONTENT tables keyed on
+-- dungeon_id (no FK / no campaign_id — the dungeon id lives in
+-- dungeon_entrances.dungeon_data JSON); purged dungeon-scoped in
+-- CampaignRepository._campaign_scope_entries(). Room references ride as JSON int
+-- arrays. FF-5 will ADD parent_faction_id + allegiance_kind to dungeon_factions.
+-- ===========================================================================
+CREATE TABLE IF NOT EXISTS dungeon_factions (
+    id                        TEXT    PRIMARY KEY,
+    dungeon_id                TEXT    NOT NULL,
+    dungeon_level             INTEGER NOT NULL DEFAULT 1,
+    name                      TEXT    NOT NULL DEFAULT '',
+    species                   TEXT    NOT NULL DEFAULT '',
+    secondary_species         TEXT    NOT NULL DEFAULT '[]',
+    alignment                 TEXT    NOT NULL DEFAULT 'neutral'
+        CHECK(alignment IN ('lawful', 'neutral', 'chaotic')),
+    faction_type              TEXT    NOT NULL DEFAULT 'tribal',
+    leader_npc_id             TEXT    NOT NULL DEFAULT '',
+    leader_room_id            INTEGER NOT NULL DEFAULT -1,
+    leader_hd                 REAL    NOT NULL DEFAULT 0,
+    starting_population       INTEGER NOT NULL DEFAULT 0,
+    current_population        INTEGER NOT NULL DEFAULT 0,
+    patrol_size               TEXT    NOT NULL DEFAULT '1d4',
+    members_on_patrol         INTEGER NOT NULL DEFAULT 0,
+    lair_room_ids             TEXT    NOT NULL DEFAULT '[]',
+    core_room_ids             TEXT    NOT NULL DEFAULT '[]',
+    patrol_room_ids           TEXT    NOT NULL DEFAULT '[]',
+    frontier_room_ids         TEXT    NOT NULL DEFAULT '[]',
+    alert_state               TEXT    NOT NULL DEFAULT 'unaware'
+        CHECK(alert_state IN ('unaware', 'cautious', 'alerted', 'mobilized')),
+    default_reaction_modifier INTEGER NOT NULL DEFAULT 0,
+    personality_weight_biases TEXT    NOT NULL DEFAULT '{}',
+    morale_modifier           INTEGER NOT NULL DEFAULT 0,
+    population_loss_percent    REAL    NOT NULL DEFAULT 0,
+    created_at                TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_factions_dungeon ON dungeon_factions(dungeon_id);
+
+CREATE TABLE IF NOT EXISTS dungeon_faction_relationships (
+    id                 TEXT PRIMARY KEY,
+    dungeon_id         TEXT NOT NULL,
+    faction_a_id       TEXT NOT NULL,
+    faction_b_id       TEXT NOT NULL,
+    relationship       TEXT NOT NULL DEFAULT 'neutral'
+        CHECK(relationship IN ('allied', 'neutral', 'rival', 'hostile', 'vassal', 'unaware')),
+    contested_room_ids TEXT NOT NULL DEFAULT '[]',
+    notes              TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_faction_rel_dungeon
+    ON dungeon_faction_relationships(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_dungeon_faction_rel_pair
+    ON dungeon_faction_relationships(faction_a_id, faction_b_id);
+
+CREATE TABLE IF NOT EXISTS dungeon_solitary_threats (
+    id               TEXT    PRIMARY KEY,
+    dungeon_id       TEXT    NOT NULL,
+    dungeon_level    INTEGER NOT NULL DEFAULT 1,
+    room_id          INTEGER NOT NULL DEFAULT -1,
+    monster_type     TEXT    NOT NULL DEFAULT '',
+    hd               REAL    NOT NULL DEFAULT 0,
+    alignment        TEXT    NOT NULL DEFAULT 'neutral',
+    territory_radius INTEGER NOT NULL DEFAULT 1,
+    tribute_from     TEXT    NOT NULL DEFAULT '[]',
+    notes            TEXT    NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_solitary_threats_dungeon
+    ON dungeon_solitary_threats(dungeon_id);
+
+
+-- ===========================================================================
 -- Setting-generation canonical data (migration 156)
 -- ===========================================================================
 

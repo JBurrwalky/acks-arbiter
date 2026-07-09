@@ -5474,7 +5474,10 @@ func _campaign_scope_entries() -> Array:
 	# Dungeon-content tables: dungeon_id is buried in dungeon_entrances.dungeon_data
 	# JSON, so scope by the campaign's computed dungeon-id list. Processed before
 	# dungeon_entrances (a depth-1 parent) so the id list is still resolvable.
-	for t in ["dungeon_floors", "dungeon_rooms", "dungeon_doors", "monster_groups", "treasure_hoards", "key_items"]:
+	# Dungeon factions (Wave 3 Track D; migration 201) are dungeon-content too:
+	# relationships/threats before factions (no FK, but keep the clean order).
+	for t in ["dungeon_floors", "dungeon_rooms", "dungeon_doors", "monster_groups", "treasure_hoards", "key_items",
+			"dungeon_faction_relationships", "dungeon_solitary_threats", "dungeon_factions"]:
 		e.append({"table": t, "dungeon_scoped": true, "id_col": "dungeon_id"})
 	e.append({"table": "voxel_map_cells", "dungeon_scoped": true, "id_col": "map_id"})
 	# Depth 1 — direct campaign_id parents (deleted last); campaigns very last.
