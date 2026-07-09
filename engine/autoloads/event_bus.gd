@@ -2370,3 +2370,27 @@ signal dungeon_faction_alert_changed(dungeon_id: String, faction_id: String, old
 ## wandering/ecology layer removes it from the wandering table and vacates its
 ## territory.
 signal dungeon_faction_wiped_out(dungeon_id: String, faction_id: String)
+
+
+# ---------------------------------------------------------------------------
+# --- Wave 3 FF-5 --- the Dungeon Faction Tie-In (gdd-faction-framework.md §9)
+# The additive link between a dungeon-internal DungeonFaction and the strategic
+# factions registry. Emitted by DungeonFactionLinker (generation-time link) and
+# DungeonTieIn (runtime consequences). An UNLINKED dungeon (allegiance_kind
+# 'none') emits NONE of these — strictly additive (§9.4).
+# ---------------------------------------------------------------------------
+
+## A dungeon band was linked to a parent faction at generation time (§9.2).
+## kind is one of DungeonFaction.ALLEGIANCE_KINDS (never 'none' — 'none' is unlinked).
+signal dungeon_faction_linked(dungeon_id: String, band_faction_id: String, parent_faction_id: String, kind: String)
+
+## News of a linked band's wipeout reached (or will reach, after delay_days) the
+## parent's seat (§9.3 "news travels"). response is the parent's disposition-driven
+## reaction: 'retaliate' | 'write_off' | 'celebrate'. Consumers: the parent's turn
+## (retaliation war-party seeding), the rumor pipeline, the faction journal.
+signal dungeon_band_news_reached_parent(dungeon_id: String, band_faction_id: String, parent_faction_id: String, response: String, delay_days: int)
+
+## A linked detachment took its ONE per-conflict allegiance-engine pass (§9.3
+## "politics reaches the dungeon", capped §11.3). decision is the AllegianceEvaluator
+## decision (open/lean/neutral/feign/open_defiant). PUBLIC posture only.
+signal dungeon_detachment_conflict_pass(dungeon_id: String, band_faction_id: String, conflict_id: String, decision: String)

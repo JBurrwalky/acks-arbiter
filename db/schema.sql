@@ -3710,7 +3710,11 @@ CREATE TABLE IF NOT EXISTS dungeon_factions (
     personality_weight_biases TEXT    NOT NULL DEFAULT '{}',
     morale_modifier           INTEGER NOT NULL DEFAULT 0,
     population_loss_percent    REAL    NOT NULL DEFAULT 0,
-    created_at                TEXT    NOT NULL DEFAULT (datetime('now'))
+    created_at                TEXT    NOT NULL DEFAULT (datetime('now')),
+    -- FF-5 (§9.1, migration 206): the additive link to the strategic factions
+    -- registry. NULL parent + 'none' kind = unlinked = pre-FF-5 behaviour (§9.4).
+    parent_faction_id         TEXT,
+    allegiance_kind           TEXT    NOT NULL DEFAULT 'none'
 );
 CREATE INDEX IF NOT EXISTS idx_dungeon_factions_dungeon ON dungeon_factions(dungeon_id);
 
@@ -3743,6 +3747,19 @@ CREATE TABLE IF NOT EXISTS dungeon_solitary_threats (
 );
 CREATE INDEX IF NOT EXISTS idx_dungeon_solitary_threats_dungeon
     ON dungeon_solitary_threats(dungeon_id);
+
+-- FF-5 (§9.3, migration 207): once-per-conflict-per-dungeon allegiance-pass cap
+-- (§11.3). One row per (dungeon, conflict) already passed. Dungeon-CONTENT.
+CREATE TABLE IF NOT EXISTS dungeon_link_conflict_passes (
+    dungeon_id   TEXT    NOT NULL,
+    conflict_id  TEXT    NOT NULL,
+    faction_id   TEXT    NOT NULL DEFAULT '',
+    decision     TEXT    NOT NULL DEFAULT '',
+    passed_day   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (dungeon_id, conflict_id)
+);
+CREATE INDEX IF NOT EXISTS idx_dungeon_link_conflict_passes_dungeon
+    ON dungeon_link_conflict_passes(dungeon_id);
 
 
 -- ===========================================================================

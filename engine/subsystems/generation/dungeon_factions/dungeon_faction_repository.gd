@@ -138,21 +138,26 @@ static func _delete_for_dungeon(db, dungeon_id: String) -> void:
 
 static func _insert_faction(db, f: DungeonFaction) -> bool:
 	var row: Dictionary = f.to_row()
+	# FF-5 (§9.1): parent_faction_id "" persists as SQL NULL (unlinked). allegiance_kind
+	# defaults 'none' from the record — an unlinked band writes exactly its pre-FF-5 row
+	# plus the two additive columns.
+	var parent_v: Variant = null if String(row["parent_faction_id"]) == "" else row["parent_faction_id"]
 	return db.query_with_bindings(
 		"""INSERT INTO dungeon_factions
 			(id, dungeon_id, dungeon_level, name, species, secondary_species, alignment,
 			 faction_type, leader_npc_id, leader_room_id, leader_hd, starting_population,
 			 current_population, patrol_size, members_on_patrol, lair_room_ids, core_room_ids,
 			 patrol_room_ids, frontier_room_ids, alert_state, default_reaction_modifier,
-			 personality_weight_biases, morale_modifier, population_loss_percent)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+			 personality_weight_biases, morale_modifier, population_loss_percent,
+			 parent_faction_id, allegiance_kind)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
 		[row["id"], row["dungeon_id"], row["dungeon_level"], row["name"], row["species"],
 		row["secondary_species"], row["alignment"], row["faction_type"], row["leader_npc_id"],
 		row["leader_room_id"], row["leader_hd"], row["starting_population"], row["current_population"],
 		row["patrol_size"], row["members_on_patrol"], row["lair_room_ids"], row["core_room_ids"],
 		row["patrol_room_ids"], row["frontier_room_ids"], row["alert_state"],
 		row["default_reaction_modifier"], row["personality_weight_biases"], row["morale_modifier"],
-		row["population_loss_percent"]])
+		row["population_loss_percent"], parent_v, row["allegiance_kind"]])
 
 
 static func _insert_relationship(db, r: DungeonFactionRelationship) -> bool:

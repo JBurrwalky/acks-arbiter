@@ -5481,7 +5481,8 @@ func _campaign_scope_entries() -> Array:
 	# Dungeon factions (Wave 3 Track D; migration 201) are dungeon-content too:
 	# relationships/threats before factions (no FK, but keep the clean order).
 	for t in ["dungeon_floors", "dungeon_rooms", "dungeon_doors", "monster_groups", "treasure_hoards", "key_items",
-			"dungeon_faction_relationships", "dungeon_solitary_threats", "dungeon_factions"]:
+			"dungeon_faction_relationships", "dungeon_solitary_threats", "dungeon_link_conflict_passes",
+			"dungeon_factions"]:
 		e.append({"table": t, "dungeon_scoped": true, "id_col": "dungeon_id"})
 	e.append({"table": "voxel_map_cells", "dungeon_scoped": true, "id_col": "map_id"})
 	# Depth 1 — direct campaign_id parents (deleted last); campaigns very last.
@@ -6405,6 +6406,27 @@ func ff_list_tithe_shares(domain_id: String) -> Array:
 		"SELECT * FROM domain_tithe_shares WHERE domain_id = ? ORDER BY faction_id ASC",
 		[domain_id])
 	return db.query_result.duplicate()
+
+
+# --- FF-5 dungeon tie-in: once-per-conflict-per-dungeon allegiance-pass cap ---
+# (gdd-faction-framework.md §9.3 / §11.3, migration 207). Dungeon-content table.
+
+## True iff the (dungeon, conflict) pair has already had its one allegiance pass.
+func ff_has_dungeon_conflict_pass(dungeon_id: String, conflict_id: String) -> bool:
+	return db.query_with_bindings(
+		"SELECT 1 FROM dungeon_link_conflict_passes WHERE dungeon_id = ? AND conflict_id = ?",
+		[dungeon_id, conflict_id]) and not db.query_result.is_empty()
+
+
+## Record that (dungeon, conflict) has passed (idempotent — INSERT OR REPLACE on
+## the (dungeon_id, conflict_id) PK). Returns true on success.
+func ff_record_dungeon_conflict_pass(dungeon_id: String, conflict_id: String,
+		faction_id: String, decision: String, passed_day: int) -> bool:
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO dungeon_link_conflict_passes
+			(dungeon_id, conflict_id, faction_id, decision, passed_day)
+		   VALUES (?, ?, ?, ?, ?)""",
+		[dungeon_id, conflict_id, faction_id, decision, passed_day])
 
 
 # ===========================================================================
