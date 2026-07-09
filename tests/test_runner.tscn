@@ -558,6 +558,9 @@
 [ext_resource type="Script" path="res://tests/test_dungeon_faction_golden.gd" id="560_dungeon_faction_golden_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_faction_units.gd" id="561_dungeon_faction_units_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_faction_persistence.gd" id="562_dungeon_faction_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_tie_in_additive.gd" id="569_dungeon_tie_in_additive_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_tie_in_linker.gd" id="570_dungeon_tie_in_linker_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_tie_in_consequences.gd" id="571_dungeon_tie_in_consequences_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2231,3 +2234,12 @@ script = ExtResource("561_dungeon_faction_units_tests")
 
 [node name="DungeonFactionPersistenceTests" type="Node" parent="."]
 script = ExtResource("562_dungeon_faction_persistence_tests")
+
+[node name="DungeonTieInAdditiveTests" type="Node" parent="."]
+script = ExtResource("569_dungeon_tie_in_additive_tests")
+
+[node name="DungeonTieInLinkerTests" type="Node" parent="."]
+script = ExtResource("570_dungeon_tie_in_linker_tests")
+
+[node name="DungeonTieInConsequencesTests" type="Node" parent="."]
+script = ExtResource("571_dungeon_tie_in_consequences_tests")

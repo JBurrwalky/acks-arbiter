@@ -52,6 +52,18 @@ const ALERT_LADDER: Array[String] = [
 	ALERT_UNAWARE, ALERT_CAUTIOUS, ALERT_ALERTED, ALERT_MOBILIZED,
 ]
 
+## FF-5 allegiance_kind values (gdd-faction-framework.md §9.1). 'none' = unlinked
+## (the pre-FF-5 default — an unlinked dungeon plays exactly as before, §9.4).
+## Only 'detachment' bands draw ACCOUNTABLE replenishment from the parent (§9.3).
+const ALLEGIANCE_NONE := "none"
+const ALLEGIANCE_DETACHMENT := "detachment"
+const ALLEGIANCE_TRIBUTARY := "tributary"
+const ALLEGIANCE_EXILE := "exile"
+
+const ALLEGIANCE_KINDS: Array[String] = [
+	ALLEGIANCE_NONE, ALLEGIANCE_DETACHMENT, ALLEGIANCE_TRIBUTARY, ALLEGIANCE_EXILE,
+]
+
 
 # ---------------------------------------------------------------------------
 # Identity
@@ -117,6 +129,19 @@ var personality_weight_biases: Dictionary = {}
 
 var morale_modifier: int = 0
 var population_loss_percent: float = 0.0
+
+# ---------------------------------------------------------------------------
+# FF-5 strategic tie-in (gdd-faction-framework.md §9.1). ADDITIVE: an unlinked
+# band leaves parent_faction_id "" and allegiance_kind "none" and behaves exactly
+# as pre-FF-5 (§9.4). Set by DungeonFactionLinker.link() AFTER generation.
+# ---------------------------------------------------------------------------
+
+## A `factions`-registry id (realm mirror / org / gang) this band answers to,
+## pays, or was exiled from. "" = unlinked.
+var parent_faction_id: String = ""
+
+## One of DungeonFaction.ALLEGIANCE_KINDS. "none" = unlinked.
+var allegiance_kind: String = ALLEGIANCE_NONE
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +219,9 @@ func to_row() -> Dictionary:
 		"personality_weight_biases": JSON.stringify(personality_weight_biases),
 		"morale_modifier": morale_modifier,
 		"population_loss_percent": population_loss_percent,
+		# FF-5 (§9.1). parent_faction_id "" round-trips as SQL NULL.
+		"parent_faction_id": parent_faction_id,
+		"allegiance_kind": allegiance_kind,
 	}
 
 
@@ -223,6 +251,9 @@ static func from_row(data: Dictionary) -> DungeonFaction:
 	f.personality_weight_biases = _decode_biases(_s(data, "personality_weight_biases"))
 	f.morale_modifier = int(data.get("morale_modifier", 0)) if data.get("morale_modifier") != null else 0
 	f.population_loss_percent = float(data.get("population_loss_percent", 0.0)) if data.get("population_loss_percent") != null else 0.0
+	# FF-5 (§9.1) — additive columns; default when absent (pre-206 rows / pre-FF-5).
+	f.parent_faction_id = _s(data, "parent_faction_id")
+	f.allegiance_kind = _s(data, "allegiance_kind", ALLEGIANCE_NONE)
 	return f
 
 
