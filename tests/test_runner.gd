@@ -1360,7 +1360,7 @@ func run() -> void:
 			_faction_ff4_covert_ops_tests,
 			_faction_ff4_divided_loyalty_tests,
 			_faction_ff4_orso_capstone_tests,
-			_faction_ff4_faction_ai_tests]:
+			_faction_ff4_faction_ai_tests,
 			# Wave 3 Track D — Dungeon Faction Generation
 			_dungeon_faction_golden_tests,
 			_dungeon_faction_units_tests,
