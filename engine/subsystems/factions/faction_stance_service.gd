@@ -151,6 +151,55 @@ static func shift_stance(campaign_id: String, faction_a_id: String, faction_b_id
 	return new_band
 
 
+## Write A's FULL conflict stance toward B — public band + hidden true_stance +
+## betrayal_condition — in one shot (the AllegianceEvaluator / BetrayalResolver write
+## point, §7.3). Pass true_band="" to store NULL (public == true, the common case) and
+## betrayal_condition_json="" to clear the armed condition. Authority-split guarded
+## (realm-mirror↔realm-mirror rejected). Emits faction_stance_changed on a PUBLIC band
+## change (the true layer is discovery-only, §7.4, and never surfaces a signal).
+## Returns the new public band, or "" on guard rejection.
+static func set_conflict_stance(campaign_id: String, faction_a_id: String, faction_b_id: String,
+		public_band: String, true_band: String, betrayal_condition_json: String,
+		reason: String = "", day: int = 0) -> String:
+	if not _authority_split_ok(faction_a_id, faction_b_id, "set_conflict_stance"):
+		return ""
+	if not BANDS.has(public_band):
+		push_error("FactionStanceService.set_conflict_stance: invalid public band '%s'" % public_band)
+		return ""
+	if true_band != "" and not BANDS.has(true_band):
+		push_error("FactionStanceService.set_conflict_stance: invalid true band '%s'" % true_band)
+		return ""
+	var row: Dictionary = CampaignRepository.ff_get_stance_row(faction_a_id, faction_b_id)
+	var stance: FactionStanceData
+	var old_public: String
+	if row.is_empty():
+		stance = FactionStanceData.new()
+		stance.campaign_id = campaign_id
+		stance.faction_a_id = faction_a_id
+		stance.faction_b_id = faction_b_id
+		old_public = String(_structural(faction_a_id, faction_b_id, day, {}).get("band", "neutral"))
+	else:
+		stance = FactionStanceData.from_dict(row)
+		old_public = stance.public_stance
+	stance.public_stance = public_band
+	# A true_stance equal to the public value is stored as "" (NULL) — no hidden layer.
+	stance.true_stance = "" if true_band == public_band else true_band
+	stance.betrayal_condition = betrayal_condition_json
+	if reason != "":
+		stance.stance_reason = reason
+	stance.last_evaluated_day = day
+	CampaignRepository.ff_upsert_stance(stance)
+	PoliticalAudit.record("stance_set_conflict", {
+		"caller": "set_conflict_stance",
+		"faction_a": faction_a_id, "faction_b": faction_b_id,
+		"day": day, "public": public_band, "has_true": stance.true_stance != "",
+		"has_betrayal": betrayal_condition_json != "", "reason": reason,
+	})
+	if public_band != old_public:
+		_emit_stance_changed(faction_a_id, faction_b_id, old_public, public_band)
+	return public_band
+
+
 # ---------------------------------------------------------------------------
 # Decay
 # ---------------------------------------------------------------------------

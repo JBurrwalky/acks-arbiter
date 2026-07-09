@@ -2275,6 +2275,46 @@ signal faction_action_taken(faction_id: String, action_id: String, outcome: Dict
 signal faction_membership_changed(character_id: String, faction_id: String, status: String)
 
 
+# ---------------------------------------------------------------------------
+# --- Wave 3 FF-4 --- the Allegiance Engine (gdd-faction-framework.md §7/§8.4)
+# Emitted by AllegianceEvaluator, BetrayalResolver, CovertOps, and
+# DividedLoyaltyDetector. Consumers: GameLog -> FactionActionNarrator (Seam A,
+# relevance-gated), the faction journal, and the quest/dialogue surfaces. NONE of
+# these signals ever carries true_stance, plot rows, or a betrayal_condition —
+# those are discovery-only (§7.4); only PUBLIC postures cross the wire.
+# ---------------------------------------------------------------------------
+
+## A faction publicly declared its allegiance in a conflict (§7.1/§7.3). public_stance
+## is the PUBLIC posture only (a feign shows the professed side, never the true one).
+signal allegiance_declared(faction_id: String, conflict_id: String, public_stance: String)
+
+## A feigned loyalty's betrayal condition fired and the faction executed the flip
+## (§7.3) — it turned on victim_faction_id. Never fires with the hidden layer.
+signal betrayal_executed(faction_id: String, victim_faction_id: String)
+
+## A plot advanced a step (§7.4) — a covert op / rumor / spy-find eroded its secrecy
+## or moved its status. Reuse for FF-4 covert-op-driven plot pressure; the rebellion
+## state machine also emits the FF-3 rebellion_plot_updated for its own transitions.
+signal plot_advanced(plot_id: String, status: String)
+
+## A plot was exposed (§7.4) — secrecy hit 0 or an informant/spy revealed it.
+signal plot_exposed(plot_id: String)
+
+## A divided-loyalty conflict was detected among party members (§8.4): members and
+## factions are id arrays, cause is one of mutual_hostile_memberships /
+## opposite_conflict_sides / obligation_targets_faction. Surfaces as CONTENT
+## (conflicting job offers, loyalty demands), never a UI modal.
+signal party_loyalty_conflict_detected(members: Array, factions: Array, cause: String)
+
+## A covert op resolved (§6.7). Dev/telemetry-facing; success is the throw result.
+signal faction_covert_op_run(perpetrator_faction_id: String, target_faction_id: String, op: String, success: bool)
+
+## A covert op was DISCOVERED (caught, §6.7) — the target now holds an op_discovered
+## grievance. Attribution is to the acting faction first (a hirer only if the trail
+## is pulled by a second spy op).
+signal faction_covert_op_discovered(perpetrator_faction_id: String, target_faction_id: String, op: String)
+
+
 # --- Live LLM L-3 ---
 ## NarrativeUpgrader progress (gdd-live-llm-integration.md §13.2): emitted once
 ## per attempted setting_narrative block during a live upgrade/backfill pass, so

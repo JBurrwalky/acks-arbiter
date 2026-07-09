@@ -94,6 +94,13 @@ extends Node
 @onready var _faction_ff2_tithe_tests = $FactionFF2TitheTests
 @onready var _faction_ff2_membership_tests = $FactionFF2MembershipTests
 @onready var _quest_faction_bridge_tests = $QuestFactionBridgeTests
+# Wave 3 Track B — Faction FF-4 (Allegiance Engine, feign/betrayal, covert ops)
+@onready var _faction_ff4_allegiance_tests = $FactionFF4AllegianceTests
+@onready var _faction_ff4_betrayal_tests = $FactionFF4BetrayalTests
+@onready var _faction_ff4_covert_ops_tests = $FactionFF4CovertOpsTests
+@onready var _faction_ff4_divided_loyalty_tests = $FactionFF4DividedLoyaltyTests
+@onready var _faction_ff4_orso_capstone_tests = $FactionFF4OrsoCapstoneTests
+@onready var _faction_ff4_faction_ai_tests = $FactionFF4FactionAiTests
 @onready var _override_tests = $OverrideManagerTests
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
@@ -1337,7 +1344,14 @@ func run() -> void:
 			_faction_ff2_org_month_tests,
 			_faction_ff2_tithe_tests,
 			_faction_ff2_membership_tests,
-			_quest_faction_bridge_tests]:
+			_quest_faction_bridge_tests,
+			# 2026-07-09 — Wave 3 Track B: Faction FF-4 (Allegiance Engine)
+			_faction_ff4_allegiance_tests,
+			_faction_ff4_betrayal_tests,
+			_faction_ff4_covert_ops_tests,
+			_faction_ff4_divided_loyalty_tests,
+			_faction_ff4_orso_capstone_tests,
+			_faction_ff4_faction_ai_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

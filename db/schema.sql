@@ -4171,6 +4171,36 @@ CREATE INDEX IF NOT EXISTS idx_domain_tithe_shares_campaign
     ON domain_tithe_shares(campaign_id);
 
 -- ===========================================================================
+-- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198).
+-- A persisted party-loyalty conflict so a re-scan does not re-emit an already-
+-- known conflict (dedup on the deterministic `signature`) and so resolution /
+-- double-agent status has a home. Detected by DividedLoyaltyDetector; campaign-
+-- scoped LEAF table (registered in CampaignRepository._SCOPE_DIRECT_CAMPAIGN).
+-- ===========================================================================
+CREATE TABLE IF NOT EXISTS party_loyalty_conflicts (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    cause TEXT NOT NULL
+        CHECK(cause IN ('mutual_hostile_memberships', 'opposite_conflict_sides',
+                        'obligation_targets_faction')),
+    signature TEXT NOT NULL,
+    member_a_id TEXT NOT NULL,
+    member_b_id TEXT,
+    faction_a_id TEXT NOT NULL,
+    faction_b_id TEXT NOT NULL,
+    conflict_ref TEXT,
+    status TEXT NOT NULL DEFAULT 'detected'
+        CHECK(status IN ('detected', 'surfaced', 'resolved', 'double_agent')),
+    detected_day INTEGER NOT NULL DEFAULT 0,
+    resolved_day INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(campaign_id, signature)
+);
+CREATE INDEX IF NOT EXISTS idx_party_loyalty_conflicts_campaign
+    ON party_loyalty_conflicts(campaign_id);
+
+-- ===========================================================================
 -- Dialogue subsystem (Phase 1) — NPC memory data model (migration 191).
 -- generation/gdd-npc-dialogue.md §8.1 / §15. Three campaign-scoped LEAF tables:
 --   npc_relationships (Layer 1, mechanical spine), npc_memories (Layer 2,

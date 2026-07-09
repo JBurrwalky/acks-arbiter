@@ -547,6 +547,12 @@
 [ext_resource type="Script" path="res://tests/test_faction_ff2_tithe.gd" id="531_faction_ff2_tithe_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff2_membership.gd" id="532_faction_ff2_membership_tests"]
 [ext_resource type="Script" path="res://tests/test_quest_faction_bridge.gd" id="533_quest_faction_bridge_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_allegiance.gd" id="553_faction_ff4_allegiance_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_betrayal.gd" id="554_faction_ff4_betrayal_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_covert_ops.gd" id="555_faction_ff4_covert_ops_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_divided_loyalty.gd" id="556_faction_ff4_divided_loyalty_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_orso_capstone.gd" id="557_faction_ff4_orso_capstone_tests"]
+[ext_resource type="Script" path="res://tests/test_faction_ff4_faction_ai.gd" id="558_faction_ff4_faction_ai_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2188,3 +2194,21 @@ script = ExtResource("532_faction_ff2_membership_tests")
 
 [node name="QuestFactionBridgeTests" type="Node" parent="."]
 script = ExtResource("533_quest_faction_bridge_tests")
+
+[node name="FactionFF4AllegianceTests" type="Node" parent="."]
+script = ExtResource("553_faction_ff4_allegiance_tests")
+
+[node name="FactionFF4BetrayalTests" type="Node" parent="."]
+script = ExtResource("554_faction_ff4_betrayal_tests")
+
+[node name="FactionFF4CovertOpsTests" type="Node" parent="."]
+script = ExtResource("555_faction_ff4_covert_ops_tests")
+
+[node name="FactionFF4DividedLoyaltyTests" type="Node" parent="."]
+script = ExtResource("556_faction_ff4_divided_loyalty_tests")
+
+[node name="FactionFF4OrsoCapstoneTests" type="Node" parent="."]
+script = ExtResource("557_faction_ff4_orso_capstone_tests")
+
+[node name="FactionFF4FactionAiTests" type="Node" parent="."]
+script = ExtResource("558_faction_ff4_faction_ai_tests")
