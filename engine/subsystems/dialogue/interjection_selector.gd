@@ -54,14 +54,14 @@ static func select(ctx: Dictionary):
 		# Henchmen are the party's non-player companions (the speaker is the PC).
 		if String(c.get("npc_role", "player")) == "player":
 			continue
-		var personality := _personality_of(c)
+		var personality = _personality_of(c)   # nullable (Dictionary or null) — no :=
 		if personality == null:
 			continue
 		var scored := _score(personality, outcome)
 		var weight := int(scored.get("weight", 0))
 		if weight < MIN_WEIGHT:
 			continue
-		var tiebreak := abs((mid + str(seed_hint)).hash())
+		var tiebreak := absi((mid + str(seed_hint)).hash())
 		# Highest weight wins; a deterministic hash breaks ties.
 		if weight > best_weight or (weight == best_weight and tiebreak < best_tiebreak):
 			best_id = mid
