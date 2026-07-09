@@ -15,6 +15,14 @@ const UNTRUSTED_TEXT_FRAME_PATH := "res://llm_context/untrusted_text_frame.txt"
 ## Crude v1 token estimator (§10.1 point 4): chars / 4, rounded up.
 const CHARS_PER_TOKEN_ESTIMATE := 4.0
 
+## Delimiter a task template may use to split its system-block section from the
+## user-turn section (GDD §10.1 point 2: "User message = the task template's
+## user-section rendered from context"). Templates WITHOUT this delimiter behave
+## exactly as before (whole template → system prompt; user message synthesized
+## by _build_user_message). npc_dialogue_reply/summary use it so the transcript
+## tail + player move land in the USER message, not the system prompt.
+const USER_SECTION_DELIM := "===USER==="
+
 
 ## Renders the given [param task_profile] (a profile Dictionary from
 ## LlmTaskRegistry.get_profile()) against [param context], producing
@@ -24,24 +32,43 @@ const CHARS_PER_TOKEN_ESTIMATE := 4.0
 ## [param task_type] is used only for error messages/logging (the profile
 ## itself doesn't echo it back).
 static func build(task_profile: Dictionary, context: Dictionary, task_type: String = "") -> Dictionary:
+	var rendered := _render_task(task_profile, context)
+	var result := {
+		"system": rendered.get("system", ""),
+		"messages": [{"role": "user", "content": rendered.get("user", "")}],
+	}
+	return _enforce_budget(result, task_profile, context, task_type)
+
+
+## Renders {system, user} from the task template + context. If the template
+## carries a USER_SECTION_DELIM line, the portion before it is the system-block
+## section and the portion after it is the user-turn section; otherwise the
+## whole template is the system section and the user message is synthesized by
+## _build_user_message (the legacy behavior every pre-P4 consumer relies on).
+static func _render_task(task_profile: Dictionary, context: Dictionary) -> Dictionary:
 	var invariants := _read_fragment(INVARIANTS_PATH)
 	var template_path := String(task_profile.get("template", ""))
 	var template_text := _read_fragment(template_path) if not template_path.is_empty() else ""
 
-	var rendered_template := _render(template_text, context)
+	var system_part := template_text
+	var user_part := ""
+	if template_text.contains(USER_SECTION_DELIM):
+		var idx := template_text.find(USER_SECTION_DELIM)
+		system_part = template_text.substr(0, idx)
+		user_part = template_text.substr(idx + USER_SECTION_DELIM.length())
 
+	var rendered_system := _render(system_part, context)
 	var system_text := invariants
-	if not rendered_template.is_empty():
-		system_text += "\n\n" + rendered_template
+	if not rendered_system.strip_edges().is_empty():
+		system_text += "\n\n" + rendered_system
 
-	var user_text := _build_user_message(task_profile, context)
+	var user_text := ""
+	if user_part.strip_edges().is_empty():
+		user_text = _build_user_message(task_profile, context)  # legacy synthesized user turn
+	else:
+		user_text = _render(user_part, context).strip_edges()
 
-	var result := {
-		"system": system_text,
-		"messages": [{"role": "user", "content": user_text}],
-	}
-
-	return _enforce_budget(result, task_profile, context, task_type)
+	return {"system": system_text, "user": user_text}
 
 
 ## Frames a piece of untrusted (player-authored) free text per §10.4. Always
@@ -154,10 +181,11 @@ static func _enforce_budget(result: Dictionary, task_profile: Dictionary,
 	if estimate_tokens(total_text) <= budget:
 		return result
 
-	# Truncate oldest-first (array order as given in the profile) by
-	# stripping that key from context and rebuilding the user message only
-	# (the system/template portion is not context-driven for truncation
-	# purposes beyond what _render already did with the full context).
+	# Truncate oldest-first (array order as given in the profile) by stripping
+	# that context key and RE-RENDERING both the system and user sections (a
+	# truncatable key such as `memory_lines` or `transcript_tail` may appear in
+	# either section, so both must be regenerated — not just the synthesized
+	# user message the legacy path rebuilt).
 	var trimmed_context := context.duplicate(true)
 	var truncated_any := false
 	for key in truncatable:
@@ -165,8 +193,9 @@ static func _enforce_budget(result: Dictionary, task_profile: Dictionary,
 		if trimmed_context.has(key_str):
 			trimmed_context.erase(key_str)
 			truncated_any = true
-			var rebuilt_user := _build_user_message(task_profile, trimmed_context)
-			result["messages"] = [{"role": "user", "content": rebuilt_user}]
+			var rerendered := _render_task(task_profile, trimmed_context)
+			result["system"] = rerendered.get("system", "")
+			result["messages"] = [{"role": "user", "content": rerendered.get("user", "")}]
 			total_text = result.get("system", "") + "\n" + _messages_to_text(result.get("messages", []))
 			if estimate_tokens(total_text) <= budget:
 				break

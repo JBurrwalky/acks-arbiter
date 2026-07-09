@@ -134,10 +134,10 @@
     "qos": "interactive",
     "context_budget_tokens": 3000,
     "max_output_tokens": 150,
-    "cap_chars": 1200,
+    "cap_chars": 700,
     "template": "llm_context/tasks/npc_dialogue_reply.txt",
-    "truncatable": ["transcript_tail", "memories"],
-    "v1_enabled": false
+    "truncatable": ["transcript_tail", "memory_lines"],
+    "v1_enabled": true
   },
   "npc_dialogue_summary": {
     "response_mode": "json",
@@ -147,7 +147,7 @@
     "cap_chars": 1200,
     "template": "llm_context/tasks/npc_dialogue_summary.txt",
     "truncatable": ["transcript_tail"],
-    "v1_enabled": false
+    "v1_enabled": true
   },
   "interpret_player_input": {
     "response_mode": "json",

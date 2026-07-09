@@ -2282,3 +2282,29 @@ signal faction_membership_changed(character_id: String, faction_id: String, stat
 ## show a "done / total" bar. `done` is monotonic up to `total`; a run that is
 ## cancelled simply stops emitting.
 signal setting_narrative_upgraded(campaign_id: String, done: int, total: int)
+
+
+# ---------------------------------------------------------------------------
+# --- Wave 3 Dialogue P4 --- the live performance layer (gdd-npc-dialogue.md §13)
+# The deterministic reply (submit_move) is instant; when a provider is
+# configured the UI fires DialogueSession.perform_reply_live() and swaps the
+# displayed line for the model's prose. These signals let the UI show a "…"
+# indicator while the async call is in flight and then present the final line.
+# The conversation NEVER blocks on the network (§13.1) — the Tier-0 line is the
+# instant answer, upgraded in place if/when the live reply resolves.
+# ---------------------------------------------------------------------------
+
+## A live reply is being generated for [param npc_id] in [param session_id] — the
+## UI shows a "…" thinking indicator. Emitted only on the configured path; the
+## mock path returns same-frame and never emits this.
+signal dialogue_reply_pending(session_id: String, npc_id: String)
+
+## A reply line was performed (Tier-0 or live). [param is_fallback] is true when
+## the Tier-0 template stood in (unconfigured / validation failure / timeout).
+signal dialogue_reply_performed(session_id: String, npc_id: String, text: String, is_fallback: bool)
+
+## An accepted #social_flag classification (§13.10) shifted the NPC's tone by
+## [param tone_steps] (signed; negative = toward hostile). Emitted only after the
+## SocialFlagValidator ACCEPTS a model-emitted flag (validate-before-apply); the
+## LLM never writes a relationship score.
+signal npc_social_flag_applied(npc_id: String, kind: String, tone_steps: int)

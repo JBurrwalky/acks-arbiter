@@ -104,6 +104,12 @@ static func _attach_relationship_and_memories(ctx: Dictionary, campaign_id: Stri
 	# Top-K recalled memories (§8.3): importance DESC then recency.
 	var mems: Array = CampaignRepository.list_npc_memories(campaign_id, npc_id, RECALL_K)
 	ctx["memories"] = mems
+	# --- Wave 3 Dialogue P4 --- the Faction↔Dialogue seam (§10.2). PUBLIC only —
+	# DialogueFactionContext never reads true_stance / plot rows (§7.4). The LLM
+	# prompt (DialoguePromptContext) reads this block; the reveal channel stays
+	# empty until the engine decides a leak.
+	ctx["faction_context"] = DialogueFactionContext.build(
+		npc_id, party_id, Timekeeping.get_total_days())
 
 
 static func _encounter_npc_ids(encounter_data: Dictionary, spokesperson_id: String) -> Array:

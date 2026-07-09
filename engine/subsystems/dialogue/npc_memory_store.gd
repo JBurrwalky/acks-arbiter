@@ -58,12 +58,20 @@ static func write_memory(mem: NpcMemoryData) -> String:
 ## [param move_log] is an Array of Dictionaries, each entry:
 ##   { move_id, speaker_name, prior_attitude, new_attitude, kind, rumor_text? }
 ## Returns the written memory id ("" on failure or empty log).
+##
+## [param summary_override] is the Phase-4 LLM rewrite hook (§8.2 step 2): when
+## non-empty it REPLACES the template summary PROSE only — the engine-derived
+## `facts` are ground truth and are NEVER touched by the LLM (§104). The
+## deterministic call omits it and stays byte-identical to before.
 static func summarize_move_log(campaign_id: String, npc_id: String, party_id: String,
-		session_id: String, move_log: Array, final_attitude: String) -> String:
+		session_id: String, move_log: Array, final_attitude: String,
+		summary_override: String = "") -> String:
 	if move_log.is_empty():
 		return ""
 	var facts := _facts_from_log(move_log)
 	var summary := _summary_from_log(move_log, final_attitude)
+	if not summary_override.strip_edges().is_empty():
+		summary = summary_override.strip_edges()
 	var kind := _dominant_kind(move_log)
 	var mem := NpcMemoryData.new()
 	mem.campaign_id = campaign_id
@@ -77,6 +85,26 @@ static func summarize_move_log(campaign_id: String, npc_id: String, party_id: St
 	mem.created_day = _current_day()
 	mem.source_session_id = session_id
 	return write_memory(mem)
+
+
+## Public: the engine-derived facts as short human strings, for the Phase-4
+## summary PROMPT grounding (§8.2). Pure — same input the deterministic
+## summarizer uses, so the LLM rewrite can never drift from the facts.
+static func fact_lines_from_log(move_log: Array) -> Array:
+	var out: Array = []
+	for f in _facts_from_log(move_log):
+		if not (f is Dictionary):
+			continue
+		var d: Dictionary = f
+		if d.has("influenced"):
+			out.append("They tried to sway me (result: %s)." % String(d.get("result", "")))
+		elif d.has("provoked"):
+			out.append("They provoked me toward %s." % String(d.get("toward", "")))
+		elif d.has("shared_rumor"):
+			out.append("I shared a rumor: %s" % String(d.get("shared_rumor", "")))
+		elif d.has("conversed"):
+			out.append("We spoke.")
+	return out
 
 
 # ---------------------------------------------------------------------------

@@ -579,8 +579,46 @@ func _validate_response(req: LlmRequest, parsed: Dictionary, provider: LLMProvid
 	if req.validator.is_valid():
 		var consumer_check: Dictionary = req.validator.call(String(prose_result.get("text", "")))
 		if not bool(consumer_check.get("valid", true)):
-			return {"valid": false, "reason": String(consumer_check.get("reason", "consumer_rejected")), "text": ""}
+			var reason := String(consumer_check.get("reason", "consumer_rejected"))
+			# §13.4 (dialogue) / CLAUDE.md "re-prompt if appropriate": ONE re-prompt
+			# that names the violation, then fail to the consumer's template. A
+			# content rejection is NOT a transport failure — it consumes a retry
+			# slot but does not touch circuit-breaker state (mirrors §11.2's JSON
+			# re-prompt). Prose consumers without a validator (Seam A) never reach
+			# this branch, so their behavior is unchanged.
+			if req.retries_left > 0:
+				req.retries_left -= 1
+				return await _prose_consumer_reprompt(req, provider, profile, raw_text, reason)
+			return {"valid": false, "reason": reason, "text": ""}
 	return prose_result
+
+
+## The single §13.4 prose consumer re-prompt: name the violation, re-execute the
+## transport once, re-validate (layer + consumer). Returns the standard
+## {valid, reason, text}. A second failure returns invalid (→ fallback).
+func _prose_consumer_reprompt(req: LlmRequest, provider: LLMProvider, profile: Dictionary,
+		prior_text: String, violation: String) -> Dictionary:
+	var reprompt_text := LlmResponseValidator.build_prose_reprompt(violation)
+	var messages: Array = req.prompt.get("messages", []).duplicate(true)
+	messages.append({"role": "assistant", "content": prior_text})
+	messages.append({"role": "user", "content": reprompt_text})
+	var reprompt_prompt := {"system": req.prompt.get("system", ""), "messages": messages}
+	var built := provider.build_chat_request(reprompt_prompt, req.model, {
+		"temperature": 0.8, "use_native_json_mode": false,
+	})
+	var raw := await _execute_http(built, req.timeout_ms)
+	var reparsed: Dictionary = provider.parse_chat_response(
+		raw.get("code", 0), raw.get("headers", {}), raw.get("body", ""))
+	if not bool(reparsed.get("ok", false)):
+		return {"valid": false, "reason": "prose_reprompt_transport_failed", "text": ""}
+	var reprose := LlmResponseValidator.validate_prose(String(reparsed.get("text", "")), profile)
+	if not bool(reprose.get("valid", false)):
+		return reprose
+	if req.validator.is_valid():
+		var recheck: Dictionary = req.validator.call(String(reprose.get("text", "")))
+		if not bool(recheck.get("valid", true)):
+			return {"valid": false, "reason": String(recheck.get("reason", "consumer_rejected")), "text": ""}
+	return reprose
 
 
 ## Test-only backoff override (parallel to _test_transport_override): when

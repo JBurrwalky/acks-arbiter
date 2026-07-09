@@ -72,6 +72,9 @@ extends Node
 @onready var _dialogue_p3_army_parley_tests = $DialogueP3ArmyParleyTests
 @onready var _dialogue_p3_lying_tests = $DialogueP3LyingTests
 @onready var _dialogue_p3_capabilities_charm_tests = $DialogueP3CapabilitiesCharmTests
+# 2026-07-09 - Wave 3 Dialogue P4 ("The Performance Layer") + Faction-Dialogue seam
+@onready var _dialogue_p4_prompt_validation_tests = $DialogueP4PromptValidationTests
+@onready var _dialogue_p4_live_tests = $DialogueP4LiveTests  # async suite
 # 2026-07-07 - Quest & Rumor Q-1 (schema, registries, RewardValuator)
 @onready var _reward_valuator_tests = $RewardValuatorTests
 @onready var _quest_rumor_shared_types_tests = $QuestRumorSharedTypesTests
@@ -1316,6 +1319,8 @@ func run() -> void:
 			_dialogue_p3_army_parley_tests,
 			_dialogue_p3_lying_tests,
 			_dialogue_p3_capabilities_charm_tests,
+			# 2026-07-09 — Wave 3 Dialogue P4: prompt assembly, validation, faction seam (sync)
+			_dialogue_p4_prompt_validation_tests,
 			# 2026-07-07 — Quest & Rumor Q-1 (schema, registries, RewardValuator)
 			_reward_valuator_tests,
 			_quest_rumor_shared_types_tests,
@@ -1358,7 +1363,8 @@ func run() -> void:
 	# still read via the same has_failures()/fail_count() surface from
 	# test_suite_base.gd, so pass/fail accounting is uniform.
 	# ---------------------------------------------------------------------
-	for async_suite in [_llm_generate_async_tests, _llm_l3_consumers_tests]:
+	for async_suite in [_llm_generate_async_tests, _llm_l3_consumers_tests,
+			_dialogue_p4_live_tests]:
 		if async_suite == null:
 			push_error("TestRunner: missing async test suite node — check scene tree")
 			failed += 1

@@ -23,6 +23,11 @@ var default_model: String = ""
 var offline_mode: bool = false
 var max_concurrent: int = 2
 
+## Dialogue P4 (§13.6) henchman-interjection off-switch. A preference, so it
+## lives in settings.cfg (conventions §6.7 — preferences never go in SQLite), NOT
+## a DB migration. Default on; the settings screen exposes the toggle.
+var dialogue_interjections_enabled: bool = true
+
 ## Reserved, unread in v1 — written so later phases don't need a file
 ## migration (GDD §12.1 explicit rationale).
 var quality_tier: String = "standard"
@@ -41,6 +46,7 @@ func write_to(config: ConfigFile) -> void:
 	config.set_value(SECTION, "max_concurrent", max_concurrent)
 	config.set_value(SECTION, "quality_tier", quality_tier)
 	config.set_value(SECTION, "task_model_overrides", task_model_overrides)
+	config.set_value(SECTION, "dialogue_interjections_enabled", dialogue_interjections_enabled)
 
 
 ## Reads the [llm] section of [param config] into this settings object.
@@ -57,6 +63,8 @@ func read_from(config: ConfigFile) -> void:
 	max_concurrent = int(config.get_value(SECTION, "max_concurrent", max_concurrent))
 	quality_tier = String(config.get_value(SECTION, "quality_tier", quality_tier))
 	task_model_overrides = config.get_value(SECTION, "task_model_overrides", task_model_overrides)
+	dialogue_interjections_enabled = bool(config.get_value(
+		SECTION, "dialogue_interjections_enabled", dialogue_interjections_enabled))
 
 	var env_key := OS.get_environment("OLLAMA_API_KEY")
 	if not env_key.is_empty():
