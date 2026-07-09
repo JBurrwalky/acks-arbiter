@@ -21,6 +21,7 @@ func run_all_tests() -> void:
 	test_hold_is_a_candidate_floor()
 	test_negative_treasury_departures_and_survive()
 	test_process_campaign_month_emits_action()
+	test_wage_table_matches_henchman_tables()
 	if not has_failures():
 		print("FactionFF2OrgMonth: all tests passed.")
 
@@ -92,6 +93,16 @@ func test_hold_is_a_candidate_floor() -> void:
 		"goal_primary": "gain_influence", "volatility": 1.0}
 	var cands: Array = FactionAI._score_candidates(faction, false, 10, 1)
 	check(_has_action(cands, "hold"), "hold is always a candidate")
+
+
+func test_wage_table_matches_henchman_tables() -> void:
+	# OrgTypeCatalog.WAGE_GP_BY_LEVEL deliberately mirrors the RAW Henchman Monthly
+	# Fee table (the single source the ¼-wages ledger prices through). The values
+	# are Layer-1 SACRED; this guard makes the duplication SAFE by failing loudly if
+	# the two copies ever drift (gp × 100 == cp).
+	for level in range(0, 15):
+		check(OrgTypeCatalog.wage_gp_for_level(level) * 100 == HenchmanTables.monthly_wage(level),
+			"wage table L%d matches HenchmanTables (gp*100 == cp)" % level)
 
 
 func test_broke_org_still_scores_free_actions() -> void:

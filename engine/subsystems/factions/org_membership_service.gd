@@ -144,11 +144,19 @@ static func can_access_service(character_id: String, faction_id: String,
 ## Every service id this character can currently access at the faction.
 static func services_available(character_id: String, faction_id: String) -> Array:
 	var out: Array = []
+	# Read the membership + faction ONCE (both are loop-invariant); can_access_service
+	# would re-fetch each of them per service (an N+1). The per-service min-rank check
+	# is an in-memory catalog lookup.
+	var m: Dictionary = CampaignRepository.ff_get_membership(faction_id, character_id)
+	if m.is_empty() or String(m.get("status", "")) != "member":
+		return out
 	var faction: Dictionary = CampaignRepository.get_faction(faction_id)
 	var type: String = String(faction.get("faction_type", ""))
+	var rank: int = int(m.get("rank", 0))
 	for s in OrgTypeCatalog.services(type):
 		var sid: String = String((s as Dictionary).get("id", ""))
-		if can_access_service(character_id, faction_id, sid):
+		var min_rank: int = OrgTypeCatalog.service_min_rank(type, sid)
+		if min_rank >= 0 and rank >= min_rank:
 			out.append(sid)
 	return out
 

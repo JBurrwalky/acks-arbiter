@@ -28,7 +28,8 @@ const GATED_TYPES: Array = [
 ## Seed every organization for one settlement. Returns the created/refreshed org
 ## faction ids. [param world_seed] makes the per-settlement RNG reproducible.
 static func seed_for_settlement(campaign_id: String, settlement_id: String,
-		world_seed: int, set_day: int = 0, materialize_leaders: bool = true) -> Array:
+		world_seed: int, set_day: int = 0, materialize_leaders: bool = true,
+		seed_tithe: bool = true) -> Array:
 	if campaign_id.is_empty() or settlement_id.is_empty():
 		return []
 	var settlement: Dictionary = CampaignRepository.get_settlement_entrance(settlement_id)
@@ -50,8 +51,10 @@ static func seed_for_settlement(campaign_id: String, settlement_id: String,
 			materialize_leaders)
 		if fid != "":
 			created.append(fid)
-	# 8. Tithe-share defaults for the domain's temple factions (§6.4).
-	if domain_id != "":
+	# 8. Tithe-share defaults for the domain's temple factions (§6.4). Skipped
+	# under backfill (seed_tithe=false), which seeds ONCE per distinct domain
+	# rather than redundantly once per settlement in the domain.
+	if seed_tithe and domain_id != "":
 		var domain: Dictionary = CampaignRepository.get_domain(domain_id)
 		TitheApportionment.seed_defaults(
 			campaign_id, domain_id, String(domain.get("religion", "")), set_day)
@@ -67,10 +70,20 @@ static func backfill_campaign(campaign_id: String, world_seed: int,
 		return 0
 	var count: int = 0
 	count += promote_syndicate_seeds(campaign_id).size()
+	var domains_seen: Dictionary = {}
 	for s in _list_settlements(campaign_id):
+		var sid: String = String((s as Dictionary).get("id", ""))
 		count += seed_for_settlement(
-			campaign_id, String((s as Dictionary).get("id", "")), world_seed, set_day,
-			materialize_leaders).size()
+			campaign_id, sid, world_seed, set_day, materialize_leaders, false).size()
+		var did: String = CampaignRepository.get_settlement_parent_domain_id(sid)
+		if did != "":
+			domains_seen[did] = true
+	# Tithe-share defaults ONCE per distinct domain (was once per settlement —
+	# O(settlements×temples) redundant SELECTs+upserts for the same final rows).
+	for did_v in domains_seen:
+		var domain: Dictionary = CampaignRepository.get_domain(String(did_v))
+		TitheApportionment.seed_defaults(
+			campaign_id, String(did_v), String(domain.get("religion", "")), set_day)
 	return count
 
 

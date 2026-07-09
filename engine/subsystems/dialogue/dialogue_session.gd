@@ -1664,17 +1664,14 @@ func _has_offerable_quests() -> bool:
 func _has_turninable_quest() -> bool:
 	if _quest_registry == null:
 		return false
-	var ids: Array = context.get("turninable_quest_ids", [])
-	for qid in ids:
-		if _quest_registry.can_turn_in(String(qid)):
-			return true
+	# Any quest accepted THIS session that is now turn-in-able.
 	for qid in _accepted_quest_ids:
 		if _quest_registry.can_turn_in(String(qid)):
 			return true
-	# Q-5: a quest completed OUT of session (accept -> adventure -> return, the
-	# common flow) surfaces via THIS questgiver's own turn-in-able quests, not
-	# just the ids accepted this session. This is the eligibility source of
-	# truth (the context `turninable_quest_ids` hint is an optional fast-path).
+	# The eligibility SOURCE OF TRUTH: this questgiver's own complete, non-terminal
+	# quests (covers the accept -> adventure -> return flow across sessions). No
+	# context `turninable_quest_ids` hint is read — nothing in the engine produces
+	# it (the dead read + its loop are removed).
 	return not _quest_registry.turninable_for_questgiver(npc_id).is_empty()
 
 

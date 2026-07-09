@@ -268,7 +268,7 @@ static func _monthly_rng(faction_id: String, calendar_day: int) -> RandomNumberG
 static func _execute(campaign_id: String, faction: Dictionary, action_id: String,
 		calendar_day: int) -> Dictionary:
 	match action_id:
-		"recruit_members": return _do_recruit(faction)
+		"recruit_members": return _do_recruit(faction, calendar_day)
 		"raise_funds": return _do_raise_funds(faction)
 		"proselytize": return _do_proselytize(campaign_id, faction, calendar_day)
 		"court_patron": return _do_court_patron(campaign_id, faction, calendar_day)
@@ -285,10 +285,10 @@ static func _execute(campaign_id: String, faction: Dictionary, action_id: String
 			return {"summary": "unknown action %s" % action_id}
 
 
-static func _do_recruit(faction: Dictionary) -> Dictionary:
+static func _do_recruit(faction: Dictionary, calendar_day: int) -> Dictionary:
 	var type: String = String(faction.get("faction_type", ""))
 	var tier: int = OrgTypeCatalog.size_tier(type)
-	var rng := _monthly_rng(String(faction.get("id", "")) + "|recruit", 0)
+	var rng := _monthly_rng(String(faction.get("id", "")) + "|recruit", calendar_day)
 	var added: int = rng.randi_range(1, tier)
 	var new_count: int = int(faction.get("member_count_abstract", 0)) + added
 	CampaignRepository.db.query_with_bindings(
@@ -429,12 +429,11 @@ static func _do_status_flip(faction: Dictionary, status: String) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 static func _apply_negative_treasury(_campaign_id: String, faction: Dictionary,
-		_calendar_day: int) -> Dictionary:
-	# Congregants/members depart 1d10 per 1,000 gp unpaid (§2.5); survive goal
-	# activates. Loyalty rolls are the henchman machinery's job (event-driven) —
-	# we only record the departure + flip the goal.
+		calendar_day: int) -> Dictionary:
+	# Congregants/members depart 1d10 per 1,000 gp unpaid (§2.5). Loyalty rolls are
+	# the henchman machinery's job (event-driven) — we only record the departure.
 	var deficit: int = absi(mini(0, int(faction.get("treasury_gp", 0))))
-	var rng := _monthly_rng(String(faction.get("id", "")) + "|unpaid", 0)
+	var rng := _monthly_rng(String(faction.get("id", "")) + "|unpaid", calendar_day)
 	var thousands: int = int(ceil(float(deficit) / 1000.0))
 	var departed: int = 0
 	for i in thousands:
