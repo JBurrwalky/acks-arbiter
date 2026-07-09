@@ -555,6 +555,9 @@
 [ext_resource type="Script" path="res://tests/test_faction_ff4_divided_loyalty.gd" id="556_faction_ff4_divided_loyalty_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff4_orso_capstone.gd" id="557_faction_ff4_orso_capstone_tests"]
 [ext_resource type="Script" path="res://tests/test_faction_ff4_faction_ai.gd" id="558_faction_ff4_faction_ai_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_golden.gd" id="560_dungeon_faction_golden_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_units.gd" id="561_dungeon_faction_units_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_faction_persistence.gd" id="562_dungeon_faction_persistence_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2220,3 +2223,11 @@ script = ExtResource("557_faction_ff4_orso_capstone_tests")
 
 [node name="FactionFF4FactionAiTests" type="Node" parent="."]
 script = ExtResource("558_faction_ff4_faction_ai_tests")
+[node name="DungeonFactionGoldenTests" type="Node" parent="."]
+script = ExtResource("560_dungeon_faction_golden_tests")
+
+[node name="DungeonFactionUnitsTests" type="Node" parent="."]
+script = ExtResource("561_dungeon_faction_units_tests")
+
+[node name="DungeonFactionPersistenceTests" type="Node" parent="."]
+script = ExtResource("562_dungeon_faction_persistence_tests")

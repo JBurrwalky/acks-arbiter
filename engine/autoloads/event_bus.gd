@@ -2348,3 +2348,25 @@ signal dialogue_reply_performed(session_id: String, npc_id: String, text: String
 ## SocialFlagValidator ACCEPTS a model-emitted flag (validate-before-apply); the
 ## LLM never writes a relationship score.
 signal npc_social_flag_applied(npc_id: String, kind: String, tone_steps: int)
+# --- Wave 3 Dungeon Factions ---
+# Dungeon faction generation + runtime alert/depletion (gdd-dungeon-factions.md).
+# Deterministic generation; these signals are for consumers (combat engine,
+# wandering monster system, encounter narrator, faction journal). Generation
+# itself does NOT emit — DungeonFactionRepository.save() and the runtime helpers
+# (AlertPropagation / FactionWandering) do.
+# ---------------------------------------------------------------------------
+
+## Faction structure was (re)generated for a dungeon and persisted. Emitted by
+## DungeonFactionRepository.save(). Consumers refresh any cached faction views.
+signal dungeon_factions_generated(dungeon_id: String, faction_count: int)
+
+## A faction's alert level changed (§8). Emitted by AlertPropagation on an actual
+## escalate/decay transition (not on no-op calls). old_state/new_state are the
+## DungeonFaction.ALERT_* ladder values.
+signal dungeon_faction_alert_changed(dungeon_id: String, faction_id: String, old_state: String, new_state: String)
+
+## A faction was wiped out in play — current_population hit 0 (§6.2 step 5).
+## Emitted by FactionWandering when a loss reduces the faction to zero. The
+## wandering/ecology layer removes it from the wandering table and vacates its
+## territory.
+signal dungeon_faction_wiped_out(dungeon_id: String, faction_id: String)
