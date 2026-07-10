@@ -72,6 +72,19 @@ func test_round_trip() -> void:
 			check(loaded.territory_map.controller_of(r) == orig.id,
 				"rebuilt territory: room %d → %s" % [r, orig.species])
 
+	# Review #4: every CONTESTED room in the generated map must survive the round-trip.
+	# (The goblin/orc fixture leaves room 3 equidistant → contested; before the fix a
+	# non-adversarial pair dropped it because only rival/hostile pairs recorded it.)
+	var contested_seen: int = 0
+	for rid in result.territory_map.room_assignments.keys():
+		var orig_e: DungeonTerritoryEntry = result.territory_map.room_assignments[rid]
+		if orig_e.status != DungeonTerritoryEntry.STATUS_CONTESTED:
+			continue
+		contested_seen += 1
+		check(loaded.territory_map.status_of(int(rid)) == DungeonTerritoryEntry.STATUS_CONTESTED,
+			"contested room %d survives save/load" % int(rid))
+	check(contested_seen > 0, "the fixture actually produces a contested room to exercise the round-trip")
+
 
 func test_runtime_state_round_trip() -> void:
 	var result := DungeonFactionGenerator.generate(_build_input(), 2026)

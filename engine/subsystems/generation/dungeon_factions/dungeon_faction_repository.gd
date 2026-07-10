@@ -65,12 +65,15 @@ static func load(dungeon_id: String) -> DungeonFactionGenerationResult:
 			result.solitary_threats.append(DungeonSolitaryThreat.from_row(row))
 
 	# Hang relationships off each faction (by reference) + rebuild territory map.
+	# One-pass bucketing (O(F^2)) instead of a per-faction rescan (O(F^3), review #13).
+	var rels_by_faction: Dictionary = {}
+	for r in result.relationships:
+		for fid in [r.faction_a_id, r.faction_b_id]:
+			if not rels_by_faction.has(fid):
+				rels_by_faction[fid] = []
+			rels_by_faction[fid].append(r)
 	for f in result.factions:
-		var mine: Array = []
-		for r in result.relationships:
-			if r.involves(f.id):
-				mine.append(r)
-		f.relationships = mine
+		f.relationships = rels_by_faction.get(f.id, [])
 	result.territory_map = _rebuild_territory_map(result)
 	return result
 

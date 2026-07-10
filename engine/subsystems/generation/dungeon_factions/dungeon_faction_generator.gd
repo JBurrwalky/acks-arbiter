@@ -62,12 +62,17 @@ static func generate(input: DungeonFactionInput, seed: int) -> DungeonFactionGen
 		input, factions, tmap, contested_lookup, rel_rng)
 
 	# Convenience: hang each faction's relationships off the record (by reference).
+	# One pass bucketing each rel onto BOTH endpoints is O(F^2); the old per-faction
+	# rescan of every relationship was O(F^3) (review #13). Order within each bucket
+	# is preserved (rels iterated in order), so the result is identical.
+	var rels_by_faction: Dictionary = {}
+	for r in rels:
+		for fid in [r.faction_a_id, r.faction_b_id]:
+			if not rels_by_faction.has(fid):
+				rels_by_faction[fid] = []
+			rels_by_faction[fid].append(r)
 	for f in factions:
-		var mine: Array = []
-		for r in rels:
-			if r.involves(f.id):
-				mine.append(r)
-		f.relationships = mine
+		f.relationships = rels_by_faction.get(f.id, [])
 
 	result.factions = factions
 	result.solitary_threats = threats

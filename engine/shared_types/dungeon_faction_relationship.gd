@@ -37,8 +37,10 @@ var faction_a_id: String = ""
 var faction_b_id: String = ""
 var relationship: String = REL_NEUTRAL
 
-## Rooms disputed between the two (populated for rival/hostile). These become
-## higher-frequency contested wandering zones (§4.4, §6.1).
+## Rooms disputed between the two: the ownerless no-man's-land both reach at equal
+## distance (recorded for ANY aware/unaware pair so the territory map's CONTESTED
+## status survives save/load), plus — for rival/hostile pairs — their shared border
+## rooms. These become higher-frequency contested wandering zones (§4.4, §6.1).
 var contested_room_ids: Array[int] = []
 
 var notes: String = ""

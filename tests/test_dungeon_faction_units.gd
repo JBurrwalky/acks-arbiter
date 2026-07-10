@@ -21,6 +21,11 @@ func run_all_tests() -> void:
 	test_personality_biases_match_gdd_examples()
 	test_name_template_determinism()
 	test_dice_roller_bounds()
+	test_vassal_master_follows_species()
+	test_vassal_note_matches_direction()
+	test_equidistant_contested_recorded_for_any_pair()
+	test_traits_tolerate_malformed_monster_types()
+	test_faction_relationship_buckets_match_involves()
 	if not has_failures():
 		print("DungeonFactionUnits: all tests passed.")
 
@@ -269,6 +274,143 @@ func test_name_template_determinism() -> void:
 	check(n1 == n2, "same seed → same name, got '%s' vs '%s'" % [n1, n2])
 	var group := n1.split(" ")[2]
 	check(group in ["Tribe", "Clan", "Band", "Horde"], "tribal group-word, got '%s'" % group)
+
+
+# ---------------------------------------------------------------------------
+# §5 — vassal orientation + notes (review #5/#6) and no-man's-land (review #4)
+# ---------------------------------------------------------------------------
+
+## #5: the vassal master is set by published species-servitude (§5.3), not by raw
+## power — a swarm of kobolds still serves a lone dragon.
+func test_vassal_master_follows_species() -> void:
+	check(RelationshipGenerator._alliance_master_species("kobold", "dragon") == "dragon",
+		"kobold serves dragon → master is dragon")
+	check(RelationshipGenerator._alliance_master_species("dragon", "kobold") == "dragon",
+		"order-independent: the master is still the dragon")
+	check(RelationshipGenerator._alliance_master_species("goblin", "bugbear") == "bugbear",
+		"goblin serves bugbear → master is bugbear")
+	check(RelationshipGenerator._alliance_master_species("goblin", "orc") == "",
+		"a non-alliance pair names no published master")
+
+	var kob := DungeonFaction.new()
+	kob.species = "kobold"
+	var drag := DungeonFaction.new()
+	drag.species = "dragon"
+	# Power says the numerous kobolds are master (master_first = true), but the books
+	# say the dragon is — the published direction must win.
+	check(RelationshipGenerator._vassal_a_is_master(kob, drag, true) == false,
+		"kobold (faction_a) is NOT master despite out-powering the dragon")
+	check(RelationshipGenerator._vassal_a_is_master(drag, kob, false) == true,
+		"dragon (faction_a) IS master despite being out-powered")
+	# No published master → fall back to the power heuristic.
+	var gob := DungeonFaction.new()
+	gob.species = "goblin"
+	var orc := DungeonFaction.new()
+	orc.species = "orc"
+	check(RelationshipGenerator._vassal_a_is_master(gob, orc, true) == true,
+		"no published master → power heuristic decides (master_first)")
+
+
+## #6: the vassal note always names the servant serving the master per faction_a_id
+## (the resolved master), so the prose can never contradict the structured record.
+func test_vassal_note_matches_direction() -> void:
+	var kob := DungeonFaction.new()
+	kob.id = "k"
+	kob.name = "Kobold Swarm"
+	var drag := DungeonFaction.new()
+	drag.id = "d"
+	drag.name = "Old Wyrm"
+	var rel := DungeonFactionRelationship.new()
+	rel.relationship = DungeonFactionRelationship.REL_VASSAL
+
+	# Master = dragon (faction_a), even though the pair is passed as (kobolds, dragon).
+	rel.faction_a_id = drag.id
+	rel.faction_b_id = kob.id
+	check(RelationshipGenerator._notes_for(rel, kob, drag) == "Kobold Swarm serves Old Wyrm (tribute / obedience).",
+		"note names the servant serving the master, matching faction_a_id")
+	# Flip faction_a → the note must flip with it (no contradiction possible).
+	rel.faction_a_id = kob.id
+	rel.faction_b_id = drag.id
+	check(RelationshipGenerator._notes_for(rel, kob, drag) == "Old Wyrm serves Kobold Swarm (tribute / obedience).",
+		"note tracks faction_a_id in the other direction")
+
+
+## #4: the ownerless no-man's-land (equidistant contested rooms) is recorded for a
+## pair regardless of their relationship, so it survives save/load.
+func test_equidistant_contested_recorded_for_any_pair() -> void:
+	var a := DungeonFaction.new()
+	a.id = "a"
+	var b := DungeonFaction.new()
+	b.id = "b"
+	var c := DungeonFaction.new()
+	c.id = "c"
+	# Room 7 contested by a & b; room 9 contested by a & c.
+	var lookup: Dictionary = {7: {"a": true, "b": true}, 9: {"a": true, "c": true}}
+	check(RelationshipGenerator._equidistant_contested(a, b, lookup) == [7],
+		"a-b pair gets their shared no-man's-land room (independent of relationship)")
+	check(RelationshipGenerator._equidistant_contested(a, c, lookup) == [9],
+		"a-c pair gets theirs")
+	check(RelationshipGenerator._equidistant_contested(b, c, lookup) == [],
+		"b-c share no contested room")
+
+
+# ---------------------------------------------------------------------------
+# §3 — catalog robustness (review #10) + relationship bucketing (review #13)
+# ---------------------------------------------------------------------------
+
+## #10: _extract must not crash on a monster_types that is missing, null, or a
+## non-array (the .get default only covers a MISSING key). Before the guard, a null
+## value crashed mid-load and left every trait lookup empty.
+func test_traits_tolerate_malformed_monster_types() -> void:
+	var t_missing := MonsterFactionTraits._extract({"id": "x", "name": "X"})
+	check(t_missing.get("monster_types") == [], "missing monster_types → empty list, no crash")
+	var t_null := MonsterFactionTraits._extract({"id": "y", "monster_types": null})
+	check(t_null.get("monster_types") == [], "null monster_types → empty list, no crash")
+	var t_str := MonsterFactionTraits._extract({"id": "z", "monster_types": "undead"})
+	check(t_str.get("monster_types") == [], "non-array monster_types → empty list, no crash")
+	var t_ok := MonsterFactionTraits._extract({"id": "w", "monster_types": ["undead", "beastman"]})
+	check((t_ok.get("monster_types") as Array).has("undead"), "a valid array is still parsed")
+	check(bool(t_ok.get("is_undead")) == true, "is_undead is derived from the valid array")
+	# Non-scalar numeric fields must default, not crash int()/float() mid-load.
+	var t_badnum := MonsterFactionTraits._extract({"id": "n", "morale": {}, "hit_dice": {"base": []}})
+	check(int(t_badnum.get("morale", -1)) == 0, "object morale → 0, no crash")
+	check(is_equal_approx(float(t_badnum.get("hd", -1.0)), 1.0), "array hd base → default 1.0, no crash")
+	# Numeric strings still parse (behaviour preserved).
+	var t_numstr := MonsterFactionTraits._extract({"id": "s", "morale": "8", "hit_dice": {"base": "3"}})
+	check(int(t_numstr.get("morale", -1)) == 8, "numeric-string morale still parses to 8")
+	check(is_equal_approx(float(t_numstr.get("hd", -1.0)), 3.0), "numeric-string base still parses to 3.0")
+
+
+## #13: the per-faction relationship buckets (built by one-pass bucketing) must equal
+## exactly the relationships that involve each faction.
+func test_faction_relationship_buckets_match_involves() -> void:
+	var input := DungeonFactionInput.new()
+	input.dungeon_id = "dfx_buckets"
+	for i in range(1, 6):
+		input.add_room(i, 1)
+	# Two goblin clans split by an orc warband → 3 factions, each in 2 relationships.
+	input.place(1, "goblin", 6, {"monster_types": ["beastman"], "intelligence": "low",
+		"alignment": "chaotic", "hd": 1.0, "is_lair": true, "is_leader": true, "leader_hd": 2.0})
+	input.place(3, "orc", 6, {"monster_types": ["beastman"], "intelligence": "low",
+		"alignment": "chaotic", "hd": 1.0, "is_lair": true, "is_leader": true, "leader_hd": 2.0})
+	input.place(5, "goblin", 6, {"monster_types": ["beastman"], "intelligence": "low",
+		"alignment": "chaotic", "hd": 1.0, "is_lair": true, "is_leader": true, "leader_hd": 2.0})
+	input.connect_rooms(1, 2)
+	input.connect_rooms(2, 3)
+	input.connect_rooms(3, 4)
+	input.connect_rooms(4, 5)
+
+	var result := DungeonFactionGenerator.generate(input, 7)
+	check(result.factions.size() >= 2, "at least two factions to bucket")
+	for f in result.factions:
+		var expected: int = 0
+		for r in result.relationships:
+			if r.involves(f.id):
+				expected += 1
+		check(f.relationships.size() == expected,
+			"%s bucket holds all %d involving relationships (got %d)" % [f.species, expected, f.relationships.size()])
+		for r in f.relationships:
+			check(r.involves(f.id), "every relationship in the bucket involves the faction")
 
 
 # ---------------------------------------------------------------------------

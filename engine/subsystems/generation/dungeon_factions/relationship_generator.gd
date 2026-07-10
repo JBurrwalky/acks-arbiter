@@ -55,6 +55,13 @@ static func _relationship_for_pair(input: DungeonFactionInput, a: DungeonFaction
 	rel.faction_b_id = b.id
 	rel.id = "%s_dfrel_%s__%s" % [a.dungeon_id, a.id, b.id]
 
+	# Equidistant no-man's-land is a TERRITORY fact — rooms both factions reach at
+	# equal distance, owned by neither — independent of the relationship. Record it
+	# for EVERY pair (even unaware) so the map's CONTESTED status survives save/load:
+	# the repo rebuilds STATUS_CONTESTED only from contested_room_ids, so a contested
+	# room left off a non-adversarial pair was silently dropped on reload (review #4).
+	rel.contested_room_ids = _equidistant_contested(a, b, contested_lookup)
+
 	# --- Step 1: awareness --------------------------------------------------
 	var aware: bool = FactionGraph.is_aware(
 		input, a.core_room_ids, b.core_room_ids, claimed, _MAX_UNCLAIMED_FOR_AWARENESS)
@@ -78,18 +85,25 @@ static func _relationship_for_pair(input: DungeonFactionInput, a: DungeonFaction
 	# --- Step 5: roll -------------------------------------------------------
 	rel.relationship = _weighted_pick(weights, rng)
 
-	# For vassalage, faction_a is the master (stronger). Reorder if needed.
-	if rel.relationship == DungeonFactionRelationship.REL_VASSAL and not master_first:
-		var tmp: String = rel.faction_a_id
-		rel.faction_a_id = rel.faction_b_id
-		rel.faction_b_id = tmp
+	# Orient vassalage so faction_a is the MASTER. Published species-servitude (§5.3)
+	# sets the direction — kobold serves dragon even when the kobolds swarm — and the
+	# power heuristic only decides when the books are silent (review #5).
+	if rel.relationship == DungeonFactionRelationship.REL_VASSAL:
+		if not _vassal_a_is_master(a, b, master_first):
+			var tmp: String = rel.faction_a_id
+			rel.faction_a_id = rel.faction_b_id
+			rel.faction_b_id = tmp
 
-	# Contested rooms for adversarial relationships.
+	# Adversarial pairs ALSO skirmish over their shared border rooms (owned frontier
+	# rooms adjacent to the other faction), added on top of the no-man's-land above.
 	if rel.relationship == DungeonFactionRelationship.REL_RIVAL \
 			or rel.relationship == DungeonFactionRelationship.REL_HOSTILE:
-		rel.contested_room_ids = _contested_between(input, a, b, tmap, contested_lookup)
+		for rid in _border_rooms(input, a, b, tmap):
+			if not rel.contested_room_ids.has(rid):
+				rel.contested_room_ids.append(rid)
+		rel.contested_room_ids.sort()
 
-	rel.notes = _notes_for(rel.relationship, a, b)
+	rel.notes = _notes_for(rel, a, b)
 	return rel
 
 
@@ -189,15 +203,25 @@ static func _claimed_rooms(tmap: DungeonTerritoryMap) -> Dictionary:
 	return claimed
 
 
-static func _contested_between(input: DungeonFactionInput, a: DungeonFaction,
-		b: DungeonFaction, tmap: DungeonTerritoryMap, contested_lookup: Dictionary) -> Array[int]:
+## Ownerless no-man's-land: rooms the territory map flagged CONTESTED by exactly
+## these two factions (reached at equal BFS distance, §4.4). A TERRITORY fact
+## independent of the relationship, so it is recorded for every pair.
+static func _equidistant_contested(a: DungeonFaction, b: DungeonFaction,
+		contested_lookup: Dictionary) -> Array[int]:
 	var out: Array[int] = []
-	# Rooms flagged contested by exactly these two factions.
 	for rid in contested_lookup.keys():
 		var set: Dictionary = contested_lookup[rid]
 		if set.has(a.id) and set.has(b.id):
 			out.append(int(rid))
-	# Border rooms: an a-controlled room adjacent to a b-controlled room.
+	out.sort()
+	return out
+
+
+## Border skirmish rooms: an a-controlled room adjacent to a b-controlled room (and
+## the neighbour). Adversarial flavour — only added for rival/hostile pairs.
+static func _border_rooms(input: DungeonFactionInput, a: DungeonFaction,
+		b: DungeonFaction, tmap: DungeonTerritoryMap) -> Array[int]:
+	var out: Array[int] = []
 	for rid in tmap.room_assignments.keys():
 		var e: DungeonTerritoryEntry = tmap.room_assignments[rid]
 		if e.controlling_faction_id != a.id:
@@ -216,8 +240,11 @@ static func _contested_between(input: DungeonFactionInput, a: DungeonFaction,
 	return out
 
 
-static func _notes_for(rel: String, a: DungeonFaction, b: DungeonFaction) -> String:
-	match rel:
+## Note text for the RESOLVED relationship record. VASSAL wording follows
+## rel.faction_a_id (the master, oriented above) so the prose can never contradict
+## the structured direction (review #6). Non-vassal notes are symmetric in a/b.
+static func _notes_for(rel: DungeonFactionRelationship, a: DungeonFaction, b: DungeonFaction) -> String:
+	match rel.relationship:
 		DungeonFactionRelationship.REL_ALLIED:
 			return "%s and %s cooperate; alerts and reinforcements cross their border." % [a.name, b.name]
 		DungeonFactionRelationship.REL_RIVAL:
@@ -225,9 +252,31 @@ static func _notes_for(rel: String, a: DungeonFaction, b: DungeonFaction) -> Str
 		DungeonFactionRelationship.REL_HOSTILE:
 			return "%s and %s are at war; skirmishes flare in the contested rooms between them." % [a.name, b.name]
 		DungeonFactionRelationship.REL_VASSAL:
-			return "%s serves %s (tribute / obedience)." % [b.name, a.name]
+			var master: DungeonFaction = a if rel.faction_a_id == a.id else b
+			var servant: DungeonFaction = b if rel.faction_a_id == a.id else a
+			return "%s serves %s (tribute / obedience)." % [servant.name, master.name]
 		_:
 			return "%s and %s are aware of each other but keep to their own territory." % [a.name, b.name]
+
+
+## The MASTER species (the one served) if (s1, s2) is a published alliance (§5.3);
+## "" otherwise. _ALLIANCES entries are ordered [servant, master].
+static func _alliance_master_species(s1: String, s2: String) -> String:
+	for pair in _ALLIANCES:
+		if (pair[0] == s1 and pair[1] == s2) or (pair[0] == s2 and pair[1] == s1):
+			return pair[1]
+	return ""
+
+
+## True iff faction [param a] is the vassal MASTER. Published species-servitude
+## (§5.3) decides the direction regardless of raw power (a swarm of kobolds still
+## serves a lone dragon); [param master_first] (the power heuristic) is used only
+## when the books name no master for the pair.
+static func _vassal_a_is_master(a: DungeonFaction, b: DungeonFaction, master_first: bool) -> bool:
+	var master_species: String = _alliance_master_species(a.species, b.species)
+	if master_species != "":
+		return a.species == master_species
+	return master_first
 
 
 static func _align_rank(alignment: String) -> int:

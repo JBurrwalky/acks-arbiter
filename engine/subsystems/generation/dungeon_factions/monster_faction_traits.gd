@@ -56,11 +56,19 @@ static func _ensure_loaded() -> void:
 
 static func _extract(entry: Dictionary) -> Dictionary:
 	var types: Array[String] = []
-	for mt in (entry.get("monster_types", []) as Array):
-		types.append(String(mt))
+	# .get()'s default only applies to a MISSING key — a present null / non-array
+	# value would make `for mt in (null as Array)` crash mid-load, aborting the parse
+	# AFTER _loaded=true and leaving traits_for() empty forever (review #10).
+	var raw_types: Variant = entry.get("monster_types", [])
+	if raw_types is Array:
+		for mt in (raw_types as Array):
+			types.append(String(mt))
 	var hit_dice: Dictionary = entry.get("hit_dice", {}) if entry.get("hit_dice") is Dictionary else {}
-	var base: float = float(hit_dice.get("base", 1)) if hit_dice.has("base") else 1.0
-	var stars: int = int(hit_dice.get("special_ability_stars", 0)) if hit_dice.has("special_ability_stars") else 0
+	# Numeric fields go through _num so a non-scalar catalog value (e.g. "morale": {})
+	# defaults instead of crashing int()/float() mid-load — the same failure mode the
+	# monster_types guard above targets (review #10 follow-up).
+	var base: float = _num(hit_dice.get("base"), 1.0)
+	var stars: int = int(_num(hit_dice.get("special_ability_stars"), 0.0))
 	var special: bool = stars > 0
 	var abilities: Variant = entry.get("special_abilities", null)
 	if abilities is Array and not (abilities as Array).is_empty():
@@ -71,7 +79,18 @@ static func _extract(entry: Dictionary) -> Dictionary:
 		"monster_types": types,
 		"alignment": String(entry.get("alignment", "neutral")).to_lower(),
 		"hd": base,
-		"morale": int(entry.get("morale", 0)) if entry.get("morale") != null else 0,
+		"morale": int(_num(entry.get("morale"), 0.0)),
 		"is_undead": types.has("undead"),
 		"has_special_abilities": special,
 	}
+
+
+## Numeric coercion that never crashes on a non-scalar catalog value: int()/float()
+## of a Dictionary/Array throws. Accepts int/float and numeric strings; anything else
+## (Dictionary/Array/null/non-numeric string) -> [param default_value].
+static func _num(v: Variant, default_value: float = 0.0) -> float:
+	if v is int or v is float:
+		return float(v)
+	if v is String and (v as String).is_valid_float():
+		return (v as String).to_float()
+	return default_value
