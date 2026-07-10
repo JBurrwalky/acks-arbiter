@@ -38634,3 +38634,83 @@ on-tick dispatch.
 **Tests added/updated:** 14 new suites (P4 prompt/validation + live; FF-4 allegiance/betrayal/covert_ops/divided_loyalty/orso_capstone/faction_ai; DungeonFaction golden/units/persistence; DungeonTieIn additive/linker/consequences) — ext-resource id blocks 546–547 / 553–558 / 560–562 / 569–571. Plus the 4 central fixes above. Suite: **544 passed / 16 failed** — net-zero vs the pre-existing baseline (the 16 are unchanged combat/movement/domain/session baseline suites; zero Wave-3 suites among them), two-run stable, 0 parse/load errors, all 14 Wave-3 suites green.
 **Known issues:** The Dialogue-P4 live layer is exercised on the mock path + fake-transport; the §13.8 capability harness needs a real provider to run for real (that is the layer's purpose — deferred to a live-provider session). FF-4's covert ops model at the FF-4 level (reused `HijinkThrowTarget.classify_outcome`) rather than materializing the full character-hijink pipeline. Dungeon Factions' `DungeonFactionInputBuilder.from_layout` (the DG-V1 grid adapter) is the highest-risk untested seam — needs in-engine verification against a real generated dungeon. The 16-failure baseline is unchanged.
 **Next session should:** Wave 3 completes the master build plan (Waves 0–3 all done — Live LLM, Faction Framework FF-1..FF-5, Dialogue P1..P4, Quest-Rumor, Dungeon Factions). Remaining forward work: the Q-6 concrete-deed build (awaits Jedidiah's O-1..O-8 rulings on `docs/handoff-faction-concrete-jobs.md`); a live-LLM-provider pass to run the §13.8 capability harness for real; in-engine verification of the DG-V1→dungeon-faction adapter; and any Seam-B live-trigger wiring. Await Jedidiah's direction.
+
+
+## Session 2026-07-10 — delete_campaign unified onto the savegame scope map (one deletion registry)
+
+**Task:** Refactor `CampaignRepository.delete_campaign()` to DERIVE its deletions from the completeness-tested per-campaign scope map (`_campaign_scope_entries()`) instead of a second hand-maintained DELETE cascade, closing the dual-registry footgun (conventions §105) where a new campaign-scoped table had to be remembered in BOTH lists and the delete path silently drifted.
+
+**Model used:** Fable 5 (implementation + verification).
+
+**Completed:**
+- `engine/autoloads/campaign_repository.gd delete_campaign()`: replaced the ~190-line hand-rolled child-before-parent DELETE cascade with a loop over `_campaign_scope_entries()` issuing `DELETE FROM main."<t>" WHERE <scope>` per entry (deepest-child-first order comes from the map itself). Two deliberate explicit DELETEs remain: `game_snapshots` (in `SNAPSHOT_EXCLUDED_TABLES`, so outside the map, but campaign delete must drop slot metadata) and the `campaigns` root row (IS in the map for restore, but skipped in the loop and deleted explicitly LAST so the `-> bool` success contract stays keyed to it, as before). Signature and contract unchanged; per-table failures now `push_error` with the table name and return false (previously intermediate failures were silently ignored).
+- Extracted shared clause builder `_scope_where(entry, schema, campaign_id) -> {"where", "params"}` from `_restore_campaign_from_slot` and rewired the restore path through it — the two consumers can no longer scope a table differently ("0" where = skip statement, dungeon-scoped entries resolve via `_dungeon_ids_for_campaign`).
+- Mechanical coverage diff (old delete table set vs new path): all 138 previously-deleted tables remain covered; ~39 tables gain delete coverage that were previously ORPHANED on campaign delete — the whole `setting_*` family, dungeon-content tables (`dungeon_floors`/`dungeon_rooms`/`dungeon_doors`/`monster_groups`/`treasure_hoards`/`key_items`/`dungeon_faction_*`), `journal_bookmarks`/`narrative_entries`/`notebook_state`/`player_notes`/`game_log_entries`/`dungeon_entity_positions`, `ruler_ai_state`, `ruler_dispositions`, `xp_awards`, `roads`, `guildhouses`, `hideouts`, `domain_extraction_ledger`.
+- Fixed a latent no-op in the OLD delete path: `voxel_map_cells` was deleted `WHERE map_id IN (SELECT id FROM hex_maps ...)` but `voxel_map_cells.map_id` is a DUNGEON id (== `parties.dungeon_id`) — the statement never matched, orphaning voxel cells on every campaign delete. The map's dungeon-scoped entry is the correct scoping and now drives the delete.
+- Widened two scope-map via-clauses so NO coverage was lost moving to the map (both also fix latent restore under-scoping): `pending_divine_effects` scoped `(character_id IN ... OR domain_id IN ...)` (rows may carry either — CHECK enforces at least one; the map previously stranded domain-only rows) and `henchman_pool_members` scoped `(character_id IN ... OR pool_id IN ...)` (union of the old delete's pool path and the map's character path). Both moved out of `_SCOPE_VIA_CHARACTER` into custom `e.append` entries.
+- Updated conventions §105 first bullet: the dual-mechanism footgun is RESOLVED — one registry (`_campaign_scope_entries`), classify new campaign-scoped tables there ONLY; documented the two explicit exceptions and the multi-parent union-clause rule.
+- Stale comment fix in `wipe_for_tests` docstring ("zero call delete_campaign" → "almost none"; several test suites now call it).
+
+**Decisions made:**
+- delete_campaign stays NON-transactional (matches prior behavior; deletion is re-runnable, and a BEGIN inside a caller's open transaction would misbehave). The restore path keeps its existing BEGIN/COMMIT.
+- `campaigns` root deleted explicitly last (not via the loop) so the success bool keys to the root-row DELETE exactly as before the refactor.
+- Orphaned save-slot FILES on campaign delete (game_snapshots rows deleted, `.db` slot files left on disk) confirmed as a PRE-EXISTING gap, not a regression — spun off as task chip task_ce5d6914 rather than widening this change.
+
+**Interfaces defined or changed:**
+- `_scope_where(entry: Dictionary, schema: String, campaign_id: String) -> Dictionary` — new private helper on CampaignRepository, shared by `delete_campaign` and `_restore_campaign_from_slot`. Returns `{"where": String, "params": Array}`; `"0"` where means "no rows can match — skip".
+- `delete_campaign(campaign_id: String) -> bool` — signature/contract unchanged (production callers: campaign_select_screen.gd:480 delete button, party_creation_state.gd:181 cancel-rollback).
+
+**Database changes:** None (no migrations; scope-map via-clause widenings are query-shape only).
+
+**Tests added/updated:**
+- `tests/test_savegame_snapshot.gd` + `test_delete_campaign_purges_all_scoped_tables`: seeds two campaigns (incl. the historic-divergence rows: dungeon voxel cells, a domain-only `pending_divine_effects` row, a henchman pool + member, a save slot), captures per-table `(total, in-scope)` for EVERY scope-map entry BEFORE deletion (via-clauses resolve through parents, so pre-delete is the only meaningful moment), then asserts `total_after == total_before - in_scope` for every scoped table — the equality catches under-deletion (orphans) AND over-deletion (campaign-B damage) — plus targeted spot-checks (campaigns root, game_snapshots metadata, voxel cells, dual-parent rows, campaign-B survival). delete_campaign now inherits the scope map's completeness test: an unclassified new table already fails `test_scope_map_covers_all_tables`.
+- New `_table_total` helper; `_cleanup` extended to purge the delete-test's seed rows on failed runs.
+
+**Verification (concurrent-session saga):** A sibling session was running its own Wave-3 review-fix cycle in this worktree simultaneously — two main-tree double-runs collided on the shared isolated test DB (644 "database is locked", 529/31 garbage numbers) and the sibling then `git stash`-ed the whole tree mid-flight (temporarily removing this session's edits too; they returned when it popped). Clean verification was done in a THROWAWAY GIT WORKTREE (`git worktree add` from HEAD + `git stash apply` + the two untracked FF-4 migrations copied in): run_tests.sh's per-worktree APPDATA hash gives it a private test DB and log, so the two sessions stopped colliding. Result: worktree (HEAD + sibling fixes + this session's changes) = 542/18 on run 2, ZERO lock errors; sibling's own main-tree control run (HEAD only) = 543/17; the failing-assertion sets are IDENTICAL except one worktree-only artifact (`extract_dungeon_generator_data.py --check` drift — proven environmental: the same check passes in the main tree with the identical file set post-pop; fresh-checkout line-endings suspected). NET-ZERO real new failures; SavegameSnapshot (incl. the new delete test), QuestRumorPersistence, FactionFF1Schema, DialoguePhase1 (all delete_campaign consumers) pass everywhere.
+
+**Known issues:**
+- Save-slot `.db` files orphaned on campaign delete (pre-existing; chip task_ce5d6914 filed).
+- delete_campaign now runs ~2 small queries per scope entry (~300 total, incl. per-dungeon-entry `_dungeon_ids_for_campaign` re-resolution, same as restore) — a UI-click operation, no observed latency concern.
+- `test_dungeon_generator_data_freshness` fails in FRESH worktree checkouts only (data-file drift vs regenerated output; passes in the main tree) — likely CRLF/checkout artifact, worth a byte-compare hardening if worktree test runs become routine.
+
+**Next session should:**
+- Optionally take the task_ce5d6914 chip (slot-file cleanup on campaign delete).
+- No other follow-ups from this session; the sibling Wave-3 session's uncommitted review fixes (migrations 208/209 etc.) were preserved untouched throughout.
+
+
+## Session 2026-07-10 — Wave-3 code review + fix pass (15 findings, 4 logical commits)
+
+**Task:** Run a scoped code review of the Wave-3 work only (`55d346a..HEAD`), then fix the findings in small code-sharing chunks, commit, and (per Jedidiah) do all of the low-value conventions/cleanup chunk.
+
+**Model used:** Opus 4.8 for orchestration, review synthesis, fixes, and adversarial-verify workflows.
+
+**Completed:**
+- **Review:** xhigh `/code-review` scoped to Wave 3 — 10 finder angles (5 correctness + cleanup/altitude/conventions) x up to 8 candidates, 1-vote verify, sweep. 15 findings filed (2 candidates REFUTED and dropped: sabotage negative-treasury is an intended debt state consumed by `faction_ai._handle_unpaid`; the `_deterministic_offense_fired` stale-`last_outcome` claim was wrong — every non-`gather` handler sets `last_outcome`, and `gather` short-circuits on an empty plan).
+- **14 of 15 findings fixed + verified** (the 15th, helper dedup, is partially done — traversal dedup landed, the codebase-wide helper consolidation chipped). Grouped into 4 commits by shared code:
+  - **Commit `7c27ae5`** — #1 `declare_stance` once-per-conflict guard (migration 209 `faction_conflict_declarations` ledger; `_active_conflict_for` skips declared conflicts, killing the monthly re-evaluate/re-emit/betrayal-re-arm); #2 covert_ops betrayal +4 op bonus no longer floored; #3 dungeon conflict-pass cap widened to per-BAND (migration 208, PK dungeon+conflict+faction). PLUS the spun-off delete_campaign unification chip (Fable 5): `delete_campaign()` now derives from `_campaign_scope_entries()` instead of a hand-rolled cascade — closing the dual-registry footgun #1 exposed; `faction_conflict_declarations` in `_SCOPE_DIRECT_CAMPAIGN` means the scope-map delete covers it (my explicit purge line superseded). New `test_delete_campaign_purges_all_scoped_tables`; conventions section 105 rewritten.
+  - **Commit `95b1c39`** — dungeon-faction generation: #4 territory round-trip (record equidistant no-man's-land for every aware/unaware pair so CONTESTED survives save/load); #5 VASSAL master follows published species-servitude not raw power (`_vassal_a_is_master`); #6 VASSAL note derives from `rel.faction_a_id`; #10 `monster_faction_traits` guards `monster_types` + numeric fields (`_num`) against null/non-scalar catalog values; #13 O(F^3)->O(F^2) relationship bucketing.
+  - **Commit `a0aeae6`** — dialogue + faction robustness: #8 social-flag dedup per-ISSUE (kind+move+topic/quest_title/action_id) not per-kind; #9 `_capture_reply` clears the reply stash on a rejected move; #7 `divided_loyalty` returns each conflict signature once; #11 `allegiance_evaluator` guards a malformed `context.terms`.
+  - **Commit `60c3352`** — #14 signals renamed past-tense (`dialogue_reply_pending`->`dialogue_reply_requested`, `dungeon_detachment_conflict_pass`->`dungeon_detachment_conflict_resolved`); #12 the three resort-per-pop graph walks replaced with proper single-pass traversals (FactionGraph.is_aware 0-1 BFS; AlertPropagation bucketed Dijkstra; TerritoryAssigner level-by-level BFS — all output-identical, golden byte-identical test confirms); #15 TerritoryAssigner uses the shared `FactionGraph._sorted_neighbors`.
+- **Adversarial verify:** ran skeptic workflows on every fix cluster (chunk 1: 2 skeptics SOLID; chunks 2-4: 3 skeptics, chunk3 CONCERN -> 4 minors all addressed; the #1-3 batch: 4 skeptics, 1 major found + fixed — `faction_conflict_declarations` was missing from the `delete_campaign` purge, which the chip's unification then resolved wholesale). The 4 chunk-2-4 minors: numeric-cast hardening (`_num` for morale/base/stars), per-issue key broadening + dead-code removal, obligation-collapse documented.
+
+**Decisions made:**
+- Per-band dungeon conflict cap matches the AUTHORITATIVE section 11.3 ("<=1 pass per faction per conflict"); reconciled the stale section 9.3 prose. A bugfix, not a design change.
+- #4 fixed by recording equidistant rooms on every pair (reuses the existing `contested_room_ids` column, no migration) rather than a new persistence table; 3-way-contested rooms keep a pre-existing minor imprecision (noted).
+- #12 TerritoryAssigner: level-by-level BFS PRESERVES the exact `(dist, room, faction)` order (load-bearing for contested ties + downstream ownership) — verified byte-identical by the golden test. Did NOT risk a plain-FIFO rewrite.
+- #15 helper consolidation (realm-resolvers x5, `_s` x18 codebase-wide, `_band_index`, align-rank, dice-parser) is marginal-value cleanup spanning 20+ mostly-pre-Wave-3 files with drifted signatures — SPUN OFF as a dedicated chip (task_ebcfdf59) rather than swept at session end.
+
+**Interfaces defined or changed:**
+- EventBus signals RENAMED: `dialogue_reply_requested(session_id, npc_id)`, `dungeon_detachment_conflict_resolved(dungeon_id, band_faction_id, conflict_id, decision)`.
+- `CampaignRepository`: `ff_has_dungeon_conflict_pass(dungeon_id, conflict_id, faction_id)` (now 3-arg); `ff_has_faction_conflict_declaration(faction_id, conflict_id)` + `ff_record_faction_conflict_declaration(...)`; `delete_campaign` derives from `_campaign_scope_entries()` (+ `_scope_where()` shared clause builder). New scope entry `faction_conflict_declarations`.
+- `RelationshipGenerator._vassal_a_is_master/_alliance_master_species/_equidistant_contested/_border_rooms`; `MonsterFactionTraits._num`; `DialogueSession._social_flag_key`.
+
+**Database changes:** Migration 208 (`dungeon_link_conflict_passes` PK -> dungeon+conflict+faction, atomic rebuild); migration 209 (`faction_conflict_declarations`, campaign-scoped).
+
+**Tests added/updated:** regression tests for every fix (VASSAL orientation/note + equidistant round-trip; malformed catalog values + bucket correctness; per-issue + topicless social-flag keys + reject stash-clear; shared loyalty conflict once + malformed terms; per-band dungeon pass; declare_stance cap; betrayal-bonus throw; delete_campaign scope purge). Suite 544/16 net-zero, two-run stable throughout.
+
+**Known issues:**
+- One self-inflicted scare: my chunk-4 allegiance test orphaned a `check(...public...)` line into the new function (a parse error that made the suite fail to LOAD — invisible to the assertion-diff, since a load failure is not an ASSERTION FAILED). Caught by the full-suite run showing the suite absent; fixed. Lesson: grep the log for `Parse error`/`Failed to load script`, not just assertions.
+- #15 helper consolidation deferred to chip task_ebcfdf59.
+- The 16-failure baseline is unchanged (combat/movement/domain/session suites; flaky band 16<->17).
+
+**Next session should:** pick up the #15 helper-consolidation chip if desired; otherwise the master build plan (Waves 0-3) remains complete and the review is closed. Nothing pushed (local `main` only).
