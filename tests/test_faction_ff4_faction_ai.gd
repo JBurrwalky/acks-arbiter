@@ -16,6 +16,7 @@ func run_all_tests() -> void:
 	test_undermine_rival_runs_a_covert_op()
 	test_declare_stance_gated_on_a_conflict()
 	test_declare_stance_runs_the_evaluator()
+	test_declare_stance_is_capped_once_per_conflict()
 	if not has_failures():
 		print("FactionFF4FactionAI: all tests passed.")
 
@@ -91,6 +92,44 @@ func test_declare_stance_runs_the_evaluator() -> void:
 	check(bool(out.get("declared", false)), "declare_stance ran the allegiance evaluator")
 	check(String(out.get("decision", "")) != "", "a decision was produced, got %s" % out.get("decision"))
 	check(not out.has("deferred_to"), "the handler is NOT a deferred stub")
+
+
+## Review fix (finding #1): once an org declares for a conflict, declare_stance must
+## become UNAVAILABLE for that conflict — no monthly re-evaluate / re-emit / betrayal
+## re-arm. The migration-209 ledger enforces this.
+func test_declare_stance_is_capped_once_per_conflict() -> void:
+	var liege := _char("Cap Liege", "lawful")
+	var rebel := _char("Cap Rebel", "neutral")
+	var liege_realm := _realm("Cap Crown", liege, "lawful")
+	var rebel_realm := _realm("Cap Rebel Realm", rebel, "neutral")
+	_domain("Cap Crown Seat", liege, liege_realm)
+	var rebel_dom := _domain("Cap Rebel Seat", rebel, rebel_realm)
+	FactionRegistry.ensure_realm_mirror(_cid, liege_realm)
+	FactionRegistry.ensure_realm_mirror(_cid, rebel_realm)
+	var liege_mirror := FactionRegistry.get_realm_mirror_id(_cid, liege_realm)
+	var rebel_mirror := FactionRegistry.get_realm_mirror_id(_cid, rebel_realm)
+	CampaignRepository.ff_upsert_plot({
+		"campaign_id": _cid, "kind": "rebellion",
+		"instigator_faction_id": rebel_mirror, "target_faction_id": liege_mirror,
+		"secrecy": 0, "launch_condition": "{}", "status": "launched", "ready_since_day": 0})
+	var org := _org_seated("Cap Chapel", "temple", rebel_dom)
+
+	# First declaration: available, runs, records the ledger row.
+	var conflict := FactionAI._active_conflict_for(org)
+	check(not conflict.is_empty(), "the conflict exposes the org before it declares")
+	var conflict_id := String(conflict.get("conflict_id", ""))
+	check(FactionAI._action_available("declare_stance", org, "temple"),
+		"declare_stance available before the org has declared")
+	var out := FactionAI._do_declare_stance(_cid, org, 100)
+	check(bool(out.get("declared", false)), "the org declares once")
+	check(CampaignRepository.ff_has_faction_conflict_declaration(String(org.get("id", "")), conflict_id),
+		"the declaration was recorded in the ledger")
+
+	# Second month, same conflict: the org is SETTLED — no re-evaluation.
+	check(FactionAI._active_conflict_for(org).is_empty(),
+		"the settled conflict no longer exposes the org (won't re-evaluate)")
+	check(not FactionAI._action_available("declare_stance", org, "temple"),
+		"declare_stance is UNAVAILABLE for an already-declared conflict")
 
 
 # ---------------------------------------------------------------------------

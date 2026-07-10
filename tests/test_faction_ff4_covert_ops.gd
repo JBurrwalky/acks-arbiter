@@ -24,6 +24,7 @@ func run_all_tests() -> void:
 	test_op_target_number_monotone()
 	test_spy_success_steals_secret()
 	test_sabotage_destroys_org_funds()
+	test_betrayal_bonus_reaches_the_throw()
 	test_caught_op_writes_discovery()
 	test_for_hire_rate_bands_and_hostile_refusal()
 	test_assassination_gate()
@@ -98,6 +99,32 @@ func test_caught_op_writes_discovery() -> void:
 	var grievance := FactionEventLedger.recompute_grievance(
 		String(target.get("id", "")), String(perp.get("id", "")), 100)
 	check(grievance < 0, "the caught perpetrator earns a grievance, got %d" % grievance)
+
+
+## Review fix (finding #2): the §7.3 prepared-betrayal "+4 to the throw" must actually
+## reach classify_outcome (it was floored to inert by maxi(net_penalty, 0)). A non-thief
+## org throws at the L1 target (17) against a domain-less target (morale penalty 0), so
+## a d20 of 13 fails at 0 bonus but the +4 op flips it to a success, and the report
+## records the NEGATIVE net penalty (not a floored 0).
+func test_betrayal_bonus_reaches_the_throw() -> void:
+	var perp := _org("Turncoat", "temple", "lawful", 0)    # non-thief -> L1, target 17
+	var target := _org("Betrayed", "temple", "lawful", 0)  # no home domain -> morale penalty 0
+	var tid: String = String(target.get("id", ""))
+
+	var d := FixedDice.new()
+	d.d20 = 13
+	var no_bonus := CovertOps.run_op(_cid, "spy", perp, tid, 100, d)
+	check(not bool(no_bonus.get("success", false)),
+		"d20 13 misses the L1 throw (target 17) with no bonus")
+
+	var d2 := FixedDice.new()
+	d2.d20 = 13
+	var with_bonus := CovertOps.run_op(_cid, "spy", perp, tid, 100, d2,
+		{"throw_bonus": CovertOps.BETRAYAL_OP_BONUS})
+	check(bool(with_bonus.get("success", false)),
+		"the +4 betrayal op flips the SAME roll to a success (bonus applied, not floored)")
+	check(int(with_bonus.get("penalty", 1)) == -CovertOps.BETRAYAL_OP_BONUS,
+		"the report records the net bonus (penalty == -4), got %d" % int(with_bonus.get("penalty", 1)))
 
 
 # ---------------------------------------------------------------------------

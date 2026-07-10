@@ -24,6 +24,7 @@ func run_all_tests() -> void:
 	test_wipeout_detachment_drops_standing_and_retaliates()
 	test_wipeout_exile_celebrates()
 	test_conflict_pass_once_per_conflict()
+	test_two_bands_same_dungeon_each_get_a_pass()
 	test_conflict_pass_skips_non_detachment()
 	test_open_influence_path_raises_standing()
 	if not has_failures():
@@ -284,13 +285,50 @@ func test_conflict_pass_once_per_conflict() -> void:
 	var res1: Dictionary = DungeonTieIn.run_conflict_pass(
 		band, _cid, rebel_mirror, liege_mirror, conflict, 200, {})
 	check(bool(res1.get("ran")) == true, "the detachment takes its one allegiance pass")
-	check(CampaignRepository.ff_has_dungeon_conflict_pass(band.dungeon_id, "rebellion:cons"),
-		"the pass was recorded (cap set)")
+	check(CampaignRepository.ff_has_dungeon_conflict_pass(band.dungeon_id, "rebellion:cons", band.id),
+		"the pass was recorded for this band (cap set)")
 
 	var res2: Dictionary = DungeonTieIn.run_conflict_pass(
 		band, _cid, rebel_mirror, liege_mirror, conflict, 210, {})
 	check(bool(res2.get("ran")) == false, "a second pass on the same conflict is capped")
 	check(String(res2.get("reason")) == "already_passed", "reason is already_passed")
+
+
+## Two detachment bands sharing ONE dungeon, linked to OPPOSING parents, must EACH
+## get their own allegiance pass for the same conflict — the migration-208 per-band
+## cap fix (the old per-dungeon key let band A block band B).
+func test_two_bands_same_dungeon_each_get_a_pass() -> void:
+	var rebel := _realm("Rebel Twin", "neutral")
+	var liege := _realm("Loyal Twin", "lawful")
+	var rebel_mirror := _mirror(rebel)
+	var liege_mirror := _mirror(liege)
+	# Both bands live in the SAME dungeon (shared dungeon_id), opposing parents.
+	var band_a := _band("cons_twin_a", "gnoll", "tribal", "chaotic")
+	var band_b := _band("cons_twin_b", "kobold", "tribal", "chaotic")
+	band_b.dungeon_id = band_a.dungeon_id
+	_link_manual(band_a, rebel_mirror, "detachment")
+	_link_manual(band_b, liege_mirror, "detachment")
+
+	var conflict := {
+		"conflict_id": "rebellion:twin", "kind": "rebellion",
+		"side_a_mirror": rebel_mirror, "side_b_mirror": liege_mirror,
+		"side_a_realm_id": rebel, "side_b_realm_id": liege,
+		"legitimate_side": liege_mirror, "instigator_side": rebel_mirror}
+
+	var res_a: Dictionary = DungeonTieIn.run_conflict_pass(
+		band_a, _cid, rebel_mirror, liege_mirror, conflict, 300, {})
+	check(bool(res_a.get("ran")) == true, "band A takes its pass")
+	# Band B in the SAME dungeon+conflict must NOT be blocked by band A's pass.
+	var res_b: Dictionary = DungeonTieIn.run_conflict_pass(
+		band_b, _cid, rebel_mirror, liege_mirror, conflict, 300, {})
+	check(bool(res_b.get("ran")) == true, "band B (same dungeon, opposing parent) gets its OWN pass")
+	# Each band is independently capped on a re-run.
+	var res_a2: Dictionary = DungeonTieIn.run_conflict_pass(
+		band_a, _cid, rebel_mirror, liege_mirror, conflict, 310, {})
+	check(String(res_a2.get("reason")) == "already_passed", "band A is capped on its second attempt")
+	check(CampaignRepository.ff_has_dungeon_conflict_pass(band_a.dungeon_id, "rebellion:twin", band_a.id)
+		and CampaignRepository.ff_has_dungeon_conflict_pass(band_b.dungeon_id, "rebellion:twin", band_b.id),
+		"both bands have their own recorded pass row")
 
 
 func test_conflict_pass_skips_non_detachment() -> void:

@@ -3748,18 +3748,35 @@ CREATE TABLE IF NOT EXISTS dungeon_solitary_threats (
 CREATE INDEX IF NOT EXISTS idx_dungeon_solitary_threats_dungeon
     ON dungeon_solitary_threats(dungeon_id);
 
--- FF-5 (§9.3, migration 207): once-per-conflict-per-dungeon allegiance-pass cap
--- (§11.3). One row per (dungeon, conflict) already passed. Dungeon-CONTENT.
+-- FF-5 (§9.3, migration 207; PK widened in 208): once-per-conflict-per-BAND
+-- allegiance-pass cap (§11.3). One row per (dungeon, conflict, band) already passed
+-- — a dungeon can hold multiple detachment bands linked to different parents, and
+-- each gets its own single pass. Dungeon-CONTENT.
 CREATE TABLE IF NOT EXISTS dungeon_link_conflict_passes (
     dungeon_id   TEXT    NOT NULL,
     conflict_id  TEXT    NOT NULL,
     faction_id   TEXT    NOT NULL DEFAULT '',
     decision     TEXT    NOT NULL DEFAULT '',
     passed_day   INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (dungeon_id, conflict_id)
+    PRIMARY KEY (dungeon_id, conflict_id, faction_id)
 );
 CREATE INDEX IF NOT EXISTS idx_dungeon_link_conflict_passes_dungeon
     ON dungeon_link_conflict_passes(dungeon_id);
+
+-- FF-4 (§7.3, migration 209): organization allegiance-declaration ledger — the
+-- once-per-conflict idempotency guard for FactionAI.declare_stance (one allegiance
+-- decision per (faction, conflict); prevents monthly re-evaluate/re-emit/re-arm).
+-- Campaign-scoped.
+CREATE TABLE IF NOT EXISTS faction_conflict_declarations (
+    campaign_id   TEXT    NOT NULL,
+    faction_id    TEXT    NOT NULL,
+    conflict_id   TEXT    NOT NULL,
+    decision      TEXT    NOT NULL DEFAULT '',
+    declared_day  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (faction_id, conflict_id)
+);
+CREATE INDEX IF NOT EXISTS idx_faction_conflict_declarations_campaign
+    ON faction_conflict_declarations(campaign_id);
 
 
 -- ===========================================================================

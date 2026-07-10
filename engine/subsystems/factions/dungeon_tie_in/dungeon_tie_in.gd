@@ -188,7 +188,8 @@ static func on_band_wiped_out(faction: DungeonFaction, campaign_id: String,
 # ---------------------------------------------------------------------------
 
 ## When the parent's realm enters war/rebellion, a linked DETACHMENT gets ONE
-## allegiance-engine pass (§9.3), capped once per conflict per dungeon (§11.3).
+## allegiance-engine pass (§9.3), capped once per conflict per band (§11.3 —
+## migration 208; distinct bands in one dungeon each get their own pass).
 ## Evaluates + persists via AllegianceEvaluator and records the cap. Returns:
 ##   {ran:true, decision, result} on a pass, else {ran:false, reason}.
 static func run_conflict_pass(faction: DungeonFaction, campaign_id: String,
@@ -199,8 +200,10 @@ static func run_conflict_pass(faction: DungeonFaction, campaign_id: String,
 	var conflict_id: String = String(conflict.get("conflict_id", ""))
 	if conflict_id == "":
 		return {"ran": false, "reason": "no_conflict_id"}
-	# §11.3 cap: at most one pass per conflict per dungeon.
-	if CampaignRepository.ff_has_dungeon_conflict_pass(faction.dungeon_id, conflict_id):
+	# §11.3 cap: at most one pass per conflict per BAND (migration 208). Multiple
+	# detachment bands can share a dungeon under different parents; each gets its own
+	# pass, so we key the cap on this band's id, not just the dungeon.
+	if CampaignRepository.ff_has_dungeon_conflict_pass(faction.dungeon_id, conflict_id, faction.id):
 		return {"ran": false, "reason": "already_passed"}
 	var mirror: Dictionary = CampaignRepository.get_faction(faction.id)
 	if mirror.is_empty():

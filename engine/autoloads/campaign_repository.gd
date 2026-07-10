@@ -87,8 +87,8 @@ func _ready() -> void:
 ## Empties every user-data table in the open DB while preserving
 ## `schema_migrations` so subsequent test inserts see the full schema with
 ## no leftover rows. Called from `tests/test_runner.gd._ready()` so test
-## runs don't accumulate orphan campaigns (101 test files call
-## `create_campaign`; zero call `delete_campaign`).
+## runs don't accumulate orphan campaigns (100+ test files call
+## `create_campaign`; almost none call `delete_campaign`).
 ##
 ## SAFE BY CONSTRUCTION: this only ever runs against the isolated test DB +
 ## test saves dir. `_ready()` redirects `db.path` to `TEST_DB_PATH` and
@@ -378,193 +378,38 @@ func list_campaigns() -> Array:
 
 
 ## Delete a campaign and all data owned by it (characters, parties, maps, domains, etc.).
-## Returns true on success, false if the DELETE query failed.
+## Returns true on success, false if any DELETE query failed.
+##
+## Table coverage is DERIVED from _campaign_scope_entries() — the same
+## completeness-tested scope map that drives _restore_campaign_from_slot — so
+## both paths share one source of truth: a table missing from the map already
+## fails test_savegame_snapshot's test_scope_map_covers_all_tables, and once
+## classified there it is purged here automatically. godot-sqlite does not
+## enforce FK constraints, so orphaned rows must be removed explicitly; the
+## scope map is ordered deepest-child-first so no DELETE reads a parent table
+## it already emptied.
 func delete_campaign(campaign_id: String) -> bool:
-	# Deletes every row owned by this campaign across all 63+ tables that have
-	# campaign_id, plus all indirect child tables whose FK chain leads back to
-	# campaign data. godot-sqlite does not enforce FK constraints, so orphaned
-	# rows must be removed explicitly in child-before-parent order.
-	#
-	# Tier 3 ── deepest indirect children (reference tier-2 tables) ──────────
-	# settlement_poi_spell_offers → settlement_pois → settlement_entrances
-	db.query_with_bindings("""
-		DELETE FROM settlement_poi_spell_offers WHERE poi_id IN (
-			SELECT sp.id FROM settlement_pois sp
-			JOIN settlement_entrances se ON sp.settlement_id = se.id
-			WHERE se.campaign_id = ?)""", [campaign_id])
-	# stronghold_accessories/commissions → strongholds → domains/characters
-	db.query_with_bindings("""
-		DELETE FROM stronghold_accessories WHERE stronghold_id IN (
-			SELECT id FROM strongholds
-			WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?))
-		""", [campaign_id])
-	db.query_with_bindings("""
-		DELETE FROM stronghold_commissions WHERE stronghold_id IN (
-			SELECT id FROM strongholds
-			WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?))
-		""", [campaign_id])
-
-	# Tier 2 ── indirect children with FK into campaign-owned tables ──────────
-	# Character sub-tables
-	db.query_with_bindings("DELETE FROM character_conditions WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_permanent_wounds WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_proficiencies WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_spell_formulas WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_spell_slots_expended WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_powers WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_activity_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_divine_power WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_legal_status WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM character_preferences WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM inventory_items WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM henchman_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM caught_perpetrators WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM congregants WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM consecrated_altars WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM lay_low_state WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM abandoned_characters WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM pending_divine_effects WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM strongholds WHERE owner_character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id])
-	# Party sub-tables (heraldry before parties — parties.heraldry_id is the only back-link)
-	db.query_with_bindings("DELETE FROM party_heraldry WHERE heraldry_id IN (SELECT heraldry_id FROM parties WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM party_state WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM party_members WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM party_sustenance_log WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM party_visit_state WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id])
-	# Map sub-tables
-	db.query_with_bindings("DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM hex_overlays WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM hex_river_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM hex_cliff_edges WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM voxel_map_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id])
-	# Domain sub-tables
-	db.query_with_bindings("DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM domain_followers WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM follower_arrivals WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM ledger_entries WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM active_adventuring_log WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM pending_divine_effects WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)", [campaign_id])
-	# Settlement sub-tables
-	db.query_with_bindings("DELETE FROM settlement_merchandise_demand WHERE settlement_entrance_id IN (SELECT id FROM settlement_entrances WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM settlement_pois WHERE settlement_id IN (SELECT id FROM settlement_entrances WHERE campaign_id = ?)", [campaign_id])
-	# Army sub-tables
-	db.query_with_bindings("DELETE FROM army_officers WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM army_supply_state WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM army_unit_assignments WHERE army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM reconnaissance_cooldowns WHERE observer_army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM call_to_arms_state WHERE lord_army_id IN (SELECT id FROM armies WHERE campaign_id = ?)", [campaign_id])
-	# Field battle / siege sub-tables
-	db.query_with_bindings("DELETE FROM battle_log WHERE battle_id IN (SELECT id FROM field_battles WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM battle_unit_states WHERE battle_id IN (SELECT id FROM field_battles WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM siege_actions WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM siege_artillery WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM siege_mines WHERE siege_id IN (SELECT id FROM sieges WHERE campaign_id = ?)", [campaign_id])
-	# Vassal / syndicate / faction / pool sub-tables
-	db.query_with_bindings("DELETE FROM vassal_obligations WHERE vassal_assignment_id IN (SELECT id FROM vassal_assignments WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM syndicate_members WHERE syndicate_id IN (SELECT id FROM syndicates WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM hijink_assignments WHERE syndicate_id IN (SELECT id FROM syndicates WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM faction_memberships WHERE faction_id IN (SELECT id FROM factions WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM henchman_pool_members WHERE pool_id IN (SELECT id FROM henchman_pools WHERE campaign_id = ?)", [campaign_id])
-	# --- Faction Framework FF-1 sub-tables (delete children before factions/realms below) ---
-	db.query_with_bindings("DELETE FROM faction_plot_members WHERE plot_id IN (SELECT id FROM faction_plots WHERE campaign_id = ?)", [campaign_id])
-	db.query_with_bindings("DELETE FROM faction_plots WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM faction_stances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM faction_events WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM treaties WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM realm_petitions WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM domain_tithe_shares WHERE campaign_id = ?", [campaign_id])
-	# --- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198) ---
-	db.query_with_bindings("DELETE FROM party_loyalty_conflicts WHERE campaign_id = ?", [campaign_id])
-
-	# Tier 1 ── direct campaign_id tables (63 tables) ─────────────────────────
-	db.query_with_bindings("DELETE FROM characters WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM parties WHERE campaign_id = ?", [campaign_id])
-	# party_state has party_id PK, not campaign_id — deleted via party subquery above
-	db.query_with_bindings("DELETE FROM weather_states WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM lairs WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM pois WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM survey_progress WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM tracking_sessions WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM pursuit_states WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM specialists WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM specialist_commissions WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM hex_lair_state WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM trained_creatures WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM draft_vehicles WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM domains WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM override_log WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM active_effects WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM trade_routes WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM merchant_pool WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM ships WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM cargo_holds WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM shipping_contracts WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM factions WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM reputation_entries WHERE campaign_id = ?", [campaign_id])
-	# --- Dialogue subsystem (Phase 1): npc memory tables (migration 191) ---
-	# Campaign-scoped LEAF tables (no enforced FK); delete alongside the other
-	# direct-campaign rows. Own labeled block for clean Wave-0 merge.
-	db.query_with_bindings("DELETE FROM npc_relationships WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM npc_memories WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM npc_issues WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM social_groups WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM henchman_pools WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM scheduled_events WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM auto_pause_config WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM shop_inventory WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM commissions WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM visited_pois WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM location_caches WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM familiars WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM activity_state WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM restricted_cooldowns WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM troop_units WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM armies WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM field_battles WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM vassal_assignments WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM domain_threats WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM market_class_modifiers WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM sieges WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM domain_religion_conversion WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM magic_research_projects WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM libraries WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM workshops WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM followers WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM crafted_magic_items WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM construct_designs WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM construct_instances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM laboratories WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM crossbreed_species WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM crossbreed_instances WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM shipping_contract_offers WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM monopoly_holdings WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM syndicates WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM domain_departure_log WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM realms WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM realm_relations WHERE campaign_id = ?", [campaign_id])
-
-	# --- Quest & Rumor Q-1 (migration 192) — child-before-parent order ---
-	db.query_with_bindings("""
-		DELETE FROM domain_grants WHERE quest_reward_id IN (
-			SELECT id FROM quest_rewards WHERE quest_id IN (
-				SELECT id FROM quests WHERE campaign_id = ?))""", [campaign_id])
-	db.query_with_bindings("""
-		DELETE FROM quest_rewards WHERE quest_id IN (
-			SELECT id FROM quests WHERE campaign_id = ?)""", [campaign_id])
-	db.query_with_bindings("""
-		DELETE FROM rumor_settlement_pool WHERE rumor_id IN (
-			SELECT id FROM rumors WHERE campaign_id = ?)""", [campaign_id])
-	db.query_with_bindings("DELETE FROM quests WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM rumors WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM setting_quests WHERE campaign_id = ?", [campaign_id])
-	db.query_with_bindings("DELETE FROM setting_rumors WHERE campaign_id = ?", [campaign_id])
-
+	for entry: Dictionary in _campaign_scope_entries():
+		var t: String = entry["table"]
+		# The campaigns root row is deleted last (below), so the success
+		# contract stays keyed to it, matching the pre-scope-map behavior.
+		if t == "campaigns":
+			continue
+		if not _table_exists("main", t):
+			continue
+		var scope := _scope_where(entry, "main", campaign_id)
+		var where: String = scope["where"]
+		if where == "0":
+			continue
+		if not db.query_with_bindings("DELETE FROM main.\"%s\" WHERE %s" % [t, where], scope["params"]):
+			push_error("CampaignRepository.delete_campaign: DELETE failed for %s. id=%s" % [t, campaign_id])
+			return false
+	# game_snapshots is deliberately NOT in the scope map (a save slot is not
+	# part of a snapshot — see SNAPSHOT_EXCLUDED_TABLES), but deleting the
+	# campaign must still drop its save-slot metadata rows.
+	if not db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id]):
+		push_error("CampaignRepository.delete_campaign: DELETE failed for game_snapshots. id=%s" % campaign_id)
+		return false
 	# Finally delete the campaign record itself
 	var ok := db.query_with_bindings("DELETE FROM campaigns WHERE id = ?", [campaign_id])
 	if not ok:
@@ -5311,40 +5156,45 @@ func _restore_campaign_from_slot(campaign_id: String) -> bool:
 		if shared.is_empty():
 			continue
 		var collist := _quote_cols(shared)
-		var where_main := ""
-		var where_slot := ""
-		var del_params: Array = []
-		var ins_params: Array = []
-		if entry.get("dungeon_scoped", false):
-			var id_col: String = entry.get("id_col", "dungeon_id")
-			var main_ids := _dungeon_ids_for_campaign("main", campaign_id)
-			var slot_ids := _dungeon_ids_for_campaign("slot", campaign_id)
-			where_main = ("%s IN (%s)" % [id_col, _placeholders(main_ids.size())]) if main_ids.size() > 0 else "0"
-			where_slot = ("%s IN (%s)" % [id_col, _placeholders(slot_ids.size())]) if slot_ids.size() > 0 else "0"
-			del_params = main_ids
-			ins_params = slot_ids
-		else:
-			var clause: String = entry["via"]
-			where_main = clause.replace("{s}", "main")
-			where_slot = clause.replace("{s}", "slot")
-			var n := clause.count("?")
-			for i in n:
-				del_params.append(campaign_id)
-				ins_params.append(campaign_id)
+		var main_scope := _scope_where(entry, "main", campaign_id)
+		var slot_scope := _scope_where(entry, "slot", campaign_id)
+		var where_main: String = main_scope["where"]
+		var where_slot: String = slot_scope["where"]
 		if where_main != "0":
-			if not db.query_with_bindings("DELETE FROM main.\"%s\" WHERE %s" % [t, where_main], del_params):
+			if not db.query_with_bindings("DELETE FROM main.\"%s\" WHERE %s" % [t, where_main], main_scope["params"]):
 				db.query("ROLLBACK")
 				push_error("CampaignRepository._restore_campaign_from_slot: delete failed for %s" % t)
 				return false
 		if where_slot != "0":
 			if not db.query_with_bindings(
 				"INSERT INTO main.\"%s\" (%s) SELECT %s FROM slot.\"%s\" WHERE %s" % [t, collist, collist, t, where_slot],
-				ins_params):
+				slot_scope["params"]):
 				db.query("ROLLBACK")
 				push_error("CampaignRepository._restore_campaign_from_slot: copy failed for %s" % t)
 				return false
 	db.query("COMMIT")
 	return true
+
+
+## Builds the WHERE clause + bound params that scope [param entry]'s rows to
+## [param campaign_id] inside [param schema] ("main" or "slot"). Shared by
+## _restore_campaign_from_slot (DELETE from main / INSERT-SELECT from slot) and
+## delete_campaign (DELETE from main) so the two paths can never scope a table
+## differently. Returns {"where": String, "params": Array}; a where of "0"
+## means no rows can match (dungeon-scoped table with no dungeons) — callers
+## skip the statement.
+func _scope_where(entry: Dictionary, schema: String, campaign_id: String) -> Dictionary:
+	if entry.get("dungeon_scoped", false):
+		var id_col: String = entry.get("id_col", "dungeon_id")
+		var ids := _dungeon_ids_for_campaign(schema, campaign_id)
+		if ids.is_empty():
+			return {"where": "0", "params": []}
+		return {"where": "%s IN (%s)" % [id_col, _placeholders(ids.size())], "params": ids}
+	var clause: String = entry["via"]
+	var params: Array = []
+	for i in clause.count("?"):
+		params.append(campaign_id)
+	return {"where": clause.replace("{s}", schema), "params": params}
 
 
 # ---------------------------------------------------------------------------
@@ -5383,8 +5233,9 @@ const _SCOPE_DIRECT_CAMPAIGN := [
 	# faction_plot_members scopes via faction_plots (a _via entry above), not here. ---
 	"faction_stances", "treaties", "faction_events", "faction_plots",
 	"realm_petitions", "domain_tithe_shares",
-	# --- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198) ---
-	"party_loyalty_conflicts",
+	# --- Faction Framework FF-4: divided-loyalty conflicts (§8.4, migration 198) +
+	# the org allegiance-declaration idempotency ledger (§7.3, migration 209) ---
+	"party_loyalty_conflicts", "faction_conflict_declarations",
 	# --- Dialogue subsystem (Phase 1): npc memory tables (migration 191) ---
 	# All three are campaign-scoped LEAF tables (nothing FKs into them yet), so
 	# they purge as direct-campaign entries. Kept as their own labeled block for
@@ -5399,7 +5250,10 @@ const _SCOPE_VIA_CHARACTER := [
 	"character_preferences", "character_proficiencies", "character_spell_formulas",
 	"character_spell_slots_expended", "character_spells", "caught_perpetrators",
 	"consecrated_altars", "henchman_state", "lay_low_state", "abandoned_characters",
-	"congregants", "pending_divine_effects", "henchman_pool_members",
+	"congregants",
+	# pending_divine_effects + henchman_pool_members have a SECOND parent path
+	# (domain_id / pool_id) — scoped by dual-clause entries in
+	# _campaign_scope_entries, not here.
 ]
 const _SCOPE_VIA_PARTY := [
 	"party_members", "party_state", "party_sustenance_log", "party_visit_state",
@@ -5470,6 +5324,13 @@ func _campaign_scope_entries() -> Array:
 		"via": "(observer_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR observed_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?))"})
 	e.append({"table": "call_to_arms_state",
 		"via": "(lord_army_id IN (SELECT id FROM {s}.armies WHERE campaign_id = ?) OR vassal_character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?))"})
+	# pending_divine_effects rows carry character_id OR domain_id (either may be
+	# NULL — CHECK enforces at least one); scope by the union so domain-only
+	# rows aren't stranded.
+	e.append({"table": "pending_divine_effects",
+		"via": "(character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?) OR domain_id IN (SELECT id FROM {s}.domains WHERE campaign_id = ?))"})
+	e.append({"table": "henchman_pool_members",
+		"via": "(character_id IN (SELECT id FROM {s}.characters WHERE campaign_id = ?) OR pool_id IN (SELECT id FROM {s}.henchman_pools WHERE campaign_id = ?))"})
 	# Quest & Rumor Q-1 (migration 192): quest_rewards via quests;
 	# rumor_settlement_pool via rumors. domain_grants (depth-3, via
 	# quest_rewards) is appended earlier, ahead of this depth-2 block.
@@ -6411,15 +6272,18 @@ func ff_list_tithe_shares(domain_id: String) -> Array:
 # --- FF-5 dungeon tie-in: once-per-conflict-per-dungeon allegiance-pass cap ---
 # (gdd-faction-framework.md §9.3 / §11.3, migration 207). Dungeon-content table.
 
-## True iff the (dungeon, conflict) pair has already had its one allegiance pass.
-func ff_has_dungeon_conflict_pass(dungeon_id: String, conflict_id: String) -> bool:
+## True iff this BAND has already had its one allegiance pass for (dungeon, conflict).
+## Keyed per band (migration 208) so multiple detachment bands in one dungeon each get
+## their own pass — one band's pass no longer blocks the others.
+func ff_has_dungeon_conflict_pass(dungeon_id: String, conflict_id: String, faction_id: String) -> bool:
 	return db.query_with_bindings(
-		"SELECT 1 FROM dungeon_link_conflict_passes WHERE dungeon_id = ? AND conflict_id = ?",
-		[dungeon_id, conflict_id]) and not db.query_result.is_empty()
+		"""SELECT 1 FROM dungeon_link_conflict_passes
+		   WHERE dungeon_id = ? AND conflict_id = ? AND faction_id = ?""",
+		[dungeon_id, conflict_id, faction_id]) and not db.query_result.is_empty()
 
 
-## Record that (dungeon, conflict) has passed (idempotent — INSERT OR REPLACE on
-## the (dungeon_id, conflict_id) PK). Returns true on success.
+## Record that (dungeon, conflict, band) has passed (idempotent — INSERT OR REPLACE on
+## the (dungeon_id, conflict_id, faction_id) PK). Returns true on success.
 func ff_record_dungeon_conflict_pass(dungeon_id: String, conflict_id: String,
 		faction_id: String, decision: String, passed_day: int) -> bool:
 	return db.query_with_bindings(
@@ -6427,6 +6291,28 @@ func ff_record_dungeon_conflict_pass(dungeon_id: String, conflict_id: String,
 			(dungeon_id, conflict_id, faction_id, decision, passed_day)
 		   VALUES (?, ?, ?, ?, ?)""",
 		[dungeon_id, conflict_id, faction_id, decision, passed_day])
+
+
+# --- FF-4: organization once-per-conflict allegiance-declaration cap (§7.3, ---
+# migration 209). The org analogue of the dungeon pass cap above: one declaration
+# per (faction, conflict) so FactionAI.declare_stance can't re-evaluate monthly.
+
+## True iff [param faction_id] has already declared its allegiance for [param conflict_id].
+func ff_has_faction_conflict_declaration(faction_id: String, conflict_id: String) -> bool:
+	return db.query_with_bindings(
+		"SELECT 1 FROM faction_conflict_declarations WHERE faction_id = ? AND conflict_id = ?",
+		[faction_id, conflict_id]) and not db.query_result.is_empty()
+
+
+## Record that [param faction_id] declared for [param conflict_id] (idempotent —
+## INSERT OR REPLACE on the (faction_id, conflict_id) PK). Returns true on success.
+func ff_record_faction_conflict_declaration(campaign_id: String, faction_id: String,
+		conflict_id: String, decision: String, declared_day: int) -> bool:
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO faction_conflict_declarations
+			(campaign_id, faction_id, conflict_id, decision, declared_day)
+		   VALUES (?, ?, ?, ?, ?)""",
+		[campaign_id, faction_id, conflict_id, decision, declared_day])
 
 
 # ===========================================================================

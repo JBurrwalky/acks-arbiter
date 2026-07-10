@@ -13,6 +13,10 @@ extends "res://tests/test_suite_base.gd"
 ##   - test_restore_is_campaign_isolated: restoring campaign A leaves campaign B's
 ##     data exactly as it was.
 ##   - test_snapshot_file_captures_full_table_set: the slot file is a whole-DB copy.
+##   - test_delete_campaign_purges_all_scoped_tables: delete_campaign derives its
+##     DELETEs from the same scope map, so it removes EVERY in-scope row of every
+##     scoped table (and nothing else) — the delete path inherits the map's
+##     completeness guarantee and can never silently orphan again.
 
 
 const C_A := "test_savegame_snap_campaign_a"
@@ -33,6 +37,8 @@ func run_all_tests() -> void:
 	test_round_trip_restores_registry_hard_tables()
 	_cleanup()
 	test_restore_is_campaign_isolated()
+	_cleanup()
+	test_delete_campaign_purges_all_scoped_tables()
 	_cleanup()
 	if not has_failures():
 		print("SavegameSnapshot: all tests passed.")
@@ -128,6 +134,87 @@ func test_restore_is_campaign_isolated() -> void:
 	print("  restore_is_campaign_isolated: OK")
 
 
+## delete_campaign derives its DELETEs from _campaign_scope_entries, so deleting
+## campaign A must remove exactly the in-scope rows of EVERY scoped table while
+## leaving campaign B untouched. In-scope counts are captured BEFORE the delete
+## (via clauses resolve through parent tables, so they are only meaningful while
+## the parents still exist); the per-table equality total_after == total_before
+## - in_scope catches both leftovers (under-deletion) and lost B rows
+## (over-deletion).
+func test_delete_campaign_purges_all_scoped_tables() -> void:
+	_seed(C_A, MAP_A, DUN_A, Vector3i(2, 3, 1))
+	_seed(C_B, MAP_B, DUN_B, Vector3i(5, 5, 0))
+	# Rows on the paths where the old hand-rolled delete and the scope map
+	# diverged: dungeon voxel cells (old delete scoped map_id via hex_maps — a
+	# no-op, map_id is a DUNGEON id), a domain-only pending_divine_effects row,
+	# and a henchman pool + member.
+	CampaignRepository.db.query_with_bindings(
+		"INSERT INTO characters (id, campaign_id, name) VALUES (?, ?, ?)",
+		["del_char_a", C_A, "Del Test Char"])
+	CampaignRepository.db.query_with_bindings(
+		"INSERT INTO domains (id, campaign_id, name) VALUES (?, ?, ?)",
+		["del_dom_a", C_A, "Del Test Domain"])
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO pending_divine_effects (id, domain_id, effect_kind)
+		VALUES (?, ?, 'consecrate_fields_land_value')""", ["del_pde_a", "del_dom_a"])
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO henchman_pools (id, campaign_id, settlement_id, generated_month, generated_year)
+		VALUES (?, ?, ?, 1, 1)""", ["del_pool_a", C_A, "del_settle_a"])
+	CampaignRepository.db.query_with_bindings(
+		"INSERT INTO henchman_pool_members (pool_id, character_id) VALUES (?, ?)",
+		["del_pool_a", "del_char_a"])
+	var sid := CampaignRepository.save_snapshot(C_A, "Delete Test", "manual", "")
+	check(not sid.is_empty(), "save_snapshot returned an id")
+	var slot_abs := CampaignRepository._slot_abs_path(sid)
+
+	var audit: Array = []
+	for entry: Dictionary in CampaignRepository._campaign_scope_entries():
+		var t: String = entry["table"]
+		if not CampaignRepository._table_exists("main", t):
+			continue
+		var scope: Dictionary = CampaignRepository._scope_where(entry, "main", C_A)
+		var where: String = scope["where"]
+		var scoped := 0
+		if where != "0":
+			CampaignRepository.db.query_with_bindings(
+				"SELECT COUNT(*) AS c FROM main.\"%s\" WHERE %s" % [t, where], scope["params"])
+			scoped = int(CampaignRepository.db.query_result[0].get("c", 0))
+		audit.append({"table": t, "total": _table_total(t), "scoped": scoped})
+
+	check(CampaignRepository.delete_campaign(C_A), "delete_campaign returned true")
+
+	var drifted: Array = []
+	for a: Dictionary in audit:
+		var t: String = a["table"]
+		var expected: int = int(a["total"]) - int(a["scoped"])
+		var actual := _table_total(t)
+		if actual != expected:
+			drifted.append("%s (want %d, have %d)" % [t, expected, actual])
+	check(drifted.is_empty(),
+		"delete_campaign must remove exactly the in-scope rows of every scoped table; drifted: %s" % str(drifted))
+
+	# Targeted spot-checks: the historic divergences + the two tables outside
+	# the scope map (campaigns root, game_snapshots slot metadata).
+	check(_count("campaigns", "id", C_A) == 0, "campaign root row deleted")
+	check(_count("game_snapshots", "campaign_id", C_A) == 0,
+		"save-slot metadata deleted (game_snapshots is outside the scope map)")
+	check(_count("voxel_map_cells", "map_id", DUN_A) == 0,
+		"dungeon voxel cells purged (previously orphaned — scoped via hex_maps)")
+	check(_count("pending_divine_effects", "domain_id", "del_dom_a") == 0,
+		"domain-only pending_divine_effects purged (dual-parent clause)")
+	check(_count("henchman_pool_members", "pool_id", "del_pool_a") == 0,
+		"henchman_pool_members purged")
+	# Campaign B untouched.
+	check(_count("campaigns", "id", C_B) == 1, "campaign B root survives")
+	check(_count("voxel_map_cells", "map_id", DUN_B) == 1, "campaign B voxel cell survives")
+	check(_count("parties", "campaign_id", C_B) == 1, "campaign B party survives")
+	# delete_campaign removes the slot METADATA row; the slot file itself is not
+	# its concern — remove it here so test runs don't accumulate orphan files.
+	if FileAccess.file_exists(slot_abs):
+		DirAccess.remove_absolute(slot_abs)
+	print("  delete_campaign_purges_all_scoped_tables: OK")
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -164,6 +251,13 @@ func _count(table: String, col: String, val) -> int:
 	return int(CampaignRepository.db.query_result[0].get("c", 0))
 
 
+func _table_total(table: String) -> int:
+	CampaignRepository.db.query("SELECT COUNT(*) AS c FROM main.\"%s\"" % table)
+	if CampaignRepository.db.query_result.is_empty():
+		return 0
+	return int(CampaignRepository.db.query_result[0].get("c", 0))
+
+
 func _live_table_count() -> int:
 	CampaignRepository.db.query("SELECT COUNT(*) AS c FROM main.sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
 	return int(CampaignRepository.db.query_result[0].get("c", 0))
@@ -192,3 +286,11 @@ func _cleanup() -> void:
 		CampaignRepository.db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [camp])
 		CampaignRepository.db.query_with_bindings("DELETE FROM hex_maps WHERE campaign_id = ?", [camp])
 		CampaignRepository.db.query_with_bindings("DELETE FROM campaigns WHERE id = ?", [camp])
+	# Extra rows seeded by test_delete_campaign_purges_all_scoped_tables —
+	# normally removed by delete_campaign itself; purge here so a failed run
+	# can't leak them into other tests.
+	CampaignRepository.db.query("DELETE FROM pending_divine_effects WHERE id = 'del_pde_a'")
+	CampaignRepository.db.query("DELETE FROM henchman_pool_members WHERE pool_id = 'del_pool_a'")
+	CampaignRepository.db.query("DELETE FROM henchman_pools WHERE id = 'del_pool_a'")
+	CampaignRepository.db.query("DELETE FROM characters WHERE id = 'del_char_a'")
+	CampaignRepository.db.query("DELETE FROM domains WHERE id = 'del_dom_a'")

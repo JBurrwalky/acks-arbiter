@@ -472,11 +472,18 @@ static func _do_declare_stance(campaign_id: String, faction: Dictionary, calenda
 	var result: Dictionary = AllegianceEvaluator.evaluate(
 		faction, side_a, side_b, conflict, calendar_day)
 	AllegianceEvaluator.apply_decision(campaign_id, result, calendar_day)
+	# Record the one allegiance decision for this conflict (§7.3). _active_conflict_for
+	# now skips declared conflicts, so this org won't re-evaluate the same conflict next
+	# month (no re-emit / no betrayal re-arm), but can still declare for a NEW conflict.
+	var conflict_id: String = String(conflict.get("conflict_id", ""))
+	CampaignRepository.ff_record_faction_conflict_declaration(
+		campaign_id, String(faction.get("id", "")), conflict_id,
+		String(result.get("decision", "")), calendar_day)
 	return {
 		"summary": "%s declares its allegiance." % faction.get("name", "The faction"),
 		"declared": true, "decision": result.get("decision", ""),
 		"professed_side_mirror": result.get("professed_side_mirror", ""),
-		"conflict_id": conflict.get("conflict_id", ""),
+		"conflict_id": conflict_id,
 	}
 
 
@@ -503,14 +510,18 @@ static func _find_rival(faction: Dictionary) -> Dictionary:
 	return worst
 
 
-## The active conflict this org is exposed to (§7.1): a launched rebellion whose rebel
-## or liege realm is the org's seat realm. Returns {conflict_id, side_a_mirror,
-## side_b_mirror, kind, legitimate_side, instigator_side, side_a_realm_id,
-## side_b_realm_id}, or {} when the org sits outside any live conflict.
+## The active conflict this org is exposed to AND has not yet declared for (§7.1):
+## a launched rebellion whose rebel or liege realm is the org's seat realm, minus any
+## conflict already recorded in faction_conflict_declarations (§7.3 — one allegiance
+## decision per conflict; skipping declared conflicts stops the monthly re-evaluate/
+## re-emit/re-arm loop AND lets the org still reach a DIFFERENT live conflict). Returns
+## {conflict_id, side_a_mirror, side_b_mirror, kind, legitimate_side, instigator_side,
+## side_a_realm_id, side_b_realm_id}, or {} when no undeclared conflict exposes the org.
 static func _active_conflict_for(faction: Dictionary) -> Dictionary:
 	var seat_realm: String = _seat_realm(faction)
 	if seat_realm == "":
 		return {}
+	var faction_id: String = String(faction.get("id", ""))
 	var campaign_id: String = String(faction.get("campaign_id", ""))
 	for plot in CampaignRepository.ff_list_plots_for_campaign(campaign_id, ["launched"]):
 		var p: Dictionary = plot
@@ -519,9 +530,14 @@ static func _active_conflict_for(faction: Dictionary) -> Dictionary:
 		var liege_realm: String = _mirror_realm(liege_mirror)
 		var rebel_realm: String = _rebel_realm_for_plot(p)
 		if seat_realm == liege_realm or seat_realm == rebel_realm:
+			var conflict_id: String = "rebellion:%s" % String(p.get("id", ""))
+			# Already declared for this conflict? It is settled — skip it so the org
+			# doesn't re-evaluate (which would re-emit + re-arm the betrayal, §7.3).
+			if CampaignRepository.ff_has_faction_conflict_declaration(faction_id, conflict_id):
+				continue
 			var rebel_mirror: String = FactionRegistry.get_realm_mirror_id(campaign_id, rebel_realm)
 			return {
-				"conflict_id": "rebellion:%s" % String(p.get("id", "")),
+				"conflict_id": conflict_id,
 				"kind": "rebellion",
 				"side_a_mirror": rebel_mirror, "side_b_mirror": liege_mirror,
 				"side_a_realm_id": rebel_realm, "side_b_realm_id": liege_realm,

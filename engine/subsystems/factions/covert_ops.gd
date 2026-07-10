@@ -86,9 +86,16 @@ static func run_op(campaign_id: String, op: String, perpetrator_faction: Diction
 	# end of the ladder -- the intended brutal amateur caught-rate.
 	var target_num: int = op_target_number(level)
 	var morale_penalty: int = _domain_spy_penalty(target_faction_id)
-	var net_penalty: int = morale_penalty - throw_bonus   # bonus reduces the penalty
+	# A throw_bonus exceeding the morale penalty becomes a NET BONUS: net_penalty goes
+	# negative, and classify_outcome applies it as effective_roll = raw_d20 - penalty
+	# = raw_d20 + bonus. Do NOT floor at 0 -- that discarded the §7.3 prepared-betrayal
+	# "+4 to the throw" op entirely whenever the target had no positive domain morale
+	# (the common realm-mirror case), leaving the buff inert. (At the documented +4
+	# magnitude a natural 1 -> effective_roll 5 still misses the typical 11-18 targets,
+	# so the amateur's fumble stands; the guarantee is not universal for larger bonuses.)
+	var net_penalty: int = morale_penalty - throw_bonus
 	var classified: Dictionary = HijinkThrowTarget.classify_outcome(
-		raw_d20, maxi(net_penalty, 0), target_num, false)
+		raw_d20, net_penalty, target_num, false)
 	var success: bool = bool(classified.get("success", false))
 	var caught: bool = bool(classified.get("caught", false))
 
