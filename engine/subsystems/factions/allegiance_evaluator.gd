@@ -69,7 +69,7 @@ const BAND_HOSTILE: String = "hostile"
 ## betrayal_condition (or {}), feign_gate, underground.
 static func evaluate(faction: Dictionary, side_a_mirror: String, side_b_mirror: String,
 		conflict: Dictionary = {}, day: int = 0, context: Dictionary = {}) -> Dictionary:
-	var faction_id: String = _s(faction.get("id"))
+	var faction_id: String = StringUtils.s(faction.get("id"))
 	var a_realm: String = FactionRegistry.realm_id_of_mirror(side_a_mirror)
 	var b_realm: String = FactionRegistry.realm_id_of_mirror(side_b_mirror)
 	var seat_realm: String = FactionRegistry.seat_realm_of_faction(faction)
@@ -103,7 +103,7 @@ static func evaluate(faction: Dictionary, side_a_mirror: String, side_b_mirror: 
 
 	var result: Dictionary = {
 		"faction_id": faction_id,
-		"conflict_id": _s(conflict.get("conflict_id")),
+		"conflict_id": StringUtils.s(conflict.get("conflict_id")),
 		"side_a_mirror": side_a_mirror, "side_b_mirror": side_b_mirror,
 		"support_a": support_a, "support_b": support_b, "margin": margin,
 		"terms_a": terms_a, "terms_b": terms_b,
@@ -140,7 +140,7 @@ static func evaluate(faction: Dictionary, side_a_mirror: String, side_b_mirror: 
 
 	PoliticalAudit.record("allegiance_evaluate", {
 		"caller": "allegiance_evaluator", "faction": faction_id,
-		"conflict_id": _s(conflict.get("conflict_id")), "day": day,
+		"conflict_id": StringUtils.s(conflict.get("conflict_id")), "day": day,
 		"decision": result["decision"],
 		"support_a": support_a, "support_b": support_b, "margin": margin,
 		"pref_side": pref_side, "seat_side": seat_side,
@@ -163,30 +163,30 @@ static func evaluate(faction: Dictionary, side_a_mirror: String, side_b_mirror: 
 ## decision is open_defiant against the seat-holder, and emit allegiance_declared.
 ## Returns {ok, public_stance, ...}.
 static func apply_decision(campaign_id: String, result: Dictionary, day: int) -> Dictionary:
-	var faction_id: String = _s(result.get("faction_id"))
+	var faction_id: String = StringUtils.s(result.get("faction_id"))
 	if faction_id == "":
 		return {"ok": false, "error": "empty_faction"}
-	var conflict_id: String = _s(result.get("conflict_id"))
-	var side_a: String = _s(result.get("side_a_mirror"))
-	var side_b: String = _s(result.get("side_b_mirror"))
-	var decision: String = _s(result.get("decision"))
+	var conflict_id: String = StringUtils.s(result.get("conflict_id"))
+	var side_a: String = StringUtils.s(result.get("side_a_mirror"))
+	var side_b: String = StringUtils.s(result.get("side_b_mirror"))
+	var decision: String = StringUtils.s(result.get("decision"))
 
 	# Toward side A.
 	FactionStanceService.set_conflict_stance(campaign_id, faction_id, side_a,
-		_s(result.get("public_a"), BAND_NEUTRAL), _s(result.get("true_a")),
-		_s(result.get("betrayal_condition_a")), "allegiance:%s" % decision, day)
+		StringUtils.s(result.get("public_a"), BAND_NEUTRAL), StringUtils.s(result.get("true_a")),
+		StringUtils.s(result.get("betrayal_condition_a")), "allegiance:%s" % decision, day)
 	# Toward side B.
 	FactionStanceService.set_conflict_stance(campaign_id, faction_id, side_b,
-		_s(result.get("public_b"), BAND_NEUTRAL), _s(result.get("true_b")),
-		_s(result.get("betrayal_condition_b")), "allegiance:%s" % decision, day)
+		StringUtils.s(result.get("public_b"), BAND_NEUTRAL), StringUtils.s(result.get("true_b")),
+		StringUtils.s(result.get("betrayal_condition_b")), "allegiance:%s" % decision, day)
 
 	if bool(result.get("underground", false)):
 		CampaignRepository.db.query_with_bindings(
 			"UPDATE factions SET status = 'underground' WHERE id = ?", [faction_id])
 
 	# The PUBLIC posture (never the true stance / betrayal) is what surfaces.
-	var professed: String = _s(result.get("professed_side_mirror"))
-	var public_posture: String = _s(result.get("public_posture"), decision)
+	var professed: String = StringUtils.s(result.get("professed_side_mirror"))
+	var public_posture: String = StringUtils.s(result.get("public_posture"), decision)
 	if EventBus.has_signal("allegiance_declared"):
 		EventBus.emit_signal("allegiance_declared", faction_id, conflict_id, public_posture)
 	PoliticalAudit.record("allegiance_apply", {
@@ -293,14 +293,14 @@ static func feign_eligibility(faction: Dictionary, conflict: Dictionary, context
 static func is_fanatic_faithful(faction: Dictionary, _conflict: Dictionary, context: Dictionary) -> bool:
 	if not (String(faction.get("faction_type", "")) in TEMPLE_ORDER_TYPES):
 		return false
-	if _s(context.get("fanatic_tie_side")) != "":
+	if StringUtils.s(context.get("fanatic_tie_side")) != "":
 		return true
 	if bool(faction.get("_fanatic_tie", false)):
 		return true
 	# goal_primary / goal_secondary are nullable columns — coerce with the null-safe
 	# helper (String(null) is an invalid constructor call in GDScript).
-	var g1: String = _s(faction.get("goal_primary"))
-	var g2: String = _s(faction.get("goal_secondary"))
+	var g1: String = StringUtils.s(faction.get("goal_primary"))
+	var g2: String = StringUtils.s(faction.get("goal_secondary"))
 	return g1 in ["spread_doctrine", "defend_patron"] or g2 in ["spread_doctrine", "defend_patron"]
 
 
@@ -310,7 +310,7 @@ static func is_fanatic_faithful(faction: Dictionary, _conflict: Dictionary, cont
 
 static func _support_terms(faction: Dictionary, side_mirror: String, side_realm: String,
 		seat_realm: String, conflict: Dictionary, day: int, context: Dictionary) -> Dictionary:
-	var faction_id: String = _s(faction.get("id"))
+	var faction_id: String = StringUtils.s(faction.get("id"))
 	# Guard the optional term overrides: a caller passing a non-Dictionary `terms`
 	# would make `x as Dictionary` yield null (then .get() crashes), and a non-Dictionary
 	# per-side entry is an invalid assignment to the typed `overrides`. Degrade to
@@ -369,7 +369,7 @@ static func _patronage_term(faction_id: String, side_mirror: String, day: int) -
 ## faction holds a role='vassal'/'officer' membership in the side mirror; +1 for kin
 ## (approximated as any non-leader member) in the side's levies.
 static func _membership_ties(faction: Dictionary, side_mirror: String, side_realm: String) -> int:
-	var leader: String = _s(faction.get("leader_npc_id"))
+	var leader: String = StringUtils.s(faction.get("leader_npc_id"))
 	if leader != "":
 		var mem: Dictionary = CampaignRepository.ff_get_membership(side_mirror, leader)
 		if not mem.is_empty() and String(mem.get("role", "")) in ["vassal", "officer", "leader"]:
@@ -377,7 +377,7 @@ static func _membership_ties(faction: Dictionary, side_mirror: String, side_real
 		# Leader is a vassal of the side realm's sovereign.
 		if side_realm != "":
 			var side_row: Dictionary = CampaignRepository.get_faction(side_mirror)
-			var head: String = _s(side_row.get("leader_npc_id"))
+			var head: String = StringUtils.s(side_row.get("leader_npc_id"))
 			if head != "" and _is_vassal_of(leader, head):
 				return MEMBERSHIP_TIE_VASSAL
 	return 0
@@ -389,13 +389,13 @@ static func _expected_winner_term(faction: Dictionary, side_realm: String,
 		conflict: Dictionary, context: Dictionary) -> int:
 	if side_realm == "":
 		return 0
-	var a_realm: String = _s(conflict.get("side_a_realm_id"))
-	var b_realm: String = _s(conflict.get("side_b_realm_id"))
+	var a_realm: String = StringUtils.s(conflict.get("side_a_realm_id"))
+	var b_realm: String = StringUtils.s(conflict.get("side_b_realm_id"))
 	# Fall back to resolving both realms from the mirrors when not supplied.
 	if a_realm == "":
-		a_realm = FactionRegistry.realm_id_of_mirror(_s(conflict.get("side_a_mirror")))
+		a_realm = FactionRegistry.realm_id_of_mirror(StringUtils.s(conflict.get("side_a_mirror")))
 	if b_realm == "":
-		b_realm = FactionRegistry.realm_id_of_mirror(_s(conflict.get("side_b_mirror")))
+		b_realm = FactionRegistry.realm_id_of_mirror(StringUtils.s(conflict.get("side_b_mirror")))
 	var this_br: float = _realm_federated_br(side_realm)
 	var other_realm: String = b_realm if side_realm == a_realm else a_realm
 	var other_br: float = _realm_federated_br(other_realm) if other_realm != "" else 0.0
@@ -421,7 +421,7 @@ static func _type_bias(faction: Dictionary, side_mirror: String, side_realm: Str
 	var type: String = String(faction.get("faction_type", ""))
 	match type:
 		"knightly_order":
-			if side_mirror != "" and side_mirror == _s(conflict.get("legitimate_side")):
+			if side_mirror != "" and side_mirror == StringUtils.s(conflict.get("legitimate_side")):
 				return TYPE_BIAS_LEGITIMACY
 			return 0
 		"syndicate", "brigand_gang":
@@ -447,13 +447,13 @@ static func _type_bias(faction: Dictionary, side_mirror: String, side_realm: Str
 ## The "less law" side (§7.3 syndicate bias): the more-chaotic realm, or the
 ## rebel/instigator when alignments tie.
 static func _is_less_law_side(side_mirror: String, side_realm: String, conflict: Dictionary) -> bool:
-	var instigator: String = _s(conflict.get("instigator_side"))
+	var instigator: String = StringUtils.s(conflict.get("instigator_side"))
 	if instigator != "" and side_mirror == instigator:
 		return true
 	var a_align: int = _chaos_rank(_realm_alignment(side_realm))
 	# Compare against the other side's alignment.
-	var a_mirror: String = _s(conflict.get("side_a_mirror"))
-	var b_mirror: String = _s(conflict.get("side_b_mirror"))
+	var a_mirror: String = StringUtils.s(conflict.get("side_a_mirror"))
+	var b_mirror: String = StringUtils.s(conflict.get("side_b_mirror"))
 	var other_mirror: String = b_mirror if side_mirror == a_mirror else a_mirror
 	var other_align: int = _chaos_rank(_realm_alignment(FactionRegistry.realm_id_of_mirror(other_mirror)))
 	return a_align > other_align
@@ -503,7 +503,7 @@ static func _leader_self_interest(faction: Dictionary, context: Dictionary = {})
 	var override: Variant = context.get("leader_self_interest", null)
 	if override != null:
 		return int(override)
-	var leader: String = _s(faction.get("leader_npc_id"))
+	var leader: String = StringUtils.s(faction.get("leader_npc_id"))
 	if leader == "":
 		return 5   # neutral default (no strong self-interest, no strong altruism)
 	var disp: StrategicDisposition = RulerDispositionRepository.get_disposition(leader)
@@ -513,7 +513,7 @@ static func _leader_self_interest(faction: Dictionary, context: Dictionary = {})
 
 
 static func _survive_active(faction: Dictionary) -> bool:
-	if _s(faction.get("goal_primary")) == "survive":
+	if StringUtils.s(faction.get("goal_primary")) == "survive":
 		return true
 	# Treasury under ~3 months of reserve OR underground status forces survival.
 	if String(faction.get("status", "")) == "underground":
@@ -524,9 +524,3 @@ static func _survive_active(faction: Dictionary) -> bool:
 static func _term_or(overrides: Dictionary, key: String, computed: int) -> int:
 	var v: Variant = overrides.get(key, null)
 	return int(v) if v != null else computed
-
-
-## Null-safe String coercion (SQL NULL columns arrive as Variant null;
-## String(null) is an invalid constructor call in GDScript).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return str(v) if v != null else default_value

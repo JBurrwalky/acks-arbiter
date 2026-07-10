@@ -257,16 +257,16 @@ static func is_linked(faction: DungeonFaction) -> bool:
 static func _parent_at_war(parent_row: Dictionary, context: Dictionary) -> bool:
 	if context.has("parent_at_war"):
 		return bool(context.get("parent_at_war"))
-	var realm_id: String = _s(parent_row.get("realm_id"))
+	var realm_id: String = StringUtils.s(parent_row.get("realm_id"))
 	if realm_id != "":
 		if CampaignRepository.db.query_with_bindings(
 				"""SELECT 1 FROM realm_relations
 				   WHERE (realm_a_id = ? OR realm_b_id = ?) AND disposition = 'hostile'""",
 				[realm_id, realm_id]) and not CampaignRepository.db.query_result.is_empty():
 			return true
-	if _s(parent_row.get("status")) == "underground":
+	if StringUtils.s(parent_row.get("status")) == "underground":
 		return true
-	if _s(parent_row.get("goal_primary")) == "survive":
+	if StringUtils.s(parent_row.get("goal_primary")) == "survive":
 		return true
 	return false
 
@@ -335,7 +335,3 @@ static func _event_bus() -> Object:
 	if tree == null or tree.root == null or not tree.root.has_node("EventBus"):
 		return null
 	return tree.root.get_node("EventBus")
-
-
-static func _s(v: Variant, default_value: String = "") -> String:
-	return String(v) if v != null else default_value

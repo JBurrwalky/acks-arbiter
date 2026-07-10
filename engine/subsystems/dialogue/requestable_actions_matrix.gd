@@ -90,9 +90,9 @@ static func _predicate_matches(predicate: Variant, npc: Dictionary,
 	if not (predicate is Dictionary) or (predicate as Dictionary).is_empty():
 		return false
 	var pred: Dictionary = predicate
-	var progression: String = _s(npc.get("combat_progression"), "")
-	var char_class: String = _s(npc.get("character_class"), "")
-	var role: String = _s(npc.get("npc_role"), "")
+	var progression: String = StringUtils.s(npc.get("combat_progression"), "")
+	var char_class: String = StringUtils.s(npc.get("character_class"), "")
+	var role: String = StringUtils.s(npc.get("npc_role"), "")
 	var level: int = int(npc.get("level", 1))
 
 	if pred.has("progressions") and progression in (pred["progressions"] as Array):
@@ -115,8 +115,3 @@ static func _level_ok(pred: Dictionary, level: int) -> bool:
 	if pred.has("min_level"):
 		return level >= int(pred["min_level"])
 	return true
-
-
-## Null-safe String coercion (conventions §106 — never String(null)).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return default_value if v == null else str(v)

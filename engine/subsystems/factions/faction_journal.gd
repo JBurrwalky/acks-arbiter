@@ -58,7 +58,7 @@ static func entries_for_party(party_id: String) -> Array:
 		if faction.is_empty():
 			continue
 		var type: String = String(faction.get("faction_type", ""))
-		var leader_id: String = _s(faction.get("leader_npc_id"))
+		var leader_id: String = StringUtils.s(faction.get("leader_npc_id"))
 		var leader_name: String = ""
 		if leader_id != "":
 			var lch: Dictionary = CampaignRepository.get_character(leader_id)
@@ -77,8 +77,8 @@ static func entries_for_party(party_id: String) -> Array:
 			"faction_id": fid,
 			"name": String(faction.get("name", "")),
 			"faction_type": type,
-			"seat_settlement_id": _s(faction.get("seat_settlement_id")),
-			"seat_poi_id": _s(faction.get("seat_poi_id")),
+			"seat_settlement_id": StringUtils.s(faction.get("seat_settlement_id")),
+			"seat_poi_id": StringUtils.s(faction.get("seat_poi_id")),
 			"leader_npc_id": leader_id,
 			"leader_name": leader_name,
 			"party_reputation_tier": String((met[fid] as Dictionary).get("tier", "neutral")),
@@ -109,8 +109,3 @@ static func _memberships_for_character(character_id: String) -> Array:
 			[character_id]):
 		return []
 	return CampaignRepository.db.query_result.duplicate()
-
-
-## Null-safe String coercion (a NULL SQL column is `null`; String(null) forbidden).
-static func _s(v: Variant, default: String = "") -> String:
-	return String(v) if v != null else default

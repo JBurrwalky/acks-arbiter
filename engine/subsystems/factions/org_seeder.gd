@@ -112,7 +112,7 @@ static func promote_syndicate_seeds(campaign_id: String) -> Array:
 		f.faction_type = "syndicate"
 		f.scope = "organization"
 		f.alignment = _synd_alignment(synd as Dictionary)
-		f.leader_npc_id = _s((synd as Dictionary).get("boss_character_id"))
+		f.leader_npc_id = StringUtils.s((synd as Dictionary).get("boss_character_id"))
 		f.member_count_abstract = member_count
 		f.treasury_gp = _passthrough_start_gp(member_count)
 		f.goal_primary = OrgTypeCatalog.default_goal_primary("syndicate")
@@ -154,7 +154,7 @@ static func _seed_temples(campaign_id: String, settlement: Dictionary,
 	f.scope = "organization"
 	f.alignment = _domain_alignment(domain)
 	f.religion_id = religion_id
-	f.culture_id = _s(domain.get("culture"))
+	f.culture_id = StringUtils.s(domain.get("culture"))
 	f.home_domain_id = domain_id
 	f.seat_settlement_id = settlement_id
 	f.member_count_abstract = 40 if int(settlement.get("market_class", 6)) <= 3 else 20
@@ -166,7 +166,7 @@ static func _seed_temples(campaign_id: String, settlement: Dictionary,
 	if poi_id != "":
 		f.seat_poi_id = poi_id
 	# Parent chain: realm-church of the same deity (§6.2 step 6).
-	var realm_id: String = _s(domain.get("realm_id"))
+	var realm_id: String = StringUtils.s(domain.get("realm_id"))
 	if realm_id != "":
 		f.parent_faction_id = _ensure_realm_church(campaign_id, realm_id, religion_id, f.alignment)
 	_upsert_faction(f)
@@ -340,13 +340,8 @@ static func _religion_display(religion_id: String) -> String:
 
 
 static func _domain_alignment(domain: Dictionary) -> String:
-	var a: String = _s(domain.get("alignment"), "neutral")
+	var a: String = StringUtils.s(domain.get("alignment"), "neutral")
 	return a if a in ["lawful", "neutral", "chaotic"] else "neutral"
-
-
-## Null-safe String coercion (a NULL SQL column is `null`; String(null) forbidden).
-static func _s(v: Variant, default: String = "") -> String:
-	return String(v) if v != null else default
 
 
 static func _upsert_faction(f: FactionData) -> void:

@@ -1063,8 +1063,8 @@ func _reply_ctx_for(outcome: Dictionary) -> Dictionary:
 	var ctx := {
 		"attitude": _attitude,
 		"personality": _personality(),
-		"npc_class": _s(c.get("character_class"), ""),
-		"npc_role": _s(c.get("npc_role"), ""),
+		"npc_class": StringUtils.s(c.get("character_class"), ""),
+		"npc_role": StringUtils.s(c.get("npc_role"), ""),
 		"dice": _dice,
 		"seed_hint": abs(String(session_id + str(_exchange_index)).hash()),
 		"active_effects": _active_effects.duplicate(true),
@@ -1746,11 +1746,6 @@ func _roll_d20() -> int:
 	return randi() % 20 + 1
 
 
-## Null-safe String coercion (conventions §106 — never String(null)).
-func _s(v: Variant, default_value: String = "") -> String:
-	return default_value if v == null else str(v)
-
-
 # ===========================================================================
 # Wave 3 Dialogue P4 — The Performance Layer (gdd-npc-dialogue.md §13)
 # ===========================================================================
@@ -1880,7 +1875,7 @@ func perform_reply_live() -> Dictionary:
 func _apply_social_flag(flag) -> void:
 	if not (flag is Dictionary):
 		return
-	var kind := _s((flag as Dictionary).get("kind"))   # model-authored — null-safe (§106)
+	var kind := StringUtils.s((flag as Dictionary).get("kind"))   # model-authored — null-safe (§106)
 	# Dedup PER ISSUE, not per kind: an NPC offended about one issue can still be
 	# offended anew about a DIFFERENT issue this session (§13.10; review #8). The old
 	# per-kind latch suppressed every offense after the first, session-wide.
@@ -1959,7 +1954,7 @@ func _generate_summary_override() -> String:
 	var parsed: Variant = JSON.parse_string(env.text)
 	if parsed is Dictionary:
 		# Model-authored field — null-safe (§106; a null 'summary' must not crash).
-		return _s((parsed as Dictionary).get("summary"))
+		return StringUtils.s((parsed as Dictionary).get("summary"))
 	return ""
 
 

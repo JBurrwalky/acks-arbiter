@@ -64,7 +64,7 @@ static func process_campaign_month(campaign_id: String, calendar_day: int,
 	var dist_by_domain: Dictionary = {}
 	var orgs: Array = _active_orgs(campaign_id, active_set)
 	for org in orgs:
-		var dom: String = _s((org as Dictionary).get("home_domain_id"))
+		var dom: String = StringUtils.s((org as Dictionary).get("home_domain_id"))
 		if dom != "" and not dist_by_domain.has(dom):
 			dist_by_domain[dom] = TitheApportionment.distribute_month(dom)
 
@@ -84,7 +84,7 @@ static func _active_orgs(campaign_id: String, active_set: Dictionary) -> Array:
 		return []
 	var out: Array = []
 	for row in CampaignRepository.db.query_result:
-		var seat: String = _s((row as Dictionary).get("seat_settlement_id"))
+		var seat: String = StringUtils.s((row as Dictionary).get("seat_settlement_id"))
 		if seat != "" and active_set.has(seat):
 			out.append(row)
 	return out
@@ -103,7 +103,7 @@ static func _take_turn(campaign_id: String, faction: Dictionary, calendar_day: i
 	# 1) Ledger (income first).
 	var tithe_income: int = 0
 	if type in PROSELYTIZE_TYPES:
-		var dom: String = _s(faction.get("home_domain_id"))
+		var dom: String = StringUtils.s(faction.get("home_domain_id"))
 		tithe_income = int((dist_by_domain.get(dom, {}) as Dictionary).get(faction_id, 0))
 	var ledger: Dictionary = FactionLedgerResolver.resolve_month(faction, tithe_income)
 	report["ledger"] = ledger
@@ -197,8 +197,8 @@ static func _actions_this_month(faction: Dictionary) -> int:
 static func _score_candidates(faction: Dictionary, forced_survive: bool,
 		treasury: int, calendar_day: int) -> Array:
 	var type: String = String(faction.get("faction_type", ""))
-	var goal_primary: String = "survive" if forced_survive else _s(faction.get("goal_primary"))
-	var goal_secondary: String = _s(faction.get("goal_secondary"))
+	var goal_primary: String = "survive" if forced_survive else StringUtils.s(faction.get("goal_primary"))
+	var goal_secondary: String = StringUtils.s(faction.get("goal_secondary"))
 	var scored: Array = []
 	for action_id_v in ACTION_DEFS:
 		var action_id: String = String(action_id_v)
@@ -336,7 +336,7 @@ static func _do_proselytize(campaign_id: String, faction: Dictionary, calendar_d
 	_set_treasury(faction, int(faction.get("treasury_gp", 0)) - spend)
 	faction["treasury_gp"] = int(faction.get("treasury_gp", 0)) - spend
 	var rng := _monthly_rng(faction_id + "|proselytize", calendar_day)
-	var cha: int = _leader_cha_mod(_s(faction.get("leader_npc_id")))
+	var cha: int = _leader_cha_mod(StringUtils.s(faction.get("leader_npc_id")))
 	var gained: int = rng.randi_range(1, 10) + cha
 	var rival: Dictionary = _same_family_rival(faction)
 	var poached: int = 0
@@ -366,7 +366,7 @@ static func _do_court_patron(campaign_id: String, faction: Dictionary, calendar_
 	if not (type in TitheApportionment.TEMPLE_TYPES):
 		return {"summary": "%s courts the local power." % faction.get("name", "The faction")}
 	var faction_id: String = String(faction.get("id", ""))
-	var domain_id: String = _s(faction.get("home_domain_id"))
+	var domain_id: String = StringUtils.s(faction.get("home_domain_id"))
 	if domain_id == "":
 		return {"summary": "%s finds no court to petition." % faction.get("name", "The faction")}
 	# Pay the courting cost (gifts, entertainment) — the declared ACTION_DEFS cost,
@@ -401,8 +401,8 @@ static func _do_court_patron(campaign_id: String, faction: Dictionary, calendar_
 ## facing surface). Uses QuestRegistry.create_faction_quest (Q-6).
 static func _do_post_job(campaign_id: String, faction: Dictionary, calendar_day: int) -> Dictionary:
 	var registry := QuestRegistry.new(CampaignRepository, campaign_id)
-	var goal: String = _s(faction.get("goal_primary"), "accumulate_wealth")
-	var front: String = _s(faction.get("leader_npc_id"))
+	var goal: String = StringUtils.s(faction.get("goal_primary"), "accumulate_wealth")
+	var front: String = StringUtils.s(faction.get("leader_npc_id"))
 	var quest_id: String = registry.create_faction_quest(
 		String(faction.get("id", "")), front, goal,
 		{"calendar_day": calendar_day, "reward_gp": _post_job_reward(faction)})
@@ -550,11 +550,11 @@ static func _active_conflict_for(faction: Dictionary) -> Dictionary:
 ## now heads a rebel realm; resolve it from any committed member's re-pointed domain.
 static func _rebel_realm_for_plot(plot: Dictionary) -> String:
 	var instigator_mirror: String = String(plot.get("instigator_faction_id", ""))
-	var head: String = _s(CampaignRepository.get_faction(instigator_mirror).get("leader_npc_id"))
+	var head: String = StringUtils.s(CampaignRepository.get_faction(instigator_mirror).get("leader_npc_id"))
 	if head == "":
 		return ""
 	var realm: Dictionary = RealmRepository.get_realm_for_character(head)
-	return _s(realm.get("id"))
+	return StringUtils.s(realm.get("id"))
 
 
 # ---------------------------------------------------------------------------
@@ -613,7 +613,7 @@ static func _leader_cha_mod(leader_id: String) -> int:
 
 ## A same-alignment-family rival temple present in the same domain (for poaching).
 static func _same_family_rival(faction: Dictionary) -> Dictionary:
-	var domain_id: String = _s(faction.get("home_domain_id"))
+	var domain_id: String = StringUtils.s(faction.get("home_domain_id"))
 	if domain_id == "":
 		return {}
 	var faction_id: String = String(faction.get("id", ""))
@@ -628,7 +628,7 @@ static func _same_family_rival(faction: Dictionary) -> Dictionary:
 
 static func _friendly_ally(faction: Dictionary) -> Dictionary:
 	# A parent faction is the simplest reliable friendly+ target.
-	var parent_id: String = _s(faction.get("parent_faction_id"))
+	var parent_id: String = StringUtils.s(faction.get("parent_faction_id"))
 	if parent_id != "":
 		var p: Dictionary = CampaignRepository.get_faction(parent_id)
 		if not p.is_empty():
@@ -680,9 +680,4 @@ static func _shift_shares_toward(domain_id: String, winner_id: String, points: i
 
 static func _domain_ruler(domain_id: String) -> String:
 	var d: Dictionary = CampaignRepository.get_domain(domain_id)
-	return _s(d.get("owner_character_id")) if not d.is_empty() else ""
-
-
-## Null-safe String coercion (a NULL SQL column is `null`; String(null) forbidden).
-static func _s(v: Variant, default: String = "") -> String:
-	return String(v) if v != null else default
+	return StringUtils.s(d.get("owner_character_id")) if not d.is_empty() else ""

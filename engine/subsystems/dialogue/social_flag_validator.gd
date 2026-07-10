@@ -39,7 +39,7 @@ const VALID_KINDS := ["offense", "enticement"]
 ## Returns { accepted: bool, kind: String, tone_steps: int, reason: String }.
 static func validate(flag: Dictionary, ctx: Dictionary) -> Dictionary:
 	# Model-authored fields — null-safe coercion (§106; never String(null)).
-	var kind := _s(flag.get("kind")).strip_edges().to_lower()
+	var kind := StringUtils.s(flag.get("kind")).strip_edges().to_lower()
 	if not VALID_KINDS.has(kind):
 		return _reject(kind, "invalid_kind")
 
@@ -47,7 +47,7 @@ static func validate(flag: Dictionary, ctx: Dictionary) -> Dictionary:
 	if bool(ctx.get("already_fired", false)):
 		return _reject(kind, "duplicate_offense_fired")
 
-	var grounds := _s(flag.get("grounds")).strip_edges()
+	var grounds := StringUtils.s(flag.get("grounds")).strip_edges()
 	if grounds.is_empty():
 		return _reject(kind, "empty_grounds")
 
@@ -118,8 +118,3 @@ static func _log_accept(kind: String, magnitude: int, grounds: String) -> void:
 	# a secret/key, so it is safe to log (no redaction concern — dialogue replies
 	# carry no API material).
 	push_warning("SocialFlagValidator: accepted %s (%d step) — grounds: %s" % [kind, magnitude, grounds])
-
-
-## Null-safe String coercion (conventions §106 — never String(null)).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return default_value if v == null else str(v)

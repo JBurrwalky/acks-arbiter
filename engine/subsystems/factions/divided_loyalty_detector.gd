@@ -257,7 +257,3 @@ static func _signature(cause: String, faction_a: String, faction_b: String, conf
 static func _band_index(band: String) -> int:
 	var idx: int = FactionStanceData.BANDS.find(band)
 	return idx if idx >= 0 else 2   # default neutral
-
-
-static func _s(v: Variant, default_value: String = "") -> String:
-	return str(v) if v != null else default_value

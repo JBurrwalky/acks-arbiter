@@ -87,7 +87,7 @@ static func seed_defaults(campaign_id: String, domain_id: String,
 		basis[fid] = float(_congregants(t as Dictionary))
 		bias[fid] = 0.0
 		if ruler_religion_id != "" \
-				and _s((t as Dictionary).get("religion_id")) == ruler_religion_id:
+				and StringUtils.s((t as Dictionary).get("religion_id")) == ruler_religion_id:
 			bias[fid] = RULER_DEITY_BIAS_POINTS
 	var shares: Dictionary = apportion_points(basis, bias)
 	for fid_v in shares:
@@ -223,7 +223,7 @@ static func panel_model(domain_id: String) -> Dictionary:
 		rows.append({
 			"faction_id": fid,
 			"name": String((t as Dictionary).get("name", "")),
-			"religion_id": _s((t as Dictionary).get("religion_id")),
+			"religion_id": StringUtils.s((t as Dictionary).get("religion_id")),
 			"congregants": _congregants(t as Dictionary),
 			"congregant_share_pct": int(congregant_pct.get(fid, 0)),
 			"current_share_pct": cur,
@@ -328,13 +328,7 @@ static func apply(campaign_id: String, domain_id: String, shares: Dictionary,
 ## "" if the domain has no resolvable realm/mirror.
 static func _ruler_realm_mirror(campaign_id: String, domain_id: String) -> String:
 	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
-	var realm_id: String = _s(domain.get("realm_id"))
+	var realm_id: String = StringUtils.s(domain.get("realm_id"))
 	if realm_id.is_empty():
 		return ""
 	return FactionRegistry.get_realm_mirror_id(campaign_id, realm_id)
-
-
-## Null-safe String coercion — a NULL SQL column comes back as `null`, and
-## String(null) is forbidden (produces "<null>"); default to "".
-static func _s(v: Variant, default: String = "") -> String:
-	return String(v) if v != null else default

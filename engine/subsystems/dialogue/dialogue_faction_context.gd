@@ -76,7 +76,7 @@ static func build(npc_id: String, party_id: String, day: int = 0) -> Dictionary:
 			"type": type,
 			"rank_title": OrgTypeCatalog.rank_title(type, int((m as Dictionary).get("rank", 0))),
 			# leader_npc_id is nullable (§106 — never String(null)).
-			"is_leader": _s(faction.get("leader_npc_id")) == npc_id,
+			"is_leader": StringUtils.s(faction.get("leader_npc_id")) == npc_id,
 		})
 		npc_faction_ids.append(fid)
 		# Public color derived from PUBLIC faction fields only.
@@ -178,7 +178,7 @@ static func _stance_words(band: String) -> String:
 
 static func _append_goal_directive(directives: Array, faction: Dictionary) -> void:
 	# goal_primary is nullable (§106 — never String(null)).
-	var goal: String = _s(faction.get("goal_primary")).strip_edges()
+	var goal: String = StringUtils.s(faction.get("goal_primary")).strip_edges()
 	if goal.is_empty():
 		return
 	var phrase: String = String(_GOAL_PHRASES.get(goal, "pursuing its aims"))
@@ -188,8 +188,3 @@ static func _append_goal_directive(directives: Array, faction: Dictionary) -> vo
 static func _append_unique(arr: Array, value: String) -> void:
 	if not arr.has(value):
 		arr.append(value)
-
-
-## Null-safe String coercion (conventions §106 — never String(null)).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return default_value if v == null else str(v)

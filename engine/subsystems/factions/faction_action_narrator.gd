@@ -123,7 +123,7 @@ static func is_player_relevant(faction_id: String, party_id: String,
 		return false
 	# Same settlement as the party.
 	if party_settlement_id != "" \
-			and _s(faction.get("seat_settlement_id")) == party_settlement_id:
+			and StringUtils.s(faction.get("seat_settlement_id")) == party_settlement_id:
 		return true
 	if party_id == "":
 		return false
@@ -148,7 +148,7 @@ static func is_player_relevant(faction_id: String, party_id: String,
 static func _assemble(faction: Dictionary, faction_id: String, action_id: String,
 		action_outcome: Dictionary) -> Dictionary:
 	var leader_name: String = ""
-	var leader_id: String = _s(faction.get("leader_npc_id"))
+	var leader_id: String = StringUtils.s(faction.get("leader_npc_id"))
 	if leader_id != "":
 		var lch: Dictionary = CampaignRepository.get_character(leader_id)
 		leader_name = String(lch.get("name", "")) if not lch.is_empty() else ""
@@ -159,7 +159,7 @@ static func _assemble(faction: Dictionary, faction_id: String, action_id: String
 		"faction_type": String(faction.get("faction_type", "")),
 		"leader_npc_id": leader_id,
 		"leader_name": leader_name if leader_name != "" else "Its leader",
-		"goal_primary": _s(faction.get("goal_primary")),
+		"goal_primary": StringUtils.s(faction.get("goal_primary")),
 		"action_id": action_id,
 		"action_outcome": action_outcome.duplicate(true),
 	}
@@ -234,8 +234,3 @@ static func _load() -> Dictionary:
 static func clear_template_cache() -> void:
 	_templates = {}
 	_loaded = false
-
-
-## Null-safe String coercion (a NULL SQL column is `null`; String(null) forbidden).
-static func _s(v: Variant, default: String = "") -> String:
-	return String(v) if v != null else default

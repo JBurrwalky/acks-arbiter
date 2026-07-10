@@ -47,7 +47,7 @@ const BETRAYAL_MAGNITUDE: int = -6
 static func generate_condition(faction: Dictionary, professed_side_mirror: String,
 		true_side_mirror: String, conflict: Dictionary) -> Dictionary:
 	var professed_realm: String = FactionRegistry.realm_id_of_mirror(professed_side_mirror)
-	var kind: String = _s(conflict.get("betrayal_hint"))
+	var kind: String = StringUtils.s(conflict.get("betrayal_hint"))
 	if not CONDITION_KINDS.has(kind):
 		kind = COND_SIDE_LOSES_FIELD_BATTLE   # the §7.5 default
 	var params: Dictionary = {
@@ -66,7 +66,7 @@ static func generate_condition(faction: Dictionary, professed_side_mirror: Strin
 		"params": params,
 		"professed_mirror": professed_side_mirror,
 		"true_mirror": true_side_mirror,
-		"conflict_id": _s(conflict.get("conflict_id")),
+		"conflict_id": StringUtils.s(conflict.get("conflict_id")),
 	}
 
 
@@ -82,7 +82,7 @@ static func check_and_fire(campaign_id: String, event_kind: String, event_data: 
 	var fired: Array = []
 	for row in CampaignRepository.ff_list_stances_with_betrayal(campaign_id):
 		var r: Dictionary = row
-		var cond: Dictionary = _parse_json(_s(r.get("betrayal_condition")))
+		var cond: Dictionary = _parse_json(StringUtils.s(r.get("betrayal_condition")))
 		if cond.is_empty():
 			continue
 		if condition_matches(cond, event_kind, event_data):
@@ -107,13 +107,13 @@ static func condition_matches(cond: Dictionary, event_kind: String, event_data: 
 		COND_PATRON_PAYMENT_MISSED:
 			if event_kind != "patron_payment_missed":
 				return false
-			if _s(event_data.get("patron_mirror")) != _s(params.get("side_mirror")):
+			if StringUtils.s(event_data.get("patron_mirror")) != StringUtils.s(params.get("side_mirror")):
 				return false
 			return int(event_data.get("months_missed", 0)) >= int(params.get("n_months", 1))
 		COND_RIVAL_ORG_DECLARES_FOR:
 			if event_kind != "rival_org_declared":
 				return false
-			return _s(event_data.get("declared_side_mirror")) == _s(params.get("declared_side_mirror"))
+			return StringUtils.s(event_data.get("declared_side_mirror")) == StringUtils.s(params.get("declared_side_mirror"))
 		COND_POWER_RATIO_CROSSES:
 			if event_kind != "power_ratio_update":
 				return false
@@ -121,8 +121,8 @@ static func condition_matches(cond: Dictionary, event_kind: String, event_data: 
 		COND_EVIDENCE_OF_PERSECUTION_PLAN:
 			if event_kind != "persecution_plan_evidence":
 				return false
-			return _s(event_data.get("target_mirror")) == _s(params.get("side_mirror")) \
-				or _s(event_data.get("planner_mirror")) == _s(params.get("side_mirror"))
+			return StringUtils.s(event_data.get("target_mirror")) == StringUtils.s(params.get("side_mirror")) \
+				or StringUtils.s(event_data.get("planner_mirror")) == StringUtils.s(params.get("side_mirror"))
 		_:
 			return false
 
@@ -132,9 +132,9 @@ static func condition_matches(cond: Dictionary, event_kind: String, event_data: 
 ## preference, runs one prepared free op at +4, and writes the permanent betrayal.
 static func execute_betrayal(campaign_id: String, stance_row: Dictionary, cond: Dictionary,
 		day: int, dice = null) -> Dictionary:
-	var faction_id: String = _s(stance_row.get("faction_a_id"))
-	var professed_mirror: String = _s(stance_row.get("faction_b_id"))
-	var true_mirror: String = _s(cond.get("true_mirror"))
+	var faction_id: String = StringUtils.s(stance_row.get("faction_a_id"))
+	var professed_mirror: String = StringUtils.s(stance_row.get("faction_b_id"))
+	var true_mirror: String = StringUtils.s(cond.get("true_mirror"))
 	if faction_id == "" or professed_mirror == "":
 		return {"ok": false, "error": "empty_id"}
 	if dice == null:
@@ -180,10 +180,10 @@ static func execute_betrayal(campaign_id: String, stance_row: Dictionary, cond: 
 ## Match a side by realm-id OR mirror-id, whichever the event carries.
 static func _matches_side(event_data: Dictionary, realm_key: String, mirror_key: String,
 		params: Dictionary) -> bool:
-	var target_realm: String = _s(params.get("side_realm_id"))
-	var target_mirror: String = _s(params.get("side_mirror"))
-	var ev_realm: String = _s(event_data.get(realm_key))
-	var ev_mirror: String = _s(event_data.get(mirror_key))
+	var target_realm: String = StringUtils.s(params.get("side_realm_id"))
+	var target_mirror: String = StringUtils.s(params.get("side_mirror"))
+	var ev_realm: String = StringUtils.s(event_data.get(realm_key))
+	var ev_mirror: String = StringUtils.s(event_data.get(mirror_key))
 	if target_realm != "" and ev_realm != "" and target_realm == ev_realm:
 		return true
 	if target_mirror != "" and ev_mirror != "" and target_mirror == ev_mirror:
@@ -196,9 +196,3 @@ static func _parse_json(s: String) -> Dictionary:
 		return {}
 	var parsed: Variant = JSON.parse_string(s)
 	return parsed if parsed is Dictionary else {}
-
-
-## Null-safe String coercion (SQL NULL columns arrive as Variant null;
-## String(null) is an invalid constructor call in GDScript).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return str(v) if v != null else default_value

@@ -65,14 +65,14 @@ static func evaluate(faction_a: Dictionary, faction_b: Dictionary, context: Dict
 		return scale_result
 
 	var align_term: int = _alignment_term(
-		_s(faction_a.get("alignment")), _s(faction_b.get("alignment")))
+		StringUtils.s(faction_a.get("alignment")), StringUtils.s(faction_b.get("alignment")))
 	terms["alignment"] = align_term
 
 	var religion_term: int = _religion_term(faction_a, faction_b)
 	terms["religion"] = religion_term
 
 	var culture_term: int = _culture_term(
-		_s(faction_a.get("culture_id")), _s(faction_b.get("culture_id")))
+		StringUtils.s(faction_a.get("culture_id")), StringUtils.s(faction_b.get("culture_id")))
 	terms["culture"] = culture_term
 
 	var type_term: int = _type_term(faction_a, faction_b, context)
@@ -124,14 +124,14 @@ static func _alignment_term(a: String, b: String) -> int:
 ## Otherwise (a neutral deity vs a non-neutral one) → n.a. (0). Marked tunable;
 ## FF-2 replaces the alignment proxy with the real nemesis-graph lookup.
 static func _religion_term(faction_a: Dictionary, faction_b: Dictionary) -> int:
-	var ra: String = _s(faction_a.get("religion_id"))
-	var rb: String = _s(faction_b.get("religion_id"))
+	var ra: String = StringUtils.s(faction_a.get("religion_id"))
+	var rb: String = StringUtils.s(faction_b.get("religion_id"))
 	if ra == "" or rb == "":
 		return RELIGION_NA
 	if ra == rb:
 		return RELIGION_SAME_DEITY
-	var aa: String = _s(faction_a.get("alignment"))
-	var ab: String = _s(faction_b.get("alignment"))
+	var aa: String = StringUtils.s(faction_a.get("alignment"))
+	var ab: String = StringUtils.s(faction_b.get("alignment"))
 	if aa != "" and aa == ab:
 		return RELIGION_SAME_FAMILY
 	if (aa == "lawful" and ab == "chaotic") or (aa == "chaotic" and ab == "lawful"):
@@ -154,8 +154,8 @@ static func _culture_term(a: String, b: String) -> int:
 ## honors the same-settlement / same-religion-family gates for the temple
 ## rivalry pair and the 'any' / 'any_lawful_org' / 'patrons_enemies' wildcards.
 static func _type_term(faction_a: Dictionary, faction_b: Dictionary, context: Dictionary) -> int:
-	var ta: String = _s(faction_a.get("faction_type"))
-	var tb: String = _s(faction_b.get("faction_type"))
+	var ta: String = StringUtils.s(faction_a.get("faction_type"))
+	var tb: String = StringUtils.s(faction_b.get("faction_type"))
 	var pairs: Array = _type_matrix.get("pairs", [])
 	var best: int = int(_type_matrix.get("default_term", 0))
 	var matched: bool = false
@@ -178,8 +178,8 @@ static func _type_term(faction_a: Dictionary, faction_b: Dictionary, context: Di
 ## type_y (faction_y)? Handles wildcards and the gate flags.
 static func _pair_matches(entry: Dictionary, type_x: String, type_y: String,
 		faction_x: Dictionary, faction_y: Dictionary, context: Dictionary) -> bool:
-	var ea: String = _s(entry.get("a"))
-	var eb: String = _s(entry.get("b"))
+	var ea: String = StringUtils.s(entry.get("a"))
+	var eb: String = StringUtils.s(entry.get("b"))
 	if ea != type_x:
 		return false
 	if not _type_side_matches(eb, type_y, faction_y):
@@ -191,8 +191,8 @@ static func _pair_matches(entry: Dictionary, type_x: String, type_y: String,
 	# Gate: same religion family (co-aligned temple rivalry). Approximated by
 	# same alignment (the family proxy above).
 	if bool(entry.get("requires_same_religion_family", false)):
-		var ax: String = _s(faction_x.get("alignment"))
-		var ay: String = _s(faction_y.get("alignment"))
+		var ax: String = StringUtils.s(faction_x.get("alignment"))
+		var ay: String = StringUtils.s(faction_y.get("alignment"))
 		if ax == "" or ax != ay:
 			return false
 	return true
@@ -208,8 +208,8 @@ static func _type_side_matches(token: String, type_y: String, faction_y: Diction
 		"any":
 			return true
 		"any_lawful_org":
-			return _s(faction_y.get("scope")) == "organization" \
-				and _s(faction_y.get("alignment")) == "lawful"
+			return StringUtils.s(faction_y.get("scope")) == "organization" \
+				and StringUtils.s(faction_y.get("alignment")) == "lawful"
 		"patrons_enemies":
 			# Resolved by the caller via context in a later phase; without the
 			# patron/hostiles context this token never matches (contributes 0).
@@ -222,9 +222,9 @@ static func _type_side_matches(token: String, type_y: String, faction_y: Diction
 ## stance toward the target. Returns {} when A is not a warband or the parent is
 ## unresolvable (so the caller falls through to A's own structural terms).
 static func _warband_scale(faction_a: Dictionary, faction_b: Dictionary, context: Dictionary) -> Dictionary:
-	if _s(faction_a.get("scope")) != SCOPE_WARBAND:
+	if StringUtils.s(faction_a.get("scope")) != SCOPE_WARBAND:
 		return {}
-	var parent_id: String = _s(faction_a.get("parent_faction_id"))
+	var parent_id: String = StringUtils.s(faction_a.get("parent_faction_id"))
 	if parent_id == "":
 		return {}
 	var lookup: Variant = context.get("faction_lookup", null)
@@ -272,7 +272,3 @@ static func _ensure_matrix() -> void:
 static func reset_matrix_cache() -> void:
 	_type_matrix_loaded = false
 	_type_matrix = {}
-
-
-static func _s(value: Variant) -> String:
-	return String(value) if value != null else ""

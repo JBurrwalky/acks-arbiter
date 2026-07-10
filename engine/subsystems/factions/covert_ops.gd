@@ -62,7 +62,7 @@ static func run_op(campaign_id: String, op: String, perpetrator_faction: Diction
 		target_faction_id: String, day: int, dice = null, opts: Dictionary = {}) -> Dictionary:
 	if not OPS.has(op):
 		return {"ok": false, "error": "unknown_op", "op": op}
-	var perp_id: String = _s(perpetrator_faction.get("id"))
+	var perp_id: String = StringUtils.s(perpetrator_faction.get("id"))
 	if perp_id == "" or target_faction_id == "":
 		return {"ok": false, "error": "empty_id", "op": op}
 	if dice == null:
@@ -175,7 +175,7 @@ static func _effect_spy(perp: Dictionary, target_id: String, day: int, dice) -> 
 static func _effect_sabotage(_campaign_id: String, _perp: Dictionary, target_id: String, _day: int) -> Dictionary:
 	var target: Dictionary = CampaignRepository.get_faction(target_id)
 	var destroyed: int = 0
-	if not target.is_empty() and _s(target.get("scope")) == "organization":
+	if not target.is_empty() and StringUtils.s(target.get("scope")) == "organization":
 		var treasury: int = int(target.get("treasury_gp", 0))
 		# One income-month = 1/4-wages of the target's abstract roster (its baseline).
 		destroyed = MathUtils.bankers_round(
@@ -194,14 +194,14 @@ static func _effect_sabotage(_campaign_id: String, _perp: Dictionary, target_id:
 ## Axioms `slandering` hijink given mechanics -- §6.7). Needs opts.third_party_id.
 static func _effect_slander(campaign_id: String, perp: Dictionary, target_id: String,
 		day: int, opts: Dictionary) -> Dictionary:
-	var third: String = _s(opts.get("third_party_id"))
+	var third: String = StringUtils.s(opts.get("third_party_id"))
 	if third == "":
 		return {"slander_applied": false, "reason": "no_third_party"}
 	# The target's reputation with the third party sours one band (the third party
 	# now thinks worse of the target). shift_stance is authority-split guarded.
 	var new_band: String = FactionStanceService.shift_stance(
 		campaign_id, third, target_id, -1,
-		"slandered by %s" % _s(perp.get("name"), "a rival"), day)
+		"slandered by %s" % StringUtils.s(perp.get("name"), "a rival"), day)
 	return {"slander_applied": new_band != "", "third_party_id": third, "new_band": new_band}
 
 
@@ -217,7 +217,7 @@ static func _effect_poach(campaign_id: String, perp: Dictionary, target_id: Stri
 	var moved: int = mini(stolen, t_before)
 	if moved <= 0:
 		return {"poached": 0}
-	var perp_id: String = _s(perp.get("id"))
+	var perp_id: String = StringUtils.s(perp.get("id"))
 	CampaignRepository.db.query_with_bindings(
 		"UPDATE factions SET member_count_abstract = ? WHERE id = ?", [t_before - moved, target_id])
 	CampaignRepository.db.query_with_bindings(
@@ -235,8 +235,8 @@ static func _effect_poach(campaign_id: String, perp: Dictionary, target_id: Stri
 ## §6.7 reserves a v2 secret-save option). Returns the (off-screen) outcome.
 static func _effect_assassinate(campaign_id: String, perp: Dictionary, target_id: String,
 		day: int, opts: Dictionary) -> Dictionary:
-	var perp_id: String = _s(perp.get("id"))
-	var victim_npc: String = _s((opts.get("assassin_target_ctx", {}) as Dictionary).get("npc_id"))
+	var perp_id: String = StringUtils.s(perp.get("id"))
+	var victim_npc: String = StringUtils.s((opts.get("assassin_target_ctx", {}) as Dictionary).get("npc_id"))
 	FactionEventLedger.record(campaign_id, day, perp_id, target_id,
 		"member_killed", -5, JSON.stringify({"op": "assassinate", "npc_id": victim_npc, "off_screen": true}))
 	return {"assassinated_off_screen": true, "victim_npc_id": victim_npc}
@@ -252,8 +252,8 @@ static func _effect_assassinate(campaign_id: String, perp: Dictionary, target_id
 ## {ok, refused?, reason?, price_gp, multiplier, band}.
 static func quote_for_hire(hirer_faction: Dictionary, syndicate_faction: Dictionary,
 		op: String, day: int, dice = null) -> Dictionary:
-	var hirer_id: String = _s(hirer_faction.get("id"))
-	var synd_id: String = _s(syndicate_faction.get("id"))
+	var hirer_id: String = StringUtils.s(hirer_faction.get("id"))
+	var synd_id: String = StringUtils.s(syndicate_faction.get("id"))
 	if hirer_id == "" or synd_id == "":
 		return {"ok": false, "refused": true, "reason": "empty_id"}
 	# Stance both directions; a Hostile relationship EITHER way refuses the deal.
@@ -302,7 +302,7 @@ static func can_assassinate(perpetrator_faction: Dictionary, opts: Dictionary) -
 ## True when the faction fields an assassin/nightblade (leader class, or an explicit
 ## capability flag on the row/opts for abstract rosters).
 static func _faction_has_assassin(faction: Dictionary) -> bool:
-	var leader: String = _s(faction.get("leader_npc_id"))
+	var leader: String = StringUtils.s(faction.get("leader_npc_id"))
 	if leader != "":
 		var ch: Dictionary = CampaignRepository.get_character(leader)
 		if not ch.is_empty() and String(ch.get("character_class", "")) in ASSASSIN_CLASSES:
@@ -316,7 +316,7 @@ static func _faction_has_assassin(faction: Dictionary) -> bool:
 ## their real level; everyone else acts AS A 1st-LEVEL THIEF (the ruled amateur cap).
 static func perpetrator_effective_level(faction: Dictionary) -> int:
 	if String(faction.get("faction_type", "")) in THIEF_ORG_TYPES:
-		var leader: String = _s(faction.get("leader_npc_id"))
+		var leader: String = StringUtils.s(faction.get("leader_npc_id"))
 		if leader != "":
 			var ch: Dictionary = CampaignRepository.get_character(leader)
 			if not ch.is_empty():
@@ -343,7 +343,7 @@ static func _spy_secret_value(level: int, dice) -> int:
 ## home domain morale; 0 when unavailable.
 static func _domain_spy_penalty(target_faction_id: String) -> int:
 	var f: Dictionary = CampaignRepository.get_faction(target_faction_id)
-	var dom_id: String = _s(f.get("home_domain_id"))
+	var dom_id: String = StringUtils.s(f.get("home_domain_id"))
 	if dom_id == "":
 		return 0
 	var dom: Dictionary = CampaignRepository.get_domain(dom_id)
@@ -371,14 +371,14 @@ static func _steal_secret(target_id: String) -> Dictionary:
 				"toward": String(r.get("faction_b_id", "")),
 				"public": String(r.get("public_stance", "")),
 				"true": String(truev),
-				"betrayal_condition": _s(r.get("betrayal_condition")),
+				"betrayal_condition": StringUtils.s(r.get("betrayal_condition")),
 			})
 	return out
 
 
 static func _record_discovery(campaign_id: String, op: String, perp_id: String,
 		target_id: String, day: int, opts: Dictionary) -> Dictionary:
-	var hirer: String = _s(opts.get("hirer_faction_id"))
+	var hirer: String = StringUtils.s(opts.get("hirer_faction_id"))
 	FactionEventLedger.record(campaign_id, day, perp_id, target_id, "op_discovered", -4,
 		JSON.stringify({"op": op, "hirer_faction_id": hirer}))
 	# A caught op sours the target's stance toward the perpetrator one band.
@@ -398,9 +398,3 @@ static func _audit_op(op: String, perp_id: String, target_id: String, day: int,
 	PoliticalAudit.bump_counter("covert_ops_run")
 	if caught:
 		PoliticalAudit.bump_counter("covert_ops_discovered")
-
-
-## Null-safe String coercion (SQL NULL columns arrive as Variant null;
-## String(null) is an invalid constructor call in GDScript).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return str(v) if v != null else default_value

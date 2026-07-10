@@ -120,8 +120,8 @@ static func _directive_bullets(personality: Dictionary) -> String:
 
 
 static func _motivations(personality: Dictionary) -> String:
-	var prim := _s(personality.get("motivation_primary")).strip_edges()
-	var sec := _s(personality.get("motivation_secondary")).strip_edges()
+	var prim := StringUtils.s(personality.get("motivation_primary")).strip_edges()
+	var sec := StringUtils.s(personality.get("motivation_secondary")).strip_edges()
 	if prim.is_empty() and sec.is_empty():
 		return "getting through the day"
 	if sec.is_empty():
@@ -130,7 +130,7 @@ static func _motivations(personality: Dictionary) -> String:
 
 
 static func _feature(personality: Dictionary) -> String:
-	var f := _s(personality.get("distinctive_feature")).strip_edges()
+	var f := StringUtils.s(personality.get("distinctive_feature")).strip_edges()
 	return f if not f.is_empty() else "nothing remarkable"
 
 
@@ -305,8 +305,3 @@ static func _to_strings(arr: Array) -> Array:
 	for v in arr:
 		out.append(String(v))
 	return out
-
-
-## Null-safe String coercion (conventions §106 — never String(null)).
-static func _s(v: Variant, default_value: String = "") -> String:
-	return default_value if v == null else str(v)
