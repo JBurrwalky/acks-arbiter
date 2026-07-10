@@ -2334,10 +2334,10 @@ signal setting_narrative_upgraded(campaign_id: String, done: int, total: int)
 # instant answer, upgraded in place if/when the live reply resolves.
 # ---------------------------------------------------------------------------
 
-## A live reply is being generated for [param npc_id] in [param session_id] — the
-## UI shows a "…" thinking indicator. Emitted only on the configured path; the
-## mock path returns same-frame and never emits this.
-signal dialogue_reply_pending(session_id: String, npc_id: String)
+## A live reply was requested for [param npc_id] in [param session_id] (the async
+## generate() call has begun) — the UI shows a "…" thinking indicator. Emitted only
+## on the configured path; the mock path returns same-frame and never emits this.
+signal dialogue_reply_requested(session_id: String, npc_id: String)
 
 ## A reply line was performed (Tier-0 or live). [param is_fallback] is true when
 ## the Tier-0 template stood in (unconfigured / validation failure / timeout).
@@ -2393,4 +2393,4 @@ signal dungeon_band_news_reached_parent(dungeon_id: String, band_faction_id: Str
 ## A linked detachment took its ONE per-conflict allegiance-engine pass (§9.3
 ## "politics reaches the dungeon", capped §11.3). decision is the AllegianceEvaluator
 ## decision (open/lean/neutral/feign/open_defiant). PUBLIC posture only.
-signal dungeon_detachment_conflict_pass(dungeon_id: String, band_faction_id: String, conflict_id: String, decision: String)
+signal dungeon_detachment_conflict_resolved(dungeon_id: String, band_faction_id: String, conflict_id: String, decision: String)

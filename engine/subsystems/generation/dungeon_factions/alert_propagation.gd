@@ -64,32 +64,38 @@ static func propagate_within_faction(input: DungeonFactionInput, faction: Dungeo
 	for r in faction.all_room_ids():
 		owned[r] = true
 	var reached: Dictionary = {source_room: 0}
-	# Dijkstra over round-cost; tiny graph.
-	var frontier: Array = [[0, source_room]]
-	while not frontier.is_empty():
-		frontier.sort_custom(func(x, y):
-			if x[0] != y[0]:
-				return x[0] < y[0]
-			return x[1] < y[1])
-		var top: Array = frontier.pop_front()
-		var cost: int = top[0]
-		var cur: int = top[1]
-		if int(reached.get(cur, _ROUND_BLOCKED)) < cost:
-			continue
-		var room: DungeonFactionRoomInput = input.get_room(cur)
-		if room == null:
-			continue
-		for e in room.neighbors:
-			var n: int = e.to_room_id
-			if not owned.has(n):
+	# Dijkstra over round-cost, cost-bucketed instead of resorting the whole frontier
+	# each pop: edge costs are small ints (open 1, door 2), so processing buckets in
+	# ascending cost pops in nondecreasing round order in O(V+E). The min round per room
+	# is a shortest-path property, invariant to pop order, so the output is unchanged.
+	var buckets: Dictionary = {0: [source_room]}
+	var cost: int = 0
+	var max_cost: int = 0
+	while cost <= max_cost:
+		var bucket: Array = buckets.get(cost, [])
+		bucket.sort()                                       # deterministic within-cost order
+		for cur in bucket:
+			if int(reached.get(cur, _ROUND_BLOCKED)) < cost:
+				continue                                    # stale (a shorter path won)
+			var room: DungeonFactionRoomInput = input.get_room(cur)
+			if room == null:
 				continue
-			var step: int = _edge_round_cost(e)
-			if step >= _ROUND_BLOCKED:
-				continue
-			var nc: int = cost + step
-			if nc < int(reached.get(n, _ROUND_BLOCKED)):
-				reached[n] = nc
-				frontier.append([nc, n])
+			for e in room.neighbors:
+				var n: int = e.to_room_id
+				if not owned.has(n):
+					continue
+				var step: int = _edge_round_cost(e)
+				if step >= _ROUND_BLOCKED:
+					continue
+				var nc: int = cost + step                   # nc > cost, never the current bucket
+				if nc < int(reached.get(n, _ROUND_BLOCKED)):
+					reached[n] = nc
+					if not buckets.has(nc):
+						buckets[nc] = []
+					buckets[nc].append(n)
+					if nc > max_cost:
+						max_cost = nc
+		cost += 1
 	return reached
 
 

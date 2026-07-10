@@ -326,8 +326,8 @@ static func _emit_news(dungeon_id: String, band_id: String, parent_id: String,
 static func _emit_conflict_pass(dungeon_id: String, band_id: String,
 		conflict_id: String, decision: String) -> void:
 	var eb: Object = _event_bus()
-	if eb != null and eb.has_signal("dungeon_detachment_conflict_pass"):
-		eb.emit_signal("dungeon_detachment_conflict_pass", dungeon_id, band_id, conflict_id, decision)
+	if eb != null and eb.has_signal("dungeon_detachment_conflict_resolved"):
+		eb.emit_signal("dungeon_detachment_conflict_resolved", dungeon_id, band_id, conflict_id, decision)
 
 
 static func _event_bus() -> Object:

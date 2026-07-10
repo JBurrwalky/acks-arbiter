@@ -1859,7 +1859,7 @@ func perform_reply_live() -> Dictionary:
 		EventBus.dialogue_reply_performed.emit(session_id, npc_id, String(fb.get("text", "")), true)
 		fb["performed"] = true
 		return fb
-	EventBus.dialogue_reply_pending.emit(session_id, npc_id)
+	EventBus.dialogue_reply_requested.emit(session_id, npc_id)
 	var result: Dictionary = await DialoguePerformer.perform_reply_live(
 		_last_reply_plan, context, _templates, _last_reply_slots,
 		_transcript_for_prompt(), _last_player_move, _last_free_text)

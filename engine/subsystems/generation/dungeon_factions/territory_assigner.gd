@@ -39,49 +39,58 @@ static func assign(input: DungeonFactionInput, factions: Array,
 
 	# --- Multi-source BFS from every core room over wide-open edges ----------
 	# assigned[room] = { "faction": id, "dist": int }; contested tracked separately.
+	# Uniform-cost BFS processed LEVEL BY LEVEL: every dist-d entry is handled (in sorted
+	# (room, faction) order) before any dist-(d+1) entry — the same global (dist, room,
+	# faction) order the old per-pop tail-resort produced, but each level is sorted ONCE
+	# instead of re-sorting the whole unread tail on every pop (O(n log n) total vs the old
+	# O(n^2 log n)). Order is load-bearing: the FIRST faction to reach a room assigns it and
+	# propagates through it, so a stable order keeps contested ties + downstream ownership
+	# deterministic (the golden test asserts byte-identical output).
 	var assigned: Dictionary = {}
 	var contested: Dictionary = {}                  # room_id -> { faction_id: true }
-	var queue: Array = []                           # [dist, room_id, faction_id]
 
 	var sorted_factions: Array = factions.duplicate()
 	sorted_factions.sort_custom(func(a, b): return a.id < b.id)
+	var level: Array = []                           # [room_id, faction_id] at the current dist
 	for f in sorted_factions:
 		var seeds: Array = f.core_room_ids.duplicate()
 		seeds.sort()
 		for r in seeds:
-			queue.append([0, int(r), f.id])
+			level.append([int(r), f.id])
 
-	var head: int = 0
-	while head < queue.size():
-		# Stable order: sort the unread tail by (dist, room, faction) each pass is
-		# O(n log n) but n is tiny (<50); guarantees deterministic contest ties.
-		_sort_queue_tail(queue, head)
-		var entry: Array = queue[head]
-		head += 1
-		var dist: int = entry[0]
-		var cur: int = entry[1]
-		var fid: String = entry[2]
-		var room: DungeonFactionRoomInput = input.get_room(cur)
-		if room == null:
-			continue
-		for e in _sorted_neighbors(room):
-			if not _traversable(e):
+	var dist: int = 0
+	while not level.is_empty():
+		level.sort_custom(func(a, b):
+			if a[0] != b[0]:
+				return a[0] < b[0]
+			return a[1] < b[1])
+		var next_level: Array = []
+		var nd: int = dist + 1
+		for entry in level:
+			var cur: int = entry[0]
+			var fid: String = entry[1]
+			var room: DungeonFactionRoomInput = input.get_room(cur)
+			if room == null:
 				continue
-			var n: int = e.to_room_id
-			if core_owner.has(n) or threat_room.has(n) or not claimable.has(n):
-				continue
-			var nd: int = dist + 1
-			if not assigned.has(n):
-				assigned[n] = {"faction": fid, "dist": nd}
-				queue.append([nd, n, fid])
-			else:
-				var prev: Dictionary = assigned[n]
-				if int(prev["dist"]) == nd and String(prev["faction"]) != fid:
-					# Equal-distance reach by two factions ⇒ contested (§4.4).
-					if not contested.has(n):
-						contested[n] = {}
-						contested[n][String(prev["faction"])] = true
-					contested[n][fid] = true
+			for e in FactionGraph._sorted_neighbors(room):
+				if not _traversable(e):
+					continue
+				var n: int = e.to_room_id
+				if core_owner.has(n) or threat_room.has(n) or not claimable.has(n):
+					continue
+				if not assigned.has(n):
+					assigned[n] = {"faction": fid, "dist": nd}
+					next_level.append([n, fid])
+				else:
+					var prev: Dictionary = assigned[n]
+					if int(prev["dist"]) == nd and String(prev["faction"]) != fid:
+						# Equal-distance reach by two factions ⇒ contested (§4.4).
+						if not contested.has(n):
+							contested[n] = {}
+							contested[n][String(prev["faction"])] = true
+						contested[n][fid] = true
+		level = next_level
+		dist = nd
 
 	# --- Build the territory map + fill faction room lists ------------------
 	var faction_by_id: Dictionary = {}
@@ -193,23 +202,5 @@ static func _traversable(e: DungeonFactionEdge) -> bool:
 	return e.kind == DungeonFactionEdge.KIND_OPEN and e.width_ft >= 10
 
 
-static func _sorted_neighbors(room: DungeonFactionRoomInput) -> Array:
-	var edges: Array = room.neighbors.duplicate()
-	edges.sort_custom(func(a, b): return a.to_room_id < b.to_room_id)
-	return edges
-
-
-static func _sort_queue_tail(queue: Array, head: int) -> void:
-	# Sort only the still-unprocessed tail so BFS pops in (dist, room, faction)
-	# order — deterministic contested-tie resolution on tiny graphs.
-	if head >= queue.size():
-		return
-	var tail: Array = queue.slice(head)
-	tail.sort_custom(func(a, b):
-		if a[0] != b[0]:
-			return a[0] < b[0]
-		if a[1] != b[1]:
-			return a[1] < b[1]
-		return a[2] < b[2])
-	for i in tail.size():
-		queue[head + i] = tail[i]
+# Neighbor sorting is shared with FactionGraph._sorted_neighbors (review #15) — the
+# multi-source BFS above calls it directly rather than keeping a byte-identical copy.

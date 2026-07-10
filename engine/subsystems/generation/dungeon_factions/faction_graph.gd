@@ -80,22 +80,22 @@ static func is_aware(input: DungeonFactionInput, a_rooms: Array, b_rooms: Array,
 	for r in b_rooms:
 		b_set[int(r)] = true
 	var best: Dictionary = {}                 # room_id -> min unclaimed-count to reach
-	# Priority by unclaimed-count: small graph, use repeated relaxation (Dijkstra-lite).
-	var frontier: Array = []                  # entries: [unclaimed_count, room_id]
+	# 0-1 BFS: entering a CLAIMED room costs 0 (push to the FRONT), an unclaimed room
+	# costs 1 (push to the BACK). The deque then pops in nondecreasing unclaimed-count
+	# with no per-pop sort — O(V+E) instead of the old O(V^2 log V) resort-per-pop. The
+	# min-cost per room (hence the boolean result) is identical to the Dijkstra it
+	# replaces; determinism is preserved (neighbors visited in sorted to_room_id order).
+	var deque: Array = []                     # entries: [unclaimed_count, room_id]
 	var sorted_sources: Array = a_rooms.duplicate()
 	sorted_sources.sort()
 	for s in sorted_sources:
 		best[int(s)] = 0
-		frontier.append([0, int(s)])
-	while not frontier.is_empty():
-		frontier.sort_custom(func(x, y):
-			if x[0] != y[0]:
-				return x[0] < y[0]
-			return x[1] < y[1])
-		var top: Array = frontier.pop_front()
+		deque.append([0, int(s)])
+	while not deque.is_empty():
+		var top: Array = deque.pop_front()
 		var cost: int = top[0]
 		var cur: int = top[1]
-		if best.get(cur, 999999) < cost:
+		if int(best.get(cur, 999999)) < cost:
 			continue
 		if b_set.has(cur) and cost <= max_unclaimed:
 			return true
@@ -108,9 +108,12 @@ static func is_aware(input: DungeonFactionInput, a_rooms: Array, b_rooms: Array,
 			var nxt: int = e.to_room_id
 			var add: int = 0 if claimed.has(nxt) else 1
 			var ncost: int = cost + add
-			if ncost < best.get(nxt, 999999):
+			if ncost < int(best.get(nxt, 999999)):
 				best[nxt] = ncost
-				frontier.append([ncost, nxt])
+				if add == 0:
+					deque.push_front([ncost, nxt])
+				else:
+					deque.append([ncost, nxt])
 	return false
 
 
