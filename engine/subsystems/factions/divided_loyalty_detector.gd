@@ -141,8 +141,8 @@ static func resolve(campaign_id: String, signature: String, resolution: String, 
 static func _mutual_hostile(fa: String, fb: String, day: int) -> Dictionary:
 	var band_ab: String = String(FactionStanceService.get_stance(fa, fb, day).get("public_stance", "neutral"))
 	var band_ba: String = String(FactionStanceService.get_stance(fb, fa, day).get("public_stance", "neutral"))
-	var hostile: bool = _band_index(band_ab) <= HOSTILE_BAND_MAX_INDEX \
-		and _band_index(band_ba) <= HOSTILE_BAND_MAX_INDEX
+	var hostile: bool = FactionStanceData.band_index_or_neutral(band_ab) <= HOSTILE_BAND_MAX_INDEX \
+		and FactionStanceData.band_index_or_neutral(band_ba) <= HOSTILE_BAND_MAX_INDEX
 	return {"hostile": hostile, "band_ab": band_ab, "band_ba": band_ba}
 
 
@@ -171,11 +171,11 @@ static func _leans_toward(faction_id: String, side_mirror: String, rival_mirror:
 		return true
 	if faction_id == rival_mirror:
 		return false
-	var to_side: int = _band_index(String(
+	var to_side: int = FactionStanceData.band_index_or_neutral(String(
 		FactionStanceService.get_stance(faction_id, side_mirror, day).get("public_stance", "neutral")))
-	var to_rival: int = _band_index(String(
+	var to_rival: int = FactionStanceData.band_index_or_neutral(String(
 		FactionStanceService.get_stance(faction_id, rival_mirror, day).get("public_stance", "neutral")))
-	return to_side > to_rival and to_side >= _band_index("friendly")
+	return to_side > to_rival and to_side >= FactionStanceData.band_index_or_neutral("friendly")
 
 
 # ---------------------------------------------------------------------------
@@ -252,8 +252,3 @@ static func _signature(cause: String, faction_a: String, faction_b: String, conf
 	var pair: Array = [faction_a, faction_b]
 	pair.sort()
 	return "%s|%s|%s|%s" % [cause, pair[0], pair[1], conflict_ref]
-
-
-static func _band_index(band: String) -> int:
-	var idx: int = FactionStanceData.BANDS.find(band)
-	return idx if idx >= 0 else 2   # default neutral

@@ -163,7 +163,16 @@ static func _maybe_emit_wiped(faction: DungeonFaction, was_alive: bool) -> void:
 		EventBus.dungeon_faction_wiped_out.emit(faction.dungeon_id, faction.id)
 
 
-## Roll an "NdM" (optionally "NdM+K") dice expression with the seeded RNG.
+## Roll an "NdM" (optionally "NdM+K") dice expression with the seeded [param rng].
+##
+## Deliberately a local, seeded, side-effect-free parser rather than a call to the
+## DiceSystem autoload: DiceSystem rolls on the GLOBAL RNG and logs every roll to
+## the dice_rolls table + emits signals (right for player/GM rolls, wrong for
+## deterministic generation), and its strict regex parser rejects the permissive
+## inputs accepted here (bare/empty count, malformed fallbacks). Several other
+## generators keep this same local-seeded-parser pattern (commerce _roll_dice_spec,
+## treasure_resolver, disease_resolver). Keep this seeded + pure so generation stays
+## byte-identical for a given seed (test_dungeon_faction_units, golden determinism).
 static func roll_dice(expr: String, rng: RandomNumberGenerator) -> int:
 	var bonus: int = 0
 	var core: String = expr.strip_edges().to_lower()

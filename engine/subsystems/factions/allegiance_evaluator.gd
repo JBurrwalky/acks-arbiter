@@ -450,21 +450,13 @@ static func _is_less_law_side(side_mirror: String, side_realm: String, conflict:
 	var instigator: String = StringUtils.s(conflict.get("instigator_side"))
 	if instigator != "" and side_mirror == instigator:
 		return true
-	var a_align: int = _chaos_rank(_realm_alignment(side_realm))
+	var a_align: int = AlignmentAxis.chaos_rank(_realm_alignment(side_realm))
 	# Compare against the other side's alignment.
 	var a_mirror: String = StringUtils.s(conflict.get("side_a_mirror"))
 	var b_mirror: String = StringUtils.s(conflict.get("side_b_mirror"))
 	var other_mirror: String = b_mirror if side_mirror == a_mirror else a_mirror
-	var other_align: int = _chaos_rank(_realm_alignment(FactionRegistry.realm_id_of_mirror(other_mirror)))
+	var other_align: int = AlignmentAxis.chaos_rank(_realm_alignment(FactionRegistry.realm_id_of_mirror(other_mirror)))
 	return a_align > other_align
-
-
-static func _chaos_rank(alignment: String) -> int:
-	match alignment:
-		"chaotic": return 2
-		"neutral": return 1
-		"lawful": return 0
-	return 1
 
 
 static func _realm_alignment(realm_id: String) -> String:

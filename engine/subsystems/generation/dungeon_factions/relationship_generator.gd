@@ -112,7 +112,7 @@ static func _relationship_for_pair(input: DungeonFactionInput, a: DungeonFaction
 # ---------------------------------------------------------------------------
 
 static func _apply_alignment_bias(weights: Dictionary, a: DungeonFaction, b: DungeonFaction) -> void:
-	var diff: int = abs(_align_rank(a.alignment) - _align_rank(b.alignment))
+	var diff: int = abs(AlignmentAxis.chaos_rank(a.alignment) - AlignmentAxis.chaos_rank(b.alignment))
 	match diff:
 		0:  # same alignment → allied / neutral
 			weights[DungeonFactionRelationship.REL_ALLIED] += 20.0
@@ -277,16 +277,6 @@ static func _vassal_a_is_master(a: DungeonFaction, b: DungeonFaction, master_fir
 	if master_species != "":
 		return a.species == master_species
 	return master_first
-
-
-static func _align_rank(alignment: String) -> int:
-	match alignment:
-		"lawful":
-			return 0
-		"chaotic":
-			return 2
-		_:
-			return 1
 
 
 static func _pair_in_table(table: Array, s1: String, s2: String) -> bool:

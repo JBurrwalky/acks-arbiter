@@ -274,8 +274,7 @@ static func _authority_split_ok(faction_a_id: String, faction_b_id: String, call
 # ---------------------------------------------------------------------------
 
 static func _band_index(band: String) -> int:
-	var idx: int = BANDS.find(band)
-	return idx if idx >= 0 else 2   # default neutral
+	return FactionStanceData.band_index_or_neutral(band)
 
 
 static func _clamp_band(idx: int) -> String:

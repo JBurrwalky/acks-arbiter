@@ -39,6 +39,14 @@ static func band_from_index(idx: int) -> String:
 	return BANDS[clamped]
 
 
+## Band index with a neutral (2) fallback for an unknown band string -- distinct
+## from band_index(), which returns -1 on miss. Shared by FactionStanceService and
+## DividedLoyaltyDetector, which formerly kept private `_band_index` copies.
+static func band_index_or_neutral(band: String) -> int:
+	var idx: int = BANDS.find(band)
+	return idx if idx >= 0 else 2
+
+
 static func _s(data: Dictionary, key: String, default_val: String = "") -> String:
 	var v: Variant = data.get(key, default_val)
 	return String(v) if v != null else default_val
