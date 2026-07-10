@@ -46,7 +46,7 @@ const BETRAYAL_MAGNITUDE: int = -6
 ## carrying the professed/true mirror ids so firing can execute the swap.
 static func generate_condition(faction: Dictionary, professed_side_mirror: String,
 		true_side_mirror: String, conflict: Dictionary) -> Dictionary:
-	var professed_realm: String = _mirror_realm(professed_side_mirror)
+	var professed_realm: String = FactionRegistry.realm_id_of_mirror(professed_side_mirror)
 	var kind: String = _s(conflict.get("betrayal_hint"))
 	if not CONDITION_KINDS.has(kind):
 		kind = COND_SIDE_LOSES_FIELD_BATTLE   # the §7.5 default
@@ -189,13 +189,6 @@ static func _matches_side(event_data: Dictionary, realm_key: String, mirror_key:
 	if target_mirror != "" and ev_mirror != "" and target_mirror == ev_mirror:
 		return true
 	return false
-
-
-static func _mirror_realm(mirror_id: String) -> String:
-	if mirror_id == "":
-		return ""
-	var f: Dictionary = CampaignRepository.get_faction(mirror_id)
-	return _s(f.get("realm_id"))
 
 
 static func _parse_json(s: String) -> Dictionary:

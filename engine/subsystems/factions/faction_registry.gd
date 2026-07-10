@@ -112,6 +112,29 @@ static func ensure_mirrors_for_tracked_realms(campaign_id: String) -> int:
 	return count
 
 
+## The realm id a realm-mirror faction backs (its realm_id column), or "" when
+## the mirror id is empty or the faction has no realm_id. Shared by the
+## allegiance/betrayal/ruler resolvers, which formerly kept private copies
+## (_mirror_realm / _side_realm_id).
+static func realm_id_of_mirror(mirror_id: String) -> String:
+	if mirror_id == "":
+		return ""
+	var f: Dictionary = CampaignRepository.get_faction(mirror_id)
+	return _str(f.get("realm_id"))
+
+
+## The realm whose territory contains the faction's seat (home_domain_id -> domain
+## -> realm_id). "" when the faction has no seated domain. Shared by the
+## allegiance/ruler resolvers, which formerly kept private copies
+## (_seat_realm / _faction_seat_realm).
+static func seat_realm_of_faction(faction: Dictionary) -> String:
+	var dom_id: String = _str(faction.get("home_domain_id"))
+	if dom_id == "":
+		return ""
+	var dom: Dictionary = CampaignRepository.get_domain(dom_id)
+	return _str(dom.get("realm_id")) if not dom.is_empty() else ""
+
+
 # ---------------------------------------------------------------------------
 # Internals
 # ---------------------------------------------------------------------------

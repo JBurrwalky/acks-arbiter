@@ -70,9 +70,9 @@ const BAND_HOSTILE: String = "hostile"
 static func evaluate(faction: Dictionary, side_a_mirror: String, side_b_mirror: String,
 		conflict: Dictionary = {}, day: int = 0, context: Dictionary = {}) -> Dictionary:
 	var faction_id: String = _s(faction.get("id"))
-	var a_realm: String = _side_realm_id(side_a_mirror)
-	var b_realm: String = _side_realm_id(side_b_mirror)
-	var seat_realm: String = _faction_seat_realm(faction)
+	var a_realm: String = FactionRegistry.realm_id_of_mirror(side_a_mirror)
+	var b_realm: String = FactionRegistry.realm_id_of_mirror(side_b_mirror)
+	var seat_realm: String = FactionRegistry.seat_realm_of_faction(faction)
 	var seat_side: String = ""
 	if seat_realm != "" and seat_realm == a_realm:
 		seat_side = side_a_mirror
@@ -393,9 +393,9 @@ static func _expected_winner_term(faction: Dictionary, side_realm: String,
 	var b_realm: String = _s(conflict.get("side_b_realm_id"))
 	# Fall back to resolving both realms from the mirrors when not supplied.
 	if a_realm == "":
-		a_realm = _side_realm_id(_s(conflict.get("side_a_mirror")))
+		a_realm = FactionRegistry.realm_id_of_mirror(_s(conflict.get("side_a_mirror")))
 	if b_realm == "":
-		b_realm = _side_realm_id(_s(conflict.get("side_b_mirror")))
+		b_realm = FactionRegistry.realm_id_of_mirror(_s(conflict.get("side_b_mirror")))
 	var this_br: float = _realm_federated_br(side_realm)
 	var other_realm: String = b_realm if side_realm == a_realm else a_realm
 	var other_br: float = _realm_federated_br(other_realm) if other_realm != "" else 0.0
@@ -455,7 +455,7 @@ static func _is_less_law_side(side_mirror: String, side_realm: String, conflict:
 	var a_mirror: String = _s(conflict.get("side_a_mirror"))
 	var b_mirror: String = _s(conflict.get("side_b_mirror"))
 	var other_mirror: String = b_mirror if side_mirror == a_mirror else a_mirror
-	var other_align: int = _chaos_rank(_realm_alignment(_side_realm_id(other_mirror)))
+	var other_align: int = _chaos_rank(_realm_alignment(FactionRegistry.realm_id_of_mirror(other_mirror)))
 	return a_align > other_align
 
 
@@ -489,24 +489,6 @@ static func _realm_federated_br(realm_id: String) -> float:
 		for row in CampaignRepository.db.query_result:
 			total += float((row as Dictionary).get("battle_rating", 0.0))
 	return total
-
-
-## The realm id a realm-mirror faction backs (its realm_id column), or "".
-static func _side_realm_id(mirror_id: String) -> String:
-	if mirror_id == "":
-		return ""
-	var f: Dictionary = CampaignRepository.get_faction(mirror_id)
-	return _s(f.get("realm_id"))
-
-
-## The realm whose territory contains the faction's seat (home_domain_id -> domain
-## -> realm_id). "" when the faction has no seated domain.
-static func _faction_seat_realm(faction: Dictionary) -> String:
-	var dom_id: String = _s(faction.get("home_domain_id"))
-	if dom_id == "":
-		return ""
-	var dom: Dictionary = CampaignRepository.get_domain(dom_id)
-	return _s(dom.get("realm_id")) if not dom.is_empty() else ""
 
 
 static func _is_vassal_of(vassal_character_id: String, liege_character_id: String) -> bool:

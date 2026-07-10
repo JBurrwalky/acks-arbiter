@@ -518,7 +518,7 @@ static func _find_rival(faction: Dictionary) -> Dictionary:
 ## {conflict_id, side_a_mirror, side_b_mirror, kind, legitimate_side, instigator_side,
 ## side_a_realm_id, side_b_realm_id}, or {} when no undeclared conflict exposes the org.
 static func _active_conflict_for(faction: Dictionary) -> Dictionary:
-	var seat_realm: String = _seat_realm(faction)
+	var seat_realm: String = FactionRegistry.seat_realm_of_faction(faction)
 	if seat_realm == "":
 		return {}
 	var faction_id: String = String(faction.get("id", ""))
@@ -527,7 +527,7 @@ static func _active_conflict_for(faction: Dictionary) -> Dictionary:
 		var p: Dictionary = plot
 		var liege_mirror: String = String(p.get("target_faction_id", ""))
 		# The rebel realm-mirror is the one the launch minted; resolve both realms.
-		var liege_realm: String = _mirror_realm(liege_mirror)
+		var liege_realm: String = FactionRegistry.realm_id_of_mirror(liege_mirror)
 		var rebel_realm: String = _rebel_realm_for_plot(p)
 		if seat_realm == liege_realm or seat_realm == rebel_realm:
 			var conflict_id: String = "rebellion:%s" % String(p.get("id", ""))
@@ -544,21 +544,6 @@ static func _active_conflict_for(faction: Dictionary) -> Dictionary:
 				"legitimate_side": liege_mirror, "instigator_side": rebel_mirror,
 			}
 	return {}
-
-
-static func _seat_realm(faction: Dictionary) -> String:
-	var dom_id: String = _s(faction.get("home_domain_id"))
-	if dom_id == "":
-		return ""
-	var dom: Dictionary = CampaignRepository.get_domain(dom_id)
-	return _s(dom.get("realm_id")) if not dom.is_empty() else ""
-
-
-static func _mirror_realm(mirror_id: String) -> String:
-	if mirror_id == "":
-		return ""
-	var f: Dictionary = CampaignRepository.get_faction(mirror_id)
-	return _s(f.get("realm_id"))
 
 
 ## The rebel realm a launched plot minted: the committed instigator faction's leader
