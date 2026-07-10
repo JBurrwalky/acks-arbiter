@@ -311,7 +311,14 @@ static func is_fanatic_faithful(faction: Dictionary, _conflict: Dictionary, cont
 static func _support_terms(faction: Dictionary, side_mirror: String, side_realm: String,
 		seat_realm: String, conflict: Dictionary, day: int, context: Dictionary) -> Dictionary:
 	var faction_id: String = _s(faction.get("id"))
-	var overrides: Dictionary = (context.get("terms", {}) as Dictionary).get(side_mirror, {})
+	# Guard the optional term overrides: a caller passing a non-Dictionary `terms`
+	# would make `x as Dictionary` yield null (then .get() crashes), and a non-Dictionary
+	# per-side entry is an invalid assignment to the typed `overrides`. Degrade to
+	# defaults instead of crashing the support-term stack (review #11).
+	var terms_raw: Variant = context.get("terms", {})
+	var terms: Dictionary = terms_raw if terms_raw is Dictionary else {}
+	var side_raw: Variant = terms.get(side_mirror, {})
+	var overrides: Dictionary = side_raw if side_raw is Dictionary else {}
 
 	var default_score: int = _term_or(overrides, "default", _default_stance_score(faction, side_mirror))
 	var grievance: int = _term_or(overrides, "grievance",

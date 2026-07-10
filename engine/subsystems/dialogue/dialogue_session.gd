@@ -85,7 +85,7 @@ var _last_player_move: String = ""                # move id of the last submitte
 var _last_free_text: String = ""                  # the last untrusted free-text rider
 var _pending_interjection = null                  # this exchange's henchman interjection (§13.6) or null
 var _last_interjection_exchange: int = -999       # cadence cap bookkeeping (§13.6 ~1/4)
-var _social_flags_fired: Dictionary = {}          # kind -> true; dedupe accepted #social_flags (§13.10)
+var _social_flags_fired: Dictionary = {}          # issue key -> true; dedupe accepted #social_flags PER ISSUE (§13.10)
 
 
 ## Static factory (§4.1). Builds the session from a context Dictionary produced by
@@ -1768,6 +1768,14 @@ func _s(v: Variant, default_value: String = "") -> String:
 ## `return _capture_reply(...)`. Rejected replies are pass-through no-ops.
 func _capture_reply(reply: Dictionary, move_id: String, free_text: String) -> Dictionary:
 	if bool(reply.get("rejected", false)):
+		# A rejected/ineligible move produced no NPC line and appended nothing to the
+		# transcript — clear the stash so a later perform_reply_live() short-circuits
+		# (guards on _last_reply_plan.is_empty()) instead of re-performing the PREVIOUS
+		# exchange's plan and rewriting its transcript line (review #9).
+		_last_reply_plan = {}
+		_last_reply_slots = {}
+		_last_player_move = ""
+		_last_free_text = ""
 		return reply
 	_last_reply_plan = reply.get("plan", {})
 	_last_reply_slots = _template_slots()
@@ -1873,23 +1881,45 @@ func _apply_social_flag(flag) -> void:
 	if not (flag is Dictionary):
 		return
 	var kind := _s((flag as Dictionary).get("kind"))   # model-authored — null-safe (§106)
+	# Dedup PER ISSUE, not per kind: an NPC offended about one issue can still be
+	# offended anew about a DIFFERENT issue this session (§13.10; review #8). The old
+	# per-kind latch suppressed every offense after the first, session-wide.
+	var dedup_key := _social_flag_key(kind)
 	var res: Dictionary = SocialFlagValidator.validate(flag, {
 		"personality": _personality(),
 		"attitude": _attitude,
 		"move_id": _last_player_move,
 		"deterministic_trigger_fired": _deterministic_offense_fired(),
-		"already_fired": _social_flags_fired.has(kind),
+		"already_fired": _social_flags_fired.has(dedup_key),
 	})
 	if not bool(res.get("accepted", false)):
 		return
 	var steps := int(res.get("tone_steps", 0))
 	if steps == 0:
 		return
-	_social_flags_fired[kind] = true
+	_social_flags_fired[dedup_key] = true
 	_attitude = Attitude.shift_tier(_attitude, steps)
 	if _relationship != null:
 		_relationship.attitude = _attitude
 	EventBus.npc_social_flag_applied.emit(npc_id, String(res.get("kind", kind)), steps)
+
+
+## The per-issue dedup key for a #social_flag: the flag kind + the current exchange's
+## issue (its move id and topic). Two exchanges on DIFFERENT issues get distinct keys,
+## so each can offend/entice once; repeats on the SAME issue are deduped (§13.10 "per
+## issue", not a session-wide per-kind latch — review #8).
+func _social_flag_key(kind: String) -> String:
+	# The issue = the current exchange's topic PLUS any identifying id the outcome
+	# carries, so two DIFFERENT issues resolved via the same move id (e.g. accepting two
+	# different quests, both move_id "quest_accept") get distinct keys rather than
+	# collapsing to one (§13.10 "per issue"). Topicless moves fall back to whatever id
+	# their outcome exposes (quest_title / action_id / rumor_id / subject_id).
+	var issue := String(last_outcome.get("topic", ""))
+	for k in ["quest_title", "action_id", "rumor_id", "subject_id"]:
+		var v := String(last_outcome.get(k, ""))
+		if v != "":
+			issue += "|" + v
+	return "%s|%s|%s" % [kind, _last_player_move, issue]
 
 
 ## True if a deterministic §6.6 offense trigger fired this exchange — the gate

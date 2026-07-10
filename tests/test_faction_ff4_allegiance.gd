@@ -18,6 +18,7 @@ func run_all_tests() -> void:
 	test_feign_when_pref_not_seat_and_eligible()
 	test_fanatic_faithful_never_feigns_open_defiant()
 	test_discovery_only_true_stance_hidden()
+	test_malformed_terms_context_does_not_crash()
 	if not has_failures():
 		print("FactionFF4Allegiance: all tests passed.")
 
@@ -212,3 +213,21 @@ func test_discovery_only_true_stance_hidden() -> void:
 	check(String(public.get("public_stance", "")) == "friendly", "public API returns the FRIENDLY mask")
 	check(not public.has("true_stance"), "public API NEVER exposes true_stance")
 	check(not public.has("betrayal_condition"), "public API NEVER exposes betrayal_condition")
+
+
+## Review #11: a caller passing a non-Dictionary `terms` (or a non-Dictionary per-side
+## entry) must degrade to defaults, not crash the support-term stack. evaluate() is
+## public, so a malformed context (future live-LLM path, save migration) must be safe.
+func test_malformed_terms_context_does_not_crash() -> void:
+	var s := _scenario()
+	# terms is a non-Dictionary (String) — the old `x as Dictionary` yielded null.
+	var r1: Dictionary = AllegianceEvaluator.evaluate(
+		s["guild"], s["orso_mirror"], s["pel_mirror"], s["conflict"], 100, {"terms": "not a dict"})
+	check(String(r1.get("decision", "")) != "", "malformed terms (non-dict) still yields a decision")
+	# terms[side] is a non-Dictionary — the old typed assignment raised Invalid assignment.
+	var bad_terms := {}
+	bad_terms[String(s["orso_mirror"])] = "bogus"
+	bad_terms[String(s["pel_mirror"])] = 42
+	var r2: Dictionary = AllegianceEvaluator.evaluate(
+		s["guild"], s["orso_mirror"], s["pel_mirror"], s["conflict"], 100, {"terms": bad_terms})
+	check(String(r2.get("decision", "")) != "", "malformed per-side terms still yields a decision")

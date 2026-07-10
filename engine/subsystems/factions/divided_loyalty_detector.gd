@@ -83,10 +83,26 @@ static func detect(campaign_id: String, party_member_ids: Array, day: int,
 
 	# Persist + emit only for NEW conflicts (dedup on signature).
 	var current: Array = []
+	var seen_signatures: Dictionary = {}
 	for descriptor in found:
 		var d: Dictionary = descriptor
+		var sig: String = String(d.get("signature", ""))
+		# Two member pairs can manifest the SAME conflict (e.g. two members in faction X
+		# vs one member in hostile faction Y produce the pairs (X1,Y1) and (X2,Y1), which
+		# share the signature X|Y). Return each distinct conflict ONCE so the caller
+		# doesn't render/mint it twice (review #7). The DB dedup already collapses the
+		# persisted row + signal; this collapses the returned list to match.
+		#
+		# Granularity is per-SIGNATURE (cause + faction-pair + conflict_ref) — deliberately
+		# owner-agnostic, matching the signature-keyed persistence. For an obligation
+		# conflict this means two members owing the same source faction against the same
+		# target surface as one entry; per-owner surfacing would require the owner in the
+		# signature (a design decision for Jedidiah, not a bug).
+		if seen_signatures.has(sig):
+			continue
+		seen_signatures[sig] = true
 		var existing: Dictionary = CampaignRepository.ff_get_party_conflict_by_signature(
-			campaign_id, String(d.get("signature", "")))
+			campaign_id, sig)
 		if existing.is_empty():
 			CampaignRepository.ff_upsert_party_conflict(d)
 			_emit(d)

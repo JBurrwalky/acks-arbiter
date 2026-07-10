@@ -16,6 +16,7 @@ func run_all_tests() -> void:
 	test_opposite_conflict_sides()
 	test_obligation_targets_faction()
 	test_dedup_no_reemit()
+	test_shared_conflict_reported_once()
 	test_resolve_marks_status()
 	if not has_failures():
 		print("FactionFF4DividedLoyalty: all tests passed.")
@@ -124,6 +125,31 @@ func test_dedup_no_reemit() -> void:
 				and _pair_matches(r, ai, bi):
 			mutual_rows += 1
 	check(mutual_rows == 1, "exactly one persisted row for the deduped conflict, got %d" % mutual_rows)
+
+
+## Review #7: two members in faction X + one member in hostile faction Y produce two
+## member pairs that share the SAME X-vs-Y signature. The conflict must be returned
+## ONCE (the DB already dedups the persisted row + signal; the returned list must too).
+func test_shared_conflict_reported_once() -> void:
+	var x := _org("Temple X", "temple")
+	var y := _org("Syndicate Y", "syndicate")
+	var xi: String = String(x.get("id", ""))
+	var yi: String = String(y.get("id", ""))
+	FactionStanceService.instantiate_stance(_cid, xi, yi, "hostile", "", 0)
+	FactionStanceService.instantiate_stance(_cid, yi, xi, "hostile", "", 0)
+	var m1 := _pc("X1")
+	var m2 := _pc("X2")
+	var m3 := _pc("Y1")
+	_join(xi, m1)
+	_join(xi, m2)
+	_join(yi, m3)
+
+	var conflicts := DividedLoyaltyDetector.detect(_cid, [m1, m2, m3], 100)
+	var mutual := 0
+	for c in conflicts:
+		if String((c as Dictionary).get("cause", "")) == DividedLoyaltyDetector.CAUSE_MUTUAL_HOSTILE:
+			mutual += 1
+	check(mutual == 1, "the shared X-vs-Y conflict is returned exactly once, got %d" % mutual)
 
 
 func test_resolve_marks_status() -> void:

@@ -50,6 +50,8 @@ func run_async_tests() -> void:
 	await test_validation_failure_falls_back()
 	await test_close_live_summarizes_prose_only()
 	await test_social_flag_applied_on_live_path()
+	test_social_flag_dedup_is_per_issue()
+	test_rejected_reply_clears_stash()
 	# §13.8 model-capability harness (scaffold).
 	await test_capability_3_instructed_falsehood()
 	await test_capability_4_injection_resistance()
@@ -254,6 +256,58 @@ func test_social_flag_applied_on_live_path() -> void:
 	check(bool(applied["fired"]), "an accepted #social_flag applied a tone shift")
 	check(int(applied["steps"]) < 0, "an offense shifts tone toward hostile (engine applies it)")
 	_restore_neutral_state(saved)
+
+
+# ---------------------------------------------------------------------------
+# Review #8/#9 — per-issue social-flag dedup + rejected-reply stash clearing
+# ---------------------------------------------------------------------------
+
+## #8: the #social_flag dedup is keyed PER ISSUE (kind + move + topic), so an NPC
+## offended about one issue can still be offended anew about a DIFFERENT issue —
+## not a session-wide per-kind latch that suppressed every later offense.
+func test_social_flag_dedup_is_per_issue() -> void:
+	var s := _make_session()
+	s._last_player_move = "provoke"
+	s.last_outcome = {}
+	var k_provoke := s._social_flag_key("offense")
+	s._last_player_move = "ask_question"
+	s.last_outcome = {"topic": "smugglers"}
+	var k_smug := s._social_flag_key("offense")
+	s.last_outcome = {"topic": "goblins"}
+	var k_gob := s._social_flag_key("offense")
+	check(k_provoke != k_smug and k_smug != k_gob and k_provoke != k_gob,
+		"different issues (move/topic) → distinct dedup keys")
+	# The same issue → the same key (a repeat on that issue dedupes).
+	s._last_player_move = "ask_question"
+	s.last_outcome = {"topic": "goblins"}
+	check(s._social_flag_key("offense") == k_gob, "the same issue → the same key")
+	# The flag kind is part of the key (offense vs enticement tracked separately).
+	check(s._social_flag_key("enticement") != k_gob, "the flag kind is part of the key")
+	# Topicless moves discriminate on the outcome's identifying id (quest_title etc.),
+	# so two different quests via the same move id don't collapse to one key.
+	s._last_player_move = "quest_accept"
+	s.last_outcome = {"quest_title": "Clear the Cellar"}
+	var k_q1 := s._social_flag_key("offense")
+	s.last_outcome = {"quest_title": "Find the Heir"}
+	var k_q2 := s._social_flag_key("offense")
+	check(k_q1 != k_q2, "two different quests via the same move id get distinct keys")
+
+
+## #9: a rejected/ineligible move clears the reply stash, so a later
+## perform_reply_live() short-circuits instead of re-performing the prior exchange.
+func test_rejected_reply_clears_stash() -> void:
+	var s := _make_session()
+	# A valid capture stashes a plan.
+	s._capture_reply({"rejected": false, "plan": {"kind": "converse"}, "line": "Well met."}, "converse", "Well met.")
+	check(not s.last_reply_plan().is_empty(), "a captured reply stashed its plan")
+	# A rejected capture must CLEAR the stash.
+	s._capture_reply({"rejected": true, "reason": "ineligible"}, "provoke", "")
+	check(s.last_reply_plan().is_empty(), "a rejected reply cleared the stashed plan")
+	# Unconfigured perform_reply_live now short-circuits (empty plan) rather than
+	# re-performing the previous exchange.
+	var result: Dictionary = Callable(s, "perform_reply_live").call()
+	check(not bool(result.get("performed", true)),
+		"perform_reply_live short-circuits after a reject (no re-performance of the prior exchange)")
 
 
 # ---------------------------------------------------------------------------
