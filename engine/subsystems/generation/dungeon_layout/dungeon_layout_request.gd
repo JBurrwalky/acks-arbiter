@@ -65,4 +65,27 @@ var floor_tier: int = 1
 ## where the multi-floor orchestrator supplies the prior-floor stair-position
 ## the new floor must align with. Each anchor cell is reserved as the center
 ## of a 3×3 antechamber room before scatter (per §9.3.2).
+##
+## LEGACY path (dies at DG-C3D.F): the contiguous-3D pipeline uses
+## `reserved_rooms` instead; the two are never combined in one request.
 var required_stair_positions: Array = []
+
+## Pre-placed reservation rooms from the whole-dungeon vertical plan
+## (DG-C3D.C; contiguous GDD §8 stage B1). Each entry is a Dictionary in the
+## `VerticalPlan.reservations_for_band()` shape:
+##   rect: Rect2i                — exact footprint (already collision-checked
+##                                 within the interior margin by the plan)
+##   kind: String                — "circulation" (stairwell room, MST node) |
+##                                 "atrium_base" (large room, MST node) |
+##                                 "atrium_upper" (blocked region + door-
+##                                 eligible balcony ring stub; collision +
+##                                 loop-edges only, NOT an MST node, not a
+##                                 room in the layout output)
+##   ref: RefCounted             — back-reference to the ConnectorPlan /
+##                                 AtriumPlan (opaque to the layout layer)
+##   is_sole_connector: bool     — true when the circulation room is the only
+##                                 connector for its band pair; doors on such
+##                                 rooms skip the secret overlay (§10.3)
+## Empty (the default) leaves the layout pipeline byte-identical to pre-C
+## behavior — the RNG-identity gate the golden-fingerprint test enforces.
+var reserved_rooms: Array = []

@@ -41,15 +41,28 @@ static func rasterize_cells(composer: DungeonRoomComposer) -> Array[Array]:
 
 ## Convert composer.rooms into Array[DungeonRoomData] with id, cells, bounds,
 ## area_sqft, center, original_purpose. Doors are attached separately.
+##
+## DG-C3D.C: atrium-upper blocked regions are SKIPPED — they are not rooms on
+## their band (contiguous GDD §8 B1); the composition stage carves their ring
+## and void directly into the volume. A door planned into a stub therefore
+## keeps the stub's composer room id in `connects` with no matching
+## DungeonRoomData — tolerated everywhere (attach_doors_to_rooms skips missing
+## ids) and resolved by the composition stage via the reservation rect.
+## Circulation rooms flow through with kind = "circulation" so the stocker's
+## exclusion (V1 §11.1) and the zone model see them.
 static func build_room_data(composer: DungeonRoomComposer) -> Array[DungeonRoomData]:
 	var out: Array[DungeonRoomData] = []
 	for r in composer.rooms:
 		var room: DungeonRoomComposer.RoomPlan = r
+		if room.is_blocked_region():
+			continue
 		var rd := DungeonRoomData.new()
 		rd.id = room.id
 		rd.bounds = room.bounds
 		rd.original_purpose = room.original_purpose
 		rd.current_purpose = ""  # populated by V1 stocking later
+		if room.reserved_kind == DungeonRoomComposer.RESERVED_KIND_CIRCULATION:
+			rd.kind = DungeonRoomData.KIND_CIRCULATION
 		# Enumerate cells inside the bounds.
 		var b: Rect2i = room.bounds
 		for x in range(b.position.x, b.position.x + b.size.x):
@@ -126,9 +139,13 @@ static func _new_rock_cell() -> DungeonCellData:
 # ---------------------------------------------------------------------------
 
 ## Stamp every cell inside each room's bounds as open room floor.
+## DG-C3D.C: atrium-upper blocked regions stay untouched rock — their ring
+## and void are carved by the composition stage, not the band layout.
 static func _stamp_room_interiors(composer: DungeonRoomComposer, cells: Array[Array]) -> void:
 	for r in composer.rooms:
 		var room: DungeonRoomComposer.RoomPlan = r
+		if room.is_blocked_region():
+			continue
 		var b: Rect2i = room.bounds
 		for x in range(b.position.x, b.position.x + b.size.x):
 			for y in range(b.position.y, b.position.y + b.size.y):

@@ -33,8 +33,26 @@ class RoomPlan extends RefCounted:
 	var bounds: Rect2i = Rect2i()
 	var original_purpose: String = ""
 	## True if this room exists solely as a stair antechamber (DG-V1.B-edits
-	## anchor support per §9.3.2). DG-V1.B-base never sets this.
+	## anchor support per §9.3.2). DG-V1.B-base never sets this. LEGACY path —
+	## dies at DG-C3D.F.
 	var is_anchor_room: bool = false
+	## DG-C3D.C reservation kind: "" for normal scattered rooms, else
+	## "circulation" | "atrium_base" | "atrium_upper" per
+	## DungeonLayoutRequest.reserved_rooms. atrium_upper plans are the blocked
+	## region + balcony ring stub: collision + loop-edges only — never MST
+	## nodes, never rasterized as floor, never emitted as DungeonRoomData.
+	var reserved_kind: String = ""
+	## True for circulation rooms that are the ONLY connector of their band
+	## pair — doors on them skip the secret overlay (contiguous GDD §10.3).
+	var is_sole_connector: bool = false
+
+	func is_reserved() -> bool:
+		return not reserved_kind.is_empty()
+
+	## Blocked regions are not rooms on their band: no MST membership, no
+	## stairs, no rasterized floor, no DungeonRoomData output.
+	func is_blocked_region() -> bool:
+		return reserved_kind == "atrium_upper"
 
 	func center() -> Vector2i:
 		return Vector2i(
@@ -123,9 +141,17 @@ var _corridor_cells: Dictionary = {}
 ##
 ## [param floor_tier] (1-6) drives the §8.3 door material rule. Default 1.
 ##
+## [param reserved_rooms] entries follow DungeonLayoutRequest.reserved_rooms
+## (the VerticalPlan.reservations_for_band() shape) — pre-placed with exact
+## bounds BEFORE scatter per contiguous GDD §8 B1 (DG-C3D.C). Placement
+## consumes no rng draws, so an empty array leaves the pipeline byte-identical
+## to pre-C behavior.
+##
 ## Returns the number of rooms successfully placed (INCLUDING anchor
-## antechambers). Returns -1 if anchor validation fails (OOB anchor, duplicate
-## anchors, anchors with conflicting directions at the same position).
+## antechambers and reservations). Returns -1 if anchor validation fails (OOB
+## anchor, duplicate anchors, anchors with conflicting directions at the same
+## position) or a reservation is invalid (OOB rect, overlap with a prior
+## reservation — both indicate an upstream vertical-plan bug).
 func compose(
 	p_grid_width: int,
 	p_grid_height: int,
@@ -137,6 +163,7 @@ func compose(
 	rng: RandomNumberGenerator,
 	floor_tier: int = 1,
 	required_stair_positions: Array = [],
+	reserved_rooms: Array = [],
 ) -> int:
 	grid_width = p_grid_width
 	grid_height = p_grid_height
@@ -147,6 +174,11 @@ func compose(
 	connection_edges = []
 	_occupancy = {}
 	_corridor_cells = {}
+
+	# DG-C3D.C — pre-place vertical-plan reservations before anchors + scatter.
+	if not _pre_place_reserved_rooms(reserved_rooms):
+		push_error("DungeonRoomComposer: invalid reserved_rooms; aborting.")
+		return -1
 
 	# §9.3.2 step 1 — reserve anchor antechambers before scatter.
 	if not _validate_stair_anchors(required_stair_positions):
@@ -175,10 +207,61 @@ func compose(
 
 	_assign_room_purposes(theme, rng)
 
-	# §9.3.3 safety net — if any anchor antechamber ended up without a
-	# corridor/door connection to the rest of the dungeon, force a direct carve.
+	# §9.3.3 safety net — if any anchor antechamber (or DG-C3D.C reserved MST
+	# room) ended up without a corridor/door connection, force a direct carve.
 	_ensure_anchor_connectivity()
 	return rooms.size()
+
+
+# ---------------------------------------------------------------------------
+# DG-C3D.C reservation pre-placement (contiguous GDD §8 B1)
+# ---------------------------------------------------------------------------
+
+const RESERVED_KIND_CIRCULATION := "circulation"
+const RESERVED_KIND_ATRIUM_BASE := "atrium_base"
+const RESERVED_KIND_ATRIUM_UPPER := "atrium_upper"
+
+const _VALID_RESERVED_KINDS: Array[String] = [
+	RESERVED_KIND_CIRCULATION, RESERVED_KIND_ATRIUM_BASE, RESERVED_KIND_ATRIUM_UPPER,
+]
+
+
+## Pre-place every reservation as a RoomPlan with its exact rect, BEFORE
+## anchors and scatter, so the room collision check sees them. Consumes no
+## rng. Returns false on a malformed entry, an out-of-bounds rect (needs the
+## 1-cell wall band inside the grid), or overlap with a previously placed
+## reservation — all upstream vertical-plan bugs, per §9.3.3's fail-loudly
+## precedent.
+func _pre_place_reserved_rooms(reserved: Array) -> bool:
+	for entry in reserved:
+		if not (entry is Dictionary) or not (entry as Dictionary).has("rect") \
+				or not (entry as Dictionary).has("kind"):
+			push_error("DungeonRoomComposer: reserved entry missing rect/kind: %s" % str(entry))
+			return false
+		var dict: Dictionary = entry
+		var rect: Rect2i = dict["rect"]
+		var kind: String = str(dict["kind"])
+		if not kind in _VALID_RESERVED_KINDS:
+			push_error("DungeonRoomComposer: unknown reserved kind '%s'." % kind)
+			return false
+		if rect.position.x < 1 or rect.position.y < 1 \
+				or rect.end.x > grid_width - 1 or rect.end.y > grid_height - 1:
+			push_error("DungeonRoomComposer: reserved rect %s does not fit inside the wall band of a %dx%d grid."
+				% [str(rect), grid_width, grid_height])
+			return false
+		for r in rooms:
+			if rect.grow(1).intersects((r as RoomPlan).bounds):
+				push_error("DungeonRoomComposer: reserved rect %s overlaps prior reservation %s."
+					% [str(rect), str((r as RoomPlan).bounds)])
+				return false
+		var room := RoomPlan.new()
+		room.id = rooms.size()
+		room.bounds = rect
+		room.reserved_kind = kind
+		room.is_sole_connector = bool(dict.get("is_sole_connector", false))
+		rooms.append(room)
+		_stamp_room_occupancy(room)
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -267,13 +350,18 @@ func _pre_place_anchor_rooms(anchors: Array) -> void:
 		stairs.append(stair)
 
 
-## §9.3.3 safety net — if any anchor antechamber has no door connecting it
-## to the rest of the network after door planning, force-carve a direct
-## corridor from the anchor's centroid to the nearest already-passable cell.
+## §9.3.3 safety net — if any anchor antechamber (or DG-C3D.C reserved MST
+## room: circulation / atrium base) has no door connecting it to the rest of
+## the network after door planning, force-carve a direct corridor from the
+## room's centroid to the nearest already-passable cell. Blocked regions are
+## exempt — they are not rooms on their band and connect opportunistically
+## (loop edges) or via DG-C3D.D's §7.2 guarantee.
 func _ensure_anchor_connectivity() -> void:
 	for r in rooms:
 		var room: RoomPlan = r
-		if not room.is_anchor_room:
+		var needs_net: bool = room.is_anchor_room \
+			or (room.is_reserved() and not room.is_blocked_region())
+		if not needs_net:
 			continue
 		# Does the antechamber have at least one door?
 		var has_door: bool = false
@@ -334,6 +422,14 @@ func _force_carve_from_anchor(room: RoomPlan) -> void:
 					break
 				var oid: int = _occupancy.get(cur, -1)
 				if oid >= 0 and oid != room.id:
+					# A blocked region (atrium void) is impassable and is NOT a
+					# valid connection target: a door carved to it is a dead-end
+					# that leaves this reserved room disconnected. Stop the ray
+					# (can't tunnel the void) without recording a target; other
+					# sides may find a real room/corridor, else the room warns
+					# below. DG-C3D.C.
+					if (rooms[oid] as RoomPlan).is_blocked_region():
+						break
 					if path.size() < best_len:
 						best_path = path.duplicate()
 						best_perim = perim
@@ -433,17 +529,35 @@ func _stamp_room_occupancy(room: RoomPlan) -> void:
 ## entries (each Vector2i.x = room id A, .y = room id B; A < B for canonical
 ## ordering). Uses Prim's algorithm for the MST + sampled non-MST edges as
 ## loops per theme.loop_frequency.
+##
+## DG-C3D.C: atrium-upper blocked regions are NOT MST nodes (they are not
+## rooms on their band — contiguous GDD §8 B1), but they DO join the loop-edge
+## pool: "a balcony-ring room stub the corridor router MAY connect doors to".
+## A sampled loop edge to the stub becomes an upper-band corridor + door into
+## the future balcony ring; when none is sampled, DG-C3D.D's §7.2 connectivity
+## guarantee (internal stair / degradation) covers the balcony. With no
+## reservations both node sets equal [0..n-1] and the routine is byte-
+## identical to its pre-C form.
 func _build_connection_graph(theme: DungeonTheme, rng: RandomNumberGenerator) -> void:
 	connection_edges = []
 	var n: int = rooms.size()
 	if n < 2:
 		return
+	# Node sets: MST spans every room except blocked regions; the loop pool
+	# additionally includes blocked regions (their ring stubs are door-eligible).
+	var mst_ids: Array[int] = []
+	for r in rooms:
+		var room: RoomPlan = r
+		if not room.is_blocked_region():
+			mst_ids.append(room.id)
+	if mst_ids.size() < 2:
+		return
 	# Prim's algorithm: maintain a set of "visited" rooms; repeatedly pick the
 	# cheapest edge from a visited to an unvisited room. Edge cost = Manhattan
 	# distance between centroids.
 	var visited: Dictionary = {}
-	visited[0] = true
-	var unvisited_count: int = n - 1
+	visited[mst_ids[0]] = true
+	var unvisited_count: int = mst_ids.size() - 1
 	var centroids: Array[Vector2i] = []
 	for r in rooms:
 		var room: RoomPlan = r
@@ -453,7 +567,7 @@ func _build_connection_graph(theme: DungeonTheme, rng: RandomNumberGenerator) ->
 		var best_a: int = -1
 		var best_b: int = -1
 		for a in visited.keys():
-			for b in n:
+			for b in mst_ids:
 				if visited.has(b):
 					continue
 				var cost: int = _manhattan(centroids[a], centroids[b])
@@ -595,6 +709,13 @@ func _route_corridor(a: RoomPlan, b: RoomPlan, theme: DungeonTheme, rng: RandomN
 		var path: Array[Vector2i] = _route_with_strategy(start, end, sid)
 		if path.is_empty():
 			continue
+		# DG-C3D.C hard constraint: corridors never pass THROUGH an
+		# atrium-upper blocked region (its interior is the future void —
+		# "blocked regions receive no rooms/corridors"). Ending adjacent to it
+		# (a loop edge to the ring stub) is fine; crossing is not. With no
+		# reservations this check never rejects and the routine is unchanged.
+		if _path_crosses_blocked_region(path):
+			continue
 		var crossings: int = _count_room_crossings(path, a.id, b.id)
 		if crossings == 0:
 			best_path = path
@@ -603,6 +724,8 @@ func _route_corridor(a: RoomPlan, b: RoomPlan, theme: DungeonTheme, rng: RandomN
 			best_crossings = crossings
 			best_path = path
 	if best_path.is_empty():
+		if _has_blocked_region():
+			push_warning("DungeonRoomComposer: no corridor route between rooms %d and %d avoids a blocked region — edge dropped (navigability check / retry ladder recovers)." % [a.id, b.id])
 		return null
 	var corridor := CorridorPlan.new()
 	corridor.centerline = best_path
@@ -728,6 +851,32 @@ func _walk_vertical(path: Array[Vector2i], target_y: int) -> void:
 		path.append(cur)
 
 
+## True if any cell of `path` lands INSIDE an atrium-upper blocked region.
+## No exemption for the corridor's own endpoints: a legitimate loop edge to a
+## balcony ring stub ends at the stub's PERIMETER cell (outside the region —
+## _pick_perimeter_facing returns a cell 1 beyond the bounds), so its
+## centerline never enters the interior. Exempting an endpoint blocked region
+## (an earlier bug) let an L/S path clip through the void undetected; the
+## rasterizer keeps blocked interiors at room_id -1, so those clipped cells
+## would then be stamped as corridor floor — puncturing the void. DG-C3D.C.
+func _path_crosses_blocked_region(path: Array[Vector2i]) -> bool:
+	for c in path:
+		var rid: int = _occupancy.get(c, -1)
+		if rid < 0:
+			continue
+		if (rooms[rid] as RoomPlan).is_blocked_region():
+			return true
+	return false
+
+
+## True if any room in the plan is an atrium-upper blocked region.
+func _has_blocked_region() -> bool:
+	for r in rooms:
+		if (r as RoomPlan).is_blocked_region():
+			return true
+	return false
+
+
 ## Count cells of `path` that land inside a room OTHER than `except_a` or
 ## `except_b`. Useful for picking the strategy with fewest unintended room
 ## intrusions.
@@ -810,14 +959,35 @@ func _install_corridor_door(cell: Vector2i, room_id: int, weights: Dictionary, r
 ## Pick a door type from the weighted roll; if "secret" comes up, expand
 ## via the §8.1 step-5 sub-weight roll and set is_secret = true. After this
 ## call, door.type is one of DungeonDoorData.VALID_TYPES (never "secret").
+##
+## Sole-connector secret exclusion (DG-C3D.C; contiguous GDD §10.3): doors on
+## a circulation room that is the ONLY connector for its adjacent band pair
+## skip the secret OVERLAY — the type roll and the step-5 sub-roll still
+## happen (identical rng draw sequence), but is_secret stays false, so the
+## door resolves to its plain underlying type (locked is fine — locked doors
+## carry keys; secret doors carry only the hope of a Search throw). Net rule:
+## every band stays reachable through at least one never-secret path. This is
+## the proactive half; DG-C3D.E owns the clear-one backstop for
+## multi-connector pairs.
 func _assign_door_type(door: DoorPlan, weights: Dictionary, rng: RandomNumberGenerator) -> void:
 	var roll_result: String = _weighted_pick(weights, rng)
 	if roll_result == DungeonDoorData.ROLL_CATEGORY_SECRET:
 		door.type = _weighted_pick(_SECRET_UNDERLYING_WEIGHTS, rng)
-		door.is_secret = true
+		door.is_secret = not _door_touches_sole_connector(door)
 	else:
 		door.type = roll_result
 		door.is_secret = false
+
+
+## True if either side of the door is a sole-connector circulation room.
+func _door_touches_sole_connector(door: DoorPlan) -> bool:
+	for rid in [door.room_id_a, door.room_id_b]:
+		if rid < 0 or rid >= rooms.size():
+			continue
+		var room: RoomPlan = rooms[rid]
+		if room.reserved_kind == RESERVED_KIND_CIRCULATION and room.is_sole_connector:
+			return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -888,19 +1058,24 @@ func _plan_stairs(up_count: int, down_count: int, rng: RandomNumberGenerator) ->
 	var total: int = ups_left + downs_left
 	if total <= 0:
 		return
-	# Free-placement stairs go in NON-ANCHOR rooms preferentially — anchor
-	# rooms exist solely to host their pre-planted stair; cluttering them
-	# with extra stairs muddies the §9.3 anchor semantics.
+	# Free-placement stairs go in NON-ANCHOR, NON-RESERVED rooms — anchor
+	# rooms exist solely to host their pre-planted stair, and DG-C3D.C
+	# reserved rooms get their vertical geometry carved by the composition
+	# stage (a legacy 2D stair inside a stairwell room or atrium would fight
+	# the carved runs/void).
 	var available_rooms: Array[int] = []
 	for r in rooms:
 		var room: RoomPlan = r
-		if room.is_anchor_room:
+		if room.is_anchor_room or room.is_reserved():
 			continue
 		available_rooms.append(room.id)
-	# Fall back to anchor rooms if no non-anchor room is available (extreme
-	# degenerate case for tiny grids).
+	# Fall back to anchor / reserved rooms if no plain room is available
+	# (extreme degenerate case for tiny grids) — but NEVER a blocked region:
+	# a free stair inside the atrium void would be unreachable nonsense.
 	if available_rooms.is_empty():
 		for r in rooms:
+			if (r as RoomPlan).is_blocked_region():
+				continue
 			available_rooms.append((r as RoomPlan).id)
 	# Shuffle.
 	for i in range(available_rooms.size() - 1, 0, -1):

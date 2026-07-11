@@ -88,6 +88,7 @@ static func generate(request: DungeonLayoutRequest) -> DungeonLayout:
 		rng,
 		request.floor_tier,
 		request.required_stair_positions,
+		request.reserved_rooms,
 	)
 	if placed < 0:
 		push_error("DungeonLayoutGenerator: composer rejected the request (invalid stair anchors); aborting.")

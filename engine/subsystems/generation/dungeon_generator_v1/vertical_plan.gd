@@ -15,12 +15,15 @@ extends RefCounted
 ## as a parallel internal path until the DG-C3D.F cutover. DG-C3D.C consumes
 ## `reservations_for_band()` as pre-placed rooms in the per-band layout.
 ##
-## THEME TABLES (DG-C3D.B interim): the §8.3 connector weights and §7.3 atrium
-## parameters key off the request's `dungeon_type` string below (with a
-## default-row fallback), NOT off DungeonTheme fields — the catalog is still
-## wizards_dungeon-universal (V1 GDD §7.1). DG-C3D.C adds `connector_weights`
-## and `multi_story_room_chance` to DungeonTheme and rewires build() to read
-## them; the tables here become those fields' default values.
+## THEME TABLES: DungeonTheme.connector_weights / multi_story_room_chance win
+## when the theme row actually represents the requested type
+## (theme.dungeon_type_id == request.dungeon_type — DG-C3D.C); otherwise the
+## per-type tables below apply (they key off request.dungeon_type with a
+## default-row fallback, and double as the defaults for future theme rows).
+## The id guard exists because the catalog is wizards-universal (V1 GDD §7.1):
+## without it the wizards fallback theme would override every other type's
+## §8.3 row. Table keys MUST use the canonical dungeon_type vocabulary
+## (InfrastructureGenerator._D20_TYPES) — guarded by test.
 ##
 ## RNG STREAM DISCIPLINE (build plan "Resolved decisions"): build() draws only
 ## from the rng handed to it, which the caller derives via derive_rng() —
@@ -72,10 +75,11 @@ const RESERVATION_SEPARATION: int = 1
 
 ## Placement attempts per footprint before the plan hard-fails (grids are
 ## huge relative to footprints, so exhaustion indicates a logic bug, not bad
-## luck). Separation clearance is enforced for the first _RELAX_AFTER
-## attempts, then relaxed to exact-fit.
+## luck). Separation clearance is ALWAYS enforced — the per-band layout
+## requires a 1-cell wall band between pre-placed rooms (DG-C3D.C's
+## _pre_place_reserved_rooms rejects touching rects), so relaxing to
+## exact-fit would emit reservations the composer must refuse.
 const PLACEMENT_ATTEMPTS: int = 60
-const _RELAX_AFTER: int = 40
 
 ## Extra connectors per adjacent band pair for Large dungeons: layout GDD
 ## §9.1 "1 per 15-20 rooms" against the §3 Large midpoint of 40 rooms/level
@@ -234,10 +238,18 @@ static func build(
 		reserved[band.floor_index] = []
 
 	# -------------------------------------------------------------------------
-	# Connectors per adjacent band pair (§8 A2).
+	# Connectors per adjacent band pair (§8 A2). Theme fields win when the
+	# theme row actually represents the requested type (DG-C3D.C —
+	# dungeon_type_id guards against the wizards universal fallback overriding
+	# another type's §8.3 row); the per-type tables remain the fallback and
+	# the defaults for future theme rows.
 	# -------------------------------------------------------------------------
-	var weights: Dictionary = _CONNECTOR_WEIGHTS_BY_TYPE.get(
-		request.dungeon_type, _DEFAULT_CONNECTOR_WEIGHTS)
+	var weights: Dictionary = {}
+	if theme.dungeon_type_id == request.dungeon_type:
+		weights = theme.connector_weights
+	if weights.is_empty():
+		weights = _CONNECTOR_WEIGHTS_BY_TYPE.get(
+			request.dungeon_type, _DEFAULT_CONNECTOR_WEIGHTS)
 	var per_pair: int = 1
 	if request.dungeon_size == DungeonLayoutRequest.SIZE_LARGE:
 		per_pair += LARGE_EXTRA_CONNECTORS
@@ -285,7 +297,11 @@ static func build(
 	# without one (per-pair cap 1) and shares a pair only when the dungeon has
 	# a single pair.
 	# -------------------------------------------------------------------------
-	var atrium_chance: int = int(_ATRIUM_CHANCE_BY_TYPE.get(request.dungeon_type, _DEFAULT_ATRIUM_CHANCE))
+	var atrium_chance: int = -1
+	if theme.dungeon_type_id == request.dungeon_type:
+		atrium_chance = theme.multi_story_room_chance
+	if atrium_chance < 0:
+		atrium_chance = int(_ATRIUM_CHANCE_BY_TYPE.get(request.dungeon_type, _DEFAULT_ATRIUM_CHANCE))
 	var atrium_rolls: int = 2 if request.dungeon_size == DungeonLayoutRequest.SIZE_LARGE else 1
 	for _a in atrium_rolls:
 		if rng.randi_range(1, 100) > atrium_chance:
@@ -400,12 +416,10 @@ static func _place_footprint(
 	var hi := Vector2i(grid.x - INTERIOR_MARGIN - dims.x, grid.y - INTERIOR_MARGIN - dims.y)
 	if hi.x < lo.x or hi.y < lo.y:
 		return Rect2i()  # footprint larger than the interior — caller errors
-	for attempt in PLACEMENT_ATTEMPTS:
+	for _attempt in PLACEMENT_ATTEMPTS:
 		var pos := Vector2i(rng.randi_range(lo.x, hi.x), rng.randi_range(lo.y, hi.y))
 		var rect := Rect2i(pos, dims)
-		# Separation clearance first; exact-fit for the tail attempts.
-		var clearance: int = RESERVATION_SEPARATION if attempt < _RELAX_AFTER else 0
-		var inflated := rect.grow(clearance)
+		var inflated := rect.grow(RESERVATION_SEPARATION)
 		var collides := false
 		for band_index in band_indices:
 			for other in reserved[band_index]:

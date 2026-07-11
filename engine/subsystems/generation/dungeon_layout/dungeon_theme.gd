@@ -100,3 +100,22 @@ var structure_type: String = STRUCTURE_SUBTERRANEAN
 ## percentage weight. Weights should sum to 100. The room placer rolls a
 ## weighted pick from this table for each room's `original_purpose`.
 var purpose_weights: Dictionary = {}
+
+## Canonical dungeon_type id this theme row represents (e.g.
+## "wizards_dungeon" — the InfrastructureGenerator._D20_TYPES vocabulary).
+## Set by DungeonThemeCatalog. Lets consumers distinguish "the theme FOR this
+## type" from "the universal wizards fallback returned for an unknown type"
+## (V1 GDD §7.1) — the vertical plan only trusts per-theme vertical fields
+## when this id matches the requested type. DG-C3D.C.
+var dungeon_type_id: String = ""
+
+## Vertical connector weight row (contiguous GDD §8.3): keys "straight" /
+## "switchback" / "spiral" / "ramp", integer percents summing to 100. Empty
+## means "not specified" — VerticalPlan falls back to its per-type table
+## (which doubles as the defaults for future theme rows). DG-C3D.C.
+var connector_weights: Dictionary = {}
+
+## Multi-story (atrium) promotion chance per eligible dungeon, percent
+## (contiguous GDD §7.3). -1 means "not specified" — VerticalPlan falls back
+## to its per-type table. DG-C3D.C.
+var multi_story_room_chance: int = -1

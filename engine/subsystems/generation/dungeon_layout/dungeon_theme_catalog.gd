@@ -98,4 +98,12 @@ static func _make_wizards_dungeon() -> DungeonTheme:
 	t.encounter_flavor = []  # §5.3 exception — raw tables only
 	t.structure_type = DungeonTheme.STRUCTURE_SUBTERRANEAN
 	t.purpose_weights = _WIZARDS_DUNGEON_PURPOSE_WEIGHTS.duplicate()
+	# DG-C3D.C vertical fields (contiguous GDD §8.3 default row / §7.3).
+	# dungeon_type_id marks this as THE wizards_dungeon row: VerticalPlan only
+	# trusts these fields when the id matches the requested type, so the
+	# universal fallback (this theme returned for unknown types) cannot
+	# override another type's §8.3 table row.
+	t.dungeon_type_id = DUNGEON_TYPE_WIZARDS_DUNGEON
+	t.connector_weights = {"straight": 45, "switchback": 25, "spiral": 20, "ramp": 10}
+	t.multi_story_room_chance = 40
 	return t
