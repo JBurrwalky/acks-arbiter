@@ -17,9 +17,13 @@ extends RefCounted
 ##
 ## Cache hit detection: the parsed dungeon_data dict has a "cells" OR "levels" key
 ## AND its "generator_version" (missing = 0) matches
-## DungeonGeneratorV1.GENERATOR_VERSION. A stale version discards the stored
-## dungeon (relational rows + persisted voxel cells) and regenerates lazily
-## (DG-C3D.A; gdd-dungeon-contiguous-3d.md §13 "regenerate, no migration").
+## DungeonGeneratorV1.GENERATOR_VERSION. A stale version regenerates lazily
+## (DG-C3D.A; gdd-dungeon-contiguous-3d.md §13 "regenerate, no migration"): the
+## true shape is recovered from the stored dungeon_floors rows
+## (DungeonGeneratorRepository.derive_request_spec), the dungeon is regenerated
+## (generate(persist=true) replaces the relational rows wholesale), and stale
+## runtime voxel cells are purged only after that succeeds — so a failed
+## regeneration strands nothing.
 ##
 ## Stable seed derivation: abs(entrance["id"].hash()) & 0x7FFFFFFF  (always > 0,
 ## reproducible across sessions for the same entrance id string).
@@ -47,10 +51,14 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 				return dungeon_json  # cache hit — already generated, current version
 			print("DungeonFixtureService: dungeon '%s' stored with generator version %d (current %d) — discarding and regenerating."
 				% [entrance_id, stored_version, DungeonGeneratorV1.GENERATOR_VERSION])
-			# Recover the generation spec BEFORE deleting the stored rows:
-			# prefer the "spec" key preserved in the payload; fall back to
-			# deriving it from the stored dungeon_floors rows (payloads
-			# persisted before DG-C3D.A carry no spec).
+			# Recover the generation spec so regeneration reproduces the true
+			# shape (not the 1-floor default): the stored dungeon_floors rows ARE
+			# the recovery source (derive_request_spec). Do NOT delete those rows
+			# here — leaving them intact keeps recovery working if this attempt
+			# fails and a later access retries, and generate(persist=true)
+			# replaces them wholesale on success (insert_dungeon_layout
+			# deletes-then-inserts). Stale runtime voxel cells are purged in
+			# step 6, only once the new geometry is in hand.
 			if not (existing as Dictionary).has("spec"):
 				var derived_spec: Dictionary = DungeonGeneratorRepository.derive_request_spec(entrance_id)
 				if not derived_spec.is_empty():
@@ -59,12 +67,6 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 					push_warning(
 						"DungeonFixtureService: no spec recoverable for stale dungeon '%s' — regenerating with defaults."
 						% entrance_id)
-			# Purge both stores: relational rows and persisted runtime voxel
-			# state (stale fog/door cells must not survive under regenerated
-			# geometry). dungeon_entrances.dungeon_data is overwritten at
-			# step 6 after successful regeneration.
-			DungeonGeneratorRepository.delete_dungeon_layout(entrance_id)
-			CampaignRepository.delete_voxel_cells_for_map(entrance_id)
 
 	# -------------------------------------------------------------------------
 	# 2. Read spec fields from the parsed stub.
@@ -131,36 +133,40 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 		return ""
 
 	# -------------------------------------------------------------------------
-	# 5. Serialize to voxel JSON.
+	# 5. Serialize to voxel JSON. Build the dict once, merge the narrator
+	#    metadata the stub carried (provenance / context / dungeon_level /
+	#    size_hint / dungeon_type — written by SettingMaterializer) so an
+	#    ENTERED dungeon keeps its origin for the M5 narrator, then stringify a
+	#    single time (avoids a full parse+re-stringify of the whole cell grid).
+	#    "spec" is deliberately NOT merged into the payload: a stale-version
+	#    regeneration recovers the shape from the stored dungeon_floors rows
+	#    (derive_request_spec), so the payload needs no spec — and embedding it
+	#    would change what the payload exposes today (the Get-Hex-Info dev tool
+	#    renders extra rows off "spec"), breaking the zero-behavior-change goal.
 	# -------------------------------------------------------------------------
-	var voxel_json: String = DungeonVoxelSerializer.to_voxel_json(result)
+	var voxel_dict: Dictionary = DungeonVoxelSerializer.to_voxel_dict(result)
+	if existing is Dictionary:
+		for key in ["provenance", "context", "dungeon_level", "size_hint", "dungeon_type"]:
+			if (existing as Dictionary).has(key) and not voxel_dict.has(key):
+				voxel_dict[key] = (existing as Dictionary)[key]
+	var voxel_json: String = JSON.stringify(voxel_dict)
 	if voxel_json.is_empty():
 		push_error(
 			"DungeonFixtureService.get_or_generate_voxel: serializer returned empty string for entrance '%s'"
 			% entrance_id)
 		return ""
 
-	# Preserve the narrator metadata the stub carried (provenance / context / dungeon_level /
-	# size_hint / dungeon_type — written by SettingMaterializer._materialize_dungeons) across
-	# the voxel overwrite, so an ENTERED dungeon keeps its origin for the M5 narrator. The
-	# voxel dict still has "cells", so the cache-hit short-circuit on re-entry is unaffected.
-	# "spec" is preserved too (DG-C3D.A) so a future generator-version bump can regenerate
-	# this dungeon with its true shape instead of the defaults.
-	if existing is Dictionary:
-		var voxel_dict: Variant = JSON.parse_string(voxel_json)
-		if voxel_dict is Dictionary:
-			var merged := false
-			for key in ["spec", "provenance", "context", "dungeon_level", "size_hint", "dungeon_type"]:
-				if (existing as Dictionary).has(key) and not (voxel_dict as Dictionary).has(key):
-					(voxel_dict as Dictionary)[key] = (existing as Dictionary)[key]
-					merged = true
-			if merged:
-				voxel_json = JSON.stringify(voxel_dict)
+	# -------------------------------------------------------------------------
+	# 6. Purge any stale runtime voxel cells (fog/door state) for this dungeon
+	#    id, then persist the new payload and update the in-memory dict so the
+	#    caller sees it immediately. For a first generation there are no such
+	#    cells (never entered) so the purge is a no-op; for a stale-version
+	#    regeneration it clears fog/doors that must not survive under the
+	#    regenerated geometry. Done here — after successful generation — so
+	#    nothing is destroyed for a regeneration that failed.
+	# -------------------------------------------------------------------------
+	CampaignRepository.delete_voxel_cells_for_map(entrance_id)
 
-	# -------------------------------------------------------------------------
-	# 6. Persist back to dungeon_entrances and update the in-memory dict so the
-	#    caller sees the populated dungeon_data immediately.
-	# -------------------------------------------------------------------------
 	if not CampaignRepository.update_dungeon_entrance_data(entrance_id, voxel_json):
 		push_error(
 			"DungeonFixtureService.get_or_generate_voxel: update_dungeon_entrance_data failed for '%s'"

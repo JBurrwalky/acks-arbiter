@@ -188,10 +188,10 @@ func test_missing_version_key_counts_as_current() -> void:
 
 func test_stale_version_regenerates() -> void:
 	# Generate a dungeon normally, then tamper its stored version stamp. The
-	# next access must discard the stored dungeon (relational rows + persisted
-	# runtime voxel cells) and regenerate — deterministically identical to the
-	# original, since the seed derives from the entrance id and the preserved
-	# "spec" survives the overwrite.
+	# next access must regenerate — deterministically identical to the original,
+	# since the seed derives from the entrance id and the shape is recovered from
+	# the stored dungeon_floors rows (derive_request_spec) — and must purge the
+	# stale runtime voxel cells.
 	var entrance := _make_entrance("dfs_test_stale", {
 		"spec": {
 			"kind": "wizards_dungeon",
@@ -206,8 +206,8 @@ func test_stale_version_regenerates() -> void:
 	if original_json.is_empty():
 		return
 	var original: Variant = JSON.parse_string(original_json)
-	check(original is Dictionary and (original as Dictionary).has("spec"),
-		"generated payload preserves the 'spec' key for future regeneration")
+	check(original is Dictionary and not (original as Dictionary).has("spec"),
+		"generated payload does NOT embed 'spec' — stale-version recovery reads the dungeon_floors rows via derive_request_spec")
 	check(int((original as Dictionary).get("generator_version", -1)) == DungeonGeneratorV1.GENERATOR_VERSION,
 		"generated payload carries the current generator_version stamp")
 
@@ -237,7 +237,7 @@ func test_stale_version_regenerates() -> void:
 	check(not regenerated_json.is_empty(), "stale version triggers regeneration, not failure")
 	check(regenerated_json != tampered_json, "regenerated payload replaces the tampered one")
 	check(regenerated_json == original_json,
-		"regeneration is deterministic — same entrance id + preserved spec reproduce the original payload")
+		"regeneration is deterministic — same entrance id + derived spec reproduce the original payload")
 
 	var regen_parsed: Variant = JSON.parse_string(regenerated_json)
 	check(regen_parsed is Dictionary and int((regen_parsed as Dictionary).get("generator_version", -1)) == DungeonGeneratorV1.GENERATOR_VERSION,
