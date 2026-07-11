@@ -15,3 +15,14 @@ var warnings: Array[String] = []              ## soft warnings ([BALANCE], tier 
 var acceptance_report: Dictionary = {}        ## §14 hard/soft test results
 var placeholder_counts: Dictionary = {}       ## {trap_placeholder, unique_placeholder, trapped_door,
                                               ##  magic_item_placeholder, secret_gated_treasure}
+
+# ---------------------------------------------------------------------------
+# Contiguous 3D volume slot (DG-C3D.A — dormant until cutover)
+# ---------------------------------------------------------------------------
+# During DG-C3D.B-E the new pipeline runs as a parallel internal path and
+# parks its output here so tests can inspect it WITHOUT changing the public
+# result contract (`floors` stays authoritative). At DG-C3D.F these become
+# the primary output and the per-floor array retires.
+
+var composed_volume: VoxelMapData = null      ## one contiguous volume; null until DG-C3D.F
+var stairwells: Array[StairwellData] = []     ## logical vertical connectors (empty until DG-C3D.D)

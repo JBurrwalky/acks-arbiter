@@ -62,6 +62,10 @@ static func to_voxel_dict(result: DungeonGeneratorResultV1) -> Dictionary:
 		"theme": "",
 		"tileset_group": "",
 		"generation_seed": gen_seed,
+		# DG-C3D.A: version stamp checked at the DungeonFixtureService lazy-
+		# generation seam — a stored payload whose version does not match the
+		# current constant is discarded and regenerated (contiguous GDD §13).
+		"generator_version": DungeonGeneratorV1.GENERATOR_VERSION,
 		"cells": cells_array,
 		"lever_links": lever_links_array,
 		# TODO: populate from stocked monster_groups once DG-V1.E is wired.

@@ -75,6 +75,12 @@ var stair_target_level: int = -1
 var room_id: int = -1
 var is_corridor: bool = false
 
+## Zone membership within the owning room (gdd-dungeon-contiguous-3d.md §5.3).
+## -1 = no zone (corridors, non-dungeon maps, pre-DG-C3D content). Stamped at
+## composition time (DG-C3D.D) — zone membership cannot always be derived from
+## (room_id, band) because disconnected same-band galleries are distinct zones.
+var zone_index: int = -1
+
 
 # ---------------------------------------------------------------------------
 # Fog of war
@@ -200,6 +206,7 @@ static func from_dict(data: Dictionary) -> VoxelCell:
 	cell.stair_target_level = data.get("stair_target_level", -1)
 	cell.room_id = data.get("room_id", -1)
 	cell.is_corridor = data.get("is_corridor", false)
+	cell.zone_index = data.get("zone_index", -1)
 	cell.fog_state = data.get("fog_state", "hidden")
 	cell.cover_value = data.get("cover_value", 0)
 	return cell
@@ -223,6 +230,7 @@ func to_dict() -> Dictionary:
 		"stair_target_level": stair_target_level,
 		"room_id": room_id,
 		"is_corridor": is_corridor,
+		"zone_index": zone_index,
 		"fog_state": fog_state,
 		"cover_value": cover_value,
 	}

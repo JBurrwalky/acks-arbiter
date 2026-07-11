@@ -26,6 +26,10 @@ extends RefCounted
 ##      layout-level CRUD here only reads/writes them once DG-V1.D adds the
 ##      stocking fields to the in-memory DungeonLayout. For DG-V1.B layouts
 ##      these tables stay empty.
+##   room_zones / stairwells — DG-C3D contiguous-3D output (migration 210).
+##      DORMANT until the vertical composer (DG-C3D.D) emits them and cutover
+##      (DG-C3D.F) persists them; the CRUD below exists and is round-trip
+##      tested, but no production caller writes these tables yet.
 ##
 ## ## ID strategy
 ##
@@ -106,8 +110,9 @@ static func _insert_floor_rows(dungeon_id: String, layout: DungeonLayout) -> Str
 		"""INSERT INTO dungeon_floors
 			(id, dungeon_id, floor_index, floor_tier, is_entrance_floor,
 			 dungeon_type, dungeon_size, structure_type, grid_width, grid_height,
-			 entrance_x, entrance_y, generation_seed, cells_json, stairs_json)
-		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+			 entrance_x, entrance_y, generation_seed, cells_json, stairs_json,
+			 generator_version)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 		[
 			floor_id, dungeon_id, layout.level_number, layout.floor_tier,
 			1 if layout.is_entrance_floor else 0,
@@ -115,6 +120,7 @@ static func _insert_floor_rows(dungeon_id: String, layout: DungeonLayout) -> Str
 			layout.grid_width, layout.grid_height,
 			layout.entrance.x, layout.entrance.y, layout.generation_seed,
 			_serialize_cells(layout.cells), _serialize_stairs(layout.stairs),
+			DungeonGeneratorV1.GENERATOR_VERSION,
 		])
 	if not ok:
 		push_error("DungeonGeneratorRepository: dungeon_floors insert failed (dungeon %s, floor %d)." % [dungeon_id, layout.level_number])
@@ -285,7 +291,7 @@ static func get_key_items(dungeon_id: String) -> Array[KeyItemData]:
 # Delete (cascade)
 # ---------------------------------------------------------------------------
 
-## Cascading delete across all six tables for [param dungeon_id]. Transactional.
+## Cascading delete across all eight tables for [param dungeon_id]. Transactional.
 static func delete_dungeon_layout(dungeon_id: String) -> bool:
 	var db = CampaignRepository.db
 	db.query("BEGIN TRANSACTION")
@@ -296,12 +302,13 @@ static func delete_dungeon_layout(dungeon_id: String) -> bool:
 	return true
 
 
-## Delete every row for a dungeon across all six tables. Caller manages the
+## Delete every row for a dungeon across all eight tables. Caller manages the
 ## transaction. Returns false on the first failed statement.
 static func _delete_dungeon_rows(dungeon_id: String) -> bool:
 	var db = CampaignRepository.db
 	for table in ["dungeon_rooms", "dungeon_doors", "monster_groups",
-			"treasure_hoards", "key_items", "dungeon_floors"]:
+			"treasure_hoards", "key_items", "room_zones", "stairwells",
+			"dungeon_floors"]:
 		if not db.query_with_bindings("DELETE FROM %s WHERE dungeon_id = ?" % table, [dungeon_id]):
 			push_error("DungeonGeneratorRepository: cascade delete failed on %s for dungeon %s." % [table, dungeon_id])
 			return false
@@ -417,6 +424,181 @@ static func _insert_key_items(dungeon_id: String, keys: Array, index_to_floor_id
 			push_error("DungeonGeneratorRepository: key_items insert failed (dungeon %s)." % dungeon_id)
 			return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# DG-C3D.A helpers (contiguous 3D — dormant until DG-C3D.F cutover)
+# ---------------------------------------------------------------------------
+
+## Insert all RoomZone records for [param dungeon_id]. Caller manages any
+## enclosing transaction (mirrors _insert_monster_groups — at DG-C3D.F this
+## runs inside insert_dungeon_layout's transaction). No production caller
+## until then; exercised by the round-trip tests.
+static func insert_room_zones(dungeon_id: String, zones: Array) -> bool:
+	var db = CampaignRepository.db
+	for z in zones:
+		var zone: RoomZone = z
+		var pk: String = CampaignRepository.generate_id()
+		var cells_arr: Array = []
+		for c in zone.cells:
+			cells_arr.append([c.x, c.y])
+		var mg: Variant = null if zone.monster_group_id.is_empty() else zone.monster_group_id
+		var th: Variant = null if zone.treasure_hoard_id.is_empty() else zone.treasure_hoard_id
+		var ok: bool = db.query_with_bindings(
+			"""INSERT INTO room_zones
+				(id, dungeon_id, room_id, zone_index, band, zone_type,
+				 cells_json, level_offset, contents_kind,
+				 monster_group_id, treasure_hoard_id, current_purpose)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+			[
+				pk, dungeon_id, zone.room_id, zone.zone_index, zone.band,
+				zone.zone_type, JSON.stringify(cells_arr), zone.level_offset,
+				zone.contents_kind, mg, th, zone.current_purpose,
+			])
+		if not ok:
+			push_error("DungeonGeneratorRepository: room_zones insert failed (dungeon %s, room %d, zone %d)."
+				% [dungeon_id, zone.room_id, zone.zone_index])
+			return false
+	return true
+
+
+## Load all RoomZone records for [param dungeon_id], ordered by
+## (room_id, zone_index) for deterministic reconstruction.
+static func get_room_zones(dungeon_id: String) -> Array[RoomZone]:
+	var out: Array[RoomZone] = []
+	var db = CampaignRepository.db
+	if not db.query_with_bindings(
+			"SELECT * FROM room_zones WHERE dungeon_id = ? ORDER BY room_id ASC, zone_index ASC",
+			[dungeon_id]):
+		return out
+	for row in db.query_result:
+		out.append(_row_to_room_zone(row))
+	return out
+
+
+## Insert all StairwellData records for [param dungeon_id]. Caller manages
+## any enclosing transaction. Uses each stairwell's own stairwell_id as the
+## PK (generating one when empty, and writing it back to the object so the
+## in-memory record matches the stored row).
+static func insert_stairwells(dungeon_id: String, stairwells: Array) -> bool:
+	var db = CampaignRepository.db
+	for s in stairwells:
+		var stairwell: StairwellData = s
+		if stairwell.stairwell_id.is_empty():
+			stairwell.stairwell_id = CampaignRepository.generate_id()
+		var run_arr: Array = []
+		for c in stairwell.run_cells:
+			run_arr.append([c.x, c.y, c.z])
+		var ok: bool = db.query_with_bindings(
+			"""INSERT INTO stairwells
+				(id, dungeon_id, type, lower_band, upper_band,
+				 bottom_x, bottom_y, bottom_z, top_x, top_y, top_z,
+				 run_cells_json, width, room_id, is_entrance)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+			[
+				stairwell.stairwell_id, dungeon_id, stairwell.type,
+				stairwell.lower_band, stairwell.upper_band,
+				stairwell.bottom_cell.x, stairwell.bottom_cell.y, stairwell.bottom_cell.z,
+				stairwell.top_cell.x, stairwell.top_cell.y, stairwell.top_cell.z,
+				JSON.stringify(run_arr), stairwell.width, stairwell.room_id,
+				1 if stairwell.is_entrance else 0,
+			])
+		if not ok:
+			push_error("DungeonGeneratorRepository: stairwells insert failed (dungeon %s, stairwell %s)."
+				% [dungeon_id, stairwell.stairwell_id])
+			return false
+	return true
+
+
+## Load all StairwellData records for [param dungeon_id], ordered by
+## (lower_band, id) for deterministic reconstruction.
+static func get_stairwells(dungeon_id: String) -> Array[StairwellData]:
+	var out: Array[StairwellData] = []
+	var db = CampaignRepository.db
+	if not db.query_with_bindings(
+			"SELECT * FROM stairwells WHERE dungeon_id = ? ORDER BY lower_band ASC, id ASC",
+			[dungeon_id]):
+		return out
+	for row in db.query_result:
+		out.append(_row_to_stairwell(row))
+	return out
+
+
+## Reconstruct a generation-request spec from a dungeon's stored
+## dungeon_floors rows: {kind, size, floors, entrance_floor_index, tier}
+## (the dungeon_entrances spec-stub key names DungeonFixtureService reads).
+## Used as the regeneration fallback when a stale-version voxel payload
+## carries no preserved "spec" key (payloads persisted before DG-C3D.A).
+## `tier` approximates the original entrance_tier with the entrance floor's
+## stored floor_tier (tier derivation anchors on the entrance floor, so the
+## two agree for every V1-generated dungeon). Returns {} when the dungeon
+## has no stored floors.
+static func derive_request_spec(dungeon_id: String) -> Dictionary:
+	var db = CampaignRepository.db
+	if not db.query_with_bindings(
+			"""SELECT floor_index, floor_tier, is_entrance_floor, dungeon_type, dungeon_size
+			   FROM dungeon_floors WHERE dungeon_id = ? ORDER BY floor_index ASC""",
+			[dungeon_id]):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	var rows: Array = db.query_result.duplicate()
+	var entrance_floor_index: int = 1
+	var entrance_tier: int = 1
+	for row in rows:
+		if int(row["is_entrance_floor"]) == 1:
+			entrance_floor_index = int(row["floor_index"])
+			entrance_tier = int(row["floor_tier"])
+	return {
+		"kind": str(rows[0]["dungeon_type"]),
+		"size": str(rows[0]["dungeon_size"]),
+		"floors": rows.size(),
+		"entrance_floor_index": entrance_floor_index,
+		"tier": entrance_tier,
+	}
+
+
+static func _row_to_room_zone(row: Dictionary) -> RoomZone:
+	var zone := RoomZone.new()
+	zone.room_id = int(row["room_id"])
+	zone.zone_index = int(row["zone_index"])
+	zone.band = int(row["band"])
+	zone.zone_type = str(row["zone_type"])
+	var cells_parsed: Variant = JSON.parse_string(str(row["cells_json"]))
+	if cells_parsed is Array:
+		for entry in cells_parsed:
+			if entry is Array and (entry as Array).size() >= 2:
+				zone.cells.append(Vector2i(int(entry[0]), int(entry[1])))
+	zone.level_offset = int(row["level_offset"])
+	zone.contents_kind = str(row["contents_kind"])
+	var mg_raw = row["monster_group_id"]
+	zone.monster_group_id = "" if mg_raw == null else str(mg_raw)
+	var th_raw = row["treasure_hoard_id"]
+	zone.treasure_hoard_id = "" if th_raw == null else str(th_raw)
+	zone.current_purpose = str(row["current_purpose"])
+	return zone
+
+
+static func _row_to_stairwell(row: Dictionary) -> StairwellData:
+	var stairwell := StairwellData.new()
+	stairwell.stairwell_id = str(row["id"])
+	stairwell.type = str(row["type"])
+	stairwell.lower_band = int(row["lower_band"])
+	stairwell.upper_band = int(row["upper_band"])
+	stairwell.bottom_cell = Vector3i(
+		int(row["bottom_x"]), int(row["bottom_y"]), int(row["bottom_z"]))
+	stairwell.top_cell = Vector3i(
+		int(row["top_x"]), int(row["top_y"]), int(row["top_z"]))
+	var run_parsed: Variant = JSON.parse_string(str(row["run_cells_json"]))
+	if run_parsed is Array:
+		for entry in run_parsed:
+			if entry is Array and (entry as Array).size() >= 3:
+				stairwell.run_cells.append(
+					Vector3i(int(entry[0]), int(entry[1]), int(entry[2])))
+	stairwell.width = int(row["width"])
+	stairwell.room_id = int(row["room_id"])
+	stairwell.is_entrance = int(row["is_entrance"]) == 1
+	return stairwell
 
 
 # ---------------------------------------------------------------------------

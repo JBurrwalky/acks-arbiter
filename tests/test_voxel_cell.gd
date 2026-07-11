@@ -60,6 +60,7 @@ func test_default_values() -> void:
 	check(cell.door_detected == false, "default door_detected should be false")
 	check(cell.room_id == -1, "default room_id should be -1")
 	check(cell.is_corridor == false, "default is_corridor should be false")
+	check(cell.zone_index == -1, "default zone_index should be -1")
 	check(cell.fog_state == "hidden", "default fog_state should be 'hidden'")
 	check(cell.cover_value == 0, "default cover_value should be 0")
 
@@ -82,7 +83,7 @@ func test_from_dict_populates_fields() -> void:
 		"col": 5, "row": 10, "level": 3,
 		"solidity": "solid", "feature": "wall_stone", "floor_type": "stone",
 		"door_state": "locked", "door_type": "locked", "door_detected": true,
-		"room_id": 4, "is_corridor": true,
+		"room_id": 4, "is_corridor": true, "zone_index": 2,
 		"fog_state": "visible", "cover_value": 2,
 	}
 	var cell := VoxelCell.from_dict(data)
@@ -97,6 +98,7 @@ func test_from_dict_populates_fields() -> void:
 	check(cell.door_detected == true, "door_detected from dict")
 	check(cell.room_id == 4, "room_id from dict")
 	check(cell.is_corridor == true, "is_corridor from dict")
+	check(cell.zone_index == 2, "zone_index from dict")
 	check(cell.fog_state == "visible", "fog_state from dict")
 	check(cell.cover_value == 2, "cover_value from dict")
 
@@ -106,7 +108,7 @@ func test_to_dict_round_trip() -> void:
 		"col": 2, "row": 8, "level": 1,
 		"solidity": "liquid", "feature": "water_deep", "floor_type": "stone",
 		"door_state": "", "door_type": "", "door_detected": false,
-		"room_id": 7, "is_corridor": false,
+		"room_id": 7, "is_corridor": false, "zone_index": 1,
 		"fog_state": "explored", "cover_value": 1,
 	}
 	var cell := VoxelCell.from_dict(data)
@@ -123,6 +125,7 @@ func test_to_dict_round_trip() -> void:
 	check(cell2.door_detected == cell.door_detected, "round-trip door_detected")
 	check(cell2.room_id == cell.room_id, "round-trip room_id")
 	check(cell2.is_corridor == cell.is_corridor, "round-trip is_corridor")
+	check(cell2.zone_index == cell.zone_index, "round-trip zone_index")
 	check(cell2.fog_state == cell.fog_state, "round-trip fog_state")
 	check(cell2.cover_value == cell.cover_value, "round-trip cover_value")
 
@@ -132,6 +135,7 @@ func test_from_dict_defaults() -> void:
 	check(cell.solidity == "air", "empty dict defaults solidity to air")
 	check(cell.feature == "open", "empty dict defaults feature to open")
 	check(cell.floor_type == "none", "empty dict defaults floor_type to none")
+	check(cell.zone_index == -1, "empty dict defaults zone_index to -1")
 
 
 # ---------------------------------------------------------------------------

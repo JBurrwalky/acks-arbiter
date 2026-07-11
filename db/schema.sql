@@ -1224,6 +1224,9 @@ CREATE TABLE IF NOT EXISTS voxel_map_cells (
     room_id INTEGER NOT NULL DEFAULT -1,
     is_corridor INTEGER NOT NULL DEFAULT 0,
     cover_value INTEGER NOT NULL DEFAULT 0,
+    -- Migration 210: zone membership within the owning room (DG-C3D.A).
+    -- -1 = no zone; stamped at vertical composition time.
+    zone_index INTEGER NOT NULL DEFAULT -1,
     PRIMARY KEY (map_id, col, row, level)
 );
 
@@ -3560,7 +3563,11 @@ CREATE TABLE IF NOT EXISTS dungeon_floors (
     encounter_table_row     INTEGER NOT NULL DEFAULT 0,
     cells_json              TEXT    NOT NULL DEFAULT '[]',
     stairs_json             TEXT    NOT NULL DEFAULT '[]',
-    created_at              TEXT    NOT NULL DEFAULT (datetime('now'))
+    created_at              TEXT    NOT NULL DEFAULT (datetime('now')),
+    -- Migration 210: generator version stamp (DG-C3D.A). Stamped from
+    -- DungeonGeneratorV1.GENERATOR_VERSION at insert; version mismatch at the
+    -- lazy-generation seam discards + regenerates the stored dungeon.
+    generator_version       INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_dungeon_floors_dungeon ON dungeon_floors(dungeon_id);
 
@@ -3581,11 +3588,75 @@ CREATE TABLE IF NOT EXISTS dungeon_rooms (
     contents_kind     TEXT    NOT NULL DEFAULT 'empty'
         CHECK(contents_kind IN ('empty', 'monster', 'monster_lair', 'trap_placeholder', 'unique_placeholder')),
     monster_group_id  TEXT,
-    treasure_hoard_id TEXT
+    treasure_hoard_id TEXT,
+    -- Migration 210: contiguous-3D room verticality (DG-C3D.A, dormant).
+    -- band = ACKS dungeon level; kind separates chambers from circulation
+    -- (stairwell) rooms; height_levels 2 = standard, 4 = two-band atrium;
+    -- level_offset is the reserved free-form hook (always 0 for now).
+    band              INTEGER NOT NULL DEFAULT 0,
+    kind              TEXT    NOT NULL DEFAULT 'chamber'
+        CHECK(kind IN ('chamber', 'circulation')),
+    height_levels     INTEGER NOT NULL DEFAULT 2,
+    level_offset      INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_dungeon ON dungeon_rooms(dungeon_id);
 CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_floor ON dungeon_rooms(floor_id);
 CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_floor_roomid ON dungeon_rooms(floor_id, room_id_in_floor);
+
+-- ===========================================================================
+-- Migration 210: Contiguous 3D dungeon generation — dormant schema (DG-C3D.A).
+-- gdd-dungeon-contiguous-3d.md §9. Dungeon-CONTENT tables keyed on dungeon_id
+-- (no FK — the dungeon id lives in dungeon_entrances.dungeon_data JSON), per
+-- the DG-V1.C / migration-201 pattern; purged dungeon-scoped in
+-- CampaignRepository._campaign_scope_entries(). Empty until the vertical
+-- composer (DG-C3D.D) emits zones/stairwells and cutover (DG-C3D.F) persists.
+-- ===========================================================================
+
+-- §9.2 RoomZone — the stocking unit: one row per maximal contiguous walkable
+-- region of one room on one band. cells_json = JSON array of [col, row] pairs.
+-- Stocking-result columns mirror dungeon_rooms (they relocate to zones at F).
+CREATE TABLE IF NOT EXISTS room_zones (
+    id                TEXT    PRIMARY KEY,
+    dungeon_id        TEXT    NOT NULL,
+    room_id           INTEGER NOT NULL DEFAULT -1,
+    zone_index        INTEGER NOT NULL DEFAULT 0,
+    band              INTEGER NOT NULL DEFAULT 0,
+    zone_type         TEXT    NOT NULL DEFAULT 'main'
+        CHECK(zone_type IN ('main', 'balcony', 'gallery', 'ledge', 'landing')),
+    cells_json        TEXT    NOT NULL DEFAULT '[]',
+    level_offset      INTEGER NOT NULL DEFAULT 0,
+    contents_kind     TEXT    NOT NULL DEFAULT 'empty'
+        CHECK(contents_kind IN ('empty', 'monster', 'monster_lair', 'trap_placeholder', 'unique_placeholder')),
+    monster_group_id  TEXT,
+    treasure_hoard_id TEXT,
+    current_purpose   TEXT    NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_room_zones_dungeon ON room_zones(dungeon_id);
+CREATE INDEX IF NOT EXISTS idx_room_zones_room ON room_zones(dungeon_id, room_id);
+
+-- §9.3 StairwellData — one row per logical vertical connector. bottom/top are
+-- landing approach cells (voxel col/row/level; -1/-1/0 = unset sentinel).
+-- run_cells_json = JSON array of [col, row, level] triples; run cells never
+-- carry door cells or gate semantics (contiguous GDD §10.3).
+CREATE TABLE IF NOT EXISTS stairwells (
+    id             TEXT    PRIMARY KEY,
+    dungeon_id     TEXT    NOT NULL,
+    type           TEXT    NOT NULL DEFAULT 'straight'
+        CHECK(type IN ('straight', 'switchback', 'spiral', 'ramp')),
+    lower_band     INTEGER NOT NULL DEFAULT 0,
+    upper_band     INTEGER NOT NULL DEFAULT 0,
+    bottom_x       INTEGER NOT NULL DEFAULT -1,
+    bottom_y       INTEGER NOT NULL DEFAULT -1,
+    bottom_z       INTEGER NOT NULL DEFAULT 0,
+    top_x          INTEGER NOT NULL DEFAULT -1,
+    top_y          INTEGER NOT NULL DEFAULT -1,
+    top_z          INTEGER NOT NULL DEFAULT 0,
+    run_cells_json TEXT    NOT NULL DEFAULT '[]',
+    width          INTEGER NOT NULL DEFAULT 1,
+    room_id        INTEGER NOT NULL DEFAULT -1,
+    is_entrance    INTEGER NOT NULL DEFAULT 0 CHECK(is_entrance IN (0, 1))
+);
+CREATE INDEX IF NOT EXISTS idx_stairwells_dungeon ON stairwells(dungeon_id);
 
 CREATE TABLE IF NOT EXISTS dungeon_doors (
     id                     TEXT    PRIMARY KEY,

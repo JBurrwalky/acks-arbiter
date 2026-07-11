@@ -268,6 +268,7 @@ func test_all_fields_roundtrip() -> void:
 	cell.room_id = 99
 	cell.is_corridor = true
 	cell.cover_value = 2
+	cell.zone_index = 3
 	_repo.save_voxel_cell(mid, cell)
 
 	var loaded: Array = _repo.load_voxel_cells_for_map(mid)
@@ -288,3 +289,4 @@ func test_all_fields_roundtrip() -> void:
 	check(lc.room_id == 99, "room_id round-trip")
 	check(lc.is_corridor == true, "is_corridor round-trip")
 	check(lc.cover_value == 2, "cover_value round-trip")
+	check(lc.zone_index == 3, "zone_index round-trip")

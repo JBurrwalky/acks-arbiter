@@ -26,6 +26,22 @@ extends RefCounted
 ##   and keep it.
 
 
+## Generator version stamp (DG-C3D.A; gdd-dungeon-contiguous-3d.md §13).
+## Persisted with every generated dungeon (dungeon_floors.generator_version +
+## the "generator_version" key in the voxel JSON payload). The lazy-generation
+## seam (DungeonFixtureService) discards and regenerates any stored dungeon
+## whose stamp does not match this constant — "regenerate, no migration".
+##
+## 0 = the pre-contiguous floor-stitched generator (payloads persisted before
+## the stamp existed read as 0 via the missing-key default, so they count as
+## current until the bump). DG-C3D.F bumps this to 1 when generate() flips to
+## the composed-volume pipeline, invalidating every stored dungeon at once.
+## NOTE for F: hand-authored dungeon payloads (test content) must be exempted
+## from version-triggered regeneration or the bump would replace them with
+## generated dungeons — see the DG-C3D.A build log entry.
+const GENERATOR_VERSION: int = 0
+
+
 static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResultV1:
 	# ---------------------------------------------------------------------------
 	# Step 1 — validate request (these hard errors are NEVER retried)

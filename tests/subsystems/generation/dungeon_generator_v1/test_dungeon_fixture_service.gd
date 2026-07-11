@@ -26,6 +26,9 @@ func run_all_tests() -> void:
 	test_cache_hit_idempotency()
 	test_single_floor_spec()
 	test_metadata_preserved_across_generation()
+	test_missing_version_key_counts_as_current()
+	test_stale_version_regenerates()
+	test_stale_version_without_spec_derives_from_stored_floors()
 	_teardown_db()
 	if not has_failures():
 		print("DungeonFixtureService: all tests passed.")
@@ -159,6 +162,141 @@ func test_metadata_preserved_across_generation() -> void:
 	check(second == str(db_entrance.get("dungeon_data", "")),
 		"cache hit returns the persisted (metadata-merged) JSON unchanged")
 	print("  test_metadata_preserved_across_generation: OK")
+
+
+# ---------------------------------------------------------------------------
+# Generator-version regeneration (DG-C3D.A; contiguous GDD §13)
+# ---------------------------------------------------------------------------
+
+func test_missing_version_key_counts_as_current() -> void:
+	# A voxel payload persisted BEFORE the version stamp existed has no
+	# "generator_version" key — it must read as version 0 (== the current
+	# constant until DG-C3D.F bumps it) and cache-hit unchanged. This is the
+	# zero-behavior-change guarantee for pre-DG-C3D stored dungeons.
+	check(DungeonGeneratorV1.GENERATOR_VERSION == 0,
+		"DG-C3D.A expects GENERATOR_VERSION 0 (pre-cutover); when F bumps it, retire this test's premise")
+	var legacy_payload := JSON.stringify({"cells": [], "id": "dfs_test_legacy"})
+	var entrance := {
+		"id": "dfs_test_legacy",
+		"dungeon_data": legacy_payload,
+	}
+	var result_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	check(result_json == legacy_payload,
+		"payload without generator_version must cache-hit byte-identically (read as version 0)")
+	print("  test_missing_version_key_counts_as_current: OK")
+
+
+func test_stale_version_regenerates() -> void:
+	# Generate a dungeon normally, then tamper its stored version stamp. The
+	# next access must discard the stored dungeon (relational rows + persisted
+	# runtime voxel cells) and regenerate — deterministically identical to the
+	# original, since the seed derives from the entrance id and the preserved
+	# "spec" survives the overwrite.
+	var entrance := _make_entrance("dfs_test_stale", {
+		"spec": {
+			"kind": "wizards_dungeon",
+			"tier": 1,
+			"size": "lair",
+			"floors": 1,
+			"entrance_floor_index": 1,
+		}
+	})
+	var original_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	check(not original_json.is_empty(), "stale-version test: initial generation succeeds")
+	if original_json.is_empty():
+		return
+	var original: Variant = JSON.parse_string(original_json)
+	check(original is Dictionary and (original as Dictionary).has("spec"),
+		"generated payload preserves the 'spec' key for future regeneration")
+	check(int((original as Dictionary).get("generator_version", -1)) == DungeonGeneratorV1.GENERATOR_VERSION,
+		"generated payload carries the current generator_version stamp")
+
+	# Stamp stored relational rows carry the version too.
+	CampaignRepository.db.query_with_bindings(
+		"SELECT generator_version FROM dungeon_floors WHERE dungeon_id = ?", ["dfs_test_stale"])
+	check(not CampaignRepository.db.query_result.is_empty(),
+		"stale-version test: dungeon_floors rows persisted")
+	for row in CampaignRepository.db.query_result:
+		check(int(row["generator_version"]) == DungeonGeneratorV1.GENERATOR_VERSION,
+			"dungeon_floors.generator_version stamped with the current constant")
+
+	# Tamper: mark the stored payload as an older generator's output, and
+	# plant a fake persisted runtime voxel cell that must be purged.
+	var tampered: Dictionary = (original as Dictionary).duplicate(true)
+	tampered["generator_version"] = -999
+	var tampered_json := JSON.stringify(tampered)
+	CampaignRepository.update_dungeon_entrance_data("dfs_test_stale", tampered_json)
+	var stale_cell := VoxelCell.new()
+	stale_cell.col = 1
+	stale_cell.row = 1
+	stale_cell.level = 0
+	CampaignRepository.save_voxel_cell("dfs_test_stale", stale_cell)
+
+	var db_entrance := CampaignRepository.get_dungeon_entrance("dfs_test_stale")
+	var regenerated_json: String = DungeonFixtureService.get_or_generate_voxel(db_entrance)
+	check(not regenerated_json.is_empty(), "stale version triggers regeneration, not failure")
+	check(regenerated_json != tampered_json, "regenerated payload replaces the tampered one")
+	check(regenerated_json == original_json,
+		"regeneration is deterministic — same entrance id + preserved spec reproduce the original payload")
+
+	var regen_parsed: Variant = JSON.parse_string(regenerated_json)
+	check(regen_parsed is Dictionary and int((regen_parsed as Dictionary).get("generator_version", -1)) == DungeonGeneratorV1.GENERATOR_VERSION,
+		"regenerated payload stamped with the current generator_version")
+
+	# The planted stale runtime voxel cell must be gone.
+	CampaignRepository.db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM voxel_map_cells WHERE map_id = ?", ["dfs_test_stale"])
+	check(int(CampaignRepository.db.query_result[0]["n"]) == 0,
+		"persisted runtime voxel cells purged on version-mismatch regeneration")
+
+	# Relational rows exist again (regenerated, current version).
+	CampaignRepository.db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM dungeon_floors WHERE dungeon_id = ? AND generator_version = ?",
+		["dfs_test_stale", DungeonGeneratorV1.GENERATOR_VERSION])
+	check(int(CampaignRepository.db.query_result[0]["n"]) >= 1,
+		"dungeon_floors rows re-persisted at the current version after regeneration")
+
+	DungeonGeneratorRepository.delete_dungeon_layout("dfs_test_stale")
+	print("  test_stale_version_regenerates: OK")
+
+
+func test_stale_version_without_spec_derives_from_stored_floors() -> void:
+	# Payloads persisted before DG-C3D.A carry no "spec" key. On a version
+	# mismatch the seam must recover the dungeon's shape from the stored
+	# dungeon_floors rows (DungeonGeneratorRepository.derive_request_spec)
+	# instead of regenerating with defaults. Discriminating assertion: the
+	# original spec asks for TWO floors; the fixture-service default is one.
+	var entrance := _make_entrance("dfs_test_derive", {
+		"spec": {
+			"kind": "wizards_dungeon",
+			"tier": 1,
+			"size": "small",
+			"floors": 2,
+			"entrance_floor_index": 1,
+		}
+	})
+	var original_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	check(not original_json.is_empty(), "derive test: initial generation succeeds")
+	if original_json.is_empty():
+		return
+
+	# Tamper: stale version AND strip the preserved spec (simulates a pre-A payload).
+	var tampered: Dictionary = JSON.parse_string(original_json)
+	tampered["generator_version"] = -999
+	tampered.erase("spec")
+	CampaignRepository.update_dungeon_entrance_data("dfs_test_derive", JSON.stringify(tampered))
+
+	var db_entrance := CampaignRepository.get_dungeon_entrance("dfs_test_derive")
+	var regenerated_json: String = DungeonFixtureService.get_or_generate_voxel(db_entrance)
+	check(not regenerated_json.is_empty(), "derive test: regeneration succeeds without a payload spec")
+
+	CampaignRepository.db.query_with_bindings(
+		"SELECT COUNT(*) AS n FROM dungeon_floors WHERE dungeon_id = ?", ["dfs_test_derive"])
+	check(int(CampaignRepository.db.query_result[0]["n"]) == 2,
+		"derived spec preserves the original floor count (2), not the 1-floor default")
+
+	DungeonGeneratorRepository.delete_dungeon_layout("dfs_test_derive")
+	print("  test_stale_version_without_spec_derives_from_stored_floors: OK")
 
 
 # ---------------------------------------------------------------------------

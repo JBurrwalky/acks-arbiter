@@ -4612,8 +4612,8 @@ func save_voxel_cell(map_id: String, cell: VoxelCell) -> bool:
 		INSERT OR REPLACE INTO voxel_map_cells
 		(map_id, col, row, level, solidity, feature, floor_type,
 		 door_state, door_type, door_detected, fog_state,
-		 room_id, is_corridor, cover_value)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 room_id, is_corridor, cover_value, zone_index)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		map_id,
 		cell.col, cell.row, cell.level,
@@ -4624,6 +4624,7 @@ func save_voxel_cell(map_id: String, cell: VoxelCell) -> bool:
 		cell.room_id,
 		1 if cell.is_corridor else 0,
 		cell.cover_value,
+		cell.zone_index,
 	])
 
 
@@ -4636,6 +4637,15 @@ func load_voxel_cells_for_map(map_id: String) -> Array:
 	for row_data: Dictionary in db.query_result:
 		cells.append(_voxel_cell_from_row(row_data))
 	return cells
+
+
+## Deletes every persisted voxel cell for [param map_id]. Used when a stored
+## dungeon is discarded for regeneration (stale generator version — the
+## DungeonFixtureService seam): stale runtime cell state (fog, door states)
+## must not survive under the regenerated geometry.
+func delete_voxel_cells_for_map(map_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM voxel_map_cells WHERE map_id = ?", [map_id])
 
 
 ## Updates the door_state and fog_state of a single voxel cell (insert or replace).
@@ -4690,6 +4700,7 @@ func _voxel_cell_from_row(row_data: Dictionary) -> VoxelCell:
 	cell.room_id = row_data.get("room_id", -1)
 	cell.is_corridor = bool(row_data.get("is_corridor", 0))
 	cell.cover_value = row_data.get("cover_value", 0)
+	cell.zone_index = row_data.get("zone_index", -1)
 	return cell
 
 
@@ -5343,7 +5354,7 @@ func _campaign_scope_entries() -> Array:
 	# relationships/threats before factions (no FK, but keep the clean order).
 	for t in ["dungeon_floors", "dungeon_rooms", "dungeon_doors", "monster_groups", "treasure_hoards", "key_items",
 			"dungeon_faction_relationships", "dungeon_solitary_threats", "dungeon_link_conflict_passes",
-			"dungeon_factions"]:
+			"dungeon_factions", "room_zones", "stairwells"]:
 		e.append({"table": t, "dungeon_scoped": true, "id_col": "dungeon_id"})
 	e.append({"table": "voxel_map_cells", "dungeon_scoped": true, "id_col": "map_id"})
 	# Depth 1 — direct campaign_id parents (deleted last); campaigns very last.

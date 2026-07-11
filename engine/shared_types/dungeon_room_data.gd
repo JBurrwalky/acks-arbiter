@@ -64,6 +64,42 @@ var treasure_hoard_id: String = ""
 
 
 # ---------------------------------------------------------------------------
+# Contiguous 3D volume fields (DG-C3D.A — gdd-dungeon-contiguous-3d.md §9.1)
+#
+# DORMANT until the vertical composer (DG-C3D.D) populates them; defaults hold
+# everywhere until then. The stocking fields above relocate to RoomZone at
+# cutover (DG-C3D.F); dual presence during B-E is deliberate — nothing reads
+# zones yet.
+# ---------------------------------------------------------------------------
+
+## Room kind vocabulary. Circulation rooms (switchback/spiral stairwells) get
+## walls, doors, and fog identity but are excluded from the stocking loop.
+const KIND_CHAMBER := "chamber"
+const KIND_CIRCULATION := "circulation"
+
+const VALID_KINDS: Array[String] = [KIND_CHAMBER, KIND_CIRCULATION]
+
+## The room's ACKS dungeon level (floor_index). A band IS a floor for every
+## tier, treasure, and wandering-monster purpose.
+var band: int = 0
+
+## "chamber" (default) or "circulation" (stairwell rooms). See KIND_*.
+var kind: String = KIND_CHAMBER
+
+## Room height in voxel levels: 2 = standard 10' room; 4 = two-band atrium.
+var height_levels: int = 2
+
+## RESERVED free-form hook (gdd-dungeon-contiguous-3d.md §5.4) — voxel levels
+## relative to the band walk level. Always 0 in this version; validation
+## asserts it.
+var level_offset: int = 0
+
+## The room's stocking zones (zone_index 0 = main floor; upper-band
+## balcony/gallery zones follow). Empty until DG-C3D.D composes the volume.
+var zones: Array[RoomZone] = []
+
+
+# ---------------------------------------------------------------------------
 # Convenience
 # ---------------------------------------------------------------------------
 
