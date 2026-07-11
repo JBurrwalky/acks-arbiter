@@ -564,6 +564,7 @@
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_contiguous_schema.gd" id="572_dungeon_contiguous_schema_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_vertical_plan.gd" id="573_vertical_plan_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_layout/test_dungeon_layout_reservations.gd" id="574_dungeon_layout_reservations_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_volume_composer.gd" id="575_dungeon_volume_composer_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1791,6 +1792,9 @@ script = ExtResource("573_vertical_plan_tests")
 
 [node name="DungeonLayoutReservationsTests" type="Node" parent="."]
 script = ExtResource("574_dungeon_layout_reservations_tests")
+
+[node name="DungeonVolumeComposerTests" type="Node" parent="."]
+script = ExtResource("575_dungeon_volume_composer_tests")
 
 [node name="TreasureInstantiatorTests" type="Node" parent="."]
 script = ExtResource("394_treasure_instantiator_tests")
