@@ -68,6 +68,9 @@ func run_all_tests() -> void:
 	test_trap_room_hoards_are_locked_chests()
 	test_pile_hoards_are_never_locked_or_trapped()
 	test_traps_unavailable_no_hoard_is_trapped()
+	# DG-C3D.F.2a — project per-band stocking onto composed zones.
+	test_map_band_stocking_to_zones()
+	test_stock_floor_skips_circulation_rooms()
 
 	if not has_failures():
 		print("DungeonStocker: all tests passed.")
@@ -379,3 +382,118 @@ func test_traps_unavailable_no_hoard_is_trapped() -> void:
 		check(hoard.is_trapped == false,
 			"with traps_available=false (V1), no hoard should emit is_trapped=true (room %d, container '%s')"
 				% [hoard.room_id, hoard.container_type])
+
+
+# ---------------------------------------------------------------------------
+# DG-C3D.F.2a — per-zone stocking projection + circulation exclusion
+# ---------------------------------------------------------------------------
+
+## map_band_stocking_to_zones copies each stocked band-layout chamber room onto
+## its composed zone-0 RoomZone, remaps monster-group/hoard room ids to the
+## dungeon-unique global id (band_slot*1000+local) + stamps zone_index 0, skips
+## circulation rooms, and rolls the composed room's purpose up from its main zone.
+func test_map_band_stocking_to_zones() -> void:
+	# Band 1 (composer slot 0): a stocked chamber (local 0) + a circulation room.
+	var b1 := DungeonLayout.new()
+	b1.level_number = 1
+	var b1_chamber := DungeonRoomData.new()
+	b1_chamber.id = 0
+	b1_chamber.kind = DungeonRoomData.KIND_CHAMBER
+	b1_chamber.contents_kind = "monster_lair"
+	b1_chamber.monster_group_id = "mg_b1"
+	b1_chamber.current_purpose = "goblin lair"
+	var b1_circ := DungeonRoomData.new()
+	b1_circ.id = 1
+	b1_circ.kind = DungeonRoomData.KIND_CIRCULATION
+	b1_circ.contents_kind = "empty"
+	b1.rooms = [b1_chamber, b1_circ]
+	var mg1 := MonsterGroupData.new()
+	mg1.id = "mg_b1"
+	mg1.room_id = 0
+	b1.monster_groups = [mg1]
+
+	# Band 2 (composer slot 1): a stocked chamber (local 0 -> global 1000).
+	var b2 := DungeonLayout.new()
+	b2.level_number = 2
+	var b2_chamber := DungeonRoomData.new()
+	b2_chamber.id = 0
+	b2_chamber.kind = DungeonRoomData.KIND_CHAMBER
+	b2_chamber.contents_kind = "empty"
+	b2_chamber.current_purpose = "empty vault"
+	b2.rooms = [b2_chamber]
+	var h2 := TreasureHoardData.new()
+	h2.id = "h_b2"
+	h2.room_id = 0
+	b2.treasure_hoards = [h2]
+
+	# Compose result: global rooms + zone-0 per chamber (slot 0 -> id 0; slot 1 -> id 1000).
+	var cr := DungeonVolumeComposer.ComposeResult.new()
+	var cr1 := DungeonRoomData.new()
+	cr1.id = 0
+	cr1.band = 1
+	var cr2 := DungeonRoomData.new()
+	cr2.id = 1000
+	cr2.band = 2
+	cr.rooms = [cr1, cr2]
+	var z1 := RoomZone.new()
+	z1.room_id = 0
+	z1.zone_index = 0
+	z1.band = 1
+	var z2 := RoomZone.new()
+	z2.room_id = 1000
+	z2.zone_index = 0
+	z2.band = 2
+	cr.zones = [z1, z2]
+
+	var out: Dictionary = DungeonStocker.map_band_stocking_to_zones([b1, b2], cr)
+
+	# Zone-0 carries the band-layout room's stocking.
+	check(z1.contents_kind == "monster_lair", "band-1 chamber content maps to its zone 0")
+	check(z1.monster_group_id == "mg_b1", "band-1 monster group id maps to zone 0")
+	check(z1.current_purpose == "goblin lair", "band-1 purpose maps to zone 0")
+	check(z2.contents_kind == "empty", "band-2 chamber maps as empty")
+	# Monster group / hoard room ids remap to global + zone_index 0.
+	check(mg1.room_id == 0, "band-1 group global id = 0 (slot 0)")
+	check(mg1.zone_index == 0, "band-1 group zone_index stamped 0")
+	check(h2.room_id == 1000, "band-2 hoard global id = 1000 (slot 1), got %d" % h2.room_id)
+	check((out["monster_groups"] as Array).size() == 1, "collected 1 monster group")
+	check((out["treasure_hoards"] as Array).size() == 1, "collected 1 treasure hoard")
+	# Composed RoomData rollup from the main zone.
+	check(cr1.current_purpose == "goblin lair", "composed room 0 purpose rolls up from zone 0")
+	check(cr1.monster_group_id == "mg_b1", "composed room 0 monster id rolls up")
+	# Circulation room contributed nothing (no zone, no remapped group).
+	check(z1.contents_kind != "" and z2.contents_kind != "", "both chamber zones stocked")
+
+
+## stock_floor never stocks a circulation room (§11.1): it is skipped from the
+## d100 loop, so it keeps its default empty contents and gets no purpose.
+func test_stock_floor_skips_circulation_rooms() -> void:
+	var layout := DungeonLayout.new()
+	layout.level_number = 1
+	layout.floor_tier = 1
+	layout.grid_width = 6
+	layout.grid_height = 6
+	var cells: Array[Array] = []
+	for x in range(6):
+		var col: Array[DungeonCellData] = []
+		for y in range(6):
+			var c := DungeonCellData.new()
+			c.terrain_feature = DungeonCellData.FEATURE_ROCK
+			col.append(c)
+		cells.append(col)
+	layout.cells = cells
+	var circ := DungeonRoomData.new()
+	circ.id = 0
+	circ.kind = DungeonRoomData.KIND_CIRCULATION
+	circ.cells = [Vector2i(1, 1), Vector2i(2, 1)]
+	layout.rooms = [circ]
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	DungeonStocker.stock_floor(layout, _loader, _registry, rng)
+
+	check(circ.current_purpose == "", "circulation room never gets a stocked purpose")
+	check(circ.contents_kind == "empty", "circulation room keeps default empty contents")
+	check(circ.monster_group_id == "", "circulation room gets no monster group")
+	check(layout.monster_groups.is_empty(), "no monster groups stocked for a circulation-only floor")
+	check(layout.treasure_hoards.is_empty(), "no treasure hoards stocked for a circulation-only floor")
