@@ -17,6 +17,7 @@ func run_all_tests() -> void:
 	test_null_treasure_type_letter()
 	test_json_arrays_survive()
 	test_delete_removes_stocking_rows()
+	test_insert_dungeon_layout_persists_zones_and_stairwells()
 	if not has_failures():
 		print("DungeonRepositoryStockedRoundtrip: all tests passed.")
 
@@ -485,3 +486,70 @@ func _count_rows(table: String, dungeon_id: String) -> int:
 			"SELECT COUNT(*) AS n FROM %s WHERE dungeon_id = ?" % table, [dungeon_id]):
 		return -1
 	return int(CampaignRepository.db.query_result[0]["n"])
+
+
+## DG-C3D.F.2b — insert_dungeon_layout persists composed-volume zones +
+## stairwells inside its transaction (the cutover's persistence path). Empty
+## zones/stairwells (the legacy default) are a no-op, verified by the other
+## round-trip tests staying green.
+func test_insert_dungeon_layout_persists_zones_and_stairwells() -> void:
+	var dungeon_id := _unique_id("zs_rt")
+	var layout := _minimal_layout(1)
+
+	var z0 := RoomZone.new()
+	z0.room_id = 0
+	z0.zone_index = 0
+	z0.band = 1
+	z0.zone_type = RoomZone.ZONE_TYPE_MAIN
+	z0.cells = [Vector2i(2, 2), Vector2i(3, 2)]
+	z0.contents_kind = "monster"
+	z0.current_purpose = "goblin patrol"
+	var z1 := RoomZone.new()
+	z1.room_id = 1000
+	z1.zone_index = 1
+	z1.band = 2
+	z1.zone_type = RoomZone.ZONE_TYPE_BALCONY
+
+	var sw := StairwellData.new()
+	sw.stairwell_id = "sw_test_1"
+	sw.type = StairwellData.TYPE_STRAIGHT
+	sw.lower_band = 2
+	sw.upper_band = 1
+	sw.bottom_cell = Vector3i(4, 2, -2)
+	sw.top_cell = Vector3i(7, 2, 0)
+	sw.run_cells = [Vector3i(5, 2, -2), Vector3i(6, 2, -1)]
+	sw.width = 2
+
+	var ok: bool = DungeonGeneratorRepository.insert_dungeon_layout(
+		dungeon_id, [layout], [], [z0, z1], [sw])
+	check(ok, "insert_dungeon_layout with zones + stairwells succeeds")
+
+	var zones := DungeonGeneratorRepository.get_room_zones(dungeon_id)
+	check(zones.size() == 2, "2 zones persisted, got %d" % zones.size())
+	var by_key: Dictionary = {}
+	for z in zones:
+		by_key["%d:%d" % [z.room_id, z.zone_index]] = z
+	check(by_key.has("0:0"), "main zone persisted")
+	if by_key.has("0:0"):
+		var mz: RoomZone = by_key["0:0"]
+		check(mz.contents_kind == "monster", "zone contents_kind round-trips")
+		check(mz.current_purpose == "goblin patrol", "zone current_purpose round-trips")
+		check(mz.cells.size() == 2, "zone cells round-trip")
+	check(by_key.has("1000:1"), "balcony zone (global room 1000) persisted")
+
+	var stairwells := DungeonGeneratorRepository.get_stairwells(dungeon_id)
+	check(stairwells.size() == 1, "1 stairwell persisted, got %d" % stairwells.size())
+	if stairwells.size() == 1:
+		var s: StairwellData = stairwells[0]
+		check(s.type == StairwellData.TYPE_STRAIGHT, "stairwell type round-trips")
+		check(s.bottom_cell == Vector3i(4, 2, -2), "stairwell bottom cell round-trips")
+		check(s.run_cells.size() == 2, "stairwell run cells round-trip")
+
+	# Idempotent re-save clears + re-inserts (no duplication).
+	DungeonGeneratorRepository.insert_dungeon_layout(dungeon_id, [layout], [], [z0], [sw])
+	check(DungeonGeneratorRepository.get_room_zones(dungeon_id).size() == 1,
+		"re-save replaces zones (idempotent), not appends")
+
+	DungeonGeneratorRepository.delete_dungeon_layout(dungeon_id)
+	check(DungeonGeneratorRepository.get_stairwells(dungeon_id).is_empty(),
+		"delete cascades to stairwells")

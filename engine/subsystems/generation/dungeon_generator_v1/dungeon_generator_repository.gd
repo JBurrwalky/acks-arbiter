@@ -65,7 +65,14 @@ const _CELL_FIELDS := ["tf", "p", "los", "ds", "dd", "rid", "corr", "elev"]
 ## [param key_items] is the optional array of KeyItemData for the dungeon
 ## (cross-floor key placements — DG-V1.D). Defaults to [] so existing callers
 ## (DG-V1.B tests, layout-only inserts) need no change.
-static func insert_dungeon_layout(dungeon_id: String, floors: Array, key_items: Array = []) -> bool:
+## [param zones] / [param stairwells] are the composed-volume records
+## (DG-C3D.F). Default empty for the legacy per-floor path; the F.2 cutover
+## passes result.zones + result.stairwells so they persist inside the SAME
+## transaction as the floors (a half-persisted dungeon otherwise strands them).
+## The idempotent re-save's _delete_dungeon_rows already cascades room_zones +
+## stairwells, so re-running is clean.
+static func insert_dungeon_layout(dungeon_id: String, floors: Array, key_items: Array = [],
+		zones: Array = [], stairwells: Array = []) -> bool:
 	if dungeon_id.is_empty():
 		push_error("DungeonGeneratorRepository.insert_dungeon_layout: empty dungeon_id.")
 		return false
@@ -94,6 +101,13 @@ static func insert_dungeon_layout(dungeon_id: String, floors: Array, key_items: 
 			return false
 	# Insert key items after all floors (cross-floor references resolved).
 	if not _insert_key_items(dungeon_id, key_items, index_to_floor_id):
+		db.query("ROLLBACK")
+		return false
+	# Composed-volume records (DG-C3D.F). Empty for the legacy path.
+	if not zones.is_empty() and not insert_room_zones(dungeon_id, zones):
+		db.query("ROLLBACK")
+		return false
+	if not stairwells.is_empty() and not insert_stairwells(dungeon_id, stairwells):
 		db.query("ROLLBACK")
 		return false
 	db.query("COMMIT")

@@ -26,3 +26,4 @@ var placeholder_counts: Dictionary = {}       ## {trap_placeholder, unique_place
 
 var composed_volume: VoxelMapData = null      ## one contiguous volume; null until DG-C3D.F
 var stairwells: Array[StairwellData] = []     ## logical vertical connectors (empty until DG-C3D.D)
+var zones: Array[RoomZone] = []               ## per-zone stocking units (empty until DG-C3D.F cutover)
