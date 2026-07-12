@@ -42,6 +42,7 @@ func test_monster_group_roundtrip() -> void:
 	g1.alignment = "Chaotic"
 	g1.treasure_type_letter = "C"
 	g1.initial_inventory = [{"item_type": "key", "key_id": "k1"}]
+	g1.zone_index = 2   # migration 211 — non-default zone (DG-C3D.F.1)
 
 	var g2 := MonsterGroupData.new()
 	g2.floor_index = 1
@@ -76,11 +77,13 @@ func test_monster_group_roundtrip() -> void:
 			check(r1.treasure_type_letter == "C", "treasure_type_letter 'C' should round-trip")
 			check(r1.monster_name == "Goblin", "monster_name should round-trip")
 			check(r1.morale == -1, "morale -1 should round-trip")
+			check(r1.zone_index == 2, "zone_index 2 should round-trip (migration 211)")
 		check(by_room.has(5), "group in room 5 should be present")
 		if by_room.has(5):
 			var r2: MonsterGroupData = by_room[5]
 			check(not r2.is_lair, "patrol group should not be is_lair")
 			check(r2.treasure_type_letter == "", "empty treasure_type_letter should round-trip as ''")
+			check(r2.zone_index == -1, "unset zone_index round-trips as -1 (dormant default)")
 	DungeonGeneratorRepository.delete_dungeon_layout(dungeon_id)
 
 
@@ -276,6 +279,7 @@ func test_key_item_roundtrip() -> void:
 	k1.placed_in = KeyItemData.PLACED_MONSTER_INV
 	k1.placed_in_room_id = 3
 	k1.placed_on_floor_index = 1
+	k1.placed_in_zone_index = 1   # migration 211 — non-default zone (DG-C3D.F.1)
 
 	# Key 2: loose in a room on floor 2, placed_in_room_id < 0 (unassigned) -> NULL.
 	var k2 := KeyItemData.new()
@@ -301,6 +305,7 @@ func test_key_item_roundtrip() -> void:
 		check(rk1.placed_in == KeyItemData.PLACED_MONSTER_INV, "k1 placed_in should round-trip")
 		check(rk1.placed_in_room_id == 3, "k1 placed_in_room_id 3 should round-trip")
 		check(rk1.placed_on_floor_index == 1, "k1 placed_on_floor_index should be 1")
+		check(rk1.placed_in_zone_index == 1, "k1 placed_in_zone_index 1 should round-trip (migration 211)")
 
 	check(by_pos.has(Vector2i(5, 5)), "key for door at (5,5) should be present")
 	if by_pos.has(Vector2i(5, 5)):
@@ -308,6 +313,7 @@ func test_key_item_roundtrip() -> void:
 		check(rk2.placed_in == KeyItemData.PLACED_LOOSE, "k2 placed_in should round-trip")
 		check(rk2.placed_in_room_id == -1, "k2 placed_in_room_id NULL should come back as -1")
 		check(rk2.placed_on_floor_index == 2, "k2 placed_on_floor_index should be 2")
+		check(rk2.placed_in_zone_index == -1, "unset placed_in_zone_index round-trips as -1 (dormant default)")
 
 	DungeonGeneratorRepository.delete_dungeon_layout(dungeon_id)
 

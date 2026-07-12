@@ -3693,7 +3693,10 @@ CREATE TABLE IF NOT EXISTS monster_groups (
     morale               INTEGER NOT NULL DEFAULT 0,
     alignment            TEXT    NOT NULL DEFAULT '',
     treasure_type_letter TEXT,
-    initial_inventory    TEXT    NOT NULL DEFAULT '[]'
+    initial_inventory    TEXT    NOT NULL DEFAULT '[]',
+    -- Migration 211: per-zone stocking (DG-C3D.F.1, dormant). -1 = no zone
+    -- (pre-contiguous per-room model); the cutover stocks per zone.
+    zone_index           INTEGER NOT NULL DEFAULT -1
 );
 CREATE INDEX IF NOT EXISTS idx_monster_groups_dungeon ON monster_groups(dungeon_id);
 CREATE INDEX IF NOT EXISTS idx_monster_groups_floor ON monster_groups(floor_id);
@@ -3741,7 +3744,10 @@ CREATE TABLE IF NOT EXISTS key_items (
     placed_in             TEXT    NOT NULL
         CHECK(placed_in IN ('monster_group_inventory', 'treasure_hoard', 'loose_in_room')),
     placed_in_room_id     TEXT,
-    placed_on_floor_id    TEXT
+    placed_on_floor_id    TEXT,
+    -- Migration 211: per-zone key placement (DG-C3D.F.1, dormant). -1 = no zone
+    -- (pre-contiguous per-room model); the cutover places keys per zone.
+    placed_in_zone_index  INTEGER NOT NULL DEFAULT -1
 );
 CREATE INDEX IF NOT EXISTS idx_key_items_dungeon ON key_items(dungeon_id);
 

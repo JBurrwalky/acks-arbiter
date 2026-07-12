@@ -12,6 +12,10 @@ extends RefCounted
 var id: String = ""
 var floor_index: int = -1                  ## 1-based floor index during generation
 var room_id: int = -1                      ## DungeonRoomData.id within the floor
+## The stocking zone within the room (gdd-dungeon-contiguous-3d.md §9.2).
+## DORMANT until the DG-C3D.F cutover stocks per zone: -1 = "no zone" (the
+## pre-contiguous per-room model; the floor-stitched stocker never sets it).
+var zone_index: int = -1
 var monster_name: String = ""
 var monster_xp_each: int = 0
 var number_appearing: int = 0

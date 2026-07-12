@@ -38928,3 +38928,30 @@ on-tick dispatch.
 **Next session should:**
 - **DG-C3D.F — per-zone stocking + CUTOVER** (Opus): flip `DungeonGeneratorV1.generate()` to the composed pipeline (VerticalPlan → per-band layout with reservations → compose → `place_composed` → per-zone stock), bump `GENERATOR_VERSION` to 1, persist zones/stairwells/composed volume, delete the legacy per-floor validator/placer/serializer + `stair_target_*` + teleport path + Ascend/Descend menu, and run the 80-dungeon stress sweep. Map composed key Dictionaries → `KeyItemData` + `placed_in_zone_index`. The single-band byte-identity gate is the F regression proof.
 - All work stays on branch `dungeon-refactor`.
+
+## Session 2026-07-11 — DG-C3D.F.1: per-zone stocking schema + repository (dormant)
+
+**Task:** Begin DG-C3D.F. Jedidiah chose to DECOMPOSE the F cutover into F.1–F.4 (it is large + irreversible — flips generate(), deletes the legacy stair/teleport path across ~20 files, per-zone stocking with a byte-identity gate, 80-dungeon sweep). F.1 = the genuinely-additive, dormant, net-zero prep: the per-zone stocking foreign keys (`MonsterGroup.zone_index`, `KeyItem.placed_in_zone_index`) + migration + repository carry. NOTHING wired into generate() — the atomic flip stays isolated in F.2.
+**Model used:** Opus 4.8 (recon + implementation).
+**Completed:**
+- **Dormant schema fields** (gdd-dungeon-contiguous-3d.md §9.2): `MonsterGroupData.zone_index: int = -1` and `KeyItemData.placed_in_zone_index: int = -1` — the stocking zone within a room; -1 = "no zone" (the pre-contiguous per-room model; the floor-stitched generator never sets them).
+- **Migration 211** (`db/migrations/211_dungeon_zone_stocking_fields.sql`, additive only): `ALTER TABLE monster_groups ADD COLUMN zone_index INTEGER NOT NULL DEFAULT -1`; `ALTER TABLE key_items ADD COLUMN placed_in_zone_index INTEGER NOT NULL DEFAULT -1`. `db/schema.sql` updated in tandem (both columns appended to the two tables). Mirrors the DG-C3D.A migration-210 dormant-additive pattern (default = today's semantics; no row backfills — old dungeons regenerate at the F.2 version bump per §13).
+- **Repository carry** (`dungeon_generator_repository.gd`): `_insert_monster_groups` + `_row_to_monster_group` carry `zone_index`; `_insert_key_items` + `_row_to_key_item` carry `placed_in_zone_index` (defensive `.get(..., -1)` on read). `room_zones`/`stairwells`/composed-volume persistence already existed (DG-C3D.A via `insert_room_zones`/`insert_stairwells` + `voxel_map_cells` + `zone_index`); F.1 completes the last two per-zone FKs.
+- **Docs:** build-plan DG-C3D.F row → DECOMPOSED F.1–F.4 with F.1 DONE + the F.2/F.3/F.4 split recorded.
+**Decisions made:**
+- **F decomposed into F.1–F.4; the per-zone stocker folds into F.2, not F.1.** Deeper recon showed the stocker is NOT cleanly parallel to `stock_floor` the way the validator/placer were: its outputs (the §11.4 trap-door secret+locked upgrades, the §15 hoard cell placements) target the COMPOSED VOLUME that only the cutover assembles. So "build the stocker parallel" would produce results with nowhere honest to land. F.1 delivers the truly-additive schema/repository; the stocker rework belongs with the atomic `generate()` flip in F.2.
+- **-1 = "no zone" sentinel** (not 0) so a persisted pre-contiguous monster group / key is unambiguously distinguishable from a zone-0 (main-floor) placement once F.2 starts writing real zone indices.
+**Interfaces defined or changed:**
+- `MonsterGroupData.zone_index: int = -1` (dormant); `KeyItemData.placed_in_zone_index: int = -1` (dormant).
+- `monster_groups.zone_index` + `key_items.placed_in_zone_index` columns (migration 211).
+- Repository insert/load for `monster_groups` + `key_items` now round-trip the zone index (no signature changes — internal helpers).
+**Database changes:** Migration 211 (see Completed). Number 211 (registry tops out at 210; migrations auto-discovered by `CampaignRepository._run_migrations` scanning `res://db/migrations/*.sql`).
+**Tests added/updated:**
+- `test_dungeon_repository_stocked_roundtrip.gd`: `test_monster_group_roundtrip` asserts a non-default `zone_index = 2` and a default `-1` round-trip; `test_key_item_roundtrip` asserts `placed_in_zone_index = 1` and default `-1` round-trip.
+- Full suite (double-run, isolated): **549 passed / 16 failed — net-zero** (no new suite; extended assertions on existing round-trip tests; run 2 booting the already-migrated DB doubles as the migration-211 idempotent-re-run proof).
+**Known issues:**
+- The per-zone stocker + the atomic cutover are F.2 (the big, dangerous step). The stocker must preserve single-band byte-identity (fixed-seed single-floor dungeon stocks identically before/after) — the F.2 regression gate.
+- F.3 legacy-deletion surface mapped: `StairData`/`dungeon_stair_data.gd` (17 files), `stair_target_*`/`get_stair_target`/`_apply_stair_overlays`/`_convert_legacy_to_voxel`/`required_stair_positions`/StairAnchor (11 files), plus the legacy per-floor `validate_layout`/`validate_solvability`/`place` methods kept alive by E's parallel-path discipline.
+**Next session should:**
+- **DG-C3D.F.2 — per-zone stocker + atomic cutover** (Opus): wire `generate()` to VerticalPlan → per-band layout(reservations) → `DungeonVolumeComposer.compose` → `DungeonKeyLeverPlacer.place_composed` → per-zone stock → `validate_composed_solvability`; stock zones of chamber rooms (zone 0 first = byte-identical to `stock_floor`; balcony zones extra) at band tier; propagate trap-door upgrades + hoard cells onto the composed volume; map composed key Dictionaries → `KeyItemData` + `placed_in_zone_index` and monster groups → `zone_index`; bump `DungeonGeneratorV1.GENERATOR_VERSION` to 1; `current_purpose` rollup on RoomData. The single-band byte-identity test is the F.2 gate. Keep it ONE atomic commit.
+- All work stays on branch `dungeon-refactor`.

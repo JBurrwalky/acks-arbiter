@@ -330,8 +330,8 @@ static func _insert_monster_groups(dungeon_id: String, floor_id: String, groups:
 			"""INSERT INTO monster_groups
 				(id, dungeon_id, floor_id, room_id, monster_name, monster_xp_each,
 				 number_appearing, hd, associated_creatures, is_lair, morale,
-				 alignment, treasure_type_letter, initial_inventory)
-			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+				 alignment, treasure_type_letter, initial_inventory, zone_index)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 			[
 				pk, dungeon_id, floor_id, str(group.room_id),
 				group.monster_name, group.monster_xp_each, group.number_appearing,
@@ -340,6 +340,7 @@ static func _insert_monster_groups(dungeon_id: String, floor_id: String, groups:
 				group.morale, group.alignment,
 				ttl,
 				JSON.stringify(group.initial_inventory),
+				group.zone_index,
 			])
 		if not ok:
 			push_error("DungeonGeneratorRepository: monster_groups insert failed (floor %s, room %d)." % [floor_id, group.room_id])
@@ -413,12 +414,14 @@ static func _insert_key_items(dungeon_id: String, keys: Array, index_to_floor_id
 		var ok: bool = db.query_with_bindings(
 			"""INSERT INTO key_items
 				(id, dungeon_id, opens_door_floor_id, opens_door_position_x,
-				 opens_door_position_y, placed_in, placed_in_room_id, placed_on_floor_id)
-			   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+				 opens_door_position_y, placed_in, placed_in_room_id, placed_on_floor_id,
+				 placed_in_zone_index)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 			[
 				pk, dungeon_id, opens_floor_id,
 				key.opens_door_position.x, key.opens_door_position.y,
 				key.placed_in, room_id_val, placed_floor_id,
+				key.placed_in_zone_index,
 			])
 		if not ok:
 			push_error("DungeonGeneratorRepository: key_items insert failed (dungeon %s)." % dungeon_id)
@@ -724,6 +727,8 @@ static func _row_to_monster_group(row: Dictionary, floor_index: int) -> MonsterG
 	g.treasure_type_letter = "" if ttl_raw == null else str(ttl_raw)
 	var inv_parsed: Variant = JSON.parse_string(str(row["initial_inventory"]))
 	g.initial_inventory = inv_parsed if inv_parsed is Array else []
+	# Migration 211 — per-zone stocking (DG-C3D.F.1, dormant; -1 = no zone).
+	g.zone_index = int(row.get("zone_index", -1))
 	return g
 
 
@@ -782,6 +787,8 @@ static func _row_to_key_item(row: Dictionary, floor_level: Dictionary) -> KeyIte
 	else:
 		k.placed_on_floor_index = floor_level.get(str(placed_fid_raw), -1)
 
+	# Migration 211 — per-zone key placement (DG-C3D.F.1, dormant; -1 = no zone).
+	k.placed_in_zone_index = int(row.get("placed_in_zone_index", -1))
 	return k
 
 

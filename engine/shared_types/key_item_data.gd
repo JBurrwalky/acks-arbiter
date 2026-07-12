@@ -24,3 +24,7 @@ var opens_door_position: Vector2i = Vector2i(-1, -1)
 var placed_in: String = PLACED_LOOSE
 var placed_in_room_id: int = -1                    ## DungeonRoomData.id of the room holding the key
 var placed_on_floor_index: int = -1                ## floor holding the key
+## The stocking zone within the room holding the key (gdd-dungeon-contiguous-3d.md
+## §9.2). DORMANT until the DG-C3D.F cutover places keys per zone: -1 = "no zone"
+## (the pre-contiguous per-room model; the floor-stitched placer never sets it).
+var placed_in_zone_index: int = -1
