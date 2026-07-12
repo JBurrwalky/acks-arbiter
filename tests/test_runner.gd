@@ -589,6 +589,8 @@ extends Node
 @onready var _dungeon_layout_reservations_tests = $DungeonLayoutReservationsTests
 # 2026-07-11 — DG-C3D.D: vertical composition (volume composer)
 @onready var _dungeon_volume_composer_tests = $DungeonVolumeComposerTests
+# 2026-07-11 — DG-C3D.E: 3D-graph validation + spiral movement + composed placer
+@onready var _dungeon_composed_navigation_tests = $DungeonComposedNavigationTests
 # 2026-05-28 — Treasure item backing (value_cp + hoard→inventory bridge)
 @onready var _treasure_instantiator_tests = $TreasureInstantiatorTests
 @onready var _magic_item_catalog_tests = $MagicItemCatalogTests
@@ -1186,6 +1188,8 @@ func run() -> void:
 			_dungeon_layout_reservations_tests,
 			# 2026-07-11 — DG-C3D.D: vertical composition (volume composer)
 			_dungeon_volume_composer_tests,
+			# 2026-07-11 — DG-C3D.E: 3D-graph validation + spiral + composed placer
+			_dungeon_composed_navigation_tests,
 			_treasure_instantiator_tests,
 			_magic_item_catalog_tests,
 			_character_ac_calculator_tests,

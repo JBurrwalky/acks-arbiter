@@ -939,65 +939,14 @@ func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
 			return false
 
 
-## Checks if a stair or ramp feature connects [param from_pos] to
-## [param to_pos] (which must differ by exactly 1 level).
+## Checks if a stair / ramp / spiral feature connects [param from_pos] to
+## [param to_pos] (which must differ by exactly 1 level). Delegates to the
+## single step-legality home `MovementRules.connects_via_feature` (DG-C3D.E) so
+## combat/exploration movement, the navigability validator, and the key/lever
+## placer share ONE stair predicate — and this is where combat picks up the
+## spiral-stair clause (voxel GDD §10.5).
 func _has_stair_connection(from_pos: Vector3i, to_pos: Vector3i) -> bool:
-	var going_up: bool = to_pos.z > from_pos.z
-	var h_delta := Vector2i(to_pos.x - from_pos.x, to_pos.y - from_pos.y)
-
-	# Find the direction suffix for this horizontal movement
-	var suffix := _direction_suffix_for_delta(h_delta)
-	if suffix.is_empty():
-		# Pure vertical movement (no horizontal delta) — check for ladder
-		var from_cell := _voxel_map.get_cell(from_pos)
-		var to_cell := _voxel_map.get_cell(to_pos)
-		return from_cell.feature == "ladder" or to_cell.feature == "ladder"
-
-	var from_cell := _voxel_map.get_cell(from_pos)
-	var to_cell := _voxel_map.get_cell(to_pos)
-
-	if going_up:
-		# From cell has stairs_up_<suffix> or ramp_<suffix>
-		if from_cell.feature == "stairs_up_" + suffix:
-			return true
-		if from_cell.feature == "ramp_" + suffix:
-			return true
-		# To cell has stairs_down_<reverse> (entering from above)
-		var rev := _reverse_direction(suffix)
-		if to_cell.feature == "stairs_down_" + rev:
-			return true
-		if to_cell.feature == "ramp_" + rev:
-			return true
-	else:
-		# Going down: from cell has stairs_down_<suffix>
-		if from_cell.feature == "stairs_down_" + suffix:
-			return true
-		if from_cell.feature == "ramp_" + suffix:
-			return true
-		var rev := _reverse_direction(suffix)
-		if to_cell.feature == "stairs_up_" + rev:
-			return true
-		if to_cell.feature == "ramp_" + rev:
-			return true
-
-	return false
-
-
-## Maps a horizontal delta to its compass direction suffix string.
-func _direction_suffix_for_delta(delta: Vector2i) -> String:
-	for i in VoxelGrid.DIRECTION_OFFSETS.size():
-		if VoxelGrid.DIRECTION_OFFSETS[i] == delta:
-			return VoxelGrid.Direction.keys()[i]
-	return ""
-
-
-## Returns the opposite compass direction.
-func _reverse_direction(dir: String) -> String:
-	const REVERSE := {
-		"N": "S", "NE": "SW", "E": "W", "SE": "NW",
-		"S": "N", "SW": "NE", "W": "E", "NW": "SE",
-	}
-	return REVERSE.get(dir, "")
+	return MovementRules.connects_via_feature(_voxel_map, from_pos, to_pos)
 
 
 ## Reconstructs a path from BFS visited dictionary (3D version).

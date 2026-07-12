@@ -18,7 +18,10 @@ const MIN_LEVEL: int = -20
 ## A cell is supported if:
 ##   1. Its floor_type is not "none" (floor under the walker's feet), OR
 ##   2. The cell directly below (level - 1) is solid (standing on a wall/pillar), OR
-##   3. The cell has a ladder feature (attached to climbing surface).
+##   3. The cell has a ladder feature (attached to climbing surface), OR
+##   4. The cell is a stairs_spiral shaft step — the winding stair holds a
+##      climber even at the intervening level where the slab is open
+##      (gdd-voxel-tactical-architecture.md §10.5; DG-C3D.E).
 static func has_support(map: VoxelMapData, pos: Vector3i) -> bool:
 	var cell := map.get_cell(pos)
 	if cell.floor_type != "none":
@@ -26,7 +29,7 @@ static func has_support(map: VoxelMapData, pos: Vector3i) -> bool:
 	var below := map.get_cell(Vector3i(pos.x, pos.y, pos.z - 1))
 	if below.solidity == "solid":
 		return true
-	if cell.feature == "ladder":
+	if cell.feature == "ladder" or cell.feature == "stairs_spiral":
 		return true
 	return false
 

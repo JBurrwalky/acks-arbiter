@@ -579,3 +579,332 @@ static func _neighbours(pos: Vector2i) -> Array[Vector2i]:
 ## Encoded cell key for multi-floor dictionaries.
 static func _cell_key(floor_idx: int, pos: Vector2i) -> String:
 	return "%d:%d:%d" % [floor_idx, pos.x, pos.y]
+
+
+# =========================================================================
+# DG-C3D.E — composed-volume discovery-order placement (over zones)
+# =========================================================================
+#
+# A single discovery-order fixpoint over the composed 3D volume, using
+# MovementRules for step legality (the SAME predicate the navigability
+# validator uses — no independent stair/support logic here). When the frontier
+# reaches a gated door its key/lever is placed in a fully-discovered ZONE
+# (excluding the entrance zone and circulation-room zones), so every key is
+# reachable before its door by construction. Repair ladder per contiguous GDD
+# §10.3. Mutates door cells + records in place. The legacy per-floor place()
+# above survives until the DG-C3D.F cutover.
+
+## Returns {keys: Array[Dictionary], wired_levers: Dictionary, solved: bool,
+##          warnings: Array}. Each key = {opens_door_cell: Vector3i, room_id,
+## band, zone_index, zone_cells: Array[Vector3i]}. wired_levers maps a portcullis
+## door cell -> its lever cell.
+static func place_composed(
+		volume: VoxelMapData,
+		zones: Array[RoomZone],
+		stairwells: Array[StairwellData],
+		rooms: Array[DungeonRoomData],
+		doors: Array,
+		band_walk: Dictionary,
+		entrance_pos: Vector3i,
+		rng: RandomNumberGenerator) -> Dictionary:
+	var out_keys: Array = []
+	var wired_levers: Dictionary = {}
+	var warnings: Array = []
+
+	# Zone bookkeeping: zone_key "room:zone" -> {band, total}; cell -> zone_key.
+	var zone_meta: Dictionary = {}
+	var cell_to_zone: Dictionary = {}
+	for z: RoomZone in zones:
+		var zk: String = "%d:%d" % [z.room_id, z.zone_index]
+		var walk: int = int(band_walk.get(z.band, 0))
+		var vcells: Array[Vector3i] = []
+		for c: Vector2i in z.cells:
+			var vc := Vector3i(c.x, c.y, walk)
+			vcells.append(vc)
+			cell_to_zone[vc] = zk
+		zone_meta[zk] = {"band": z.band, "total": z.cells.size(), "room_id": z.room_id, "zone_index": z.zone_index, "walk": walk, "cells": vcells}
+
+	var kind_by_room: Dictionary = {}
+	for r: DungeonRoomData in rooms:
+		kind_by_room[r.id] = r.kind
+
+	var doors_by_cell: Dictionary = {}
+	for rec in doors:
+		doors_by_cell[rec["cell"]] = rec
+
+	var st: Dictionary = {
+		"reachable": {},          # Vector3i -> true
+		"queue": [],              # Array[Vector3i]
+		"reached_count": {},      # zone_key -> int
+		"full_zones": [],         # [zone_key] discovery order
+		"full_set": {},           # zone_key -> true
+		"pending": [],            # [Vector3i] gated door cells, hit order
+		"pending_set": {},
+		"secret_blockers": [],    # [Vector3i] secret+unlocked door cells
+		"secret_blocker_set": {},
+		"zone_meta": zone_meta,
+		"cell_to_zone": cell_to_zone,
+		"doors_by_cell": doors_by_cell,
+	}
+
+	var entrance_zone_key: String = str(cell_to_zone.get(entrance_pos, ""))
+	_mark_reached_3d(volume, entrance_pos, st)
+
+	var guard: int = 0
+	var max_iters: int = doors.size() + zones.size() + 4
+	while true:
+		guard += 1
+		if guard > max_iters:
+			push_error("DungeonKeyLeverPlacer.place_composed: iteration cap %d exceeded — bailing." % max_iters)
+			break
+		_drain_3d(volume, st)
+
+		if not (st["pending"] as Array).is_empty():
+			var candidates: Array = _candidate_zones(st, entrance_zone_key, kind_by_room)
+			if candidates.is_empty():
+				# §10.4 — gated door on the sole entrance path: downgrade the first.
+				var first_cell: Vector3i = (st["pending"] as Array).pop_front()
+				(st["pending_set"] as Dictionary).erase(first_cell)
+				_downgrade_composed_door(volume, doors_by_cell[first_cell])
+				_mark_reached_3d(volume, first_cell, st)
+				continue
+			for door_cell: Vector3i in st["pending"]:
+				var rec: Dictionary = doors_by_cell[door_cell]
+				if rec["type"] == DungeonDoorData.TYPE_PORTCULLIS:
+					_wire_lever_composed(volume, door_cell, candidates, st, rng, wired_levers)
+				else:
+					out_keys.append(_make_key_composed(door_cell, rec, candidates, st, rng))
+				_mark_reached_3d(volume, door_cell, st)
+			(st["pending"] as Array).clear()
+			st["pending_set"] = {}
+			continue
+
+		# Frontier exhausted, nothing gated. Done unless mandatory content is
+		# still unreached behind a secret+unlocked door (no key concept).
+		if _coverage_complete_composed(volume, st, zones, stairwells, band_walk):
+			return {"keys": out_keys, "wired_levers": wired_levers, "solved": true, "warnings": warnings}
+		if not _clear_one_blocking_secret_composed(volume, st):
+			# Rule 3: unreached content with no frontier door explaining it — a
+			# structural composition defect. Never geometric-repair from the key
+			# layer; the whole-dungeon re-seed ladder (DG-C3D.F) owns this.
+			warnings.append("DungeonKeyLeverPlacer.place_composed: unreached content with no frontier secret door — structural defect (rule 3), re-seed required.")
+			return {"keys": out_keys, "wired_levers": wired_levers, "solved": false, "warnings": warnings}
+
+	return {"keys": out_keys, "wired_levers": wired_levers, "solved": false, "warnings": warnings}
+
+
+## Mark a composed cell reached; update zone discovery counts (promoting a zone
+## to "full" when its last cell is reached) and enqueue for neighbour expansion.
+static func _mark_reached_3d(volume: VoxelMapData, pos: Vector3i, st: Dictionary) -> void:
+	if (st["reachable"] as Dictionary).has(pos):
+		return
+	st["reachable"][pos] = true
+	(st["queue"] as Array).append(pos)
+	var zk: String = str((st["cell_to_zone"] as Dictionary).get(pos, ""))
+	if zk == "":
+		return
+	var count: int = int((st["reached_count"] as Dictionary).get(zk, 0)) + 1
+	st["reached_count"][zk] = count
+	var meta: Dictionary = st["zone_meta"][zk]
+	if count >= int(meta["total"]) and not (st["full_set"] as Dictionary).has(zk):
+		st["full_set"][zk] = true
+		(st["full_zones"] as Array).append(zk)
+
+
+## Drain the frontier: walkable open neighbours are reached; door cells are
+## classified (initially-passable -> traverse; secret+unlocked -> blocker;
+## gated -> pending) using the door record, not per-cell state.
+static func _drain_3d(volume: VoxelMapData, st: Dictionary) -> void:
+	var queue: Array = st["queue"]
+	var doors_by_cell: Dictionary = st["doors_by_cell"]
+	while not queue.is_empty():
+		var cur: Vector3i = queue.pop_front()
+		for nb: Vector3i in VoxelGrid.get_neighbors_3d(cur):
+			if (st["reachable"] as Dictionary).has(nb):
+				continue
+			if not MovementRules.is_ground_step_open(volume, cur, nb):
+				continue
+			if doors_by_cell.has(nb):
+				var rec: Dictionary = doors_by_cell[nb]
+				if _rec_initially_passable(rec):
+					_mark_reached_3d(volume, nb, st)
+				elif rec["is_secret"] and not _rec_needs_key(rec):
+					if not (st["secret_blocker_set"] as Dictionary).has(nb):
+						st["secret_blocker_set"][nb] = true
+						(st["secret_blockers"] as Array).append(nb)
+				else:
+					if not (st["pending_set"] as Dictionary).has(nb):
+						st["pending_set"][nb] = true
+						(st["pending"] as Array).append(nb)
+			else:
+				_mark_reached_3d(volume, nb, st)
+
+
+## Door record initially passable with no key/lever: arch, curtain, unlocked,
+## bashable (wood) non-secret locked/trapped.
+static func _rec_initially_passable(rec: Dictionary) -> bool:
+	if rec["is_secret"]:
+		return false
+	var t: String = rec["type"]
+	if t == DungeonDoorData.TYPE_ARCH or DungeonDoorData.is_curtain(rec["material"]):
+		return true
+	if t == DungeonDoorData.TYPE_UNLOCKED:
+		return true
+	if t == DungeonDoorData.TYPE_LOCKED or t == DungeonDoorData.TYPE_TRAPPED:
+		return DungeonDoorData.is_bashable(rec["material"])
+	return false
+
+
+## Door record requires a placed key: locked/trapped AND (secret OR stone/metal).
+static func _rec_needs_key(rec: Dictionary) -> bool:
+	var t: String = rec["type"]
+	if t != DungeonDoorData.TYPE_LOCKED and t != DungeonDoorData.TYPE_TRAPPED:
+		return false
+	if rec["is_secret"]:
+		return true
+	return rec["material"] == DungeonDoorData.MATERIAL_STONE or rec["material"] == DungeonDoorData.MATERIAL_METAL
+
+
+## Candidate zones for key/lever placement: fully-discovered zones excluding the
+## entrance zone and every circulation-room zone. Discovery order (deterministic).
+static func _candidate_zones(st: Dictionary, entrance_zone_key: String, kind_by_room: Dictionary) -> Array:
+	var out: Array = []
+	for zk: String in st["full_zones"]:
+		if zk == entrance_zone_key:
+			continue
+		var meta: Dictionary = st["zone_meta"][zk]
+		if kind_by_room.get(meta["room_id"], DungeonRoomData.KIND_CHAMBER) == DungeonRoomData.KIND_CIRCULATION:
+			continue
+		if int(meta["total"]) == 0:
+			continue
+		out.append(zk)
+	return out
+
+
+## Weighted pick among candidate zones by band proximity to the door
+## (same band 5 / adjacent 2 / distant 1).
+static func _pick_zone(candidates: Array, zone_meta: Dictionary, door_band: int, rng: RandomNumberGenerator) -> String:
+	var weights: Array[int] = []
+	var total: int = 0
+	for zk: String in candidates:
+		var delta: int = absi(int(zone_meta[zk]["band"]) - door_band)
+		var w: int = 5 if delta == 0 else (2 if delta == 1 else 1)
+		weights.append(w)
+		total += w
+	var roll: int = rng.randi_range(0, total - 1)
+	var acc: int = 0
+	for i: int in range(candidates.size()):
+		acc += weights[i]
+		if roll < acc:
+			return candidates[i]
+	return candidates[candidates.size() - 1]
+
+
+## Build a composed key record for a gated door, choosing a candidate zone
+## weighted by band proximity to the door.
+static func _make_key_composed(door_cell: Vector3i, rec: Dictionary, candidates: Array, st: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var zone_meta: Dictionary = st["zone_meta"]
+	var zk: String = _pick_zone(candidates, zone_meta, int(rec.get("band", 0)), rng)
+	var meta: Dictionary = zone_meta[zk]
+	return {
+		"opens_door_cell": door_cell,
+		"room_id": int(meta["room_id"]),
+		"zone_index": int(meta["zone_index"]),
+		"band": int(meta["band"]),
+		"zone_cells": (meta["cells"] as Array).duplicate(),
+	}
+
+
+## Wire a portcullis to a lever cell in a discovered zone; mutate the lever cell.
+static func _wire_lever_composed(volume: VoxelMapData, door_cell: Vector3i, candidates: Array, st: Dictionary, rng: RandomNumberGenerator, wired_levers: Dictionary) -> void:
+	var zone_meta: Dictionary = st["zone_meta"]
+	# Weight candidate zones by band proximity to the portcullis (§10.3 step 3),
+	# reading the door's real band from its record — not a hardcoded 0.
+	var door_band: int = int((st["doors_by_cell"] as Dictionary)[door_cell].get("band", 0))
+	var zk: String = _pick_zone(candidates, zone_meta, door_band, rng)
+	var cells: Array = zone_meta[zk]["cells"]
+	if cells.is_empty():
+		return  # unwired: forceable per §9.2
+	var lever_cell: Vector3i = cells[0]
+	wired_levers[door_cell] = lever_cell
+	volume.set_lever_link(lever_cell, door_cell)
+	var cell: VoxelCell = volume.get_cell(lever_cell)
+	cell.feature = "lever_portcullis_%d_%d" % [door_cell.x, door_cell.y]
+	volume.set_cell(lever_cell, cell)
+
+
+## §10.4 downgrade a gated composed door to plain unlocked (clear lock + secret).
+static func _downgrade_composed_door(volume: VoxelMapData, rec: Dictionary) -> void:
+	push_warning("DungeonKeyLeverPlacer.place_composed: no candidate zone for %s door at %s — downgrading to unlocked." % [rec["type"], str(rec["cell"])])
+	rec["type"] = DungeonDoorData.TYPE_UNLOCKED
+	rec["material"] = DungeonDoorData.MATERIAL_WOOD_STANDARD
+	rec["is_secret"] = false
+	_restamp_door(volume, rec)
+
+
+## Clear ONE secret+unlocked frontier door whose far side is still unreached.
+static func _clear_one_blocking_secret_composed(volume: VoxelMapData, st: Dictionary) -> bool:
+	var reachable: Dictionary = st["reachable"]
+	for door_cell: Vector3i in st["secret_blockers"]:
+		var rec: Dictionary = st["doors_by_cell"][door_cell]
+		if not rec["is_secret"]:
+			continue
+		var blocks_unreached: bool = false
+		for nb: Vector3i in VoxelGrid.get_neighbors_3d(door_cell):
+			if reachable.has(nb):
+				continue
+			if MovementRules.is_ground_step_open(volume, door_cell, nb):
+				blocks_unreached = true
+				break
+		if not blocks_unreached:
+			continue
+		push_warning("DungeonKeyLeverPlacer.place_composed: secret door at %s gates mandatory content with no key path — clearing is_secret (§10.3 repair)." % str(door_cell))
+		rec["is_secret"] = false
+		_restamp_door(volume, rec)
+		_mark_reached_3d(volume, door_cell, st)
+		return true
+	return false
+
+
+## Re-stamp a door cell from its (possibly mutated) record.
+static func _restamp_door(volume: VoxelMapData, rec: Dictionary) -> void:
+	var cell: VoxelCell = volume.get_cell(rec["cell"])
+	if rec["is_secret"]:
+		cell.door_type = "secret"
+		cell.door_state = "closed"
+		cell.door_detected = false
+	else:
+		match rec["type"]:
+			DungeonDoorData.TYPE_ARCH:
+				cell.door_type = "arch"
+				cell.door_state = "open"
+			DungeonDoorData.TYPE_UNLOCKED:
+				cell.door_type = "unlocked"
+				cell.door_state = "closed"
+			DungeonDoorData.TYPE_LOCKED, DungeonDoorData.TYPE_TRAPPED:
+				cell.door_type = rec["type"]
+				cell.door_state = "locked"
+			DungeonDoorData.TYPE_PORTCULLIS:
+				cell.door_type = "portcullis"
+				cell.door_state = "closed"
+	volume.set_cell(rec["cell"], cell)
+
+
+## Coverage: every zone and every stairwell reached (matches the solvability pass).
+static func _coverage_complete_composed(volume: VoxelMapData, st: Dictionary, zones: Array[RoomZone], stairwells: Array[StairwellData], band_walk: Dictionary) -> bool:
+	var reachable: Dictionary = st["reachable"]
+	for z: RoomZone in zones:
+		if int((st["zone_meta"][("%d:%d" % [z.room_id, z.zone_index])] as Dictionary)["total"]) == 0:
+			continue
+		var any: bool = false
+		var walk: int = int(band_walk.get(z.band, 0))
+		for c: Vector2i in z.cells:
+			if reachable.has(Vector3i(c.x, c.y, walk)):
+				any = true
+				break
+		if not any:
+			return false
+	for sw: StairwellData in stairwells:
+		if not reachable.has(sw.bottom_cell) or not reachable.has(sw.top_cell):
+			return false
+	return true

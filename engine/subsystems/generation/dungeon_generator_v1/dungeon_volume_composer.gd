@@ -78,6 +78,12 @@ class ComposeResult:
 	var stairwells: Array[StairwellData] = []
 	var zones: Array[RoomZone] = []
 	var rooms: Array[DungeonRoomData] = []
+	## Door records for the composed-volume validator / key-lever placer
+	## (DG-C3D.E): the VoxelCell carries door_state/type but NOT door_material,
+	## so the material (bashable vs key-needing) and the dungeon-unique connected
+	## room ids travel here. Entries: {cell: Vector3i, type, is_secret,
+	## material, band, connects: Array[int]}.
+	var doors: Array[Dictionary] = []
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +141,7 @@ static func compose(
 	for band in plan.bands:
 		var layout: DungeonLayout = layout_by_floor[band.floor_index]
 		var slot: int = slot_by_floor[band.floor_index]
-		_stamp_band(volume, layout, band.walk_level, slot, result.rooms)
+		_stamp_band(volume, layout, band.walk_level, slot, result.rooms, result.doors)
 
 	_cap_top(volume, plan)
 
@@ -185,7 +191,8 @@ static func _stamp_band(
 		layout: DungeonLayout,
 		walk: int,
 		slot: int,
-		out_rooms: Array[DungeonRoomData]) -> void:
+		out_rooms: Array[DungeonRoomData],
+		out_doors: Array[Dictionary]) -> void:
 	var headroom: int = walk + HEADROOM_OFFSET
 	for x in range(layout.grid_width):
 		for y in range(layout.grid_height):
@@ -193,16 +200,31 @@ static func _stamp_band(
 			var global_room: int = _global_room_id(slot, cell.room_id)
 			_stamp_column(volume, x, y, walk, headroom, cell, global_room)
 
-	# Door overlays onto the walk-level cells (§8.1 door model, cell-based).
+	# Door overlays onto the walk-level cells (§8.1 door model, cell-based) + a
+	# door record for the composed-volume validator / placer (DG-C3D.E): the
+	# VoxelCell carries state/type but not material or the dungeon-unique
+	# connected rooms, so those travel on the record.
 	for d in layout.doors:
 		var door: DungeonDoorData = d
 		if door.position.x < 0 or door.position.y < 0:
 			continue
 		if door.position.x >= layout.grid_width or door.position.y >= layout.grid_height:
 			continue
-		var wc: VoxelCell = volume.get_cell(Vector3i(door.position.x, door.position.y, walk))
+		var door_cell := Vector3i(door.position.x, door.position.y, walk)
+		var wc: VoxelCell = volume.get_cell(door_cell)
 		_apply_door(wc, door)
 		volume.set_cell(wc.pos, wc)
+		var connects_global: Array[int] = []
+		for local_id in door.connects:
+			connects_global.append(_global_room_id(slot, local_id))
+		out_doors.append({
+			"cell": door_cell,
+			"type": door.type,
+			"is_secret": door.is_secret,
+			"material": door.door_material,
+			"band": layout.level_number,
+			"connects": connects_global,
+		})
 
 	# Updated RoomData (band / kind / global id). Zones are filled in C4.
 	for r in layout.rooms:
