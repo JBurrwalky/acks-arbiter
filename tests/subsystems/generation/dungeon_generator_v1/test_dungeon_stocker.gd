@@ -71,6 +71,11 @@ func run_all_tests() -> void:
 	# DG-C3D.F.2a — project per-band stocking onto composed zones.
 	test_map_band_stocking_to_zones()
 	test_stock_floor_skips_circulation_rooms()
+	# DG-C3D.F.2d — balcony/gallery zone stocking.
+	test_balcony_stream_zero_draw_without_zones()
+	test_balcony_zone_stocks_on_zone_band_layout()
+	test_balcony_doorless_trap_demotes_to_empty()
+	test_balcony_doorless_trap_swaps_to_doored_zone()
 
 	if not has_failures():
 		print("DungeonStocker: all tests passed.")
@@ -498,3 +503,192 @@ func test_stock_floor_skips_circulation_rooms() -> void:
 	check(circ.monster_group_id == "", "circulation room gets no monster group")
 	check(layout.monster_groups.is_empty(), "no monster groups stocked for a circulation-only floor")
 	check(layout.treasure_hoards.is_empty(), "no treasure hoards stocked for a circulation-only floor")
+
+
+# ---------------------------------------------------------------------------
+# DG-C3D.F.2d — balcony/gallery zone stocking
+# ---------------------------------------------------------------------------
+
+## Build a minimal composed fixture: one home-band chamber (global 1000, home
+## band 2) with a balcony zone on band 1, plus band layouts for floors 1-2.
+## door_specs: array of {cell: Vector3i, connects: Array} access-door records.
+func _balcony_fixture(zone_cells: Array, door_specs: Array = [], second_zone_cells: Array = []) -> Dictionary:
+	var cr := DungeonVolumeComposer.ComposeResult.new()
+	var room := DungeonRoomData.new()
+	room.id = 1000
+	room.band = 2
+	room.kind = DungeonRoomData.KIND_CHAMBER
+	cr.rooms = [room]
+	var zone := RoomZone.new()
+	zone.room_id = 1000
+	zone.zone_index = 1
+	zone.band = 1
+	zone.zone_type = RoomZone.ZONE_TYPE_BALCONY
+	for c in zone_cells:
+		zone.cells.append(c)
+	cr.zones = [zone]
+	var zone2: RoomZone = null
+	if not second_zone_cells.is_empty():
+		var room2 := DungeonRoomData.new()
+		room2.id = 1001
+		room2.band = 2
+		room2.kind = DungeonRoomData.KIND_CHAMBER
+		cr.rooms.append(room2)
+		zone2 = RoomZone.new()
+		zone2.room_id = 1001
+		zone2.zone_index = 1
+		zone2.band = 1
+		zone2.zone_type = RoomZone.ZONE_TYPE_BALCONY
+		for c in second_zone_cells:
+			zone2.cells.append(c)
+		cr.zones.append(zone2)
+	cr.volume = VoxelMapData.new()
+	for spec in door_specs:
+		var cell: Vector3i = spec["cell"]
+		var vc := VoxelCell.new()
+		vc.col = cell.x
+		vc.row = cell.y
+		vc.level = cell.z
+		vc.solidity = "air"
+		vc.feature = "open"
+		vc.floor_type = "stone"
+		vc.door_state = "closed"
+		vc.door_type = "unlocked"
+		cr.volume.set_cell(cell, vc)
+		var connects: Array[int] = []
+		for cid in spec["connects"]:
+			connects.append(int(cid))
+		cr.doors.append({
+			"cell": cell,
+			"type": DungeonDoorData.TYPE_UNLOCKED,
+			"is_secret": false,
+			"material": DungeonDoorData.MATERIAL_WOOD_STANDARD,
+			"band": 1,
+			"connects": connects,
+		})
+	var floors: Array[DungeonLayout] = []
+	for fi in [1, 2]:
+		var fl := DungeonLayout.new()
+		fl.level_number = fi
+		fl.floor_tier = fi  # discriminating: band 1 tier 1, band 2 tier 2
+		floors.append(fl)
+	return {"cr": cr, "floors": floors, "zone": zone, "zone2": zone2,
+		"band_walk": {1: 0, 2: -2}}
+
+
+## Probe for a balcony-stream seed whose FIRST d100 lands in the wanted
+## category (and optionally whose SECOND avoids a category) — against the
+## real dungeon_stocking table, so range edits cannot silently break the test.
+func _probe_balcony_seed(first_category: String, second_must_not_be: String = "") -> int:
+	var rows: Array = _loader.rows("dungeon_stocking")
+	for s in range(1, 5000):
+		var rng := DungeonStocker.derive_balcony_rng(s)
+		if DungeonStocker._match_stocking_category(rows, rng.randi_range(1, 100)) != first_category:
+			continue
+		if second_must_not_be != "":
+			if DungeonStocker._match_stocking_category(rows, rng.randi_range(1, 100)) == second_must_not_be:
+				continue
+		return s
+	return -1
+
+
+## Conventions §118 zero-draw guard: a compose result with NO zone_index >= 1
+## zones must consume nothing from the balcony stream.
+func test_balcony_stream_zero_draw_without_zones() -> void:
+	var cr := DungeonVolumeComposer.ComposeResult.new()
+	var room := DungeonRoomData.new()
+	room.id = 0
+	room.band = 1
+	room.kind = DungeonRoomData.KIND_CHAMBER
+	cr.rooms = [room]
+	var z0 := RoomZone.new()
+	z0.room_id = 0
+	z0.zone_index = 0
+	z0.band = 1
+	z0.cells.append(Vector2i(1, 1))
+	cr.zones = [z0]
+	var fl := DungeonLayout.new()
+	fl.level_number = 1
+	fl.floor_tier = 1
+	var floors: Array[DungeonLayout] = [fl]
+	var rng := DungeonStocker.derive_balcony_rng(777)
+	var before: int = rng.state
+	DungeonStocker.stock_balcony_zones(floors, cr, {1: 0}, _loader, _registry, rng)
+	check(rng.state == before, "no eligible zones -> zero draws from the balcony stream")
+	check(z0.contents_kind == "empty", "zone 0 untouched by the balcony pass")
+
+
+## A Monster-category balcony zone stocks onto the ZONE band layout with the
+## GLOBAL room id, the zone index, and hoards (if any) at the band walk z.
+func test_balcony_zone_stocks_on_zone_band_layout() -> void:
+	var s: int = _probe_balcony_seed("Monster")
+	check(s > 0, "found a balcony seed whose first d100 is Monster")
+	if s <= 0:
+		return
+	var fx := _balcony_fixture([Vector2i(4, 4), Vector2i(5, 4), Vector2i(4, 5), Vector2i(5, 5)])
+	var floors: Array[DungeonLayout] = fx["floors"]
+	DungeonStocker.stock_balcony_zones(
+		floors, fx["cr"], fx["band_walk"], _loader, _registry, DungeonStocker.derive_balcony_rng(s))
+	var zone: RoomZone = fx["zone"]
+	check(zone.contents_kind == "monster" or zone.contents_kind == "monster_lair",
+		"Monster category stocks the zone (got '%s')" % zone.contents_kind)
+	check(zone.monster_group_id != "", "zone links its monster group")
+	var band1: DungeonLayout = floors[0]
+	check(band1.monster_groups.size() == 1, "group attached to the ZONE band layout (band 1)")
+	if band1.monster_groups.size() == 1:
+		var grp: MonsterGroupData = band1.monster_groups[0]
+		check(grp.room_id == 1000, "group carries the GLOBAL room id")
+		check(grp.zone_index == 1, "group carries the zone index")
+		check(grp.floor_index == 1, "group floor_index = the zone band")
+	for h in band1.treasure_hoards:
+		var hoard: TreasureHoardData = h
+		if hoard.cell_x >= 0:
+			check(hoard.cell_z == 0, "balcony hoard placed at band 1 walk level 0 (got %d)" % hoard.cell_z)
+	check((floors[1] as DungeonLayout).monster_groups.is_empty(),
+		"nothing attached to the home band layout")
+
+
+## Door-less nuance, no eligible swap target: the Trap assignment falls to
+## Empty (d100 never re-rolled) and the zone still stocks deterministically.
+func test_balcony_doorless_trap_demotes_to_empty() -> void:
+	var s: int = _probe_balcony_seed("Trap")
+	check(s > 0, "found a balcony seed whose first d100 is Trap")
+	if s <= 0:
+		return
+	var fx := _balcony_fixture([Vector2i(4, 4), Vector2i(5, 4)])  # no access doors
+	var floors: Array[DungeonLayout] = fx["floors"]
+	DungeonStocker.stock_balcony_zones(
+		floors, fx["cr"], fx["band_walk"], _loader, _registry, DungeonStocker.derive_balcony_rng(s))
+	var zone: RoomZone = fx["zone"]
+	check(zone.contents_kind == "empty",
+		"door-less Trap with no swap target is assigned Empty (got '%s')" % zone.contents_kind)
+
+
+## Door-less nuance, swap: the door-less zone gives its Trap to a same-band
+## zone WITH an access door; that door record is gated (secret + locked) and
+## its volume cell restamped.
+func test_balcony_doorless_trap_swaps_to_doored_zone() -> void:
+	var s: int = _probe_balcony_seed("Trap", "Trap")
+	check(s > 0, "found a balcony seed with first Trap, second non-Trap")
+	if s <= 0:
+		return
+	var door_cell := Vector3i(9, 9, 0)
+	var fx := _balcony_fixture(
+		[Vector2i(4, 4), Vector2i(5, 4)],                       # zone A: door-less
+		[{"cell": door_cell, "connects": [1001]}],              # access door for zone B
+		[Vector2i(9, 8), Vector2i(9, 7)])                       # zone B: has the door
+	var floors: Array[DungeonLayout] = fx["floors"]
+	DungeonStocker.stock_balcony_zones(
+		floors, fx["cr"], fx["band_walk"], _loader, _registry, DungeonStocker.derive_balcony_rng(s))
+	var zone_b: RoomZone = fx["zone2"]
+	check(zone_b.contents_kind == "trap_placeholder",
+		"the doored zone took the swapped Trap (got '%s')" % zone_b.contents_kind)
+	var cr: DungeonVolumeComposer.ComposeResult = fx["cr"]
+	var rec: Dictionary = cr.doors[0]
+	check(bool(rec["is_secret"]) and str(rec["type"]) == DungeonDoorData.TYPE_LOCKED,
+		"the access door record is gated secret+locked")
+	var vc: VoxelCell = cr.volume.get_cell(door_cell)
+	check(vc.door_type == "secret" and vc.door_state == "closed" and not vc.door_detected,
+		"the volume door cell is restamped secret")
+	check((fx["zone"] as RoomZone).contents_kind != "trap_placeholder",
+		"the door-less zone no longer holds the Trap")

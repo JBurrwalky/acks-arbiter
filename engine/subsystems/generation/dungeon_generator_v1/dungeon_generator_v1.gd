@@ -39,12 +39,15 @@ extends RefCounted
 ##
 ## 0 = the pre-contiguous floor-stitched generator (payloads persisted before
 ## the stamp existed read as 0 via the missing-key default). 1 = the composed
-## contiguous-volume pipeline (DG-C3D.F cutover, 2026-07-12) — the bump
-## invalidates every stored generated dungeon at once; each lazily regenerates
-## on next access. Hand-authored payloads (test content — cells but no
-## dungeon_floors provenance rows) are exempted at the DungeonFixtureService
-## seam and never regenerate.
-const GENERATOR_VERSION: int = 1
+## contiguous-volume pipeline (DG-C3D.F.2c cutover, 2026-07-12). 2 = balcony/
+## gallery zone stocking + zone-aware key finalize (DG-C3D.F.2d, 2026-07-13) —
+## atrium dungeons regenerate with stocked upper zones; balcony-less dungeons
+## regenerate byte-identically (the balcony stream draws zero values for
+## them). Each bump invalidates every stored generated dungeon at once; each
+## lazily regenerates on next access. Hand-authored payloads (test content —
+## cells but no dungeon_floors provenance rows) are exempted at the
+## DungeonFixtureService seam and never regenerate.
+const GENERATOR_VERSION: int = 2
 
 
 static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResultV1:
@@ -378,6 +381,21 @@ static func _generate_attempt(
 			result.errors.append("DungeonGeneratorV1: composition failed — %s" % compose_result.error)
 			return result
 
+		# Step 8b — project the per-band stocking results onto the composed
+		# zones (F.2a; draws no RNG): zone 0 mirrors its room's stocking. Runs
+		# BEFORE the balcony pass and the placer so zone records are complete
+		# when keys finalize against them.
+		DungeonStocker.map_band_stocking_to_zones(result.floors, compose_result)
+
+		# Step 8c — balcony/gallery zone stocking (F.2d; contiguous GDD §11):
+		# zone_index >= 1 zones roll their own d100 at their band's tier from a
+		# dedicated namespaced stream (zero draws when no such zones exist).
+		# Balcony trap gates mutate door RECORDS + volume cells here, BEFORE
+		# the placer, so they are keyed like any other gated door.
+		var balcony_rng := DungeonStocker.derive_balcony_rng(master_seed, stocking_seed_bump)
+		DungeonStocker.stock_balcony_zones(
+			result.floors, compose_result, band_walk, loader, registry, balcony_rng)
+
 		# Step 9 — key/lever placement over the composed 3D movement graph
 		# (DG-C3D.E). Same stream derivation as the pre-flip placer. NOTE: the
 		# GDD §5 lists key/lever before stocking, but trap rooms (§11.4) create
@@ -397,14 +415,16 @@ static func _generate_attempt(
 			compose_result.doors, placement["wired_levers"], result.floors, band_walk)
 		var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.composed_keys_to_items(
 			placement["keys"], compose_result.doors)
-		DungeonKeyLeverPlacer.finalize_key_placements(keys, result.floors, loader, kl_rng)
+		DungeonKeyLeverPlacer.finalize_key_placements_composed(
+			keys, result.floors, compose_result.zones, loader, kl_rng)
 		result.key_items = keys
 
-		# Step 9b — project the per-band stocking results onto the composed
-		# zones (F.2a; draws no RNG). Runs after finalize so forced key hoards
-		# and §10.4 trap-room demotions roll into the zone copies. Balcony-zone
-		# stocking (zone_index >= 1) is DG-C3D.F.2d.
+		# Step 9b — zone-0 refresh (idempotent, no RNG): re-copy room fields
+		# onto zone 0 so §10.4 trap-room demotions from the sync-back and
+		# finalize's forced-hoard back-links stay mirrored; then compose each
+		# atrium room's LLM-facing purpose from its zones.
 		DungeonStocker.map_band_stocking_to_zones(result.floors, compose_result)
+		DungeonStocker.compose_atrium_rollups(result.floors, compose_result)
 
 		# Step 10 — composed solvability + acceptance gate. BOTH must pass (plus
 		# the placer's own rule-3 verdict) to accept this attempt. Re-rolling the

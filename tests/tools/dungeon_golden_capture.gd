@@ -15,30 +15,43 @@ const _IdentityScript := preload("res://tests/subsystems/generation/dungeon_gene
 
 
 func _ready() -> void:
+	# Single-floor sweep (the F.2c gate shape).
 	var seeds: Array[int] = [4242, 555, 1009, 31337, 90210]
 	for extra in range(1, 26):
 		seeds.append(extra * 101)
 	for s in seeds:
-		var req := DungeonGeneratorRequestV1.new()
-		req.entrance_tier = 2
-		req.floor_count = 1
-		req.entrance_floor_index = 1
-		req.dungeon_type = "wizards_dungeon"
-		req.dungeon_size = "small"
-		req.seed = s
-		req.persist = false
-		var result: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req)
-		var full: String = _IdentityScript.content_fingerprint(result, true)
-		var norm: String = _IdentityScript.content_fingerprint(result, false)
-		var portcullis: int = 0
-		for fl in result.floors:
-			for d in fl.doors:
-				if (d as DungeonDoorData).type == DungeonDoorData.TYPE_PORTCULLIS:
-					portcullis += 1
-		print("=== GOLDEN seed=%d keys=%d portcullis=%d full_md5=%s norm_md5=%s ===" % [
-			s, result.key_items.size(), portcullis, full.md5_text(), norm.md5_text()])
-		print(full)
-		print("--- NORMALIZED seed=%d ---" % s)
-		print(norm)
-		print("=== END seed=%d ===" % s)
+		_capture(s, 1, 2, "small")
+	# Multi-band sweep (the F.2d gate shape): 3-floor smalls. Dungeons whose
+	# max_zone_index stays 0 have no balcony zones — those must stay FULL-
+	# fingerprint-identical across the balcony-stocking version bump.
+	for s in [11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132]:
+		_capture(s, 3, 1, "small")
 	get_tree().quit(0)
+
+
+func _capture(s: int, floors: int, tier: int, size: String) -> void:
+	var req := DungeonGeneratorRequestV1.new()
+	req.entrance_tier = tier
+	req.floor_count = floors
+	req.entrance_floor_index = 1
+	req.dungeon_type = "wizards_dungeon"
+	req.dungeon_size = size
+	req.seed = s
+	req.persist = false
+	var result: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req)
+	var full: String = _IdentityScript.content_fingerprint(result, true)
+	var norm: String = _IdentityScript.content_fingerprint(result, false)
+	var portcullis: int = 0
+	for fl in result.floors:
+		for d in fl.doors:
+			if (d as DungeonDoorData).type == DungeonDoorData.TYPE_PORTCULLIS:
+				portcullis += 1
+	var max_zone: int = 0
+	for z in result.zones:
+		max_zone = maxi(max_zone, (z as RoomZone).zone_index)
+	print("=== GOLDEN seed=%d floors=%d keys=%d portcullis=%d max_zone=%d full_md5=%s norm_md5=%s ===" % [
+		s, floors, result.key_items.size(), portcullis, max_zone, full.md5_text(), norm.md5_text()])
+	print(full)
+	print("--- NORMALIZED seed=%d ---" % s)
+	print(norm)
+	print("=== END seed=%d ===" % s)

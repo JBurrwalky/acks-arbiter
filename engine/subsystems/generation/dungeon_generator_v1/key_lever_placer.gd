@@ -183,6 +183,74 @@ static func finalize_key_placements(
 			k.placed_in = KeyItemData.PLACED_LOOSE
 
 
+## Zone-aware §5-step-7 finalize (DG-C3D.F.2d): each key's containment
+## resolves against its ZONE's stocking (a key placed on a balcony embeds in
+## the balcony's monster/hoard, not the room's main floor). For zone-0 keys
+## this is draw-for-draw identical to the legacy finalize above — zone 0's
+## stocking fields mirror the room's (map_band_stocking_to_zones runs first),
+## so the branch decisions and the forced-hoard RNG draws match exactly.
+##
+## Forced type-"A" hoards for keys in EMPTY zones attach per the §121 id
+## model: a zone-0 key's hoard goes on the room's home band layout with the
+## LOCAL room id + updates the room back-link (legacy behavior); a balcony
+## key's hoard goes on the ZONE's band layout with the GLOBAL room id + the
+## zone back-link. Forced hoards are unplaced (no cell) in both cases,
+## matching the legacy finalize.
+static func finalize_key_placements_composed(
+		keys: Array[KeyItemData],
+		floors: Array[DungeonLayout],
+		zones: Array,
+		loader: DungeonDataLoader,
+		rng: RandomNumberGenerator) -> void:
+	var layout_by_floor: Dictionary = {}
+	for fl in floors:
+		layout_by_floor[(fl as DungeonLayout).level_number] = fl
+	var zone_by_key: Dictionary = {}
+	for z in zones:
+		var zone: RoomZone = z
+		zone_by_key["%d:%d" % [zone.room_id, zone.zone_index]] = zone
+
+	for k: KeyItemData in keys:
+		if k.placed_on_floor_index < 1 or k.placed_on_floor_index > floors.size():
+			continue
+		var home_layout: DungeonLayout = floors[k.placed_on_floor_index - 1]
+		var room: DungeonRoomData = home_layout.find_room(k.placed_in_room_id)
+		if room == null:
+			continue
+		var global_room: int = (k.placed_on_floor_index - 1) * DungeonVolumeComposer.ROOM_ID_STRIDE + k.placed_in_room_id
+		var zone_index: int = maxi(k.placed_in_zone_index, 0)
+		var zone: RoomZone = zone_by_key.get("%d:%d" % [global_room, zone_index], null)
+		if zone == null:
+			# No composed zone record (defensive) — legacy room-based fallback.
+			push_warning("DungeonKeyLeverPlacer.finalize_key_placements_composed: no zone (room %d, zone %d) for a key — falling back to room fields." % [global_room, zone_index])
+			var single: Array[KeyItemData] = [k]
+			finalize_key_placements(single, floors, loader, rng)
+			continue
+		var content_layout: DungeonLayout = layout_by_floor.get(zone.band, home_layout)
+
+		if zone.monster_group_id != "":
+			k.placed_in = KeyItemData.PLACED_MONSTER_INV
+			_append_key_to_monster_group(content_layout, zone.monster_group_id, k.id)
+		elif zone.treasure_hoard_id != "":
+			k.placed_in = KeyItemData.PLACED_TREASURE_HOARD
+		else:
+			# Empty zone: force a type-"A" hoard into it.
+			var h: TreasureHoardData = DungeonTreasureResolver.resolve_treasure_type("A", loader, rng)
+			h.id = CampaignRepository.generate_id()
+			h.source = TreasureHoardData.SOURCE_LAIR
+			if zone.zone_index == 0:
+				h.floor_index = k.placed_on_floor_index
+				h.room_id = room.id
+				home_layout.treasure_hoards.append(h)
+				room.treasure_hoard_id = h.id
+			else:
+				h.floor_index = zone.band
+				h.room_id = zone.room_id  # global (zone_index >= 1 — §121)
+				content_layout.treasure_hoards.append(h)
+			zone.treasure_hoard_id = h.id
+			k.placed_in = KeyItemData.PLACED_TREASURE_HOARD
+
+
 # ---------------------------------------------------------------------------
 # Discovery BFS internals
 # ---------------------------------------------------------------------------
@@ -844,7 +912,7 @@ static func _downgrade_composed_door(volume: VoxelMapData, rec: Dictionary) -> v
 	rec["type"] = DungeonDoorData.TYPE_UNLOCKED
 	rec["material"] = DungeonDoorData.MATERIAL_WOOD_STANDARD
 	rec["is_secret"] = false
-	_restamp_door(volume, rec)
+	restamp_composed_door(volume, rec)
 
 
 ## Clear ONE secret+unlocked frontier door whose far side is still unreached.
@@ -865,14 +933,14 @@ static func _clear_one_blocking_secret_composed(volume: VoxelMapData, st: Dictio
 			continue
 		push_warning("DungeonKeyLeverPlacer.place_composed: secret door at %s gates mandatory content with no key path — clearing is_secret (§10.3 repair)." % str(door_cell))
 		rec["is_secret"] = false
-		_restamp_door(volume, rec)
+		restamp_composed_door(volume, rec)
 		_mark_reached_3d(volume, door_cell, st)
 		return true
 	return false
 
 
 ## Re-stamp a door cell from its (possibly mutated) record.
-static func _restamp_door(volume: VoxelMapData, rec: Dictionary) -> void:
+static func restamp_composed_door(volume: VoxelMapData, rec: Dictionary) -> void:
 	var cell: VoxelCell = volume.get_cell(rec["cell"])
 	if rec["is_secret"]:
 		cell.door_type = "secret"

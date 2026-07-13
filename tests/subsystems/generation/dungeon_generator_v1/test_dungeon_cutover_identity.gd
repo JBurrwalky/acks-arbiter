@@ -35,8 +35,104 @@ func run_all_tests() -> void:
 	test_single_band_content_identity()
 	test_single_band_regeneration_is_self_identical()
 	test_single_band_composed_output_contract()
+	test_multi_band_no_atrium_full_identity()
+	test_atrium_balcony_zones_stocked()
 	if not has_failures():
 		print("DungeonCutoverIdentity: all tests passed.")
+
+
+## DG-C3D.F.2d gate: a multi-band dungeon WITHOUT atrium balcony zones must
+## generate FULL-fingerprint-identical (key/lever placements included) across
+## the balcony-stocking version bump — the balcony stream draws zero values
+## for it. Golden captured on the v1 (pre-F.2d) engine; verified byte-equal
+## on 9/9 no-atrium sweep seeds at the bump.
+func test_multi_band_no_atrium_full_identity() -> void:
+	var golden_file := FileAccess.open("res://tests/fixtures/dungeon_cutover_golden_3floor_11.txt", FileAccess.READ)
+	check(golden_file != null, "3-floor golden fixture opens")
+	if golden_file == null:
+		return
+	var golden: String = golden_file.get_as_text().replace("\r", "").strip_edges()
+	golden_file.close()
+
+	var req := DungeonGeneratorRequestV1.new()
+	req.entrance_tier = 1
+	req.floor_count = 3
+	req.entrance_floor_index = 1
+	req.dungeon_type = "wizards_dungeon"
+	req.dungeon_size = "small"
+	req.seed = 11
+	req.persist = false
+	var result: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req)
+	check(result.success, "seed-11 3-floor generates (errors: %s)" % str(result.errors))
+	for z in result.zones:
+		check((z as RoomZone).zone_index == 0, "seed 11 has no balcony zones (fixture premise)")
+	var text: String = content_fingerprint(result, true).strip_edges()
+	var ok: bool = text == golden
+	check(ok, "no-atrium 3-floor FULL fingerprint matches the pre-F.2d golden (md5 %s vs %s)"
+		% [text.md5_text(), golden.md5_text()])
+	if not ok:
+		_print_first_divergence(golden, text)
+
+
+## DG-C3D.F.2d: an atrium dungeon's balcony zones are stocked — the zone
+## carries contents, any group it owns sits on the ZONE's band layout with
+## the room's GLOBAL id + the zone's index, and any placed hoard sits at the
+## zone band's WALK level (seed 88 rolls a balcony Morlock lair + sack hoard
+## at z=-2; the atrium rollup composes the room purpose).
+func test_atrium_balcony_zones_stocked() -> void:
+	var req := DungeonGeneratorRequestV1.new()
+	req.entrance_tier = 1
+	req.floor_count = 3
+	req.entrance_floor_index = 1
+	req.dungeon_type = "wizards_dungeon"
+	req.dungeon_size = "small"
+	req.seed = 88
+	req.persist = false
+	var result: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req)
+	check(result.success, "seed-88 atrium dungeon generates (errors: %s)" % str(result.errors))
+
+	var balcony: RoomZone = null
+	for z in result.zones:
+		if (z as RoomZone).zone_index >= 1:
+			balcony = z
+			break
+	check(balcony != null, "seed 88 has a balcony zone (fixture premise)")
+	if balcony == null:
+		return
+	check(balcony.contents_kind != "", "balcony zone is stocked (contents_kind set)")
+
+	if balcony.monster_group_id != "":
+		var band_layout: DungeonLayout = result.floors[balcony.band - 1]
+		var found: MonsterGroupData = null
+		for g in band_layout.monster_groups:
+			if (g as MonsterGroupData).id == balcony.monster_group_id:
+				found = g
+				break
+		check(found != null, "balcony group lives on the ZONE's band layout (band %d)" % balcony.band)
+		if found != null:
+			check(found.room_id == balcony.room_id,
+				"balcony group carries the GLOBAL room id (%d)" % balcony.room_id)
+			check(found.zone_index == balcony.zone_index,
+				"balcony group carries the zone index (%d)" % balcony.zone_index)
+
+	if balcony.treasure_hoard_id != "":
+		var band_layout2: DungeonLayout = result.floors[balcony.band - 1]
+		for h in band_layout2.treasure_hoards:
+			var hoard: TreasureHoardData = h
+			if hoard.room_id != balcony.room_id or hoard.cell_x < 0:
+				continue
+			var expected_walk: int = 2 * (req.entrance_floor_index - balcony.band)
+			check(hoard.cell_z == expected_walk,
+				"balcony hoard placed at the zone band's walk level (%d, got %d)" % [expected_walk, hoard.cell_z])
+
+	# The atrium room's LLM-facing purpose composes the balcony clause.
+	var home_slot: int = int(balcony.room_id / DungeonVolumeComposer.ROOM_ID_STRIDE)
+	for r in result.floors[home_slot].rooms:
+		var room: DungeonRoomData = r
+		if room.id == balcony.room_id % DungeonVolumeComposer.ROOM_ID_STRIDE:
+			check(room.current_purpose.contains(";"),
+				"atrium room purpose composes the balcony clause (got '%s')" % room.current_purpose)
+			break
 
 
 ## The gate: post-flip normalized content fingerprint == the pre-flip golden.

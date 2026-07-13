@@ -100,6 +100,276 @@ static func stock_floor(
 
 
 # ---------------------------------------------------------------------------
+# DG-C3D.F.2d — balcony/gallery zone stocking (zone_index >= 1)
+# ---------------------------------------------------------------------------
+
+## Prime offset for the balcony-zone stocking stream (conventions §118).
+## Distinct from every existing derivation off master_seed: per-floor layout
+## (+ fi × 1000003 ≤ 6M), stocking (+ (fi+1) × 7919 + 999983 × (attempt−1)
+## ≤ ~3.1M), key/lever (+ 104729 + bump), vertical plan (+ 15485863), and the
+## top-level attempt stride (× 1000000007).
+const BALCONY_STREAM_OFFSET: int = 32452843
+
+
+## Derive the balcony-zone stocking stream. The single definition point —
+## DungeonGeneratorV1 and every test obtain the rng ONLY from here.
+## [param attempt_bump] is the stocking-retry bump (999983 × (attempt−1)),
+## matching the main stocking stream's retry discipline.
+static func derive_balcony_rng(master_seed: int, attempt_bump: int = 0) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = master_seed + BALCONY_STREAM_OFFSET + attempt_bump
+	return rng
+
+
+## Stock every zone_index >= 1 zone of every chamber room (contiguous GDD §11:
+## the d100 loop iterates ZONES of chamber rooms; a multi-story room stocks
+## once per level it presents walkable space). Runs AFTER compose + AFTER
+## map_band_stocking_to_zones and BEFORE the composed key/lever placer, so a
+## balcony trap's door gate is keyed like any other gated door.
+##
+## Draw-order contract (determinism): Pass A rolls ONE d100 per eligible zone
+## in compose_result.zones order; a no-RNG trap re-assignment pass follows
+## (§11 door-less nuance); Pass B stocks each zone in the same order (branch
+## draws, then treasure-placement draws). A dungeon with NO eligible zones
+## draws ZERO values from this stream — the F.2d byte-identity guard.
+##
+## The zone's BAND drives everything: monster/treasure rolls use the band's
+## tier, groups/hoards attach to the band's layout (floor_index = the zone
+## band, so XP/GP ledgers aggregate by band per §11), and hoard cells are
+## placed at the band's walk level (real composed z — the F.2c legacy-stamp
+## remap guard skips them). Content created here carries the room's GLOBAL id
+## (zone_index >= 1 marks room_id as composed-global; see conventions §121).
+##
+## §11 trap nuance: the Locked+Secret fallback gates DOORS. A zone with an
+## access door takes the gate on that door (record + volume cell; the placer
+## sync-back propagates it to the band layout's door). A door-less zone swaps
+## its Trap result with the first same-band eligible zone that has an access
+## door and is not already Trap (logged); with no eligible swap target the
+## assignment falls to Empty (logged) — the d100 itself is never re-rolled
+## (assignment within the level is Judge's discretion per
+## rules/acore-setting-construction-rules.xml:621-642 step 3).
+static func stock_balcony_zones(
+		band_layouts: Array[DungeonLayout],
+		compose_result,
+		band_walk: Dictionary,
+		loader: DungeonDataLoader,
+		registry: MonsterRegistry,
+		rng: RandomNumberGenerator) -> void:
+	# Eligible zones: zone_index >= 1, chamber-kind owning room, non-empty cells.
+	var kind_by_room: Dictionary = {}
+	for r in compose_result.rooms:
+		kind_by_room[(r as DungeonRoomData).id] = (r as DungeonRoomData).kind
+	var eligible: Array[RoomZone] = []
+	for z in compose_result.zones:
+		var zone: RoomZone = z
+		if zone.zone_index < 1 or zone.cells.is_empty():
+			continue
+		if str(kind_by_room.get(zone.room_id, DungeonRoomData.KIND_CHAMBER)) == DungeonRoomData.KIND_CIRCULATION:
+			continue
+		eligible.append(zone)
+	if eligible.is_empty():
+		return  # ZERO draws — byte-identity for balcony-less dungeons
+
+	var layout_by_floor: Dictionary = {}
+	for fl in band_layouts:
+		layout_by_floor[(fl as DungeonLayout).level_number] = fl
+	var stocking_rows: Array = loader.rows("dungeon_stocking")
+
+	# Pass A — one d100 per eligible zone, zones order.
+	var categories: Array[String] = []
+	for zone in eligible:
+		categories.append(_match_stocking_category(stocking_rows, rng.randi_range(1, 100)))
+
+	# Trap re-assignment (no RNG): door-less Trap zones swap or fall to Empty.
+	for i in range(eligible.size()):
+		if categories[i] != "Trap":
+			continue
+		if not _zone_access_doors(compose_result, eligible[i]).is_empty():
+			continue
+		var swapped := false
+		for j in range(eligible.size()):
+			if j == i or categories[j] == "Trap":
+				continue
+			if eligible[j].band != eligible[i].band:
+				continue
+			if _zone_access_doors(compose_result, eligible[j]).is_empty():
+				continue
+			print("DungeonStocker.stock_balcony_zones: door-less zone (room %d, zone %d) swaps Trap with zone (room %d, zone %d) — §11 door-less nuance." % [
+				eligible[i].room_id, eligible[i].zone_index, eligible[j].room_id, eligible[j].zone_index])
+			categories[i] = categories[j]
+			categories[j] = "Trap"
+			swapped = true
+			break
+		if not swapped:
+			print("DungeonStocker.stock_balcony_zones: door-less zone (room %d, zone %d) rolled Trap with no eligible same-band swap — assigned Empty (§11 Judge's discretion)." % [
+				eligible[i].room_id, eligible[i].zone_index])
+			categories[i] = "Empty"
+
+	# Pass B — stock each zone via a facade room (the V1 §11 branch helpers
+	# operate on (layout, room); the facade carries the GLOBAL room id so
+	# groups/hoards it creates are zone-attributed, then its result fields are
+	# copied onto the RoomZone).
+	for i in range(eligible.size()):
+		var zone: RoomZone = eligible[i]
+		if not layout_by_floor.has(zone.band):
+			push_warning("DungeonStocker.stock_balcony_zones: zone (room %d, zone %d) band %d has no layout — skipped." % [zone.room_id, zone.zone_index, zone.band])
+			continue
+		var layout: DungeonLayout = layout_by_floor[zone.band]
+		var facade := DungeonRoomData.new()
+		facade.id = zone.room_id
+		facade.band = zone.band
+		facade.original_purpose = _zone_default_purpose(zone)
+		facade.current_purpose = facade.original_purpose
+		for c in zone.cells:
+			facade.cells.append(c)
+
+		var pre_hoard_count: int = layout.treasure_hoards.size()
+		match categories[i]:
+			"Empty":
+				_stock_empty(layout, facade, zone.band, layout.floor_tier, loader, rng)
+			"Monster":
+				_stock_monster(layout, facade, zone.band, layout.floor_tier, loader, registry, rng, false)
+			"Trap":
+				_stock_trap(layout, facade, zone.band, layout.floor_tier, loader, rng)
+				_gate_balcony_trap(compose_result, zone)
+			"Unique":
+				_stock_unique(layout, facade, zone.band, layout.floor_tier, loader, registry, rng)
+			_:
+				push_error("DungeonStocker.stock_balcony_zones: unknown category '%s' — treating as Empty" % categories[i])
+				_stock_empty(layout, facade, zone.band, layout.floor_tier, loader, rng)
+
+		# Zone stamp on any group the branch created.
+		if facade.monster_group_id != "":
+			for g in layout.monster_groups:
+				if (g as MonsterGroupData).id == facade.monster_group_id:
+					(g as MonsterGroupData).zone_index = zone.zone_index
+					break
+
+		# Place this zone's hoards on the zone's cells at its band's WALK level
+		# (real composed z — no legacy stamp, no remap).
+		_place_zone_hoards(layout, facade, zone, int(band_walk.get(zone.band, 0)), pre_hoard_count, rng)
+
+		# Copy the facade's results onto the zone (the stocking unit of record).
+		zone.contents_kind = facade.contents_kind
+		zone.monster_group_id = facade.monster_group_id
+		zone.treasure_hoard_id = facade.treasure_hoard_id
+		zone.current_purpose = facade.current_purpose
+
+
+## Access doors of a balcony zone: composed door records on the zone's band
+## whose connects include the zone's (global) room id — the DG-C3D.C balcony
+## ring-stub doors by construction. Draws no RNG.
+static func _zone_access_doors(compose_result, zone: RoomZone) -> Array:
+	var out: Array = []
+	for rec in compose_result.doors:
+		if int(rec.get("band", -1)) != zone.band:
+			continue
+		if (rec.get("connects", []) as Array).has(zone.room_id):
+			out.append(rec)
+	return out
+
+
+## Apply the §11.4 Locked+Secret gate to a balcony trap zone's access door —
+## mirrors _assign_trap_doors' mutation (is_secret + LOCKED unless already
+## locked/trapped) on the composed door RECORD + volume cell (the layer that
+## exists post-compose; the placer's sync-back propagates it to the band
+## layout's DungeonDoorData). Reuses an already-qualifying access door rather
+## than gating a second one (Pass C's reuse rule).
+static func _gate_balcony_trap(compose_result, zone: RoomZone) -> void:
+	var access: Array = _zone_access_doors(compose_result, zone)
+	if access.is_empty():
+		return  # unreachable — the re-assignment pass filtered door-less zones
+	for rec in access:
+		if rec["is_secret"] and (rec["type"] == DungeonDoorData.TYPE_LOCKED or rec["type"] == DungeonDoorData.TYPE_TRAPPED):
+			return  # already gated (layout §8.1 secret roll) — reuse, add nothing
+	var chosen: Dictionary = access[0]
+	chosen["is_secret"] = true
+	if chosen["type"] != DungeonDoorData.TYPE_LOCKED and chosen["type"] != DungeonDoorData.TYPE_TRAPPED:
+		chosen["type"] = DungeonDoorData.TYPE_LOCKED
+	DungeonKeyLeverPlacer.restamp_composed_door(compose_result.volume, chosen)
+
+
+## Place the hoards a balcony-zone branch just created (layout.treasure_hoards
+## entries from [param pre_hoard_count] on) via TreasurePlacementService on the
+## zone's cells at [param walk_z]. Mirrors _place_hoards' primary/secondary
+## handling, scoped to this zone's new hoards.
+static func _place_zone_hoards(
+		layout: DungeonLayout,
+		facade: DungeonRoomData,
+		zone: RoomZone,
+		walk_z: int,
+		pre_hoard_count: int,
+		rng: RandomNumberGenerator) -> void:
+	if layout.treasure_hoards.size() <= pre_hoard_count:
+		return
+	var new_hoards: Array = []
+	for idx in range(pre_hoard_count, layout.treasure_hoards.size()):
+		new_hoards.append(layout.treasure_hoards[idx])
+	layout.treasure_hoards.resize(pre_hoard_count)
+
+	var cells_3d: Array = []
+	for c in zone.cells:
+		cells_3d.append(Vector3i(c.x, c.y, walk_z))
+	var opts: Dictionary = {"traps_available": false}
+
+	for h in new_hoards:
+		var hoard: TreasureHoardData = h
+		var placed: Array[TreasureHoardData] = TreasurePlacementService.place_hoard(
+			hoard, cells_3d, rng, opts)
+		for idx in range(placed.size()):
+			var p: TreasureHoardData = placed[idx]
+			if p.id.is_empty():
+				p.id = CampaignRepository.generate_id()
+			layout.treasure_hoards.append(p)
+		if placed.size() > 0 and facade.treasure_hoard_id == hoard.id:
+			facade.treasure_hoard_id = placed[0].id
+
+
+## Default LLM-facing purpose for an unstocked upper zone, by zone type.
+static func _zone_default_purpose(zone: RoomZone) -> String:
+	match zone.zone_type:
+		RoomZone.ZONE_TYPE_BALCONY:
+			return "overlooking balcony"
+		RoomZone.ZONE_TYPE_GALLERY:
+			return "gallery"
+		RoomZone.ZONE_TYPE_LEDGE:
+			return "natural ledge"
+		_:
+			return "isolated alcove"
+
+
+## Compose each atrium room's LLM-facing current_purpose from its zones: the
+## main zone's purpose plus a clause per stocked upper zone. Writes the
+## composed rooms AND the owning band-layout room (the persisted
+## dungeon_rooms.current_purpose), leaving single-zone rooms untouched.
+static func compose_atrium_rollups(band_layouts: Array[DungeonLayout], compose_result) -> void:
+	var layout_by_floor: Dictionary = {}
+	for fl in band_layouts:
+		layout_by_floor[(fl as DungeonLayout).level_number] = fl
+	for r in compose_result.rooms:
+		var room: DungeonRoomData = r
+		if room.zones.size() < 2:
+			continue
+		var extras: Array[String] = []
+		for z in room.zones:
+			var zone: RoomZone = z
+			if zone.zone_index < 1 or zone.current_purpose.is_empty():
+				continue
+			extras.append("%s: %s" % [zone.zone_type, zone.current_purpose])
+		if extras.is_empty():
+			continue
+		var composed: String = "%s; %s" % [room.current_purpose, "; ".join(extras)]
+		room.current_purpose = composed
+		var slot: int = int(room.id / DungeonVolumeComposer.ROOM_ID_STRIDE)
+		var local_id: int = room.id % DungeonVolumeComposer.ROOM_ID_STRIDE
+		if layout_by_floor.has(slot + 1):
+			var home_layout: DungeonLayout = layout_by_floor[slot + 1]
+			var home_room: DungeonRoomData = home_layout.find_room(local_id)
+			if home_room != null:
+				home_room.current_purpose = composed
+
+
+# ---------------------------------------------------------------------------
 # DG-C3D.F.2a — project per-band stocking onto the composed zones
 # ---------------------------------------------------------------------------
 
@@ -168,7 +438,11 @@ static func map_band_stocking_to_zones(
 				zone0.treasure_hoard_id = room.treasure_hoard_id
 		for g in band_layout.monster_groups:
 			var grp: MonsterGroupData = g
-			grp.zone_index = 0
+			# Main-floor groups (stock_floor leaves the -1 default) live in
+			# zone 0; balcony-pass groups already carry their >= 1 stamp —
+			# never clobber it (this mapper re-runs after finalize).
+			if grp.zone_index < 0:
+				grp.zone_index = 0
 			all_groups.append(grp)
 		for h in band_layout.treasure_hoards:
 			all_hoards.append(h)

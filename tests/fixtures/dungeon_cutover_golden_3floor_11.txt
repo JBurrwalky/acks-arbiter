@@ -1,0 +1,142 @@
+success=true floors=3 keys=7
+floor=1 tier=1 entrance=(26, 24) grid=31x31 is_entrance=true type=wizards_dungeon size=small
+cells_md5=3b1029930fbaf5156038a7904e5bf424
+room=0 kind=circulation bounds=[P: (8, 19), S: (2, 2)] contents=empty purpose=trapped corridor| mg=false th=false
+room=1 kind=chamber bounds=[P: (24, 17), S: (2, 2)] contents=unique_placeholder purpose=vault|unique feature (deferred) — Goblin lair fallback mg=true th=true
+room=2 kind=chamber bounds=[P: (20, 7), S: (3, 3)] contents=monster purpose=summoning chamber|patrol / temporary occupation by Locust, Cavern mg=true th=false
+room=3 kind=chamber bounds=[P: (6, 22), S: (3, 2)] contents=empty purpose=scrying room|scrying room mg=false th=false
+room=4 kind=chamber bounds=[P: (13, 27), S: (5, 2)] contents=monster_lair purpose=vault|Morlock lair mg=true th=true
+room=5 kind=chamber bounds=[P: (23, 13), S: (4, 2)] contents=monster purpose=vault|patrol / temporary occupation by NPC Party (Bard, Neutral, level 1) mg=true th=false
+room=6 kind=chamber bounds=[P: (25, 24), S: (5, 4)] contents=monster purpose=specimen storage|patrol / temporary occupation by Varmint, Giant mg=true th=false
+room=7 kind=chamber bounds=[P: (3, 18), S: (2, 4)] contents=monster purpose=golem workshop|patrol / temporary occupation by Goblin mg=true th=false
+room=8 kind=chamber bounds=[P: (11, 19), S: (6, 6)] contents=empty purpose=laboratory|laboratory mg=false th=false
+room=9 kind=chamber bounds=[P: (10, 4), S: (3, 5)] contents=trap_placeholder purpose=observatory|trap chamber (deferred — Locked+Secret door fallback active) mg=false th=true
+group room=1 zone=0 name=Goblin n=5 xp=5 hd=1-1 lair=true morale=-1 align=chaotic ttl=E assoc=[] inv=["key"]
+group room=2 zone=0 name=Locust, Cavern n=2 xp=29 hd=2 lair=false morale=-3 align=neutral ttl= assoc=[] inv=[]
+group room=4 zone=0 name=Morlock n=11 xp=10 hd=1 lair=true morale=-1 align=chaotic ttl=B assoc=[] inv=[]
+group room=5 zone=0 name=NPC Party (Bard, Neutral, level 1) n=1 xp=0 hd= lair=false morale=0 align=Neutral ttl= assoc=[] inv=[]
+group room=6 zone=0 name=Varmint, Giant n=9 xp=6 hd=0 lair=false morale=-2 align=neutral ttl= assoc=[] inv=[]
+group room=7 zone=0 name=Goblin n=4 xp=5 hd=1-1 lair=false morale=-1 align=chaotic ttl= assoc=[] inv=[]
+hoard room=1 src=lair ttl=E coins=0/0/0/0/0 gems=4 jewelry=4 magic=1 gp=1020 hidden=false locked=false trapped=false cell=24,17,0 container=barrel
+hoard room=1 src=lair ttl=E coins=25000/0/0/0/0 gems=0 jewelry=0 magic=0 gp=250 hidden=true locked=false trapped=false cell=25,18,0 container=chest
+hoard room=4 src=lair ttl=B coins=0/0/0/0/0 gems=0 jewelry=0 magic=0 gp=0 hidden=false locked=false trapped=false cell=14,28,0 container=gear_pile
+hoard room=9 src=unprotected_trap_placeholder ttl= coins=0/4000/1000/0/0 gems=6 jewelry=0 magic=0 gp=1080 hidden=false locked=true trapped=false cell=11,8,0 container=chest
+door pos=(4, 17) type=arch secret=false material= evil=false connects=[-1, 7] lever=(-1, -1)
+door pos=(5, 20) type=locked secret=false material=wood_standard evil=false connects=[-1, 7] lever=(-1, -1)
+door pos=(7, 20) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 0] lever=(-1, -1)
+door pos=(8, 21) type=locked secret=false material=wood_standard evil=false connects=[0, 3] lever=(-1, -1)
+door pos=(9, 23) type=trapped secret=false material=wood_standard evil=false connects=[-1, 3] lever=(-1, -1)
+door pos=(10, 19) type=locked secret=false material=wood_standard evil=false connects=[0, 8] lever=(-1, -1)
+door pos=(10, 20) type=locked secret=false material=wood_standard evil=false connects=[-1, 0] lever=(-1, -1)
+door pos=(10, 22) type=trapped secret=false material=wood_standard evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(11, 9) type=arch secret=false material= evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(13, 6) type=locked secret=true material=wood_standard evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(14, 18) type=trapped secret=false material=wood_standard evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(14, 25) type=portcullis secret=false material=metal evil=false connects=[-1, 8] lever=(11, 19)
+door pos=(15, 26) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 4] lever=(-1, -1)
+door pos=(17, 22) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(18, 28) type=trapped secret=false material=wood_standard evil=false connects=[-1, 4] lever=(-1, -1)
+door pos=(19, 8) type=portcullis secret=false material=metal evil=false connects=[-1, 2] lever=(13, 27)
+door pos=(21, 10) type=portcullis secret=false material=metal evil=false connects=[-1, 2] lever=(13, 2)
+door pos=(22, 14) type=trapped secret=false material=wood_standard evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(23, 18) type=unlocked secret=true material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(24, 26) type=trapped secret=false material=wood_standard evil=false connects=[-1, 6] lever=(-1, -1)
+door pos=(25, 12) type=portcullis secret=false material=metal evil=false connects=[-1, 5] lever=(23, 13)
+door pos=(25, 15) type=locked secret=false material=wood_standard evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(25, 16) type=trapped secret=false material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(25, 19) type=unlocked secret=true material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(27, 23) type=portcullis secret=false material=metal evil=false connects=[-1, 6] lever=(23, 13)
+stair pos=(26, 24) dir=up connects=0 entrance=true
+floor=2 tier=2 entrance=(-1, -1) grid=31x31 is_entrance=false type=wizards_dungeon size=small
+cells_md5=18bb11a2732945a66151ada25c4379cc
+room=0 kind=circulation bounds=[P: (8, 19), S: (2, 2)] contents=empty purpose=vault| mg=false th=false
+room=1 kind=circulation bounds=[P: (23, 14), S: (2, 4)] contents=empty purpose=apprentice quarters| mg=false th=false
+room=2 kind=chamber bounds=[P: (21, 4), S: (3, 5)] contents=empty purpose=laboratory|laboratory mg=false th=false
+room=3 kind=chamber bounds=[P: (13, 2), S: (4, 6)] contents=empty purpose=summoning chamber|summoning chamber (with cached valuables) mg=false th=true
+room=4 kind=chamber bounds=[P: (2, 18), S: (2, 4)] contents=empty purpose=trapped corridor|trapped corridor mg=false th=true
+room=5 kind=chamber bounds=[P: (13, 21), S: (5, 5)] contents=monster purpose=library|patrol / temporary occupation by Ogre mg=true th=false
+room=6 kind=chamber bounds=[P: (10, 12), S: (4, 6)] contents=empty purpose=library|library mg=false th=false
+room=7 kind=chamber bounds=[P: (6, 24), S: (2, 3)] contents=empty purpose=summoning chamber|summoning chamber mg=false th=false
+room=8 kind=chamber bounds=[P: (18, 6), S: (2, 2)] contents=unique_placeholder purpose=library|unique feature (deferred) — Bat lair fallback mg=true th=false
+room=9 kind=chamber bounds=[P: (3, 3), S: (6, 4)] contents=monster purpose=library|patrol / temporary occupation by Locust, Cavern mg=true th=false
+group room=5 zone=0 name=Ogre n=2 xp=215 hd=4+1 lair=false morale=1 align=chaotic ttl= assoc=[] inv=["key", "key"]
+group room=8 zone=0 name=Bat n=8 xp=20 hd=2 lair=true morale=0 align=neutral ttl= assoc=[] inv=[]
+group room=9 zone=0 name=Locust, Cavern n=4 xp=29 hd=2 lair=false morale=-3 align=neutral ttl= assoc=[] inv=[]
+hoard room=3 src=unprotected_empty ttl= coins=16000/8000/0/0/0 gems=3 jewelry=6 magic=1 gp=2400 hidden=false locked=false trapped=false cell=15,6,-2 container=chest
+hoard room=4 src=lair ttl=A coins=0/0/0/0/0 gems=0 jewelry=3 magic=0 gp=675 hidden=false locked=false trapped=false cell=-1,-1,0 container=
+door pos=(3, 17) type=trapped secret=false material=wood_standard evil=false connects=[-1, 4] lever=(-1, -1)
+door pos=(4, 20) type=portcullis secret=false material=metal evil=false connects=[-1, 4] lever=(13, 2)
+door pos=(6, 7) type=arch secret=false material= evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(7, 20) type=portcullis secret=false material=metal evil=false connects=[-1, 0] lever=(16, 2)
+door pos=(7, 23) type=arch secret=false material= evil=false connects=[-1, 7] lever=(-1, -1)
+door pos=(8, 25) type=trapped secret=false material=stone evil=false connects=[-1, 7] lever=(-1, -1)
+door pos=(9, 5) type=trapped secret=true material=wood_standard evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(9, 18) type=portcullis secret=false material=metal evil=false connects=[-1, 0] lever=(6, 24)
+door pos=(9, 21) type=locked secret=false material=wood_standard evil=false connects=[-1, 0] lever=(-1, -1)
+door pos=(10, 20) type=portcullis secret=false material=metal evil=false connects=[-1, 0] lever=(3, 18)
+door pos=(12, 5) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 3] lever=(-1, -1)
+door pos=(12, 18) type=portcullis secret=false material=metal evil=false connects=[-1, 6] lever=(13, 21)
+door pos=(12, 23) type=unlocked secret=true material=wood_standard evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(14, 15) type=locked secret=false material=wood_standard evil=false connects=[-1, 6] lever=(-1, -1)
+door pos=(15, 8) type=locked secret=false material=wood_standard evil=false connects=[-1, 3] lever=(-1, -1)
+door pos=(15, 20) type=locked secret=false material=wood_standard evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(17, 6) type=portcullis secret=false material=metal evil=false connects=[3, 8] lever=(3, 18)
+door pos=(17, 7) type=trapped secret=false material=metal evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(20, 6) type=trapped secret=false material=wood_standard evil=false connects=[2, 8] lever=(-1, -1)
+door pos=(22, 9) type=locked secret=true material=wood_standard evil=false connects=[-1, 2] lever=(-1, -1)
+door pos=(22, 16) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(24, 13) type=portcullis secret=false material=metal evil=false connects=[-1, 1] lever=(10, 4)
+floor=3 tier=3 entrance=(-1, -1) grid=31x31 is_entrance=false type=wizards_dungeon size=small
+cells_md5=fc2159a9f8ce3cb51b7bfd57fbbf51d0
+room=0 kind=circulation bounds=[P: (23, 14), S: (2, 4)] contents=empty purpose=specimen storage| mg=false th=false
+room=1 kind=chamber bounds=[P: (21, 24), S: (6, 3)] contents=unique_placeholder purpose=library|unique feature (deferred) — patrol by Lycanthrope mg=true th=false
+room=2 kind=chamber bounds=[P: (9, 24), S: (2, 5)] contents=empty purpose=vault|vault mg=false th=false
+room=3 kind=chamber bounds=[P: (16, 2), S: (4, 3)] contents=empty purpose=laboratory|laboratory mg=false th=true
+room=4 kind=chamber bounds=[P: (5, 13), S: (4, 3)] contents=monster purpose=vault|patrol / temporary occupation by Scorpion, Giant mg=true th=false
+room=5 kind=chamber bounds=[P: (6, 6), S: (4, 4)] contents=unique_placeholder purpose=vault|unique feature (deferred) — patrol by NPC Party (Fighter, Neutral, level 4) mg=true th=true
+room=6 kind=chamber bounds=[P: (12, 11), S: (5, 4)] contents=unique_placeholder purpose=library|unique feature (deferred) — Troglodyte lair fallback mg=true th=true
+room=7 kind=chamber bounds=[P: (16, 16), S: (6, 6)] contents=unique_placeholder purpose=vault|unique feature (deferred) — patrol by Lizard, Giant mg=true th=false
+room=8 kind=chamber bounds=[P: (21, 5), S: (5, 2)] contents=monster purpose=laboratory|patrol / temporary occupation by Varmint, Giant mg=true th=false
+room=9 kind=chamber bounds=[P: (27, 15), S: (3, 6)] contents=monster purpose=summoning chamber|patrol / temporary occupation by Ant mg=true th=false
+group room=1 zone=0 name=Lycanthrope n=6 xp=135 hd=4 lair=false morale=0 align=chaotic ttl= assoc=[] inv=["key"]
+group room=4 zone=0 name=Scorpion, Giant n=4 xp=135 hd=4 lair=false morale=3 align=chaotic ttl= assoc=[] inv=[]
+group room=5 zone=0 name=NPC Party (Fighter, Neutral, level 4) n=1 xp=0 hd= lair=false morale=0 align=Neutral ttl= assoc=[] inv=[]
+group room=6 zone=0 name=Troglodyte n=2 xp=35 hd=2 lair=true morale=0 align=chaotic ttl=A assoc=[] inv=[]
+group room=7 zone=0 name=Lizard, Giant n=3 xp=140 hd=4+2 lair=false morale=-1 align=neutral ttl= assoc=[] inv=[]
+group room=8 zone=0 name=Varmint, Giant n=24 xp=15 hd=1+1 lair=false morale=0 align=neutral ttl= assoc=[] inv=[]
+group room=9 zone=0 name=Ant n=6 xp=80 hd=4 lair=false morale=4 align=neutral ttl= assoc=[] inv=[]
+hoard room=3 src=lair ttl=A coins=0/4000/0/0/0 gems=0 jewelry=0 magic=0 gp=400 hidden=false locked=false trapped=false cell=-1,-1,0 container=
+hoard room=5 src=unprotected_unique_placeholder ttl= coins=12000/17000/0/0/0 gems=0 jewelry=0 magic=0 gp=1820 hidden=false locked=false trapped=false cell=6,7,-4 container=chest
+hoard room=6 src=lair ttl=A coins=0/0/0/0/0 gems=0 jewelry=0 magic=0 gp=0 hidden=false locked=true trapped=false cell=12,11,-4 container=sack
+hoard room=6 src=lair ttl=A coins=0/0/0/0/0 gems=4 jewelry=4 magic=0 gp=1020 hidden=false locked=true trapped=false cell=16,14,-4 container=chest
+door pos=(7, 12) type=trapped secret=false material=wood_standard evil=false connects=[-1, 4] lever=(-1, -1)
+door pos=(8, 10) type=arch secret=false material= evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(9, 14) type=trapped secret=false material=wood_standard evil=false connects=[-1, 4] lever=(-1, -1)
+door pos=(10, 8) type=trapped secret=false material=wood_standard evil=false connects=[-1, 5] lever=(-1, -1)
+door pos=(10, 23) type=trapped secret=false material=wood_standard evil=false connects=[-1, 2] lever=(-1, -1)
+door pos=(11, 13) type=portcullis secret=false material=metal evil=false connects=[-1, 6] lever=(16, 16)
+door pos=(11, 26) type=trapped secret=false material=wood_standard evil=false connects=[-1, 2] lever=(-1, -1)
+door pos=(14, 15) type=locked secret=false material=wood_standard evil=false connects=[-1, 6] lever=(-1, -1)
+door pos=(15, 19) type=portcullis secret=false material=metal evil=false connects=[-1, 7] lever=(18, 6)
+door pos=(16, 15) type=unlocked secret=false material=wood_standard evil=false connects=[6, 7] lever=(-1, -1)
+door pos=(17, 13) type=locked secret=false material=wood_standard evil=false connects=[-1, 6] lever=(-1, -1)
+door pos=(18, 5) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 3] lever=(-1, -1)
+door pos=(20, 3) type=unlocked secret=false material=stone evil=false connects=[-1, 3] lever=(-1, -1)
+door pos=(20, 6) type=arch secret=false material= evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(20, 25) type=trapped secret=false material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(22, 16) type=trapped secret=false material=wood_standard evil=false connects=[0, 7] lever=(-1, -1)
+door pos=(23, 7) type=locked secret=true material=wood_standard evil=false connects=[-1, 8] lever=(-1, -1)
+door pos=(24, 13) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 0] lever=(-1, -1)
+door pos=(24, 18) type=trapped secret=false material=metal evil=false connects=[-1, 0] lever=(-1, -1)
+door pos=(24, 23) type=unlocked secret=true material=wood_standard evil=false connects=[-1, 1] lever=(-1, -1)
+door pos=(25, 16) type=portcullis secret=false material=metal evil=false connects=[-1, 0] lever=(21, 24)
+door pos=(26, 18) type=arch secret=false material= evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(28, 14) type=unlocked secret=true material=wood_standard evil=false connects=[-1, 9] lever=(-1, -1)
+door pos=(28, 21) type=unlocked secret=false material=wood_standard evil=false connects=[-1, 9] lever=(-1, -1)
+key opens=1:(13, 6) placed_floor=1 placed_room=1 placed_in=monster_group_inventory zone=0
+key opens=2:(8, 25) placed_floor=3 placed_room=3 placed_in=treasure_hoard zone=0
+key opens=2:(9, 5) placed_floor=2 placed_room=5 placed_in=monster_group_inventory zone=0
+key opens=2:(17, 7) placed_floor=2 placed_room=3 placed_in=treasure_hoard zone=0
+key opens=2:(22, 9) placed_floor=2 placed_room=4 placed_in=treasure_hoard zone=0
+key opens=3:(23, 7) placed_floor=3 placed_room=1 placed_in=monster_group_inventory zone=0
+key opens=3:(24, 18) placed_floor=2 placed_room=5 placed_in=monster_group_inventory zone=0
