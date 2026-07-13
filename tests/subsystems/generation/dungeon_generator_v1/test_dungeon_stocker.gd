@@ -389,8 +389,9 @@ func test_traps_unavailable_no_hoard_is_trapped() -> void:
 # ---------------------------------------------------------------------------
 
 ## map_band_stocking_to_zones copies each stocked band-layout chamber room onto
-## its composed zone-0 RoomZone, remaps monster-group/hoard room ids to the
-## dungeon-unique global id (band_slot*1000+local) + stamps zone_index 0, skips
+## its composed zone-0 RoomZone, stamps MonsterGroupData.zone_index 0 while
+## KEEPING per-band-LOCAL room ids on groups/hoards (F.2c id model: the
+## relational store scopes them by floor_id; zones link by string id), skips
 ## circulation rooms, and rolls the composed room's purpose up from its main zone.
 func test_map_band_stocking_to_zones() -> void:
 	# Band 1 (composer slot 0): a stocked chamber (local 0) + a circulation room.
@@ -452,10 +453,10 @@ func test_map_band_stocking_to_zones() -> void:
 	check(z1.monster_group_id == "mg_b1", "band-1 monster group id maps to zone 0")
 	check(z1.current_purpose == "goblin lair", "band-1 purpose maps to zone 0")
 	check(z2.contents_kind == "empty", "band-2 chamber maps as empty")
-	# Monster group / hoard room ids remap to global + zone_index 0.
-	check(mg1.room_id == 0, "band-1 group global id = 0 (slot 0)")
+	# Monster group / hoard room ids stay LOCAL (F.2c id model); zone_index 0.
+	check(mg1.room_id == 0, "band-1 group keeps its local room id 0")
 	check(mg1.zone_index == 0, "band-1 group zone_index stamped 0")
-	check(h2.room_id == 1000, "band-2 hoard global id = 1000 (slot 1), got %d" % h2.room_id)
+	check(h2.room_id == 0, "band-2 hoard keeps its local room id 0 (floor_id scopes it), got %d" % h2.room_id)
 	check((out["monster_groups"] as Array).size() == 1, "collected 1 monster group")
 	check((out["treasure_hoards"] as Array).size() == 1, "collected 1 treasure hoard")
 	# Composed RoomData rollup from the main zone.

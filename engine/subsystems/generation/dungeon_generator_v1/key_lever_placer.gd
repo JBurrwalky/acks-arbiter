@@ -829,7 +829,12 @@ static func _wire_lever_composed(volume: VoxelMapData, door_cell: Vector3i, cand
 	wired_levers[door_cell] = lever_cell
 	volume.set_lever_link(lever_cell, door_cell)
 	var cell: VoxelCell = volume.get_cell(lever_cell)
-	cell.feature = "lever_portcullis_%d_%d" % [door_cell.x, door_cell.y]
+	# Runtime contract: every lever consumer (context menu "Pull Lever",
+	# renderer mesh, combat lever actions) matches feature == "lever" exactly;
+	# the lever→door pairing travels on volume.lever_links, not the feature
+	# string. (The band LAYOUT cell keeps the legacy "lever_portcullis_x_y"
+	# terrain stamp — that is a different layer, applied in the sync-back.)
+	cell.feature = "lever"
 	volume.set_cell(lever_cell, cell)
 
 
@@ -888,6 +893,111 @@ static func _restamp_door(volume: VoxelMapData, rec: Dictionary) -> void:
 				cell.door_type = "portcullis"
 				cell.door_state = "closed"
 	volume.set_cell(rec["cell"], cell)
+
+
+## Sync the placer's door-RECORD mutations (§10.4 downgrades, secret-clears)
+## and wired levers back onto the band layouts' DungeonDoorData, so the
+## acceptance tests (T4/T6) and the relational persistence see the same door
+## hardware the composed volume carries. Legacy-§10.4 parity: a full downgrade
+## (gated door → plain unlocked wood) that removes a trap room's only
+## qualifying gate demotes that room to "empty"; a bare secret-clear does not
+## demote (matching the pre-flip place() behavior). Wired levers stamp the
+## lever's own band layout cell and record the 2D position on the door.
+static func sync_composed_doors_to_layouts(
+		doors: Array,
+		wired_levers: Dictionary,
+		floors: Array[DungeonLayout],
+		band_walk: Dictionary) -> void:
+	var layout_by_floor: Dictionary = {}
+	for fl in floors:
+		layout_by_floor[(fl as DungeonLayout).level_number] = fl
+	# Inverse of band_walk: every composed door/lever cell sits at its band's
+	# WALK level, so z resolves the band directly.
+	var walk_to_floor: Dictionary = {}
+	for floor_index in band_walk:
+		walk_to_floor[int(band_walk[floor_index])] = int(floor_index)
+
+	for rec in doors:
+		var band: int = int(rec.get("band", -1))
+		if not layout_by_floor.has(band):
+			# Every record originates from a band layout door (_stamp_band); a
+			# miss is a composed-vs-layout desync worth surfacing, not skipping.
+			push_warning("DungeonKeyLeverPlacer.sync_composed_doors_to_layouts: door record at %s has unknown band %d — mutation not synced." % [str(rec.get("cell", "?")), band])
+			continue
+		var layout: DungeonLayout = layout_by_floor[band]
+		var cell: Vector3i = rec["cell"]
+		var door: DungeonDoorData = layout.find_door_at(Vector2i(cell.x, cell.y))
+		if door == null:
+			push_warning("DungeonKeyLeverPlacer.sync_composed_doors_to_layouts: no layout door at band %d %s for a composed door record — mutation not synced." % [band, str(Vector2i(cell.x, cell.y))])
+			continue
+		var changed: bool = door.type != rec["type"] \
+			or door.is_secret != rec["is_secret"] \
+			or door.door_material != rec["material"]
+		if not changed:
+			continue
+		var was_qualifying: bool = door.is_secret and (
+			door.type == DungeonDoorData.TYPE_LOCKED
+			or door.type == DungeonDoorData.TYPE_TRAPPED)
+		var is_full_downgrade: bool = rec["type"] == DungeonDoorData.TYPE_UNLOCKED \
+			and not rec["is_secret"] \
+			and rec["material"] == DungeonDoorData.MATERIAL_WOOD_STANDARD
+		door.type = rec["type"]
+		door.is_secret = rec["is_secret"]
+		door.door_material = rec["material"]
+		if is_full_downgrade:
+			door.wired_lever_position = Vector2i(-1, -1)
+			if was_qualifying:
+				_demote_ungated_trap_rooms(layout, door)
+
+	# Wired levers: record the 2D lever position on the door and stamp the
+	# lever terrain feature on the LEVER's band layout (mirrors the legacy
+	# _wire_lever, which stamped the chosen room's own floor).
+	for door_cell: Vector3i in wired_levers:
+		var lever_cell: Vector3i = wired_levers[door_cell]
+		var door_band: int = int(walk_to_floor.get(door_cell.z, -1))
+		if layout_by_floor.has(door_band):
+			var door_layout: DungeonLayout = layout_by_floor[door_band]
+			var pdoor: DungeonDoorData = door_layout.find_door_at(Vector2i(door_cell.x, door_cell.y))
+			if pdoor != null:
+				pdoor.wired_lever_position = Vector2i(lever_cell.x, lever_cell.y)
+		var lever_floor: int = int(walk_to_floor.get(lever_cell.z, -1))
+		if layout_by_floor.has(lever_floor):
+			var lever_layout: DungeonLayout = layout_by_floor[lever_floor]
+			var lc: DungeonCellData = lever_layout.get_cell_at(Vector2i(lever_cell.x, lever_cell.y))
+			if lc != null:
+				lc.terrain_feature = "lever_portcullis_%d_%d" % [door_cell.x, door_cell.y]
+
+
+## Convert place_composed's key records into KeyItemData for the result
+## contract / persistence. The record's room_id is the composed GLOBAL id
+## (band_slot * ROOM_ID_STRIDE + local); the relational store keys rooms by
+## per-band-LOCAL id + floor, so the key's placed room resolves to its HOME
+## band (slot + 1) with the local id — a balcony zone's key still records the
+## owning room's home floor, and placed_in_zone_index carries the zone.
+static func composed_keys_to_items(keys: Array, doors: Array) -> Array[KeyItemData]:
+	var band_by_cell: Dictionary = {}
+	for rec in doors:
+		band_by_cell[rec["cell"]] = int(rec.get("band", -1))
+	var out: Array[KeyItemData] = []
+	for kd in keys:
+		var record: Dictionary = kd
+		var door_cell: Vector3i = record["opens_door_cell"]
+		var door_band: int = int(band_by_cell.get(door_cell, -1))
+		if door_band < 1:
+			push_warning("DungeonKeyLeverPlacer.composed_keys_to_items: key for door at %s has no band record — skipping." % str(door_cell))
+			continue
+		var global_room: int = int(record["room_id"])
+		var k := KeyItemData.new()
+		k.id = CampaignRepository.generate_id()
+		k.opens_door_floor_index = door_band
+		k.opens_door_position = Vector2i(door_cell.x, door_cell.y)
+		@warning_ignore("integer_division")
+		k.placed_on_floor_index = global_room / DungeonVolumeComposer.ROOM_ID_STRIDE + 1
+		k.placed_in_room_id = global_room % DungeonVolumeComposer.ROOM_ID_STRIDE
+		k.placed_in_zone_index = int(record["zone_index"])
+		k.placed_in = KeyItemData.PLACED_LOOSE  # finalized later
+		out.append(k)
+	return out
 
 
 ## Coverage: every zone and every stairwell reached (matches the solvability pass).

@@ -1891,13 +1891,14 @@ func _on_enter_dungeon_pressed() -> void:
 	var entrance: Dictionary = _enter_dungeon_btn.get_meta("entrance_data", {})
 	if entrance.is_empty():
 		return
-	var pre = JSON.parse_string(str(entrance.get("dungeon_data", "")))
-	var is_generated: bool = pre is Dictionary and (pre.has("cells") or pre.has("levels"))
-	if not is_generated:
-		var generated: String = DungeonFixtureService.get_or_generate_voxel(entrance)
-		if generated.is_empty():
-			push_error("wilderness 3D: dungeon generation failed for '%s'" % str(entrance.get("id", "?")))
-			return
+	# ALWAYS route through the lazy-generation seam: the service is the cache-hit
+	# arbiter (returns a current-version payload unchanged, exempts hand-authored
+	# content, and regenerates stale generator versions — DG-C3D.F). Pre-filtering
+	# on a local "has cells" check would make the version bump unreachable.
+	var generated: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	if generated.is_empty():
+		push_error("wilderness 3D: dungeon generation failed for '%s'" % str(entrance.get("id", "?")))
+		return
 	var dungeon_dict = JSON.parse_string(str(entrance.get("dungeon_data", "")))
 	if not (dungeon_dict is Dictionary):
 		return

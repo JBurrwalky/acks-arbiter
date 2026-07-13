@@ -139,7 +139,11 @@ static func _insert_floor_rows(dungeon_id: String, layout: DungeonLayout) -> Str
 	if not ok:
 		push_error("DungeonGeneratorRepository: dungeon_floors insert failed (dungeon %s, floor %d)." % [dungeon_id, layout.level_number])
 		return ""
-	# Rooms.
+	# Rooms. band = the floor's level_number (per-floor rows; the composed
+	# world's global ids derive as (band-1)*ROOM_ID_STRIDE + room_id_in_floor).
+	# kind separates chambers from reserved circulation (stairwell) rooms
+	# (DG-C3D.F). height_levels/level_offset stay at their column defaults —
+	# room verticality is authored on the composed volume + room_zones.
 	for r in layout.rooms:
 		var room: DungeonRoomData = r
 		var room_pk: String = CampaignRepository.generate_id()
@@ -147,8 +151,9 @@ static func _insert_floor_rows(dungeon_id: String, layout: DungeonLayout) -> Str
 			"""INSERT INTO dungeon_rooms
 				(id, dungeon_id, floor_id, room_id_in_floor,
 				 bounds_x, bounds_y, bounds_w, bounds_h, area_sqft,
-				 center_x, center_y, original_purpose, current_purpose, contents_kind)
-			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+				 center_x, center_y, original_purpose, current_purpose, contents_kind,
+				 band, kind)
+			   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 			[
 				room_pk, dungeon_id, floor_id, room.id,
 				room.bounds.position.x, room.bounds.position.y,
@@ -156,6 +161,7 @@ static func _insert_floor_rows(dungeon_id: String, layout: DungeonLayout) -> Str
 				room.center.x, room.center.y,
 				room.original_purpose, room.current_purpose,
 				room.contents_kind,
+				layout.level_number, room.kind,
 			])
 		if not room_ok:
 			push_error("DungeonGeneratorRepository: dungeon_rooms insert failed (floor %s, room %d)." % [floor_id, room.id])
@@ -334,11 +340,14 @@ static func _delete_dungeon_rows(dungeon_id: String) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Insert all monster groups for a single floor. Caller holds the transaction.
+## The row PK is the group's own generation-time id when present (DG-C3D.F:
+## room_zones.monster_group_id links zones to groups by this string, so the
+## stored row must keep it), falling back to a fresh id for id-less groups.
 static func _insert_monster_groups(dungeon_id: String, floor_id: String, groups: Array) -> bool:
 	var db = CampaignRepository.db
 	for g in groups:
 		var group: MonsterGroupData = g
-		var pk: String = CampaignRepository.generate_id()
+		var pk: String = group.id if not group.id.is_empty() else CampaignRepository.generate_id()
 		var ttl: Variant = null if group.treasure_type_letter.is_empty() else group.treasure_type_letter
 		var ok: bool = db.query_with_bindings(
 			"""INSERT INTO monster_groups
@@ -372,7 +381,9 @@ static func _insert_treasure_hoards(dungeon_id: String, floor_id: String, hoards
 	var db = CampaignRepository.db
 	for h in hoards:
 		var hoard: TreasureHoardData = h
-		var pk: String = CampaignRepository.generate_id()
+		# PK = the hoard's generation-time id when present (DG-C3D.F:
+		# room_zones.treasure_hoard_id links zones to hoards by this string).
+		var pk: String = hoard.id if not hoard.id.is_empty() else CampaignRepository.generate_id()
 		var ttl: Variant = null if hoard.treasure_type_letter.is_empty() else hoard.treasure_type_letter
 		# container_type "" → NULL (matches the schema's nullable column / CHECK
 		# enum semantics: an unplaced hoard has no container yet).
@@ -556,6 +567,10 @@ static func derive_request_spec(dungeon_id: String) -> Dictionary:
 			"""SELECT floor_index, floor_tier, is_entrance_floor, dungeon_type, dungeon_size
 			   FROM dungeon_floors WHERE dungeon_id = ? ORDER BY floor_index ASC""",
 			[dungeon_id]):
+		# Surface the DB failure — an empty return also means "no stored floors"
+		# (the hand-authored exemption keys on it), and the two causes must be
+		# distinguishable in the log.
+		push_error("DungeonGeneratorRepository.derive_request_spec: dungeon_floors query FAILED for dungeon '%s' (returning {} — callers will treat as no-provenance)." % dungeon_id)
 		return {}
 	if db.query_result.is_empty():
 		return {}
@@ -666,21 +681,38 @@ static func get_unlooted_treasure_hoards_for_room(floor_id: String, room_id: int
 
 
 ## Look up the floor_id (TEXT PK of dungeon_floors) for a given dungeon at the
-## given voxel z-coordinate. The voxel z = level_number - 1
-## (gdd-voxel-tactical-architecture-v1.1; dungeon_voxel_serializer convention).
-## Used by the dungeon runtime to bridge a Vector3i cell into a floor_id when
-## calling `TreasureLootService.materialize_hoard_cell` / `get_unlooted_treasure_hoard_at_cell`.
-## Returns "" if no floor matches (dungeon_id unknown or z out of range).
+## given voxel z-coordinate. COMPOSED-volume convention (DG-C3D.F): a band's
+## walkable content sits at its walk level, walk = 2·dir·(efi − floor_index)
+## (VerticalPlan.walk_level; dir +1 subterranean, −1 above-ground), so
+## floor_index = efi − dir·walk/2. Odd z values are stair mid-levels/headroom —
+## no floor content lives there. Used by the dungeon runtime to bridge a
+## Vector3i cell into a floor_id when calling
+## `TreasureLootService.materialize_hoard_cell` / `get_unlooted_treasure_hoard_at_cell`.
+## Returns "" if no floor matches (dungeon_id unknown, odd z, or z out of
+## range) — the caller falls back to the player-drop cache-only path.
 static func get_floor_id_for_voxel_level(dungeon_id: String, voxel_z: int) -> String:
+	if voxel_z % 2 != 0:
+		return ""
 	var db = CampaignRepository.db
-	var floor_index: int = voxel_z + 1
 	if not db.query_with_bindings(
-			"SELECT id FROM dungeon_floors WHERE dungeon_id = ? AND floor_index = ?",
-			[dungeon_id, floor_index]):
+			"SELECT id, floor_index, is_entrance_floor, structure_type FROM dungeon_floors WHERE dungeon_id = ?",
+			[dungeon_id]):
 		return ""
 	if db.query_result.is_empty():
 		return ""
-	return str(db.query_result[0].get("id", ""))
+	var rows: Array = db.query_result.duplicate()
+	var efi: int = 1
+	var dir: int = VerticalPlan.DIRECTION_DOWN
+	for row in rows:
+		if int(row["is_entrance_floor"]) == 1:
+			efi = int(row["floor_index"])
+		if str(row["structure_type"]) == DungeonTheme.STRUCTURE_ABOVE_GROUND:
+			dir = VerticalPlan.DIRECTION_UP
+	var target: int = VerticalPlan.floor_for_walk(voxel_z, efi, dir)
+	for row in rows:
+		if int(row["floor_index"]) == target:
+			return str(row["id"])
+	return ""
 
 
 ## Load the single UNLOOTED hoard placed at [param cell] on [param floor_id], or
@@ -725,6 +757,7 @@ static func mark_hoard_looted(hoard_id: String) -> bool:
 
 static func _row_to_monster_group(row: Dictionary, floor_index: int) -> MonsterGroupData:
 	var g := MonsterGroupData.new()
+	g.id = str(row.get("id", ""))
 	g.floor_index = floor_index
 	g.room_id = int(str(row["room_id"]))
 	g.monster_name = str(row["monster_name"])
@@ -748,6 +781,7 @@ static func _row_to_monster_group(row: Dictionary, floor_index: int) -> MonsterG
 
 static func _row_to_treasure_hoard(row: Dictionary, floor_index: int) -> TreasureHoardData:
 	var h := TreasureHoardData.new()
+	h.id = str(row.get("id", ""))
 	h.floor_index = floor_index
 	h.room_id = int(str(row["room_id"]))
 	h.source = str(row["source"])
@@ -813,6 +847,8 @@ static func _row_to_key_item(row: Dictionary, floor_level: Dictionary) -> KeyIte
 static func _row_to_room(row: Dictionary) -> DungeonRoomData:
 	var room := DungeonRoomData.new()
 	room.id = int(row["room_id_in_floor"])
+	room.band = int(row.get("band", 0))
+	room.kind = str(row.get("kind", DungeonRoomData.KIND_CHAMBER))
 	room.bounds = Rect2i(
 		int(row["bounds_x"]), int(row["bounds_y"]),
 		int(row["bounds_w"]), int(row["bounds_h"]))

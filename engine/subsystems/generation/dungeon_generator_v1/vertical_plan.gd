@@ -329,6 +329,16 @@ static func walk_level(floor_index: int, entrance_floor: int, dir: int) -> int:
 	return 2 * dir * (entrance_floor - floor_index)
 
 
+## Inverse of walk_level — the floor_index whose walk level is [param walk].
+## Kept beside the forward formula so a future band-spacing change cannot
+## silently desync the two (the runtime z→floor bridge inverts through here).
+## [param walk] must be even (walk levels always are); odd values are stair
+## mid-levels/headroom and have no floor.
+static func floor_for_walk(walk: int, entrance_floor: int, dir: int) -> int:
+	@warning_ignore("integer_division")
+	return entrance_floor - dir * walk / 2
+
+
 ## The band for [param floor_index], or null.
 func band_for_floor(floor_index: int) -> BandPlan:
 	for band in bands:

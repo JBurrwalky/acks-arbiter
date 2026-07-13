@@ -453,7 +453,17 @@ func get_stair_target(pos: Vector3i) -> Vector3i:
 		return Vector3i(-1, -1, -1)
 	var offset: Vector2i = VoxelGrid.DIRECTION_OFFSETS[dir_idx]
 	var z_delta: int = 1 if going_up else -1
-	return Vector3i(pos.x + offset.x, pos.y + offset.y, pos.z + z_delta)
+	var fallback := Vector3i(pos.x + offset.x, pos.y + offset.y, pos.z + z_delta)
+	# Composed volumes (DG-C3D.F) carry NO stair_target_* pairing — their stair
+	# steps are ordinary walkable geometry ("Move Here" traverses them). The
+	# direction-suffix fallback exists for hand-authored legacy payloads; only
+	# honor it when the derived cell is actually standable, so a composed
+	# stairwell's Ascend/Descend (menu entries die in F.3) degrades to a no-op
+	# instead of teleporting into headroom or rock.
+	var target_cell := _voxel_map.get_cell(fallback)
+	if target_cell.solidity != "air" or target_cell.floor_type == "none":
+		return Vector3i(-1, -1, -1)
+	return fallback
 
 
 ## Teleports the party to [param target_pos] and its immediate neighbors.

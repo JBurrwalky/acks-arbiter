@@ -169,12 +169,13 @@ func test_metadata_preserved_across_generation() -> void:
 # ---------------------------------------------------------------------------
 
 func test_missing_version_key_counts_as_current() -> void:
-	# A voxel payload persisted BEFORE the version stamp existed has no
-	# "generator_version" key — it must read as version 0 (== the current
-	# constant until DG-C3D.F bumps it) and cache-hit unchanged. This is the
-	# zero-behavior-change guarantee for pre-DG-C3D stored dungeons.
-	check(DungeonGeneratorV1.GENERATOR_VERSION == 0,
-		"DG-C3D.A expects GENERATOR_VERSION 0 (pre-cutover); when F bumps it, retire this test's premise")
+	# HAND-AUTHORED EXEMPTION (DG-C3D.F; conventions §117 F-bump caveat): a
+	# payload with "cells" but no "generator_version" key reads as version 0 —
+	# STALE post-cutover — but a dungeon with NO stored dungeon_floors rows has
+	# no generated provenance, so it is hand-authored test content and must be
+	# returned unchanged, never replaced with a generated default.
+	check(DungeonGeneratorV1.GENERATOR_VERSION >= 1,
+		"DG-C3D.F bumped GENERATOR_VERSION (missing-key payloads now read stale)")
 	var legacy_payload := JSON.stringify({"cells": [], "id": "dfs_test_legacy"})
 	var entrance := {
 		"id": "dfs_test_legacy",
@@ -182,7 +183,7 @@ func test_missing_version_key_counts_as_current() -> void:
 	}
 	var result_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
 	check(result_json == legacy_payload,
-		"payload without generator_version must cache-hit byte-identically (read as version 0)")
+		"hand-authored payload (cells, no version, no dungeon_floors rows) must be returned byte-identically")
 	print("  test_missing_version_key_counts_as_current: OK")
 
 
@@ -242,6 +243,16 @@ func test_stale_version_regenerates() -> void:
 	var regen_parsed: Variant = JSON.parse_string(regenerated_json)
 	check(regen_parsed is Dictionary and int((regen_parsed as Dictionary).get("generator_version", -1)) == DungeonGeneratorV1.GENERATOR_VERSION,
 		"regenerated payload stamped with the current generator_version")
+
+	# The regenerated payload must LOAD as a playable volume (the saved-campaign
+	# regen smoke): from_dict yields cells and a standable entry.
+	var loaded: VoxelMapData = VoxelMapData.from_dict(regen_parsed)
+	check(loaded.get_all_positions().size() > 0, "regenerated payload loads with cells")
+	var entry_cell: VoxelCell = loaded.get_cell(loaded.entry_pos)
+	check(entry_cell.solidity == "air" and entry_cell.floor_type != "none",
+		"regenerated payload's entry cell is standable")
+	check(loaded.is_transition_cell(loaded.entry_pos),
+		"regenerated payload's entry is a transition cell (Exit Dungeon available)")
 
 	# The planted stale runtime voxel cell must be gone.
 	CampaignRepository.db.query_with_bindings(

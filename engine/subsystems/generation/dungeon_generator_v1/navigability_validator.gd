@@ -35,6 +35,13 @@ static func validate_layout(layout: DungeonLayout) -> Dictionary:
 		# is floor-local (the multi-floor check belongs to validate_solvability).
 		for stair: DungeonStairData in layout.stairs:
 			_enqueue(layout, stair.position, visited, queue)
+		# Composed-pipeline band (DG-C3D.F): no stairs at all — vertical
+		# connectivity is the composer's stairwells. Seed from the first room
+		# so the single-connected-component check still runs.
+		if queue.is_empty():
+			var seed_cell: Vector2i = fallback_seed_cell(layout)
+			if seed_cell != Vector2i(-1, -1):
+				_enqueue(layout, seed_cell, visited, queue)
 
 	# ---- BFS -------------------------------------------------------------
 	while queue.size() > 0:
@@ -66,6 +73,17 @@ static func validate_layout(layout: DungeonLayout) -> Dictionary:
 		"unreachable_room_ids": unreachable,
 		"message": msg,
 	}
+
+
+## Composed-pipeline seeding fallback (DG-C3D.F): a band with no entrance and
+## no stairs seeds its floor-local reachability checks from the first room's
+## first cell (deterministic). Shared by validate_layout and the generator's
+## pre-stocking no-secrets guard so the two checks can never diverge. Returns
+## (-1, -1) when the layout has no seedable room.
+static func fallback_seed_cell(layout: DungeonLayout) -> Vector2i:
+	if not layout.rooms.is_empty() and not (layout.rooms[0] as DungeonRoomData).cells.is_empty():
+		return (layout.rooms[0] as DungeonRoomData).cells[0]
+	return Vector2i(-1, -1)
 
 
 # ---------------------------------------------------------------------------
@@ -450,15 +468,23 @@ static func reach_composed(
 	var reachable: Dictionary = {}
 	reachable[entrance_pos] = true
 	var queue: Array[Vector3i] = [entrance_pos]
-	var prev: int = 0
+	# Solvability fixpoint, door-frontier form: doors found blocked are parked
+	# in [blocked_doors]; whenever the frontier exhausts, every parked door is
+	# re-checked against the GROWN reachable set (reachable growth is the only
+	# thing that can open one — the geometry predicate is state-independent),
+	# and each door that opens is enqueued as the new frontier. Each outer
+	# iteration either opens ≥1 door or terminates, so iterations are bounded
+	# by the door count and every cell is BFS-expanded exactly once. (The
+	# previous form re-seeded the queue with the ENTIRE reachable set per pass
+	# — O(doors × volume) re-expansion that made deep multi-band dungeons
+	# effectively ungenerable.)
+	var blocked_doors: Dictionary = {}  # Vector3i -> true
 	var guard: int = 0
-	var max_passes: int = doors_by_cell.size() + 2
-	while reachable.size() > prev:
+	while true:
 		guard += 1
-		if guard > max_passes + 2:
-			push_error("DungeonNavigabilityValidator.reach_composed: fixpoint exceeded %d passes — bailing with partial reachability." % (max_passes + 2))
+		if guard > doors_by_cell.size() + 2:
+			push_error("DungeonNavigabilityValidator.reach_composed: fixpoint exceeded %d passes — bailing with partial reachability." % (doors_by_cell.size() + 2))
 			break
-		prev = reachable.size()
 		while not queue.is_empty():
 			var cur: Vector3i = queue.pop_front()
 			for nb: Vector3i in VoxelGrid.get_neighbors_3d(cur):
@@ -468,15 +494,22 @@ static func reach_composed(
 					continue
 				if mode == "solvability" and doors_by_cell.has(nb):
 					if not _composed_door_passable(doors_by_cell[nb], reachable, keys):
+						blocked_doors[nb] = true
 						continue
 				reachable[nb] = true
 				queue.append(nb)
-		# Solvability only: re-seed from the full reachable set so cells adjacent
-		# to now-unlockable doors are re-evaluated (structural never grows here).
-		if mode == "solvability" and reachable.size() > prev:
-			queue.clear()
-			for k in reachable.keys():
-				queue.append(k)
+		if mode != "solvability" or blocked_doors.is_empty():
+			break
+		var opened: Array[Vector3i] = []
+		for door_cell: Vector3i in blocked_doors:
+			if _composed_door_passable(doors_by_cell[door_cell], reachable, keys):
+				opened.append(door_cell)
+		if opened.is_empty():
+			break  # true fixpoint — remaining doors stay locked
+		for door_cell in opened:
+			blocked_doors.erase(door_cell)
+			reachable[door_cell] = true
+			queue.append(door_cell)
 	return reachable
 
 
@@ -693,8 +726,10 @@ static func composed_doors_by_cell(doors: Array, wired_levers: Dictionary = {}) 
 ## Solvability pass (post-keys/stocking): doors in their INITIAL states, fixpoint
 ## key/lever unlock. Every zone reachable, every stairwell reachable. Adds gate
 ## blast-radius [GATE] telemetry (§10.3): a key gating more than [param
-## gate_fraction] of stockable zones logs a warning. Returns
-## {ok, failures, unreached_zones, gate_warnings}.
+## gate_fraction] of stockable zones logs a warning. The telemetry re-runs the
+## reach once PER KEY, so [param with_gate_telemetry] lets hot callers (the
+## generator's stocking-retry loop) skip it and run it once on the accepted
+## attempt only. Returns {ok, failures, unreached_zones, gate_warnings}.
 static func validate_composed_solvability(
 		volume: VoxelMapData,
 		zones: Array[RoomZone],
@@ -704,7 +739,8 @@ static func validate_composed_solvability(
 		band_walk: Dictionary,
 		entrance_pos: Vector3i,
 		wired_levers: Dictionary = {},
-		gate_fraction: float = 0.40) -> Dictionary:
+		gate_fraction: float = 0.40,
+		with_gate_telemetry: bool = true) -> Dictionary:
 	var doors_by_cell: Dictionary = composed_doors_by_cell(doors, wired_levers)
 	var reachable: Dictionary = reach_composed(volume, entrance_pos, "solvability", doors_by_cell, keys)
 
@@ -727,7 +763,7 @@ static func validate_composed_solvability(
 		if z.zone_type != RoomZone.ZONE_TYPE_LANDING:
 			stockable.append(z)
 	var gate_warnings: Array = []
-	if not stockable.is_empty():
+	if with_gate_telemetry and not stockable.is_empty():
 		for k in keys:
 			var door_cell: Vector3i = k.get("opens_door_cell", StairwellData.UNSET_CELL)
 			if door_cell == StairwellData.UNSET_CELL:

@@ -49,8 +49,6 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 			var stored_version: int = int((existing as Dictionary).get("generator_version", 0))
 			if stored_version == DungeonGeneratorV1.GENERATOR_VERSION:
 				return dungeon_json  # cache hit — already generated, current version
-			print("DungeonFixtureService: dungeon '%s' stored with generator version %d (current %d) — discarding and regenerating."
-				% [entrance_id, stored_version, DungeonGeneratorV1.GENERATOR_VERSION])
 			# Recover the generation spec so regeneration reproduces the true
 			# shape (not the 1-floor default): the stored dungeon_floors rows ARE
 			# the recovery source (derive_request_spec). Do NOT delete those rows
@@ -59,14 +57,23 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 			# replaces them wholesale on success (insert_dungeon_layout
 			# deletes-then-inserts). Stale runtime voxel cells are purged in
 			# step 6, only once the new geometry is in hand.
+			#
+			# HAND-AUTHORED EXEMPTION (contiguous GDD §13 / conventions §117
+			# F-bump caveat): hand-authored payloads (test content) carry cells
+			# but NO relational provenance — every GENERATED dungeon persists
+			# its dungeon_floors rows via generate(persist=true). A version-
+			# mismatched payload whose dungeon has no stored floors is therefore
+			# hand-authored content, NOT a stale generated dungeon: return it
+			# unchanged instead of replacing it with a generated default.
+			var derived_spec: Dictionary = DungeonGeneratorRepository.derive_request_spec(entrance_id)
+			if derived_spec.is_empty():
+				print("DungeonFixtureService: dungeon '%s' payload is version %d (current %d) but has no dungeon_floors provenance — treating as hand-authored content, returning unchanged."
+					% [entrance_id, stored_version, DungeonGeneratorV1.GENERATOR_VERSION])
+				return dungeon_json  # hand-authored — exempt from the version bump
 			if not (existing as Dictionary).has("spec"):
-				var derived_spec: Dictionary = DungeonGeneratorRepository.derive_request_spec(entrance_id)
-				if not derived_spec.is_empty():
-					(existing as Dictionary)["spec"] = derived_spec
-				else:
-					push_warning(
-						"DungeonFixtureService: no spec recoverable for stale dungeon '%s' — regenerating with defaults."
-						% entrance_id)
+				(existing as Dictionary)["spec"] = derived_spec
+			print("DungeonFixtureService: dungeon '%s' stored with generator version %d (current %d) — discarding and regenerating."
+				% [entrance_id, stored_version, DungeonGeneratorV1.GENERATOR_VERSION])
 
 	# -------------------------------------------------------------------------
 	# 2. Read spec fields from the parsed stub.
@@ -133,18 +140,28 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 		return ""
 
 	# -------------------------------------------------------------------------
-	# 5. Serialize to voxel JSON. Build the dict once, merge the narrator
-	#    metadata the stub carried (provenance / context / dungeon_level /
-	#    size_hint / dungeon_type — written by SettingMaterializer) so an
-	#    ENTERED dungeon keeps its origin for the M5 narrator, then stringify a
-	#    single time (avoids a full parse+re-stringify of the whole cell grid).
-	#    "spec" is deliberately NOT merged into the payload: a stale-version
-	#    regeneration recovers the shape from the stored dungeon_floors rows
-	#    (derive_request_spec), so the payload needs no spec — and embedding it
-	#    would change what the payload exposes today (the Get-Hex-Info dev tool
-	#    renders extra rows off "spec"), breaking the zero-behavior-change goal.
+	# 5. Serialize to voxel JSON. The composed VoxelMapData IS the payload
+	#    (DG-C3D.F — composition owns voxel emission; the legacy per-floor
+	#    stitcher is retired). VoxelMapData.to_dict() does NOT emit the
+	#    generator version, so stamp it here — without the stamp the cache-hit
+	#    check above reads 0 and regenerates the dungeon on EVERY entry. Merge
+	#    the narrator metadata the stub carried (provenance / context /
+	#    dungeon_level / size_hint / dungeon_type — written by
+	#    SettingMaterializer) so an ENTERED dungeon keeps its origin for the M5
+	#    narrator, then stringify a single time. "spec" is deliberately NOT
+	#    merged into the payload: a stale-version regeneration recovers the
+	#    shape from the stored dungeon_floors rows (derive_request_spec), so
+	#    the payload needs no spec — and embedding it would change what the
+	#    payload exposes today (the Get-Hex-Info dev tool renders extra rows
+	#    off "spec").
 	# -------------------------------------------------------------------------
-	var voxel_dict: Dictionary = DungeonVoxelSerializer.to_voxel_dict(result)
+	if result.composed_volume == null:
+		push_error(
+			"DungeonFixtureService.get_or_generate_voxel: generation succeeded but composed_volume is null for entrance '%s'"
+			% entrance_id)
+		return ""
+	var voxel_dict: Dictionary = result.composed_volume.to_dict()
+	voxel_dict["generator_version"] = DungeonGeneratorV1.GENERATOR_VERSION
 	if existing is Dictionary:
 		for key in ["provenance", "context", "dungeon_level", "size_hint", "dungeon_type"]:
 			if (existing as Dictionary).has(key) and not voxel_dict.has(key):

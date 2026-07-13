@@ -1,19 +1,24 @@
 class_name DungeonGeneratorV1
 extends RefCounted
 
-## DG-V1.D multi-floor dungeon generation orchestrator.
+## Multi-band dungeon generation orchestrator — the COMPOSED contiguous-3D
+## pipeline (DG-C3D.F cutover; gdd-dungeon-contiguous-3d.md §8).
 ##
-## Drives the full gdd-dungeon-generator-v1.md §5 pipeline from a
-## DungeonGeneratorRequestV1 to a DungeonGeneratorResultV1, stitching together:
-##   DungeonTierDerivation    — per-floor tier computation (§6)
-##   DungeonDataLoader        — JSON data tables (§7.2)
+## Drives one DungeonGeneratorRequestV1 to a DungeonGeneratorResultV1:
+##   VerticalPlan             — whole-dungeon vertical plan (bands, connectors,
+##                              atriums, reservations; contiguous GDD §8 A)
+##   DungeonTierDerivation    — per-band tier computation (V1 §6, via the plan)
+##   DungeonDataLoader        — JSON data tables (V1 §7.2)
 ##   MonsterRegistry          — ACKS monster catalog
-##   DungeonLayoutGenerator   — single-floor layout generation (§4.1)
-##   DungeonStocker           — room contents (§11)
-##   DungeonKeyLeverPlacer    — key/lever placements (§10)
-##   DungeonNavigabilityValidator — §9.1 layout + §9.2 solvability checks
-##   DungeonAcceptanceTests   — §14 hard/soft gate
-##   DungeonGeneratorRepository — persistence (§12, optional)
+##   DungeonLayoutGenerator   — per-band 2D layout (reservations pre-placed)
+##   DungeonStocker           — room contents (V1 §11) + per-zone projection
+##   DungeonVolumeComposer    — ONE contiguous VoxelMapData + stairwells +
+##                              zones (contiguous GDD §8 C)
+##   DungeonKeyLeverPlacer    — composed key/lever placement over the real 3D
+##                              movement graph (contiguous GDD §10.3)
+##   DungeonNavigabilityValidator — per-band §9.1 + composed solvability (§10)
+##   DungeonAcceptanceTests   — V1 §14 hard/soft gate (per-band ledgers)
+##   DungeonGeneratorRepository — persistence (V1 §12, optional)
 ##
 ## NOTE ON KEY/LEVER vs STOCKING ORDER (GDD §5 deviation):
 ##   The GDD §5 lists key/lever placement BEFORE stocking, but trap rooms (§11.4)
@@ -33,13 +38,13 @@ extends RefCounted
 ## whose stamp does not match this constant — "regenerate, no migration".
 ##
 ## 0 = the pre-contiguous floor-stitched generator (payloads persisted before
-## the stamp existed read as 0 via the missing-key default, so they count as
-## current until the bump). DG-C3D.F bumps this to 1 when generate() flips to
-## the composed-volume pipeline, invalidating every stored dungeon at once.
-## NOTE for F: hand-authored dungeon payloads (test content) must be exempted
-## from version-triggered regeneration or the bump would replace them with
-## generated dungeons — see the DG-C3D.A build log entry.
-const GENERATOR_VERSION: int = 0
+## the stamp existed read as 0 via the missing-key default). 1 = the composed
+## contiguous-volume pipeline (DG-C3D.F cutover, 2026-07-12) — the bump
+## invalidates every stored generated dungeon at once; each lazily regenerates
+## on next access. Hand-authored payloads (test content — cells but no
+## dungeon_floors provenance rows) are exempted at the DungeonFixtureService
+## seam and never regenerate.
+const GENERATOR_VERSION: int = 1
 
 
 static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResultV1:
@@ -112,11 +117,13 @@ static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResu
 			% [_gen_elapsed, base_seed, request.dungeon_type, request.dungeon_size, request.floor_count])
 
 	# ---------------------------------------------------------------------------
-	# Step 13 — persist (optional; once, on the accepted result)
+	# Step 13 — persist (optional; once, on the accepted result). Zones and
+	# stairwells ride the same transaction as the floors (DG-C3D.F).
 	# ---------------------------------------------------------------------------
 	if request.persist and result.success:
 		if not DungeonGeneratorRepository.insert_dungeon_layout(
-				dungeon_id, result.floors, result.key_items):
+				dungeon_id, result.floors, result.key_items,
+				result.zones, result.stairwells):
 			result.errors.append("DungeonGeneratorV1: persist failed for dungeon '%s'" % dungeon_id)
 			result.success = false
 			push_error("DungeonGeneratorV1.generate: DB insert failed for dungeon '%s'" % dungeon_id)
@@ -124,9 +131,13 @@ static func generate(request: DungeonGeneratorRequestV1) -> DungeonGeneratorResu
 	return result
 
 
-## One generation attempt for a fixed master_seed (Steps 5-12). Returns a result
-## whose `success` is false if a floor is ungenerable or the dungeon is not
-## solvable/acceptable; generate() then retries with a fresh seed.
+## One generation attempt for a fixed master_seed (Steps 5-12) through the
+## COMPOSED pipeline (DG-C3D.F; contiguous GDD §8): vertical plan → per-band
+## layouts (reservations pre-placed, NO legacy stairs) → per-band stocking →
+## vertical composition into ONE VoxelMapData → composed key/lever placement →
+## per-zone stocking projection → composed solvability + acceptance. Returns a
+## result whose `success` is false if a band is ungenerable or the dungeon is
+## not solvable/acceptable; generate() then retries with a fresh seed.
 static func _generate_attempt(
 		request: DungeonGeneratorRequestV1,
 		master_seed: int,
@@ -137,10 +148,19 @@ static func _generate_attempt(
 	result.dungeon_id = dungeon_id
 
 	# ---------------------------------------------------------------------------
-	# Step 5 — tier derivation
+	# Step 5 — whole-dungeon vertical plan (DG-C3D.B): bands + walk levels +
+	# per-band tiers, connectors, atrium promotions, reserved footprints. Draws
+	# ONLY from its own namespaced stream (conventions §118); a single-band
+	# dungeon draws zero values, so the per-floor layout/stocking streams below
+	# are byte-identical to the pre-flip pipeline for single-floor dungeons.
 	# ---------------------------------------------------------------------------
-	var tiers: Array[int] = DungeonTierDerivation.tiers_for_dungeon(
-		request.entrance_tier, request.floor_count, request.entrance_floor_index)
+	var theme: DungeonTheme = DungeonThemeCatalog.get_theme(request.dungeon_type)
+	var vplan: VerticalPlan = VerticalPlan.build(
+		request, theme, VerticalPlan.derive_rng(master_seed))
+	if vplan == null:
+		result.errors.append(
+			"DungeonGeneratorV1: vertical plan failed (master seed %d)" % master_seed)
+		return result
 
 	if DungeonTierDerivation.clamp_fired(
 			request.entrance_tier, request.floor_count, request.entrance_floor_index):
@@ -148,38 +168,30 @@ static func _generate_attempt(
 			"tier clamp fired (entrance_tier=%d floor_count=%d efi=%d) — deep floors capped at tier 6"
 			% [request.entrance_tier, request.floor_count, request.entrance_floor_index])
 
-	# ---------------------------------------------------------------------------
-	# Step 6 — generate floors top-down, threading stair anchors
-	# ---------------------------------------------------------------------------
-	var prev_down_positions: Array[Vector2i] = []
+	# floor_index -> walk level, for the composed validators/placer.
+	var band_walk: Dictionary = {}
+	for band in vplan.bands:
+		band_walk[band.floor_index] = band.walk_level
 
+	# ---------------------------------------------------------------------------
+	# Step 6 — generate one layout per band. The vertical plan's reservations
+	# enter each band as pre-placed rooms (circulation footprints, atrium
+	# base/upper); legacy stair anchoring is gone — vertical connectivity is
+	# carved by the composer, so bands place NO stairs except the entrance
+	# band's single up-stair (the overworld connection).
+	# ---------------------------------------------------------------------------
 	for floor_index in range(1, request.floor_count + 1):
 		var req := DungeonLayoutRequest.new()
 		req.dungeon_type = request.dungeon_type
 		req.dungeon_size = request.dungeon_size
 		req.level_number = floor_index
-		req.floor_tier = tiers[floor_index - 1]
+		req.floor_tier = vplan.band_for_floor(floor_index).tier
 		req.is_entrance_floor = (floor_index == request.entrance_floor_index)
 		req.seed = master_seed + floor_index * 1000003
-
-		# Down-stairs: this floor connects down to floor_index+1 if it exists.
-		req.stairs_down = 1 if floor_index < request.floor_count else 0
-
-		# Up-stairs: the prior floor's down-stair positions are supplied as
-		# required_stair_positions with direction "up", so each anchor takes up
-		# exactly one up-stair slot. Set stairs_up = number of anchors so the
-		# composer subtracts them and places zero additional free up-stairs.
+		req.stairs_down = 0
+		req.stairs_up = 1 if req.is_entrance_floor else 0
 		req.required_stair_positions = []
-		for p in prev_down_positions:
-			req.required_stair_positions.append({"position": p, "direction": "up"})
-
-		# The entrance floor on floor 1 gets stairs_up = 1 (the overworld entrance);
-		# it has no required_stair_positions (no floor above), so free-placement fills it.
-		# Non-first floors that have anchors set stairs_up to the anchor count.
-		if floor_index == 1:
-			req.stairs_up = 1   # entrance / overworld connection
-		else:
-			req.stairs_up = prev_down_positions.size()
+		req.reserved_rooms = vplan.reservations_for_band(floor_index)
 
 		# Generate with up-to-3 retries on failure.
 		var layout: DungeonLayout = null
@@ -252,35 +264,27 @@ static func _generate_attempt(
 
 		result.floors.append(layout)
 
-		# Collect this floor's down-stair positions to anchor the next floor.
-		prev_down_positions = []
-		for s in layout.stairs:
-			var stair: DungeonStairData = s
-			if stair.direction == DungeonStairData.DIRECTION_DOWN:
-				prev_down_positions.append(stair.position)
-
-	# Wire connects_to_level on each stair now that the full floor list is known.
-	for fi in range(result.floors.size()):
-		var floor_layout: DungeonLayout = result.floors[fi]
-		var floor_num: int = fi + 1  # 1-based
+	# The only stair any band carries is the entrance band's overworld up-stair;
+	# wire its connects_to_level = 0 (overworld convention). Vertical band-to-band
+	# connectivity is the composer's stairwells, not DungeonStairData.
+	for fl in result.floors:
+		var floor_layout: DungeonLayout = fl
 		for s in floor_layout.stairs:
 			var stair: DungeonStairData = s
-			if stair.direction == DungeonStairData.DIRECTION_DOWN:
-				stair.connects_to_level = floor_num + 1
-			elif stair.direction == DungeonStairData.DIRECTION_UP and floor_num > 1:
-				stair.connects_to_level = floor_num - 1
-			# Entrance-floor up-stair connects to overworld (level 0 convention).
-			elif stair.direction == DungeonStairData.DIRECTION_UP and stair.is_entrance_stair:
+			if stair.direction == DungeonStairData.DIRECTION_UP and stair.is_entrance_stair:
 				stair.connects_to_level = 0
 
 	# ---------------------------------------------------------------------------
-	# Steps 7-10 — stock, key/lever, lever-stamp, solvability (with retry).
+	# Steps 7-10 — stock per band, compose, key/lever on the composed volume,
+	# per-zone projection, composed solvability + acceptance (with retry).
 	#
 	# The stocker randomly converts doors to secret+locked for trap rooms. If a
-	# trap room's door is on the only path between the entrance and a stair,
+	# trap room's door is on the only path between the entrance and content,
 	# solvability fails. We retry stocking with a different seed up to 3 times
 	# before accepting the result (solvability failures are then logged as errors
 	# but do not prevent returning a best-effort result for the test harness).
+	# The volume is re-composed per attempt because composition stamps the
+	# CURRENT door states into its door records/cells.
 	# ---------------------------------------------------------------------------
 
 	# Snapshot the FULL mutable door state from the layout generator (before any
@@ -305,6 +309,15 @@ static func _generate_attempt(
 
 	var solv: Dictionary = {}
 	var report: Dictionary = {}
+	var compose_result: DungeonVolumeComposer.ComposeResult = null
+	var placement: Dictionary = {}
+	var placement_solved: bool = false
+	# Warnings from the composer / placer / gate telemetry are collected per
+	# attempt and only the ACCEPTED (or final) attempt's are surfaced — a
+	# rejected attempt's warnings describe door/key states that were rolled
+	# back, and the deterministic compose warnings would otherwise duplicate
+	# once per retry.
+	var attempt_warnings: Array[String] = []
 	var stocking_attempt := 0
 	const MAX_STOCKING_ATTEMPTS := 4
 
@@ -312,11 +325,16 @@ static func _generate_attempt(
 		stocking_attempt += 1
 		var stocking_seed_bump: int = (stocking_attempt - 1) * 999983
 
-		# Step 7 — stock each floor (clear previous stocking state on retry).
+		# Step 7 — stock each band (clear previous stocking state on retry).
 		for fi in range(result.floors.size()):
 			var floor_layout: DungeonLayout = result.floors[fi]
-			# Clear stocker-generated state so the retry is fresh.
+			# Clear stocker-generated state so the retry is fresh. Circulation
+			# rooms are never stocked (§11.1) — leave their default "empty"
+			# contents intact so they persist under the dungeon_rooms
+			# contents_kind CHECK enum ("" is not a valid value).
 			for room in floor_layout.rooms:
+				if room.kind == DungeonRoomData.KIND_CIRCULATION:
+					continue
 				room.contents_kind = ""
 				room.current_purpose = ""
 				room.monster_group_id = ""
@@ -343,71 +361,130 @@ static func _generate_attempt(
 			floor_rng.seed = master_seed + (fi + 1) * 7919 + stocking_seed_bump
 			DungeonStocker.stock_floor(floor_layout, loader, registry, floor_rng)
 
-		# Step 8 — key/lever placement (AFTER stocking so trap-room doors are present).
-		# NOTE: the GDD §5 lists key/lever before stocking, but trap rooms (§11.4) create
-		# new locked+secret doors during stocking. Running this after stocking ensures
-		# trap-room doors get uniformly keyed alongside pre-existing locked doors.
-		# finalize_key_placements runs here after both, preserving the intended outcomes.
+		# Step 8 — vertical composition (DG-C3D.D): stamp the stocked bands into
+		# ONE contiguous VoxelMapData, carve connectors + atriums, assign zones.
+		# Runs after stocking so the door records carry the §11.4 trap gates.
+		# Deterministic given the layouts (no RNG stream of its own), so a
+		# compose failure is a geometry bug no stocking re-roll can fix — bail to
+		# the whole-dungeon re-seed ladder.
+		attempt_warnings = []
+		compose_result = DungeonVolumeComposer.compose(
+			vplan, result.floors, master_seed, dungeon_id)
+		for cw in compose_result.warnings:
+			attempt_warnings.append(str(cw))
+		if not compose_result.ok:
+			for aw in attempt_warnings:
+				result.warnings.append(aw)
+			result.errors.append("DungeonGeneratorV1: composition failed — %s" % compose_result.error)
+			return result
+
+		# Step 9 — key/lever placement over the composed 3D movement graph
+		# (DG-C3D.E). Same stream derivation as the pre-flip placer. NOTE: the
+		# GDD §5 lists key/lever before stocking, but trap rooms (§11.4) create
+		# new locked+secret doors during stocking, so this runs after. The
+		# placer mutates door RECORDS + volume cells; sync those mutations back
+		# onto the band layouts so acceptance (T4/T6) and persistence see them.
 		var kl_rng := RandomNumberGenerator.new()
 		kl_rng.seed = master_seed + 104729 + stocking_seed_bump
-		var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.place(
-			result.floors, request.entrance_floor_index, kl_rng)
+		placement = DungeonKeyLeverPlacer.place_composed(
+			compose_result.volume, compose_result.zones, compose_result.stairwells,
+			compose_result.rooms, compose_result.doors, band_walk,
+			compose_result.volume.entry_pos, kl_rng)
+		placement_solved = bool(placement.get("solved", false))
+		for pw in placement.get("warnings", []):
+			attempt_warnings.append(str(pw))
+		DungeonKeyLeverPlacer.sync_composed_doors_to_layouts(
+			compose_result.doors, placement["wired_levers"], result.floors, band_walk)
+		var keys: Array[KeyItemData] = DungeonKeyLeverPlacer.composed_keys_to_items(
+			placement["keys"], compose_result.doors)
 		DungeonKeyLeverPlacer.finalize_key_placements(keys, result.floors, loader, kl_rng)
 		result.key_items = keys
 
-		# Step 9 — stamp lever terrain features.
-		# key_lever_placer.place() already stamps lever terrain_features on portcullis
-		# doors, so this step is idempotent — re-stamp for consistency.
-		for fl in result.floors:
-			var floor_layout: DungeonLayout = fl
-			for d in floor_layout.doors:
-				var door: DungeonDoorData = d
-				if door.wired_lever_position == Vector2i(-1, -1):
-					continue
-				var lever_cell: DungeonCellData = floor_layout.get_cell_at(door.wired_lever_position)
-				if lever_cell != null:
-					lever_cell.terrain_feature = (
-						"lever_portcullis_%d_%d" % [door.position.x, door.position.y])
+		# Step 9b — project the per-band stocking results onto the composed
+		# zones (F.2a; draws no RNG). Runs after finalize so forced key hoards
+		# and §10.4 trap-room demotions roll into the zone copies. Balcony-zone
+		# stocking (zone_index >= 1) is DG-C3D.F.2d.
+		DungeonStocker.map_band_stocking_to_zones(result.floors, compose_result)
 
-		# Step 10 — solvability + acceptance gate. BOTH must pass to accept this
-		# attempt. Re-rolling the stocking seed changes trap placement, so it can
-		# clear a solvability failure (a trap's secret+locked door landing on the
-		# sole entrance path) or a transient hard acceptance failure (e.g. a trap
-		# room left ungated). T6 over-gating (>1) is only a soft warning and never
-		# forces a retry.
-		solv = DungeonNavigabilityValidator.validate_solvability(
-			result.floors, result.key_items, request.entrance_floor_index)
+		# Step 10 — composed solvability + acceptance gate. BOTH must pass (plus
+		# the placer's own rule-3 verdict) to accept this attempt. Re-rolling the
+		# stocking seed changes trap placement, so it can clear a solvability
+		# failure or a transient hard acceptance failure. T6 over-gating (>1) is
+		# only a soft warning and never forces a retry.
+		# Gate blast-radius telemetry re-runs the reach once per key — far too
+		# expensive per retry attempt; it runs ONCE on the final state below.
+		solv = DungeonNavigabilityValidator.validate_composed_solvability(
+			compose_result.volume, compose_result.zones, compose_result.stairwells,
+			compose_result.doors, placement["keys"], band_walk,
+			compose_result.volume.entry_pos, placement["wired_levers"], 0.40, false)
 		report = DungeonAcceptanceTests.run(result)
 		var attempt_hard_pass: bool = report.get("hard_pass", false)
-		if solv["ok"] and attempt_hard_pass:
+		if solv["ok"] and placement_solved and attempt_hard_pass:
 			break  # solvable AND acceptance-clean — done retrying
 
 		if stocking_attempt < MAX_STOCKING_ATTEMPTS:
-			push_warning("DungeonGeneratorV1: stocking attempt %d not accepted (solvable=%s, hard_pass=%s) — retrying with a different stocking seed."
-				% [stocking_attempt, str(solv.get("ok", false)), str(attempt_hard_pass)])
+			push_warning("DungeonGeneratorV1: stocking attempt %d not accepted (solvable=%s, placer_solved=%s, hard_pass=%s) — retrying with a different stocking seed."
+				% [stocking_attempt, str(solv.get("ok", false)), str(placement_solved), str(attempt_hard_pass)])
+
+	# [GATE] blast-radius telemetry (§10.3) once, against the accepted state —
+	# the per-key reach re-runs were skipped inside the retry loop.
+	if solv.get("ok", false) and placement_solved and not placement.is_empty():
+		var telemetry: Dictionary = DungeonNavigabilityValidator.validate_composed_solvability(
+			compose_result.volume, compose_result.zones, compose_result.stairwells,
+			compose_result.doors, placement["keys"], band_walk,
+			compose_result.volume.entry_pos, placement["wired_levers"])
+		for gw in telemetry.get("gate_warnings", []):
+			attempt_warnings.append(str(gw))
+
+	# Surface the accepted (or final) attempt's composer/placer/gate warnings.
+	for aw in attempt_warnings:
+		result.warnings.append(aw)
 
 	if not solv["ok"]:
 		for failure in solv["failures"]:
 			result.errors.append(str(failure))
+	if not placement_solved:
+		result.errors.append("DungeonGeneratorV1: composed key/lever placement unsolved (rule-3 structural defect) — re-seed required.")
 
 	# ---------------------------------------------------------------------------
-	# Step 11 — record the final acceptance report (from the accepted/last attempt).
+	# Step 11 — composed output + hoard cell remap.
+	# ---------------------------------------------------------------------------
+	result.composed_volume = compose_result.volume
+	result.stairwells = compose_result.stairwells
+	result.zones = compose_result.zones
+
+	# Treasure hoards were placed on the 2D band grids at the LEGACY voxel z
+	# (level_number - 1, stamped by DungeonStocker._place_hoards). Remap each
+	# placed hoard's cell_z to its band's composed walk level so the runtime
+	# cell-based loot query (get_unlooted_treasure_hoard_at_cell) matches the
+	# volume's coordinates. A no-op for a single-band dungeon (both are 0).
+	# Guarded to hoards still carrying the legacy stamp, so a placement site
+	# that already writes a real composed z (the F.2d balcony-zone pass) is
+	# never clobbered. Unplaced hoards (cell_x == -1, e.g. finalize-forced key
+	# hoards) keep their sentinel.
+	for fl in result.floors:
+		var floor_layout: DungeonLayout = fl
+		var walk: int = int(band_walk.get(floor_layout.level_number, 0))
+		for h in floor_layout.treasure_hoards:
+			var hoard: TreasureHoardData = h
+			if hoard.cell_x >= 0 and hoard.cell_z == floor_layout.level_number - 1:
+				hoard.cell_z = walk
+
+	# ---------------------------------------------------------------------------
+	# Step 12 — record the final acceptance report + set success flag
 	# ---------------------------------------------------------------------------
 	result.acceptance_report = report
 	result.placeholder_counts = report.get("placeholder_counts", {})
 	for w in report.get("soft_warnings", []):
 		result.warnings.append(str(w))
 
-	# ---------------------------------------------------------------------------
-	# Step 12 — set success flag
-	# ---------------------------------------------------------------------------
 	var hard_pass: bool = report.get("hard_pass", false)
 	# Surface any residual hard failures (e.g. an unresolvable topological case
 	# after all retries) in result.errors, not just the acceptance report.
 	if not hard_pass:
 		for hf in report.get("hard_failures", []):
 			result.errors.append(str(hf))
-	result.success = hard_pass and solv["ok"] and result.errors.is_empty()
+	result.success = hard_pass and solv["ok"] and placement_solved and result.errors.is_empty()
 	return result
 
 
@@ -442,6 +519,14 @@ static func _stairs_all_mutually_reachable_no_secrets(layout: DungeonLayout) -> 
 		var seed_stair: DungeonStairData = layout.stairs[0]
 		visited[seed_stair.position] = true
 		queue.append(seed_stair.position)
+	else:
+		# Composed-pipeline band with no stairs (vertical connectivity is the
+		# composer's, not DungeonStairData): seed from the shared fallback so
+		# this guard and validate_layout can never diverge.
+		var seed_cell: Vector2i = DungeonNavigabilityValidator.fallback_seed_cell(layout)
+		if seed_cell != Vector2i(-1, -1):
+			visited[seed_cell] = true
+			queue.append(seed_cell)
 
 	while queue.size() > 0:
 		var pos: Vector2i = queue.pop_front()

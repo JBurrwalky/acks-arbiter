@@ -113,19 +113,27 @@ static func stock_floor(
 ## What it does:
 ##   - copies each band-layout chamber room's stocking (contents_kind, ids,
 ##     current_purpose) onto that room's composed zone-0 (main) RoomZone;
-##   - remaps every monster group / treasure hoard's per-band-local room_id to
-##     the dungeon-unique global id (band_slot*1000+local, the composer's scheme)
-##     and stamps MonsterGroupData.zone_index = 0;
+##   - stamps MonsterGroupData.zone_index = 0 (the group lives in its room's
+##     main-floor zone);
 ##   - rolls the composed RoomData's `current_purpose` (+ the stocking fields)
 ##     up from its main zone.
 ##
+## ROOM-ID MODEL (DG-C3D.F.2c decision): monster groups and treasure hoards
+## KEEP their per-band-LOCAL room_id — the relational store scopes them by
+## floor_id, matching dungeon_rooms.room_id_in_floor, and nothing at runtime
+## queries monster groups by room id. Zones link to their contents by the
+## STRING monster_group_id / treasure_hoard_id instead. The composed world
+## (RoomZone.room_id, StairwellData.room_id, VoxelCell.room_id) speaks the
+## GLOBAL id (band_slot * ROOM_ID_STRIDE + local, slot = floor_index - 1);
+## the bridge between the two id spaces is that formula.
+##
 ## Balcony / gallery zones (zone_index >= 1, atriums only) are NOT stocked here —
-## that is the F.2b balcony pass (it needs its own namespaced RNG stream + the
+## that is the F.2d balcony pass (it needs its own namespaced RNG stream + the
 ## §11 door-less-zone trap nuance).
 ##
 ## Returns {monster_groups: Array[MonsterGroupData], treasure_hoards:
-## Array[TreasureHoardData]} — the dungeon-level collections (with global room
-## ids), which the F.2 cutover persists.
+## Array[TreasureHoardData]} — flat dungeon-level views of the per-band
+## collections (room ids LOCAL).
 static func map_band_stocking_to_zones(
 		band_layouts: Array[DungeonLayout],
 		compose_result) -> Dictionary:
@@ -160,13 +168,10 @@ static func map_band_stocking_to_zones(
 				zone0.treasure_hoard_id = room.treasure_hoard_id
 		for g in band_layout.monster_groups:
 			var grp: MonsterGroupData = g
-			grp.room_id = slot * DungeonVolumeComposer.ROOM_ID_STRIDE + grp.room_id
 			grp.zone_index = 0
 			all_groups.append(grp)
 		for h in band_layout.treasure_hoards:
-			var hoard: TreasureHoardData = h
-			hoard.room_id = slot * DungeonVolumeComposer.ROOM_ID_STRIDE + hoard.room_id
-			all_hoards.append(hoard)
+			all_hoards.append(h)
 
 	# Roll the composed RoomData's LLM-facing rollup up from its main zone
 	# (single-zone rooms: the rollup IS the main zone; F.2b composes atriums'

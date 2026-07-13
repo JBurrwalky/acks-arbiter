@@ -12,7 +12,11 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_cells_non_empty_and_spans_three_levels()
 	test_door_mapping()
-	test_multi_floor_stairs()
+	# test_multi_floor_stairs RETIRED at the DG-C3D.F.2c cutover: the composed
+	# pipeline places no per-floor DungeonStairData (vertical connectivity is
+	# the composer's stairwells), so the legacy stair_target overlay this test
+	# asserted never fires. The whole serializer + this suite are deleted in
+	# DG-C3D.F.3.
 	test_round_trip_through_voxel_map_data()
 	test_lever_links()
 	if not has_failures():

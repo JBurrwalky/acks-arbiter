@@ -197,15 +197,27 @@ func test_unique_placeholder_rooms() -> void:
 
 
 func test_solvability_reaches_all_stairs() -> void:
+	# Post-cutover (DG-C3D.F): vertical connectivity is the composed volume's
+	# stairwells, not per-floor DungeonStairData — generate() itself gates
+	# success on validate_composed_solvability (every zone + stairwell
+	# reachable from the entrance in the initial door state). Assert the
+	# composed contract here: a 3-floor dungeon carries a contiguous volume,
+	# at least one stairwell per adjacent band pair, and success (which implies
+	# the composed solvability pass held).
 	var req := _make_3_floor_request()
 	var result: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req)
 	if result == null:
 		return
-	# We re-run solvability to inspect the detailed flag.
-	var solv: Dictionary = DungeonNavigabilityValidator.validate_solvability(
-		result.floors, result.key_items, req.entrance_floor_index)
-	check(solv["reached_all_stairs"],
-		"solvability should reach all stairs (unreachable: %s)" % str(solv.get("unreachable_stairs", [])))
+	check(result.success, "3-floor composed generation succeeds (errors: %s)" % str(result.errors))
+	check(result.composed_volume != null, "result carries the composed volume")
+	var pairs_covered: Dictionary = {}
+	for sw in result.stairwells:
+		var stairwell: StairwellData = sw
+		pairs_covered["%d:%d" % [mini(stairwell.lower_band, stairwell.upper_band), maxi(stairwell.lower_band, stairwell.upper_band)]] = true
+		check(not stairwell.run_cells.is_empty(),
+			"stairwell %s has run cells" % stairwell.stairwell_id)
+	check(pairs_covered.has("1:2") and pairs_covered.has("2:3"),
+		"every adjacent band pair has at least one stairwell (covered: %s)" % str(pairs_covered.keys()))
 
 
 func test_determinism_same_seed() -> void:
