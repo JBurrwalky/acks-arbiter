@@ -3,7 +3,9 @@ extends "res://tests/test_suite_base.gd"
 ## Tests for DungeonNavigabilityValidator.
 ##
 ## Constructs minimal hand-authored DungeonLayout objects to verify §9.1
-## (validate_layout) and §9.2 (validate_solvability) behaviour.
+## (validate_layout) per-band reachability. (The legacy §9.2 validate_solvability
+## was removed at DG-C3D.F.3; composed-volume solvability is covered by
+## test_dungeon_composed_navigation.gd.)
 ##
 ## Reference: gdd-dungeon-generator-v1.md §9.
 
@@ -14,15 +16,6 @@ func run_all_tests() -> void:
 	test_validate_layout_unreachable_room_detected()
 	test_validate_layout_single_room_entrance_floor()
 	test_validate_layout_door_cell_is_traversable()
-
-	# --- validate_solvability ---
-	test_validate_solvability_unlocked_door_passes()
-	test_validate_solvability_locked_door_with_key_in_reachable_room_passes()
-	test_validate_solvability_locked_door_without_key_fails()
-	test_validate_solvability_secret_door_blocks()
-	test_validate_solvability_portcullis_no_lever_passable()
-	test_validate_solvability_portcullis_lever_reached_passable()
-	test_validate_solvability_portcullis_lever_unreached_blocked()
 
 	if not has_failures():
 		print("DungeonNavigabilityValidator: all tests passed.")
@@ -129,99 +122,6 @@ func test_validate_layout_door_cell_is_traversable() -> void:
 
 
 # ===========================================================================
-# validate_solvability (§9.2)
-# ===========================================================================
-
-## 2-room layout, unlocked door between them. No keys needed. Should pass.
-func test_validate_solvability_unlocked_door_passes() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_UNLOCKED, DungeonDoorData.MATERIAL_WOOD_STANDARD)
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == true,
-		"Unlocked-door 2-room layout should be solvable; failures: %s" % str(result["failures"]))
-
-
-## Locked stone door + matching key placed in the reachable entrance room. Should pass.
-func test_validate_solvability_locked_door_with_key_in_reachable_room_passes() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_LOCKED, DungeonDoorData.MATERIAL_STONE)
-
-	# Key lives in room 0 (the entrance-side room, cells reachable from entrance).
-	var k: KeyItemData = KeyItemData.new()
-	k.id = "key_001"
-	k.opens_door_floor_index = 1
-	k.opens_door_position = Vector2i(2, 0)  # door position in the layout
-	k.placed_on_floor_index = 1
-	k.placed_in_room_id = 0  # room 0 is entrance-side
-	k.placed_in = KeyItemData.PLACED_LOOSE
-
-	var keys: Array[KeyItemData] = [k]
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == true,
-		"Locked door with reachable key should be solvable; failures: %s" % str(result["failures"]))
-
-
-## Same layout but no key provided. The locked door should block room 1.
-func test_validate_solvability_locked_door_without_key_fails() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_LOCKED, DungeonDoorData.MATERIAL_STONE)
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == false,
-		"Locked door with no key should make layout unsolvable")
-	check((result["failures"] as Array).size() > 0,
-		"failures should be non-empty when room is blocked by locked door")
-
-
-## Secret door should block even without a key requirement (conservative §9.2).
-func test_validate_solvability_secret_door_blocks() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_UNLOCKED, DungeonDoorData.MATERIAL_WOOD_STANDARD)
-	# Mark door as secret.
-	layout.doors[0].is_secret = true
-	# Also update cell terrain.
-	layout.get_cell_at(Vector2i(2, 0)).terrain_feature = DungeonCellData.FEATURE_DOOR_SECRET
-
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == false,
-		"Secret door should block in solvability BFS (conservative)")
-
-
-## Portcullis with no wired lever: Force Portcullis always available -> passable.
-func test_validate_solvability_portcullis_no_lever_passable() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_PORTCULLIS, DungeonDoorData.MATERIAL_METAL)
-	# Ensure wired_lever_position is the default (-1,-1).
-	layout.doors[0].wired_lever_position = Vector2i(-1, -1)
-
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == true,
-		"Portcullis with no lever should be passable (Force Portcullis available); failures: %s" % str(result["failures"]))
-
-
-## Portcullis with lever in entrance-side room (reachable) -> passable.
-func test_validate_solvability_portcullis_lever_reached_passable() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_PORTCULLIS, DungeonDoorData.MATERIAL_METAL)
-	# Place lever at (1,0) — inside room 0 (entrance side, always reachable).
-	layout.doors[0].wired_lever_position = Vector2i(1, 0)
-
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == true,
-		"Portcullis with lever in reachable room should be passable; failures: %s" % str(result["failures"]))
-
-
-## Portcullis with lever in the BLOCKED side room -> lever unreachable -> blocked.
-func test_validate_solvability_portcullis_lever_unreached_blocked() -> void:
-	var layout: DungeonLayout = _make_two_room_locked_door_layout(DungeonDoorData.TYPE_PORTCULLIS, DungeonDoorData.MATERIAL_METAL)
-	# Place lever at (3,0) — inside room 1 (behind the portcullis, not initially reachable).
-	layout.doors[0].wired_lever_position = Vector2i(3, 0)
-
-	var keys: Array[KeyItemData] = []
-	var result: Dictionary = DungeonNavigabilityValidator.validate_solvability([layout], keys, 1)
-	check(result["ok"] == false,
-		"Portcullis with lever behind itself should be unsolvable")
-
-
-# ===========================================================================
 # Layout construction helpers
 # ===========================================================================
 
@@ -248,54 +148,6 @@ func _make_corridor_layout(width: int, height: int) -> DungeonLayout:
 ## 3×3 fully open layout.
 func _make_3x3_open_layout() -> DungeonLayout:
 	return _make_corridor_layout(3, 3)
-
-
-## 5×1 layout:
-##  (0,0) open entrance
-##  (1,0) open room0 cell
-##  (2,0) door cell
-##  (3,0) open room1 cell
-##  (4,0) open
-## Used by validate_solvability tests; parameterised on door type + material.
-func _make_two_room_locked_door_layout(door_type: String, door_material: String) -> DungeonLayout:
-	var layout: DungeonLayout = _make_corridor_layout(5, 1)
-	layout.is_entrance_floor = true
-	layout.entrance = Vector2i(0, 0)
-	layout.level_number = 1
-
-	# Door at (2,0).
-	var door_cell: DungeonCellData = layout.get_cell_at(Vector2i(2, 0))
-	door_cell.passable = false
-	door_cell.terrain_feature = _door_feature_for_type(door_type)
-
-	var door: DungeonDoorData = DungeonDoorData.new()
-	door.position = Vector2i(2, 0)
-	door.type = door_type
-	door.door_material = door_material
-	layout.doors = [door]
-
-	# Room 0: cells (0,0) and (1,0) — entrance side.
-	var room0: DungeonRoomData = _make_room(0, [Vector2i(0, 0), Vector2i(1, 0)])
-	layout.get_cell_at(Vector2i(0, 0)).room_id = 0
-	layout.get_cell_at(Vector2i(1, 0)).room_id = 0
-
-	# Room 1: cells (3,0) and (4,0) — behind the door.
-	var room1: DungeonRoomData = _make_room(1, [Vector2i(3, 0), Vector2i(4, 0)])
-	layout.get_cell_at(Vector2i(3, 0)).room_id = 1
-	layout.get_cell_at(Vector2i(4, 0)).room_id = 1
-
-	layout.rooms = [room0, room1]
-	return layout
-
-
-func _door_feature_for_type(type: String) -> String:
-	match type:
-		DungeonDoorData.TYPE_LOCKED, DungeonDoorData.TYPE_TRAPPED:
-			return DungeonCellData.FEATURE_DOOR_LOCKED
-		DungeonDoorData.TYPE_PORTCULLIS:
-			return DungeonCellData.FEATURE_PORTCULLIS
-		_:
-			return DungeonCellData.FEATURE_DOOR
 
 
 func _make_room(id: int, cell_positions: Array) -> DungeonRoomData:

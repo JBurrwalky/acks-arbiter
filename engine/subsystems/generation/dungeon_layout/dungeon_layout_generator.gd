@@ -78,7 +78,7 @@ static func generate(request: DungeonLayoutRequest) -> DungeonLayout:
 	rng.seed = request.seed
 
 	# Phase 2-7: planning. The composer accepts floor_tier (for §8.3 door
-	# materials) and required_stair_positions (for §9.3 stair anchors).
+	# materials) and reserved_rooms (DG-C3D.C vertical-plan reservations).
 	var composer := DungeonRoomComposer.new()
 	var placed: int = composer.compose(
 		grid_size.x, grid_size.y,
@@ -87,11 +87,10 @@ static func generate(request: DungeonLayoutRequest) -> DungeonLayout:
 		request.stairs_up, request.stairs_down,
 		rng,
 		request.floor_tier,
-		request.required_stair_positions,
 		request.reserved_rooms,
 	)
 	if placed < 0:
-		push_error("DungeonLayoutGenerator: composer rejected the request (invalid stair anchors); aborting.")
+		push_error("DungeonLayoutGenerator: composer rejected the request (invalid reserved rooms); aborting.")
 		return null
 	if placed == 0:
 		push_warning("DungeonLayoutGenerator: composer placed 0 rooms for seed %d." % request.seed)

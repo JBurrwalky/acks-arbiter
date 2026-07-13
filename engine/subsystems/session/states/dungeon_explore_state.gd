@@ -81,7 +81,21 @@ func enter(runner, context: Dictionary) -> void:
 	var entrance: Dictionary = context.get("entrance", {})
 	var spawn_cell: Vector2i = context.get("spawn_cell", Vector2i(-1, -1))
 
-	var dungeon_json: String = entrance.get("dungeon_data", "")
+	# DG-C3D.F.4 restore version guard: route the stored payload through the
+	# generator-version seam. The session-restore path does NOT otherwise pass
+	# through the renderer's enter-dungeon seam, so a save made under an older
+	# generator version would load stale floor-stitched geometry that the
+	# post-F.3 traversal model (no stair teleport) can no longer walk. On a
+	# version mismatch, get_or_generate_voxel regenerates to the current composed
+	# geometry (and persists it); on a current-version or hand-authored payload
+	# it is a cheap cache-hit that returns the stored JSON unchanged.
+	var stored_json: String = entrance.get("dungeon_data", "")
+	var dungeon_json: String = DungeonFixtureService.get_or_generate_voxel(entrance)
+	if dungeon_json.is_empty():
+		dungeon_json = stored_json  # regeneration failed — fall back to the stored payload
+	# When regeneration replaced the payload, saved deep-floor positions no longer
+	# map to the new single-volume geometry — snap the party to the fresh entrance.
+	var regenerated_on_restore: bool = not stored_json.is_empty() and dungeon_json != stored_json
 	if dungeon_json.is_empty():
 		push_error("DungeonExploreState: entrance has empty dungeon_data")
 		runner.transition_to_state("wilderness")
@@ -126,6 +140,9 @@ func enter(runner, context: Dictionary) -> void:
 		if fm != null:
 			fm.apply_preset("column", party_data, active_chars)
 
+	if regenerated_on_restore:
+		# Snap to the payload's entry_pos (spawn -1,-1 → _load_dungeon_voxel uses entry).
+		spawn_cell = Vector2i(-1, -1)
 	_controller.load_dungeon(dungeon_dict, spawn_cell)
 
 	# Save party dungeon position
@@ -222,8 +239,11 @@ func enter(runner, context: Dictionary) -> void:
 	# Savegame restore (gdd-savegame-system.md §5.2): if we entered via the
 	# context-aware loader, place each entity on its exact saved cell/level
 	# (overriding the entry scatter) and sync the party-level dungeon position.
+	# Skip position restore when the dungeon was regenerated on this restore (the
+	# saved positions belong to the discarded stale geometry — the party is
+	# already snapped to the fresh entrance above).
 	var restore_positions: Dictionary = context.get("restore_positions", {})
-	if not restore_positions.is_empty():
+	if not regenerated_on_restore and not restore_positions.is_empty():
 		if _controller.restore_entity_positions(restore_positions):
 			var vmap_r: VoxelMapData = _controller.get_voxel_map()
 			var ids_r: Array = _controller.get_entity_ids()
@@ -714,47 +734,9 @@ func _on_context_action(action_data: Dictionary) -> void:
 				"Force Portcullis (1 round)")
 
 		# --- Stairs ---
-		"ascend", "descend":
-			# Stair cells carry either an explicit stair_target_* coordinate
-			# or a direction-suffix (stairs_up_<DIR>). get_stair_target resolves
-			# the destination. When the destination is spatially adjacent the
-			# party could pathfind to it, but hand-authored dungeons with paired
-			# staircases often have non-adjacent destinations — we teleport the
-			# party directly onto the landing cell, which also sidesteps the BFS
-			# cost and avoids edge cases with intermediate unreachable cells.
-			var cell_3d: Vector3i = cell if cell is Vector3i else Vector3i(cell.x, cell.y, _controller.get_current_level())
-			var stair_target: Vector3i = _controller.get_stair_target(cell_3d)
-			if stair_target == Vector3i(-1, -1, -1):
-				EventBus.notification_requested.emit({
-					"type": "warning", "category": "environment",
-					"title": "Stair %s is not connected to anywhere." % str(cell_3d),
-					"duration": 4.0,
-				})
-			else:
-				var ok: bool = _controller.teleport_party_to(stair_target)
-				if ok:
-					var msg: String = "Ascend" if action_type == "ascend" else "Descend"
-					EventBus.notification_requested.emit({
-						"type": "info", "category": "environment",
-						"title": "%s: %s → %s" % [msg, str(cell_3d), str(stair_target)],
-						"duration": 3.0,
-					})
-				else:
-					var vmap := _controller.get_voxel_map()
-					var detail: String = "unknown"
-					if vmap != null:
-						if not vmap.has_cell(stair_target):
-							detail = "no cell"
-						elif not vmap.is_passable(stair_target):
-							detail = "not passable (solidity=%s, floor=%s)" % [
-								vmap.get_cell(stair_target).solidity,
-								vmap.get_cell(stair_target).floor_type,
-							]
-					EventBus.notification_requested.emit({
-						"type": "warning", "category": "environment",
-						"title": "Stair %s → %s failed: %s" % [str(cell_3d), str(stair_target), detail],
-						"duration": 6.0,
-					})
+		# DG-C3D.F.3: no Ascend/Descend teleport. Internal stairs are carved
+		# walkable geometry — the party walks them via "Move Here". Only
+		# Exit Dungeon remains, handled below.
 		"exit_dungeon":
 			# Queue all selected characters to exit the dungeon.
 			var map = _controller.get_voxel_map()

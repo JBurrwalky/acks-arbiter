@@ -59,17 +59,6 @@ var is_entrance_floor: bool = false
 ## consumes it for the §8.3 pass. Defaults to 1 (the easiest tier).
 var floor_tier: int = 1
 
-## Required stair positions per layout GDD §9.3. Each entry is a Dictionary
-## with keys "position" (Vector2i) and "direction" (String "up" or "down").
-## Empty for the entrance floor (free placement); non-empty for child floors,
-## where the multi-floor orchestrator supplies the prior-floor stair-position
-## the new floor must align with. Each anchor cell is reserved as the center
-## of a 3×3 antechamber room before scatter (per §9.3.2).
-##
-## LEGACY path (dies at DG-C3D.F): the contiguous-3D pipeline uses
-## `reserved_rooms` instead; the two are never combined in one request.
-var required_stair_positions: Array = []
-
 ## Pre-placed reservation rooms from the whole-dungeon vertical plan
 ## (DG-C3D.C; contiguous GDD §8 stage B1). Each entry is a Dictionary in the
 ## `VerticalPlan.reservations_for_band()` shape:

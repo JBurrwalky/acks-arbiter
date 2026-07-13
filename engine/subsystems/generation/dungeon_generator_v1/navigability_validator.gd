@@ -3,16 +3,21 @@ extends RefCounted
 
 ## Validates spatial reachability for a generated dungeon.
 ##
-## §9.1 validate_layout — single-floor BFS: every room cell must be reachable
-## from the entrance (or from all stair cells on non-entrance floors).
-## Doors are treated as traversable regardless of type/state.
+## §9.1 validate_layout — per-band single-floor BFS: every room cell must be
+## reachable within one band (doors treated as traversable regardless of
+## type/state). Runs on each composed band during generation as a pre-compose
+## structural guard.
 ##
-## §9.2 validate_solvability — multi-floor fixed-point BFS: given the full
-## floor stack and all placed key items, can every room and stair cell be
-## reached in the dungeon's INITIAL state (doors locked/portcullised until
-## their guard condition is satisfied by already-reached content)?
+## Composed-volume validation (DG-C3D.E) runs reachability on the real 3D
+## movement graph of the contiguous VoxelMapData via MovementRules:
+##   validate_composed_structural  — all doors passable; every zone + stairwell
+##                                    reachable from the entrance; §10.2 geometry.
+##   validate_composed_solvability — doors in their INITIAL state, fixpoint
+##                                    key/lever unlock; gate blast-radius telemetry.
+## (The legacy per-floor 2D validate_solvability + stair-teleport BFS was removed
+## at DG-C3D.F.3; the composed volume is the only reachability surface.)
 ##
-## Reference: gdd-dungeon-generator-v1.md §9.
+## Reference: gdd-dungeon-generator-v1.md §9; gdd-dungeon-contiguous-3d.md §10.
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +37,7 @@ static func validate_layout(layout: DungeonLayout) -> Dictionary:
 		_enqueue(layout, layout.entrance, visited, queue)
 	else:
 		# Non-entrance floor: start from every stair cell so reachability
-		# is floor-local (the multi-floor check belongs to validate_solvability).
+		# is floor-local (cross-band reachability is validate_composed_solvability).
 		for stair: DungeonStairData in layout.stairs:
 			_enqueue(layout, stair.position, visited, queue)
 		# Composed-pipeline band (DG-C3D.F): no stairs at all — vertical
@@ -87,180 +92,6 @@ static func fallback_seed_cell(layout: DungeonLayout) -> Vector2i:
 
 
 # ---------------------------------------------------------------------------
-# §9.2  validate_solvability — multi-floor fixed-point BFS
-# ---------------------------------------------------------------------------
-
-## Multi-floor fixed-point BFS from the entrance cell on the entrance floor.
-##
-## Door passability in INITIAL state:
-##   arch / curtain         -> always passable
-##   unlocked               -> passable
-##   locked / trapped       -> blocked UNLESS a matching key is already in the
-##                             reachable region (key's room cells must be reached)
-##   secret (is_secret)     -> blocked (conservative: player must Search first)
-##   portcullis             -> blocked UNLESS its wired_lever_position cell is
-##                             reached; a portcullis with no wired lever is
-##                             treated as forceable (Force Portcullis always
-##                             available per gdd-dungeon-map-ui.md) and thus
-##                             passable.
-##
-## Stairs: stepping onto a stair cell adds the matching stair on the adjacent
-## floor (same grid position, opposite direction) to the frontier.
-##
-## Iterates to a fixed point — re-expands when a newly reached cell unlocks
-## a door (key now reachable / lever now reachable).
-##
-## secret_gated_treasure_per_floor: count of treasure hoards only reachable
-## by passing a secret door.  This implementation returns 0 per floor — full
-## secret-gating analysis requires a second BFS with secrets open, which is
-## expensive and low-value for V1 acceptance; documented here.
-##
-## Returns {ok:bool, failures:Array[String], reached_all_stairs:bool,
-##          unreachable_stairs:Array, secret_gated_treasure_per_floor:Array[int]}.
-static func validate_solvability(
-		floors: Array[DungeonLayout],
-		key_items: Array[KeyItemData],
-		entrance_floor_index: int) -> Dictionary:
-
-	if floors.is_empty():
-		return {
-			"ok": false,
-			"failures": ["No floors provided."],
-			"reached_all_stairs": false,
-			"unreachable_stairs": [],
-			"secret_gated_treasure_per_floor": [],
-		}
-
-	# Map of "floor_idx:room_id" -> Array[KeyItemData] for door-unlock checks.
-	var keys_by_room: Dictionary = {}  # room_key -> Array[KeyItemData]
-	for k: KeyItemData in key_items:
-		if k.placed_on_floor_index < 1 or k.placed_on_floor_index > floors.size():
-			continue
-		var room_key: String = "%d:%d" % [k.placed_on_floor_index, k.placed_in_room_id]
-		if not keys_by_room.has(room_key):
-			keys_by_room[room_key] = []
-		keys_by_room[room_key].append(k)
-
-	# ---- reachable set: "floor_index:x:y" strings -------------------------
-	var reachable: Dictionary = {}  # encoded cell key -> true
-
-	# ---- seed ---------------------------------------------------------------
-	var entrance_fl_idx := entrance_floor_index  # 1-based
-	if entrance_fl_idx < 1 or entrance_fl_idx > floors.size():
-		return {
-			"ok": false,
-			"failures": ["entrance_floor_index %d out of range." % entrance_floor_index],
-			"reached_all_stairs": false,
-			"unreachable_stairs": [],
-			"secret_gated_treasure_per_floor": [],
-		}
-
-	var entrance_floor: DungeonLayout = floors[entrance_fl_idx - 1]
-	var start: Vector2i = entrance_floor.entrance
-
-	var queue: Array = []  # Array of {floor_idx:int, pos:Vector2i}
-	var cell_key: String = _cell_key(entrance_fl_idx, start)
-	reachable[cell_key] = true
-	queue.append({"floor_idx": entrance_fl_idx, "pos": start})
-
-	# ---- fixed-point BFS ----------------------------------------------------
-	# Each pass drains the queue. If the reachable set grew this pass (new keys
-	# or levers became accessible, potentially unlocking previously blocked doors),
-	# we reseed from the full reachable set and run another pass.  Terminates
-	# because reachable is monotonically growing and bounded by grid size.
-	# A hard pass cap guards against non-terminating regressions: every genuine
-	# pass is caused by a delayed unlock event, so passes can never legitimately
-	# exceed the dungeon's total door + stair count. Exceeding the cap logs an
-	# error and bails with the partial result (fail fast, never spin).
-	var max_passes: int = 2
-	for f: DungeonLayout in floors:
-		max_passes += f.doors.size() + f.stairs.size()
-	var passes: int = 0
-	var prev_size := 0
-	while reachable.size() > prev_size:
-		passes += 1
-		if passes > max_passes:
-			push_error("DungeonNavigabilityValidator.validate_solvability: fixed-point exceeded %d passes — aborting with partial reachability (guard against non-terminating regressions)." % max_passes)
-			break
-		prev_size = reachable.size()
-
-		while queue.size() > 0:
-			var item: Dictionary = queue.pop_front()
-			var fi: int = item["floor_idx"]
-			var pos: Vector2i = item["pos"]
-			var layout: DungeonLayout = floors[fi - 1]
-
-			# Handle stair: add matching stair on adjacent floor.
-			var here: DungeonCellData = layout.get_cell_at(pos)
-			if here != null and here.is_stair():
-				_expand_stair(floors, fi, pos, reachable, queue)
-
-			# Expand 4-neighbours.
-			for nb: Vector2i in _neighbours(pos):
-				if not _can_traverse_solvability(layout, fi, nb, reachable, floors, keys_by_room):
-					continue
-				var nb_key: String = _cell_key(fi, nb)
-				if not reachable.has(nb_key):
-					reachable[nb_key] = true
-					queue.append({"floor_idx": fi, "pos": nb})
-
-		# If reachable grew, reseed queue from the entire reachable set so newly
-		# accessible cells adjacent to locked doors can be re-evaluated now that
-		# their keys/levers may have entered the reachable region.
-		if reachable.size() > prev_size:
-			queue.clear()
-			for ck: String in reachable.keys():
-				var parts: PackedStringArray = ck.split(":")
-				var fi2: int = int(parts[0])
-				var x2: int = int(parts[1])
-				var y2: int = int(parts[2])
-				queue.append({"floor_idx": fi2, "pos": Vector2i(x2, y2)})
-
-	# ---- check all stair cells -----------------------------------------------
-	var unreachable_stairs: Array = []
-	var reached_all_stairs := true
-	for f: DungeonLayout in floors:
-		for stair: DungeonStairData in f.stairs:
-			var sk: String = _cell_key(f.level_number, stair.position)
-			if not reachable.has(sk):
-				reached_all_stairs = false
-				unreachable_stairs.append({
-					"floor": f.level_number,
-					"pos": stair.position,
-					"direction": stair.direction,
-				})
-
-	# ---- check all room cells -----------------------------------------------
-	var failures: Array[String] = []
-	for f: DungeonLayout in floors:
-		for room: DungeonRoomData in f.rooms:
-			var any_room_cell_reached := false
-			for rc: Vector2i in room.cells:
-				if reachable.has(_cell_key(f.level_number, rc)):
-					any_room_cell_reached = true
-					break
-			if not any_room_cell_reached:
-				failures.append("Floor %d room %d unreachable." % [f.level_number, room.id])
-
-	# ---- secret-gated treasure (best-effort 0s — documented) ---------------
-	# Full analysis requires a second BFS with is_secret doors open minus the
-	# primary BFS result. Deferred for V1 — returns 0 per floor.
-	var secret_gated: Array[int] = []
-	for _f: DungeonLayout in floors:
-		secret_gated.append(0)
-
-	var ok := failures.is_empty() and reached_all_stairs
-
-	return {
-		"ok": ok,
-		"failures": failures,
-		"reached_all_stairs": reached_all_stairs,
-		"unreachable_stairs": unreachable_stairs,
-		"secret_gated_treasure_per_floor": secret_gated,
-	}
-
-
-# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
@@ -297,140 +128,6 @@ static func _enqueue(
 	queue.append(pos)
 
 
-## Encoded key for multi-floor reachable dictionary.
-static func _cell_key(floor_idx: int, pos: Vector2i) -> String:
-	return "%d:%d:%d" % [floor_idx, pos.x, pos.y]
-
-
-## True if any KeyItem that unlocks door at (fi, pos) has any room cell reached.
-## Requires the floors array for room cell lookup.
-static func _key_for_door_is_reachable_with_floors(
-		fi: int,
-		pos: Vector2i,
-		reachable: Dictionary,
-		keys_by_room: Dictionary,
-		floors: Array[DungeonLayout]) -> bool:
-	for room_key: String in keys_by_room.keys():
-		var keys: Array = keys_by_room[room_key]
-		for k: KeyItemData in keys:
-			if k.opens_door_floor_index != fi or k.opens_door_position != pos:
-				continue
-			# Key found — is its room reachable?
-			var kfi: int = k.placed_on_floor_index
-			if kfi < 1 or kfi > floors.size():
-				continue
-			var key_layout: DungeonLayout = floors[kfi - 1]
-			var key_room: DungeonRoomData = key_layout.find_room(k.placed_in_room_id)
-			if key_room == null:
-				continue
-			for rc: Vector2i in key_room.cells:
-				if reachable.has(_cell_key(kfi, rc)):
-					return true
-	return false
-
-
-## Whether a cell at pos on floor fi is traversable for solvability BFS.
-## Returns false for out-of-bounds, solid walls, and locked/secret doors whose
-## guard condition is not yet met.
-static func _can_traverse_solvability(
-		layout: DungeonLayout,
-		fi: int,
-		pos: Vector2i,
-		reachable: Dictionary,
-		floors: Array[DungeonLayout],
-		keys_by_room: Dictionary) -> bool:
-	if pos.x < 0 or pos.y < 0 or pos.x >= layout.grid_width or pos.y >= layout.grid_height:
-		return false
-	var cell: DungeonCellData = layout.get_cell_at(pos)
-	if cell == null:
-		return false
-	# Solid walls and rock are not traversable.
-	if not cell.passable and not cell.is_door() and not cell.is_stair():
-		return false
-	# Door cells: check initial passability with full key/lever logic.
-	if cell.is_door():
-		var door: DungeonDoorData = layout.find_door_at(pos)
-		if door != null:
-			# Secret doors: conservative §9.2 model — player must Search first.
-			# secret+locked/trapped with a reachable key: passable (Search then key).
-			# All other secret door states: blocked (Search required, no fallback).
-			if door.is_secret:
-				if door.type == DungeonDoorData.TYPE_LOCKED or door.type == DungeonDoorData.TYPE_TRAPPED:
-					return _key_for_door_is_reachable_with_floors(fi, pos, reachable, keys_by_room, floors)
-				return false
-			# Arch / curtain: passable.
-			if DungeonDoorData.is_curtain(door.door_material) or door.type == DungeonDoorData.TYPE_ARCH:
-				return true
-			# Unlocked: passable.
-			if door.type == DungeonDoorData.TYPE_UNLOCKED:
-				return true
-			# Portcullis.
-			if door.type == DungeonDoorData.TYPE_PORTCULLIS:
-				if door.wired_lever_position == Vector2i(-1, -1):
-					return true  # no lever -> Force Portcullis available
-				return reachable.has(_cell_key(fi, door.wired_lever_position))
-			# Non-bashable locked / trapped (stone or metal): need key.
-			# Bashable (wood_standard / wood_thick): always passable per §10 preamble.
-			# Note: secret+bashable doors are handled above (blocked until Search).
-			if door.type == DungeonDoorData.TYPE_LOCKED or door.type == DungeonDoorData.TYPE_TRAPPED:
-				if DungeonDoorData.is_bashable(door.door_material):
-					return true  # wood door: bash available, no key needed
-				return _key_for_door_is_reachable_with_floors(fi, pos, reachable, keys_by_room, floors)
-	return true
-
-
-## Follow a stair at (fi, pos) to the matching stair on the adjacent floor.
-## Convention: stair-down on floor i at pos P matches stair-up on floor i+1 at pos P.
-## If connects_to_level is set on DungeonStairData, uses that; otherwise infers
-## from direction (down -> fi+1, up -> fi-1).
-## Returns true if a new cell was added to the reachable set.
-static func _expand_stair(
-		floors: Array[DungeonLayout],
-		fi: int,
-		pos: Vector2i,
-		reachable: Dictionary,
-		queue: Array) -> bool:
-	var layout: DungeonLayout = floors[fi - 1]
-	var cell: DungeonCellData = layout.get_cell_at(pos)
-	if cell == null or not cell.is_stair():
-		return false
-
-	# Find the DungeonStairData for this position.
-	var stair_data: DungeonStairData = null
-	for s: DungeonStairData in layout.stairs:
-		if s.position == pos:
-			stair_data = s
-			break
-	if stair_data == null:
-		return false
-
-	# Determine destination floor index.
-	var dest_fi: int
-	if stair_data.connects_to_level > 0:
-		dest_fi = stair_data.connects_to_level
-	elif stair_data.direction == DungeonStairData.DIRECTION_DOWN:
-		dest_fi = fi + 1
-	else:
-		dest_fi = fi - 1
-
-	if dest_fi < 1 or dest_fi > floors.size():
-		return false  # no destination floor (surface stair)
-
-	var dest_layout: DungeonLayout = floors[dest_fi - 1]
-	# The matching stair is at the same grid position, opposite direction.
-	var dest_cell: DungeonCellData = dest_layout.get_cell_at(pos)
-	if dest_cell == null or not dest_cell.is_stair():
-		return false
-
-	var dest_key: String = _cell_key(dest_fi, pos)
-	if reachable.has(dest_key):
-		return false
-
-	reachable[dest_key] = true
-	queue.append({"floor_idx": dest_fi, "pos": pos})
-	return true
-
-
 # =========================================================================
 # DG-C3D.E — composed-volume validation on the real 3D movement graph
 # =========================================================================
@@ -441,8 +138,8 @@ static func _expand_stair(
 # the dungeon ENTRANCE only (the DG-V1 lesson that multi-point seeding masks
 # disconnected pockets). Falls are NEVER edges: every legal walk edge is
 # reversible (both stair cells are supported), and `assert_edge_symmetry`
-# checks it. The legacy per-floor validate_layout / validate_solvability above
-# survive until the DG-C3D.F cutover deletes them.
+# checks it. (The legacy per-floor validate_solvability was removed at
+# DG-C3D.F.3; the per-band validate_layout above stays as a pre-compose guard.)
 
 
 ## Ground-movement reachable set (Dictionary[Vector3i -> true]) from
@@ -514,8 +211,8 @@ static func reach_composed(
 
 
 ## Whether a composed door record is passable in the dungeon's INITIAL state
-## (same model as the legacy §9.2 `_can_traverse_solvability`, on VoxelCell
-## door records). Secret+unlocked doors are model-impassable (no key); secret
+## (the §9.2 door-passability model, applied to composed door records).
+## Secret+unlocked doors are model-impassable (no key); secret
 ## locked/trapped need a reachable key; portcullises need a reachable wired
 ## lever or are forceable when unwired; non-bashable locked/trapped need a key.
 static func _composed_door_passable(rec: Dictionary, reachable: Dictionary, keys: Array) -> bool:

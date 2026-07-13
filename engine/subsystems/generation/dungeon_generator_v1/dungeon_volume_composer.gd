@@ -57,8 +57,8 @@ const ROOM_ID_STRIDE: int = 1000
 ## Parapet cover value stamped on balcony edge cells overlooking a void (§7.1).
 const PARAPET_COVER: int = 1
 
-## Wall/rock feature emitted for solid fill (matches DungeonVoxelSerializer so
-## the renderer's material handling is unchanged).
+## Wall/rock feature emitted for solid fill (the renderer treats "wall_stone" as
+## impassable solid stone — the same mapping the retired 2D serializer used).
 const SOLID_FEATURE: String = "wall_stone"
 
 

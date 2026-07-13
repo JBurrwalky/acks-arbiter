@@ -315,43 +315,23 @@ static func _build_door_options(
 
 static func _build_stair_options(
 	target_cell,  # Vector2i or Vector3i
-	cell: Dictionary,
+	_cell: Dictionary,
 	map,  # VoxelMapData
 	selected_ids: Array = [],
 	session_state = null,
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
-	var tf: String = cell.get("terrain_feature", "")
 
-	# Voxel feature strings carry a direction suffix (e.g. "stairs_up_N");
-	# Cell feature matches both modern "stairs_up_<dir>" and legacy "stairs_up" forms.
-	var is_stair_up := tf == "stairs_up" or tf.begins_with("stairs_up_")
-	var is_stair_down := tf == "stairs_down" or tf.begins_with("stairs_down_")
-
+	# DG-C3D.F.3: internal stairs are ordinary walkable geometry — the party
+	# walks the carved runs via "Move Here"; there is no Ascend/Descend teleport.
+	# The only stair/transition menu action is Exit Dungeon, offered on any
+	# transition cell (the entrance up-stair or a non-stair transition such as a
+	# cave entrance) per gdd-dungeon-map-ui.md §4.2.2 v2.1.
 	var is_transition: bool = map.is_transition_cell(target_cell) if map != null else false
-
-	if is_stair_up:
-		if is_transition:
-			if _has_exit_candidates(selected_ids, map, session_state):
-				options.append(_option("exit_dungeon", "Exit Dungeon", true,
-					"Queue selected characters to exit the dungeon", "environment",
-					{"action_type": "exit_dungeon", "cell": target_cell}))
-		else:
-			options.append(_option("ascend", "Ascend", true,
-				"Climb to the level above", "environment",
-				{"action_type": "ascend", "cell": target_cell}))
-
-	elif is_stair_down:
-		options.append(_option("descend", "Descend", true,
-			"Descend to the level below", "environment",
-			{"action_type": "descend", "cell": target_cell}))
-
-	elif is_transition:
-		# Non-stair transition cell (e.g., cave entrance).
-		if _has_exit_candidates(selected_ids, map, session_state):
-			options.append(_option("exit_dungeon", "Exit Dungeon", true,
-				"Queue selected characters to exit the dungeon", "environment",
-				{"action_type": "exit_dungeon", "cell": target_cell}))
+	if is_transition and _has_exit_candidates(selected_ids, map, session_state):
+		options.append(_option("exit_dungeon", "Exit Dungeon", true,
+			"Queue selected characters to exit the dungeon", "environment",
+			{"action_type": "exit_dungeon", "cell": target_cell}))
 
 	return options
 

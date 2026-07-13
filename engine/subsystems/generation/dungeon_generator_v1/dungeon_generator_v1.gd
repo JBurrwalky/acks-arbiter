@@ -193,7 +193,6 @@ static func _generate_attempt(
 		req.seed = master_seed + floor_index * 1000003
 		req.stairs_down = 0
 		req.stairs_up = 1 if req.is_entrance_floor else 0
-		req.required_stair_positions = []
 		req.reserved_rooms = vplan.reservations_for_band(floor_index)
 
 		# Generate with up-to-3 retries on failure.

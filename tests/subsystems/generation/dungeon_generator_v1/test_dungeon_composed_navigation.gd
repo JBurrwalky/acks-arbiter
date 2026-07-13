@@ -30,6 +30,7 @@ func run_all_tests() -> void:
 	test_no_door_in_run_assertion()
 	test_solvability_locked_band_gate_key_crosses_band()
 	test_solvability_secret_unlocked_cleared()
+	test_placer_10_4_downgrade_sole_path()
 	test_placer_rule3_disconnected_hard_fail()
 	test_gate_blast_radius_warning()
 	if not has_failures():
@@ -347,6 +348,48 @@ func test_solvability_secret_unlocked_cleared() -> void:
 		if rec["cell"] == Vector3i(3, 2, -2):
 			cleared = not rec["is_secret"]
 	check(cleared, "the secret+unlocked blocker was cleared")
+
+
+## §10.4 sole-path downgrade (composed `_downgrade_composed_door`): a locked-stone
+## gate on the sole entrance path with NO fully-discovered candidate zone must be
+## downgraded to plain unlocked wood — not keyed and not stranded. Band 1 here has
+## only the entrance/circulation zone (no candidate chamber), so when the frontier
+## reaches the band-2 connector door no candidate exists and the downgrade fires.
+func test_placer_10_4_downgrade_sole_path() -> void:
+	var foot := Rect2i(4, 2, 4, 2)
+	var plan := _plan(Vector2i(16, 12), 1, [_band(1, 0), _band(2, -2)],
+		[_connector(StairwellData.TYPE_STRAIGHT, 2, 1, foot, 2)])
+	# Band 1 (entrance, walk 0): ONLY the circulation footprint (entrance = top
+	# landing T at 7,2) — no candidate chamber, so no non-entrance/non-circulation
+	# zone is ever fully discovered.
+	var b1 := _layout(16, 12, 1, [
+		{"rect": foot, "kind": DungeonRoomData.KIND_CIRCULATION},
+	], Vector2i(7, 2), true)
+	# Band 2 (walk -2): circulation + a chamber behind a LOCKED STONE door at (3,2)
+	# — the sole gate on the only forward path.
+	var b2 := _layout(16, 12, 2, [
+		{"rect": foot, "kind": DungeonRoomData.KIND_CIRCULATION},
+		{"rect": Rect2i(0, 1, 3, 3), "kind": DungeonRoomData.KIND_CHAMBER,
+			"doors": [{"pos": Vector2i(3, 2), "type": DungeonDoorData.TYPE_LOCKED,
+				"material": DungeonDoorData.MATERIAL_STONE}]},
+	])
+	var res := DungeonVolumeComposer.compose(plan, [b1, b2], 700, "downgrade")
+	check(res.ok, "downgrade fixture composes: %s" % res.error)
+	var bw := _band_walk(plan)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	var placement: Dictionary = DungeonKeyLeverPlacer.place_composed(
+		res.volume, res.zones, res.stairwells, res.rooms, res.doors, bw, res.volume.entry_pos, rng)
+	check(placement["solved"], "sole-path gate downgraded → dungeon solves")
+	check((placement["keys"] as Array).is_empty(),
+		"no key placed (the gate was downgraded, not keyed)")
+	var downgraded := false
+	for rec in res.doors:
+		if rec["cell"] == Vector3i(3, 2, -2):
+			downgraded = rec["type"] == DungeonDoorData.TYPE_UNLOCKED \
+				and not rec["is_secret"] \
+				and rec["material"] == DungeonDoorData.MATERIAL_WOOD_STANDARD
+	check(downgraded, "the sole-path locked-stone gate was downgraded to unlocked wood")
 
 
 ## A reservation-free band-2 chamber with NO connecting door is structurally

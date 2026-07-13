@@ -1055,9 +1055,8 @@ func _unhandled_input(event: InputEvent) -> void:
 							summary.append("Focus level: %d" % (_visibility_manager.focus_level if _visibility_manager != null else 0))
 							for cell: VoxelCell in vm.get_all_cells():
 								if cell.feature.begins_with("stairs_"):
-									var target := _controller.get_stair_target(Vector3i(cell.col, cell.row, cell.level))
-									summary.append("  %s at (%d,%d,%d) → %s" % [
-										cell.feature, cell.col, cell.row, cell.level, str(target)
+									summary.append("  %s at (%d,%d,%d)" % [
+										cell.feature, cell.col, cell.row, cell.level
 									])
 						print("[F3] ", " | ".join(summary))
 						EventBus.notification_requested.emit({

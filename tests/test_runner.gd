@@ -568,7 +568,6 @@ extends Node
 @onready var _dungeon_stocker_tests = $DungeonStockerTests
 @onready var _dungeon_acceptance_tests_tests = $DungeonAcceptanceTestsTests
 @onready var _dungeon_navigability_validator_tests = $DungeonNavigabilityValidatorTests
-@onready var _dungeon_key_lever_placer_tests = $DungeonKeyLeverPlacerTests
 @onready var _dungeon_repository_stocked_roundtrip_tests = $DungeonRepositoryStockedRoundtripTests
 @onready var _dungeon_generator_v1_tests = $DungeonGeneratorV1Tests
 # 2026-05-28 — DG-V1.E: end-to-end scenario tests for the dungeon generator
@@ -578,8 +577,7 @@ extends Node
 @onready var _scenario_entrance_in_middle = $ScenarioEntranceInMiddle
 @onready var _scenario_placeholder_fallbacks_active = $ScenarioPlaceholderFallbacksActive
 @onready var _scenario_invalid_dungeon_type_fallback = $ScenarioInvalidDungeonTypeFallback
-# 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
-@onready var _dungeon_voxel_serializer_tests = $DungeonVoxelSerializerTests
+# 2026-05-28 — DG-V1.F: runtime consumer (fixture service)
 @onready var _dungeon_fixture_service_tests = $DungeonFixtureServiceTests
 # 2026-07-10 — DG-C3D.A: contiguous-3D dormant types + migration 210
 @onready var _dungeon_contiguous_schema_tests = $DungeonContiguousSchemaTests
@@ -1169,7 +1167,6 @@ func run() -> void:
 			_dungeon_stocker_tests,
 			_dungeon_acceptance_tests_tests,
 			_dungeon_navigability_validator_tests,
-			_dungeon_key_lever_placer_tests,
 			_dungeon_repository_stocked_roundtrip_tests,
 			_dungeon_generator_v1_tests,
 			# 2026-05-28 — DG-V1.E: end-to-end scenario tests for the dungeon generator
@@ -1179,8 +1176,7 @@ func run() -> void:
 			_scenario_entrance_in_middle,
 			_scenario_placeholder_fallbacks_active,
 			_scenario_invalid_dungeon_type_fallback,
-			# 2026-05-28 — DG-V1.F: runtime consumer (voxel serializer + fixture service)
-			_dungeon_voxel_serializer_tests,
+			# 2026-05-28 — DG-V1.F: runtime consumer (fixture service)
 			_dungeon_fixture_service_tests,
 			# 2026-07-10 — DG-C3D.A: contiguous-3D dormant types + migration 210
 			_dungeon_contiguous_schema_tests,

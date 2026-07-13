@@ -32,10 +32,6 @@ class RoomPlan extends RefCounted:
 	var id: int = -1
 	var bounds: Rect2i = Rect2i()
 	var original_purpose: String = ""
-	## True if this room exists solely as a stair antechamber (DG-V1.B-edits
-	## anchor support per §9.3.2). DG-V1.B-base never sets this. LEGACY path —
-	## dies at DG-C3D.F.
-	var is_anchor_room: bool = false
 	## DG-C3D.C reservation kind: "" for normal scattered rooms, else
 	## "circulation" | "atrium_base" | "atrium_upper" per
 	## DungeonLayoutRequest.reserved_rooms. atrium_upper plans are the blocked
@@ -128,16 +124,9 @@ var _corridor_cells: Dictionary = {}
 # ---------------------------------------------------------------------------
 
 ## Plan a full dungeon layout. Caller supplies grid size, target room count,
-## room size range, theme, stair counts, floor tier, and optional stair
-## anchors (per layout GDD §9.3). After compose() returns, the `rooms`,
-## `corridors`, `doors`, `stairs` arrays are populated and ready for the
-## rasterizer.
-##
-## [param required_stair_positions] entries are Dictionaries with keys
-## `position: Vector2i` and `direction: String` ("up" or "down") per
-## layout GDD §9.3.1. Each anchor is reserved as the center of a 3×3
-## antechamber RoomPlan BEFORE scatter (§9.3.2 step 1); the anchor cell
-## itself becomes the stair (§9.3.2 step 5).
+## room size range, theme, stair counts, and floor tier. After compose()
+## returns, the `rooms`, `corridors`, `doors`, `stairs` arrays are populated
+## and ready for the rasterizer.
 ##
 ## [param floor_tier] (1-6) drives the §8.3 door material rule. Default 1.
 ##
@@ -147,11 +136,9 @@ var _corridor_cells: Dictionary = {}
 ## consumes no rng draws, so an empty array leaves the pipeline byte-identical
 ## to pre-C behavior.
 ##
-## Returns the number of rooms successfully placed (INCLUDING anchor
-## antechambers and reservations). Returns -1 if anchor validation fails (OOB
-## anchor, duplicate anchors, anchors with conflicting directions at the same
-## position) or a reservation is invalid (OOB rect, overlap with a prior
-## reservation — both indicate an upstream vertical-plan bug).
+## Returns the number of rooms successfully placed (INCLUDING reservations).
+## Returns -1 if a reservation is invalid (OOB rect, overlap with a prior
+## reservation — indicates an upstream vertical-plan bug).
 func compose(
 	p_grid_width: int,
 	p_grid_height: int,
@@ -162,7 +149,6 @@ func compose(
 	stairs_down_count: int,
 	rng: RandomNumberGenerator,
 	floor_tier: int = 1,
-	required_stair_positions: Array = [],
 	reserved_rooms: Array = [],
 ) -> int:
 	grid_width = p_grid_width
@@ -175,16 +161,10 @@ func compose(
 	_occupancy = {}
 	_corridor_cells = {}
 
-	# DG-C3D.C — pre-place vertical-plan reservations before anchors + scatter.
+	# DG-C3D.C — pre-place vertical-plan reservations before scatter.
 	if not _pre_place_reserved_rooms(reserved_rooms):
 		push_error("DungeonRoomComposer: invalid reserved_rooms; aborting.")
 		return -1
-
-	# §9.3.2 step 1 — reserve anchor antechambers before scatter.
-	if not _validate_stair_anchors(required_stair_positions):
-		push_error("DungeonRoomComposer: invalid required_stair_positions; aborting.")
-		return -1
-	_pre_place_anchor_rooms(required_stair_positions)
 
 	# §9.3.2 step 2 — scatter remaining rooms.
 	_scatter_rooms(target_room_count, room_size_range, rng)
@@ -201,8 +181,8 @@ func compose(
 	# Runs AFTER _plan_doors so it sees finalized types + is_secret overlays.
 	_apply_door_materials(floor_tier, rng)
 
-	# §9.3.2 step 5 — free-placement stairs fill in non-anchored slots.
-	# Anchor stairs are already in `stairs` from _pre_place_anchor_rooms.
+	# §9.3.2 step 5 — free-placement stairs (the entrance band's single up-stair;
+	# composed bands place none — the composer carves vertical connectivity).
 	_plan_stairs(stairs_up_count, stairs_down_count, rng)
 
 	_assign_room_purposes(theme, rng)
@@ -265,92 +245,19 @@ func _pre_place_reserved_rooms(reserved: Array) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# §9.3 Stair anchors
+# §9.1 Stair placement — interior margin
 # ---------------------------------------------------------------------------
 
-const _ANCHOR_ANTECHAMBER_SIZE := 3  # 3×3 RoomPlan around each anchor
-
-# A free-placed DOWN stair becomes the next floor's up-stair anchor, whose 3×3
-# antechamber must fit inside the 1-cell wall border (see _validate_stair_anchors:
-# the anchor must satisfy pos in [2, grid-3]). So any free-placed stair is kept in
-# that same interior band; otherwise the next floor would be "ungenerable".
-# Value = _ANCHOR_ANTECHAMBER_SIZE/2 (=1, the antechamber half-width) + 1 (the wall border).
+# Free-placed stairs stay in the interior band [margin, grid-1-margin] so the
+# entrance band's single up-stair sits away from the wall border. Value = 2
+# (a 1-cell room half-width + the 1-cell wall border). BYTE-IDENTITY load-
+# bearing: _plan_stairs clamps the up-stair cell with this margin — do NOT
+# change the value. (The legacy cross-floor stair-anchor path this once served
+# was removed at DG-C3D.F.3; the composer now carves all vertical connectivity.)
 const _ANCHOR_INTERIOR_MARGIN := 2
 
 
-## Validate anchor entries per layout GDD §9.3.3:
-##   - Each entry must have a `position: Vector2i` and `direction: String`.
-##   - direction must be "up" or "down".
-##   - position must be in bounds AND its 3×3 antechamber must fit in bounds
-##     with a 1-cell margin from the grid edge (so the wall band fits too).
-##   - No two anchors may share the same position with different directions.
-##
-## Returns true if all anchors are valid.
-func _validate_stair_anchors(anchors: Array) -> bool:
-	var seen_positions: Dictionary = {}
-	for entry in anchors:
-		if not (entry is Dictionary):
-			push_error("DungeonRoomComposer: anchor entry is not a Dictionary: %s" % entry)
-			return false
-		var dict: Dictionary = entry
-		if not dict.has("position") or not dict.has("direction"):
-			push_error("DungeonRoomComposer: anchor missing position or direction: %s" % dict)
-			return false
-		var pos: Vector2i = dict["position"]
-		var dir: String = dict["direction"]
-		if not (dir == DungeonStairData.DIRECTION_UP or dir == DungeonStairData.DIRECTION_DOWN):
-			push_error("DungeonRoomComposer: anchor direction must be 'up' or 'down', got '%s'." % dir)
-			return false
-		# Check antechamber fits in grid with 1-cell margin from edge.
-		var half: int = _ANCHOR_ANTECHAMBER_SIZE / 2
-		if pos.x - half < 1 or pos.x + half > grid_width - 2:
-			push_error("DungeonRoomComposer: anchor %s antechamber would not fit horizontally in %dx%d grid." % [pos, grid_width, grid_height])
-			return false
-		if pos.y - half < 1 or pos.y + half > grid_height - 2:
-			push_error("DungeonRoomComposer: anchor %s antechamber would not fit vertically in %dx%d grid." % [pos, grid_width, grid_height])
-			return false
-		if seen_positions.has(pos):
-			var prev_dir: String = seen_positions[pos]
-			if prev_dir != dir:
-				push_error("DungeonRoomComposer: two anchors at position %s with conflicting directions ('%s' vs '%s')." % [pos, prev_dir, dir])
-				return false
-			# Same position + same direction = harmless duplicate; allow.
-		seen_positions[pos] = dir
-	return true
-
-
-## Pre-place each anchor's 3×3 antechamber RoomPlan and plant a StairPlan at
-## the anchor cell. Run BEFORE _scatter_rooms so the antechambers are visible
-## to the room collision check (other rooms can't overlap them).
-func _pre_place_anchor_rooms(anchors: Array) -> void:
-	for entry in anchors:
-		var dict: Dictionary = entry
-		var pos: Vector2i = dict["position"]
-		var dir: String = dict["direction"]
-		var half: int = _ANCHOR_ANTECHAMBER_SIZE / 2
-		var bounds := Rect2i(
-			pos.x - half, pos.y - half,
-			_ANCHOR_ANTECHAMBER_SIZE, _ANCHOR_ANTECHAMBER_SIZE,
-		)
-		# Skip if a previous anchor's antechamber already covers this cell
-		# (duplicate-direction case from _validate_stair_anchors).
-		if _occupancy.has(pos):
-			continue
-		var room := RoomPlan.new()
-		room.id = rooms.size()
-		room.bounds = bounds
-		room.is_anchor_room = true
-		rooms.append(room)
-		_stamp_room_occupancy(room)
-		# Plant the stair at the anchor cell now. Free-placement stairs added
-		# later in _plan_stairs only fill in slots beyond these anchors.
-		var stair := StairPlan.new()
-		stair.position = pos
-		stair.direction = dir
-		stairs.append(stair)
-
-
-## §9.3.3 safety net — if any anchor antechamber (or DG-C3D.C reserved MST
+## §9.3.3 safety net — if any DG-C3D.C reserved MST
 ## room: circulation / atrium base) has no door connecting it to the rest of
 ## the network after door planning, force-carve a direct corridor from the
 ## room's centroid to the nearest already-passable cell. Blocked regions are
@@ -359,11 +266,10 @@ func _pre_place_anchor_rooms(anchors: Array) -> void:
 func _ensure_anchor_connectivity() -> void:
 	for r in rooms:
 		var room: RoomPlan = r
-		var needs_net: bool = room.is_anchor_room \
-			or (room.is_reserved() and not room.is_blocked_region())
+		var needs_net: bool = room.is_reserved() and not room.is_blocked_region()
 		if not needs_net:
 			continue
-		# Does the antechamber have at least one door?
+		# Does the reserved room have at least one door?
 		var has_door: bool = false
 		for d in doors:
 			var door: DoorPlan = d
@@ -1043,33 +949,25 @@ func _apply_door_materials(floor_tier: int, rng: RandomNumberGenerator) -> void:
 func _plan_stairs(up_count: int, down_count: int, rng: RandomNumberGenerator) -> void:
 	if rooms.is_empty():
 		return
-	# Anchor stairs (placed in _pre_place_anchor_rooms) count toward the
-	# requested totals. Subtract them so free-placement only fills the rest.
-	var anchored_up: int = 0
-	var anchored_down: int = 0
-	for s in stairs:
-		var st: StairPlan = s
-		if st.direction == DungeonStairData.DIRECTION_UP:
-			anchored_up += 1
-		else:
-			anchored_down += 1
-	var ups_left: int = maxi(0, up_count - anchored_up)
-	var downs_left: int = maxi(0, down_count - anchored_down)
+	# No pre-planted stairs enter here (the DG-C3D.F.3 cutover removed the
+	# cross-floor anchor path), so `stairs` is empty and free-placement fills
+	# the requested totals directly. On the composed path only the entrance band
+	# requests a stair (stairs_up=1); every other band requests none.
+	var ups_left: int = up_count
+	var downs_left: int = down_count
 	var total: int = ups_left + downs_left
 	if total <= 0:
 		return
-	# Free-placement stairs go in NON-ANCHOR, NON-RESERVED rooms — anchor
-	# rooms exist solely to host their pre-planted stair, and DG-C3D.C
-	# reserved rooms get their vertical geometry carved by the composition
-	# stage (a legacy 2D stair inside a stairwell room or atrium would fight
-	# the carved runs/void).
+	# Free-placement stairs go in NON-RESERVED rooms — DG-C3D.C reserved rooms
+	# get their vertical geometry carved by the composition stage (a legacy 2D
+	# stair inside a stairwell room or atrium would fight the carved runs/void).
 	var available_rooms: Array[int] = []
 	for r in rooms:
 		var room: RoomPlan = r
-		if room.is_anchor_room or room.is_reserved():
+		if room.is_reserved():
 			continue
 		available_rooms.append(room.id)
-	# Fall back to anchor / reserved rooms if no plain room is available
+	# Fall back to reserved rooms if no plain room is available
 	# (extreme degenerate case for tiny grids) — but NEVER a blocked region:
 	# a free stair inside the atrium void would be unreachable nonsense.
 	if available_rooms.is_empty():

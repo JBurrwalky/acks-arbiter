@@ -143,16 +143,15 @@ func _scatter_party_at_entry(entry: Vector3i) -> void:
 
 
 ## Voxel path for load_dungeon. Loads a single VoxelMapData from the dict.
-## Handles both voxel format (has "cells" key) and legacy format (has "levels" key).
+## Loads the native voxel format (has "cells" key). The legacy "levels" format
+## converter was removed at DG-C3D.F.3 — all generated + hand-authored payloads
+## are "cells".
 func _load_dungeon_voxel(dungeon_dict: Dictionary, spawn_pos: Vector2i) -> void:
 	if dungeon_dict.has("cells"):
 		# Native voxel format — unified cells array
 		_voxel_map = VoxelMapData.from_dict(dungeon_dict)
-	elif dungeon_dict.has("levels"):
-		# Legacy format — convert levels[] + stairs[] to VoxelMapData
-		_voxel_map = _convert_legacy_to_voxel(dungeon_dict)
 	else:
-		push_error("DungeonMapController._load_dungeon_voxel: unrecognized format for '%s'" % _dungeon_id)
+		push_error("DungeonMapController._load_dungeon_voxel: unrecognized format for '%s' (expected 'cells')" % _dungeon_id)
 		return
 
 	if _voxel_map.cell_count() == 0:
@@ -413,97 +412,8 @@ func _queue_door_interaction_order_voxel(entity_id: String, door_pos) -> String:
 	return "queued"
 
 
-## Given a stair cell [param pos], returns the coordinate on the connected
-## level that the stair leads to. Returns Vector3i(-1, -1, -1) if pos is not
-## a stair cell. Voxel mode only.
-##
-## Preference order:
-##   1. Explicit stair_target_col/row/level on the cell (set by the authored
-##      dungeon when geometric inference doesn't apply).
-##   2. Direction-suffix inference: stairs_up_<DIR> / stairs_down_<DIR> — one
-##      horizontal step in DIR and one level up or down.
-func get_stair_target(pos: Vector3i) -> Vector3i:
-	if _voxel_map == null:
-		return Vector3i(-1, -1, -1)
-	var cell := _voxel_map.get_cell(pos)
-	if cell == null:
-		return Vector3i(-1, -1, -1)
-
-	# 1. Explicit pairing takes priority.
-	if cell.stair_target_col != -1 \
-			and cell.stair_target_row != -1 \
-			and cell.stair_target_level != -1:
-		return Vector3i(cell.stair_target_col, cell.stair_target_row, cell.stair_target_level)
-
-	var feat: String = cell.feature
-	var going_up: bool
-	var suffix: String
-	if feat.begins_with("stairs_up_"):
-		going_up = true
-		suffix = feat.substr("stairs_up_".length())
-	elif feat.begins_with("stairs_down_"):
-		going_up = false
-		suffix = feat.substr("stairs_down_".length())
-	else:
-		return Vector3i(-1, -1, -1)
-
-	var dir_keys: Array = VoxelGrid.Direction.keys()
-	var dir_idx: int = dir_keys.find(suffix)
-	if dir_idx < 0:
-		return Vector3i(-1, -1, -1)
-	var offset: Vector2i = VoxelGrid.DIRECTION_OFFSETS[dir_idx]
-	var z_delta: int = 1 if going_up else -1
-	var fallback := Vector3i(pos.x + offset.x, pos.y + offset.y, pos.z + z_delta)
-	# Composed volumes (DG-C3D.F) carry NO stair_target_* pairing — their stair
-	# steps are ordinary walkable geometry ("Move Here" traverses them). The
-	# direction-suffix fallback exists for hand-authored legacy payloads; only
-	# honor it when the derived cell is actually standable, so a composed
-	# stairwell's Ascend/Descend (menu entries die in F.3) degrades to a no-op
-	# instead of teleporting into headroom or rock.
-	var target_cell := _voxel_map.get_cell(fallback)
-	if target_cell.solidity != "air" or target_cell.floor_type == "none":
-		return Vector3i(-1, -1, -1)
-	return fallback
-
-
-## Teleports the party to [param target_pos] and its immediate neighbors.
-## Used by stair traversal (Ascend/Descend) when the stair's destination is
-## not spatially adjacent to the stair cell — bypasses adjacency/BFS checks
-## and places each party member around the target with the same 8-neighbor
-## scatter logic used on dungeon entry.
-## Returns true on success, false if the voxel map is absent or target
-## is not a valid cell.
-func teleport_party_to(target_pos: Vector3i) -> bool:
-	if _voxel_map == null:
-		return false
-	if not _voxel_map.has_cell(target_pos):
-		push_error("DungeonMapController.teleport_party_to: no cell at %s" % str(target_pos))
-		return false
-	if not _voxel_map.is_passable(target_pos):
-		push_error("DungeonMapController.teleport_party_to: target %s is not passable" % str(target_pos))
-		return false
-
-	var old_pos := get_party_position_3d()
-	_scatter_party_at_entry(target_pos)
-	_current_level = target_pos.z
-
-	# Fire per-entity moved signals so renderer/handlers sync.
-	for eid in _party_entity_ids:
-		var new_pos: Vector3i = _voxel_map.get_entity_pos(eid)
-		entity_moved.emit(eid, old_pos, new_pos)
-
-	# Visibility + level follow + fog. D1: post-B5 the visibility-on-move
-	# helper already runs the unified fog update; calling it twice was
-	# computing 2× the LOS rays per teleport. Single call now.
-	if old_pos.z != target_pos.z:
-		level_changed.emit(old_pos.z, target_pos.z)
-	_update_visibility_on_move(old_pos, target_pos)
-	party_moved.emit(old_pos, target_pos)
-	return true
-
-
 ## Restores each party entity to its exact saved voxel cell/level (savegame
-## load). Unlike teleport_party_to(), entities are placed individually rather
+## load). Unlike the dungeon-entry scatter, entities are placed individually rather
 ## than scattered around an anchor, so the party reloads exactly where it was
 ## (gdd-savegame-system.md §5.2). [param positions] maps entity_id -> Vector3i.
 ## Sets the active level to the leader's level and refreshes fog + renderer.
@@ -1091,104 +1001,3 @@ func _update_fog_for_all_members_voxel() -> void:
 		_voxel_map.set_fog(cell_pos, "visible")
 
 	fog_updated.emit()
-
-
-# ---------------------------------------------------------------------------
-# Legacy-to-voxel format converter
-# ---------------------------------------------------------------------------
-
-## Converts a legacy dungeon dict (levels[] + stairs[]) to a single VoxelMapData.
-## Each old level N maps to voxel levels N*2 (floor) and N*2+1 (ceiling headroom).
-## Walls are stamped as solid at both floor and ceiling levels.
-static func _convert_legacy_to_voxel(dungeon_dict: Dictionary) -> VoxelMapData:
-	var vmap := VoxelMapData.new()
-	vmap.id = str(dungeon_dict.get("id", ""))
-	vmap.name = str(dungeon_dict.get("name", ""))
-
-	var levels_array: Array = dungeon_dict.get("levels", [])
-	var first_level := true
-
-	for level_data: Dictionary in levels_array:
-		var level_num: int = level_data.get("level", 1)
-		var voxel_floor: int = level_num * 2
-		var voxel_ceiling: int = voxel_floor + 1
-
-		var entry_col: int = level_data.get("entry_col", 0)
-		var entry_row: int = level_data.get("entry_row", 0)
-		if first_level:
-			vmap.entry_pos = Vector3i(entry_col, entry_row, voxel_floor)
-			first_level = false
-
-		var cells_array: Array = level_data.get("cells", [])
-		for cell_data: Dictionary in cells_array:
-			var col: int = cell_data.get("col", 0)
-			var row: int = cell_data.get("row", 0)
-			var tf: String = cell_data.get("terrain_feature", "open")
-
-			var vcell := VoxelCell.new()
-			vcell.col = col
-			vcell.row = row
-			vcell.level = voxel_floor
-			vcell.cover_value = cell_data.get("cover_value", 0)
-			vcell.door_state = cell_data.get("door_state", "")
-			vcell.door_type = cell_data.get("door_type", "")
-			vcell.door_detected = cell_data.get("door_detected", true)
-
-			match tf:
-				"wall_stone", "rock":
-					vcell.solidity = "solid"
-					vcell.feature = tf
-					vcell.floor_type = "none"
-					# Also stamp ceiling level as solid
-					var ceil_cell := VoxelCell.new()
-					ceil_cell.col = col
-					ceil_cell.row = row
-					ceil_cell.level = voxel_ceiling
-					ceil_cell.solidity = "solid"
-					ceil_cell.feature = tf
-					ceil_cell.floor_type = "none"
-					vmap.set_cell(Vector3i(col, row, voxel_ceiling), ceil_cell)
-				"wall_wood":
-					vcell.solidity = "solid"
-					vcell.feature = "wall_wood"
-					vcell.floor_type = "none"
-					var ceil_cell := VoxelCell.new()
-					ceil_cell.col = col
-					ceil_cell.row = row
-					ceil_cell.level = voxel_ceiling
-					ceil_cell.solidity = "solid"
-					ceil_cell.feature = "wall_wood"
-					ceil_cell.floor_type = "none"
-					vmap.set_cell(Vector3i(col, row, voxel_ceiling), ceil_cell)
-				"door", "door_locked", "door_secret", "portcullis":
-					vcell.solidity = "air"
-					vcell.feature = "open"
-					vcell.floor_type = "stone"
-					if vcell.door_state.is_empty():
-						vcell.door_state = "closed"
-				"stairs_up":
-					vcell.solidity = "air"
-					vcell.feature = "stairs_up_N"
-					vcell.floor_type = "stone"
-				"stairs_down":
-					vcell.solidity = "air"
-					vcell.feature = "stairs_down_S"
-					vcell.floor_type = "stone"
-				"lever":
-					vcell.solidity = "air"
-					vcell.feature = "lever"
-					vcell.floor_type = "stone"
-				_:  # "open" and anything else
-					vcell.solidity = "air"
-					vcell.feature = tf if tf != "" else "open"
-					vcell.floor_type = "stone"
-
-			vmap.set_cell(Vector3i(col, row, voxel_floor), vcell)
-
-		# Set transition cells from entry position
-		var tc_pos := Vector3i(entry_col, entry_row, voxel_floor)
-		if tc_pos not in vmap.transition_cells:
-			vmap.transition_cells.append(tc_pos)
-
-	vmap.detect_rooms()
-	return vmap

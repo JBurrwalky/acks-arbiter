@@ -430,7 +430,6 @@
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_stocker.gd" id="380_dungeon_stocker_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_acceptance_tests.gd" id="381_dungeon_acceptance_tests_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_navigability_validator.gd" id="382_dungeon_navigability_validator_tests"]
-[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_key_lever_placer.gd" id="383_dungeon_key_lever_placer_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_repository_stocked_roundtrip.gd" id="384_dungeon_repository_stocked_roundtrip_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_generator_v1.gd" id="385_dungeon_generator_v1_tests"]
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_lair_single_floor_tier1.gd" id="386_scenario_lair_single_floor_tier1"]
@@ -439,7 +438,6 @@
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_entrance_in_middle.gd" id="389_scenario_entrance_in_middle"]
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_placeholder_fallbacks_active.gd" id="390_scenario_placeholder_fallbacks_active"]
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_invalid_dungeon_type_fallback.gd" id="391_scenario_invalid_dungeon_type_fallback"]
-[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_voxel_serializer.gd" id="392_dungeon_voxel_serializer_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_fixture_service.gd" id="393_dungeon_fixture_service_tests"]
 [ext_resource type="Script" path="res://tests/test_treasure_instantiator.gd" id="394_treasure_instantiator_tests"]
 [ext_resource type="Script" path="res://tests/test_magic_item_catalog.gd" id="395_magic_item_catalog_tests"]
@@ -1753,9 +1751,6 @@ script = ExtResource("381_dungeon_acceptance_tests_tests")
 [node name="DungeonNavigabilityValidatorTests" type="Node" parent="."]
 script = ExtResource("382_dungeon_navigability_validator_tests")
 
-[node name="DungeonKeyLeverPlacerTests" type="Node" parent="."]
-script = ExtResource("383_dungeon_key_lever_placer_tests")
-
 [node name="DungeonRepositoryStockedRoundtripTests" type="Node" parent="."]
 script = ExtResource("384_dungeon_repository_stocked_roundtrip_tests")
 
@@ -1780,8 +1775,6 @@ script = ExtResource("390_scenario_placeholder_fallbacks_active")
 [node name="ScenarioInvalidDungeonTypeFallback" type="Node" parent="."]
 script = ExtResource("391_scenario_invalid_dungeon_type_fallback")
 
-[node name="DungeonVoxelSerializerTests" type="Node" parent="."]
-script = ExtResource("392_dungeon_voxel_serializer_tests")
 
 [node name="DungeonFixtureServiceTests" type="Node" parent="."]
 script = ExtResource("393_dungeon_fixture_service_tests")

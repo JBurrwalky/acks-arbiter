@@ -4,7 +4,8 @@ extends "res://tests/test_suite_base.gd"
 ##
 ## Exercises the voxel-path dispatch added in Session 7b: move_party,
 ## interact_door, can_move_to, queue_group_move, queue_door_interaction_order,
-## get_stair_target, the fog helpers, and signal emission with Vector3i payloads.
+## stair traversal via move_party, the fog helpers, and signal emission with
+## Vector3i payloads.
 ## All tests use hand-built VoxelMapData fixtures — no PartyData is required.
 
 
@@ -18,7 +19,6 @@ func run_all_tests() -> void:
 	test_interact_door_open_closes()
 	test_interact_locked_door_blocked()
 	test_interact_door_non_adjacent_fails()
-	test_get_stair_target_resolves_direction()
 	test_move_party_via_stair_transitions_level()
 	test_update_fog_on_move_transitions()
 	test_reveal_entry_room_voxel()
@@ -190,23 +190,6 @@ func test_interact_door_non_adjacent_fails() -> void:
 # ---------------------------------------------------------------------------
 # Stairs
 # ---------------------------------------------------------------------------
-
-func test_get_stair_target_resolves_direction() -> void:
-	var map := _make_flat_voxel_dungeon(3, 3)
-	# Place stairs_up_E at (0,0,0): target is (1, 0, 1)
-	_place_voxel_cell(map, Vector3i(0, 0, 0), "air", "stairs_up_E")
-	# Ensure target cell exists on level 1
-	_place_voxel_cell(map, Vector3i(1, 0, 1))
-	var ctrl := _make_controller_with_map(map)
-	var target := ctrl.get_stair_target(Vector3i(0, 0, 0))
-	check(target == Vector3i(1, 0, 1),
-		"stairs_up_E at (0,0,0) should target (1,0,1); got %s" % str(target))
-	# Non-stair cell returns sentinel
-	var non_stair := ctrl.get_stair_target(Vector3i(1, 1, 0))
-	check(non_stair == Vector3i(-1, -1, -1),
-		"get_stair_target on non-stair cell should return (-1,-1,-1)")
-	ctrl.queue_free()
-
 
 func test_move_party_via_stair_transitions_level() -> void:
 	var map := _make_flat_voxel_dungeon(3, 3, 0)
