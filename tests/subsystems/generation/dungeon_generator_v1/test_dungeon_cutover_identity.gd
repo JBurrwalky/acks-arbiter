@@ -16,12 +16,14 @@ extends "res://tests/test_suite_base.gd"
 ## which is intentionally non-seeded) and compares pure content.
 ##
 ## The comparison uses the kl-NORMALIZED fingerprint (include_kl = false):
-## key/lever PLACEMENT re-derives under the composed 3D walker (documented
-## residual — see content_fingerprint's doc + the DG-C3D.F.2c build-log
-## entry). Everything else — layout cells, rooms, doors, stocking rolls,
-## monster groups, treasure contents + cell placement, the SET of keyed
-## doors — was verified byte-identical on 29/30 sweep seeds at the cutover
-## (the 30th differed in one door's §10.4 downgrade outcome; seed 1515).
+## key/lever PLACEMENT re-derives under the composed 3D walker — RULED FINE
+## by Jedidiah 2026-07-13 (identical placements were never the intent, so
+## long as keys/levers stay reachable; reachability is what
+## validate_composed_solvability gates). Everything else — layout cells,
+## rooms, doors, stocking rolls, monster groups, treasure contents + cell
+## placement, the SET of keyed doors — was verified byte-identical on 29/30
+## sweep seeds at the cutover (the 30th differed in one door's §10.4
+## downgrade outcome; seed 1515).
 
 
 ## Fixed request the golden was captured against (single floor, tier 2, small).
