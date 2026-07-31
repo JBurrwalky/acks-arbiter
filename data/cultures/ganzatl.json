@@ -2,9 +2,9 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "ganzatl",
-      "demonym": "Ganzatl",
-      "toponym": "Xochistan",
+      "culture_id": "ganzatli",
+      "demonym": "Ganzatli",
+      "toponym": "Ganzatl",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ",

@@ -1076,8 +1076,80 @@ Integration test scenarios that exercise the full stack:
 
 ---
 
+## 23. Creature Size & Multi-Cell Footprints
+
+Added 2026-07-18 (creature-size build session). Until this section, every entity — a goblin and an ancient dragon alike — occupied a single 5' cell, walked through any 5'-wide door, and threatened the same 8 squares. This section defines how over-sized creatures occupy several cells, are gated out of passages too small for them, and threaten the ring around their whole body.
+
+### 23.1 ACKS Constraints — size categories
+
+ACKS 1e defines **six** size categories by weight (and a parallel length/height bracket) in `rules/le_monster_creation.xml` → `weight_size_and_ac_rules.size_category_table` (SACRED):
+
+| category | mass | length/height | RAW AC mod |
+|---|---|---|---|
+| `small` | ≤ 35 lb | < 2' | +1 |
+| `man_sized` | 36–400 lb | < 8' | 0 |
+| `large` | 401–2,000 lb | 8'–12' | −1 |
+| `huge` | 2,001–8,000 lb | 12'–20' | −2 |
+| `gigantic` | 8,001–32,000 lb | 20'–32' | −4 |
+| `colossal` | > 32,000 lb | 32'+ | −8 |
+
+The **RAW size→AC modifier** column is a monster-*creation* rule only (deriving a new monster's AC from HD + body form + size). Every creature already in `rules/` and `data/monsters/monster_catalog.json` is a complete entity whose stated `armor_class` already includes its size modifier, so it is **not** re-applied at runtime (Jedidiah ruling, 2026-07-18) — this work is footprint-only and never touches AC.
+
+### 23.2 Grid footprint scale (project design input)
+
+The mapping from size category to a grid rectangle is **Jedidiah's design input** (not RAW; `docs/monster_size_audit.xlsx` "Methodology" tab):
+
+| category | footprint | notes |
+|---|---|---|
+| small, man_sized | 1×1 | orientation irrelevant |
+| large (long) | 2×1 | quadrupeds, serpents (a horse: nose-to-tail) |
+| large (wide) | 1×2 | bipeds (an ogre: broad-shouldered) |
+| huge | 2×2 | |
+| gigantic | 3×4 | |
+| colossal | 6×9 | |
+
+The **Large tier is the only one whose footprint depends on body-plan orientation** (long vs wide); every other category is a single fixed rectangle. `CreatureSize` (`engine/shared_types/creature_size.gd`) is the single home for this table.
+
+### 23.3 The rotating footprint model
+
+Footprints are stored in the creature's **local frame** as `Vector2i(length, width)` — `length` along facing, `width` across. A creature still stores exactly **one anchor cell** (`Combatant.grid_position` / `VoxelMapData.entity_positions[id]`), the **rear-center** of the body; its occupied cells are derived by `CreatureFootprint.cells(anchor, facing, local)` (`engine/shared_types/creature_footprint.gd`):
+
+- The body extends `length` cells forward along the facing axis and `width` cells across (centered; even widths bias one documented side).
+- Facing is **snapped to its dominant cardinal grid axis**, so the region is always an axis-aligned rectangle. A quarter-turn therefore flips a 2×1 into a 1×2 — **the footprint rotates with facing** (Jedidiah ruling, 2026-07-18). Turning in place is consequently footprint-validated: a long creature may not be able to swing broadside in a tight corridor (`MovementResolver.set_facing_and_revalidate` refuses an illegal turn).
+
+Keeping the single-anchor contract means every other subsystem that reads `grid_position` is unchanged; multi-cell is a derived overlay.
+
+### 23.4 Occupancy (backward-compatible)
+
+`VoxelMapData` gains `entity_footprints: Dictionary[id → Array[Vector3i]]`. **An entity absent from this dict occupies exactly its single anchor cell** — so all single-cell creatures (every PC/henchman and man-sized-or-smaller monster) and all dungeon-exploration/party code behave byte-identically to before. `get_entities_at` / `is_occupied` / `is_occupied_by_other` are footprint-aware; `MovementResolver.sync_entity_footprint` is the one writer, called on every placement/move/turn.
+
+### 23.5 Passage gating, ZoC, adjacency
+
+- **Passage gating.** `MovementResolver.footprint_can_occupy(anchor, facing, local, mover_id)` requires *every* footprint cell to be passable, supported, and free of any other blocking entity. Threaded into `path_bfs_3d` / `get_cells_reachable_3d` (only for multi-cell movers — single-cell keeps the untouched fast path) and into combat spawn placement (`CombatState._try_place`). A 2×2 body simply cannot anchor anywhere one of its four cells is a wall, so it can never route through a 5'-wide door or corridor.
+- **Zone of control.** `_build_enemy_zoc_set_3d` emits the 8-neighbor ring bordering *all* of a creature's footprint cells (minus the occupied cells). A single-cell creature threatens the same 8 cells as before; a 2×2 threatens the full ring around four cells. Respects the `no_zoc_emission` swarm flag.
+- **Adjacency.** `is_adjacent` / `get_adjacent_enemies` use the minimum Chebyshev distance between the two creatures' cell-sets — a cell touching *any* body cell engages. Two single-cell creatures use the untouched anchor-distance fast path.
+
+### 23.6 Rendering
+
+`CombatantToken3D` scales the placeholder cylinder to the footprint's world span (X/Z) and by a per-size vertical stretch (`CreatureSize.height_scale`), and centers the token over the footprint rectangle so it straddles all its cells. The token re-straddles its (rotated) footprint on move/turn. Single-cell tokens are untouched.
+
+### 23.7 Data & flags
+
+`data/monsters/monster_catalog.json` entries carry a `footprint` block (`{size_category, orientation, cells_local}`) alongside the corrected `size_category`. 167 entries are wired: the ~155 confident audit rows (incl. the ten `dragon_*` age entries from the audit's Dragon Age tab) plus the **12 elementals** (2026-07-20). Elementals are the one case where the footprint is **decoupled from the size category** — a tall thin air whirlwind and radial fire/water bodies don't fit the size→footprint scale, so their `cells_local` is authored directly (Air 1×1/1×1/2×2, Earth 1×1/1×2/2×2, Fire 2×2/3×3/3×3, Water 3×3/5×5/7×7 at 8/12/16 HD) and carries a `size_decoupled: true` marker; the runtime already renders/gates any rectangle from `cells_local`, so only the data-integrity test needed to learn the new square shapes. The remaining rows — swarms (area-effect, not a footprint), oozes (ambiguous orientation), un-audited herd animals, thin-body bme-caveat creatures, `skeleton`, and every "uncertain body form" row — are listed in `docs/monster_size_flags.md` for a ruling and left as single-cell (`CreatureSize` degrades unknown categories to 1×1).
+
+### 23.8 v1 limitations (documented)
+
+- **Maneuvers** (`ManeuverResolver` force_back / overrun / wrestle) keep single-anchor semantics; multi-cell push/drag is a follow-up.
+- **Spell/AoE** reads footprint cells for "is this creature in the blast" but multi-cell template centering is not reworked.
+- **Turn-in-place** into a too-tight space is refused, not auto-repositioned.
+- Diagonal facings snap to the dominant cardinal axis for footprint purposes.
+- Multi-cell **flyers/burrowers** validate only their anchor (no such creatures are wired yet).
+
+---
+
 ## 22. Revision History
 
 - **2026-04-18 (v1.0):** Initial draft. 2D-grid-with-elevation-score to true 3D voxel grid of 5' cube cells. Floor-as-cell-property, wall-as-stack-of-solid-cells, all five movement modes, vertical traps, multi-level camera with dithered transparency, focus-level UI inspired by XCOM / Jagged Alliance 3 / BG3.
+- **2026-07-18 (v1.3):** Added §23 Creature Size & Multi-Cell Footprints — six ACKS size categories → rotating grid footprints, `entity_footprints` occupancy (default-absent = single cell, fully backward-compatible), passage gating so over-sized creatures can't squeeze small doors/corridors, footprint-wide ZoC + adjacency, and token stretching. Data wired for ~155 confident monsters; the rest flagged in `docs/monster_size_flags.md`.
 - **2026-07-06 (v1.2):** Companion edit from [`gdd-dungeon-contiguous-3d.md`](gdd-dungeon-contiguous-3d.md). Fog reveal corrected to room-agnostic light+LOS (Jedidiah ruling; §12.4, §15.2, §15.3, §21.5 aligned with the built `FogRevealEngine` — the room-scoped prose was stale). Added `stairs_spiral` feature (§7.1) and §10.5 spiral-stair movement clause. §10.4 marked realized: the contiguous generator produces real stair geometry; `stair_target_*` teleport overlays deprecated and removed.
 - **2026-04-18 (v1.1):** Resolved seven open questions from v1.0 review. Set wilderness airspace cap at ±20 levels. Eliminated slope movement cost (ACKS has no difficult-terrain concept). Committed to sparse cell storage. Committed to diamond basis (zero pathfinding friction; `AStar3D` is basis-agnostic). Replaced "shared inventory pool" assumption with carriers-with-adjacency model (§5), adapted to real-time-with-pause timing. Added 3D Chebyshev adjacency as the single source of truth (§16.9) shared across melee engagement, inventory, and area effects. Added explicit pathfinding guidance (§17.2). Added inventory-related test scenarios (§21.7-8).

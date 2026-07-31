@@ -65,7 +65,7 @@ func run_all_tests() -> void:
 	test_combatant_outside_drifted_cells_no_damage()
 	test_insect_plague_attacks_creature_in_swarm_cell()
 	test_insect_plague_low_hd_auto_drive_off()
-	test_insect_plague_high_hd_gets_swarmed_and_frightened()
+	test_insect_plague_high_hd_swarmed_but_not_frightened()
 	test_insect_plague_caster_damage_flips_to_stationary()
 	test_insect_plague_stationary_persists_once_flipped()
 	test_insect_plague_multiple_swarms_attack_independently()
@@ -269,10 +269,12 @@ func test_insect_plague_low_hd_auto_drive_off() -> void:
 		"<3 HD goblin also takes swarm tick damage (continues to suffer effects)")
 
 
-func test_insect_plague_high_hd_gets_swarmed_and_frightened() -> void:
-	# Post-refactor: HD > 3 layered on the user's design literal — both
-	# `swarmed_<type>` (damage) AND `frightened` apply via the same on-cell
-	# logic. No attack roll; tick damage is auto.
+func test_insect_plague_high_hd_swarmed_but_not_frightened() -> void:
+	# RAW: Insect Plague (acore_spell_catalog_a-i_summary.xml:1280) drives off ONLY
+	# creatures of "less than 3 Hit Dice". A HD >= 3 creature is engulfed
+	# (swarmed_<type> + auto-hit tick damage) but is NOT frightened — it keeps full
+	# agency and can ward the swarm off. (The old ">3 HD also frightened" design
+	# literal was not RAW; corrected 2026-07-24.)
 	var dice := _FakeDice.new()
 	var tracker := ActiveEffectTracker.new()
 	var hooks := SpellCombatHooks.new(tracker, dice)
@@ -286,11 +288,11 @@ func test_insect_plague_high_hd_gets_swarmed_and_frightened() -> void:
 	roster.combatants = [caster, ogre]
 	hooks.on_round_end(1, roster)
 	check(ogre.has_condition("swarmed_insect"),
-		"HD>3 ogre gets swarmed_insect condition")
-	check(ogre.has_condition("frightened"),
-		"HD>3 ogre also gets frightened (per design literal)")
+		"HD>=3 ogre gets swarmed_insect condition")
+	check(not ogre.has_condition("frightened"),
+		"HD>=3 ogre is NOT frightened (can still ward off the swarm) — RAW")
 	check(ogre.hp_current < 20,
-		"HD>3 ogre takes auto-hit tick damage, got hp=%d" % ogre.hp_current)
+		"HD>=3 ogre takes auto-hit tick damage, got hp=%d" % ogre.hp_current)
 
 
 func test_insect_plague_caster_damage_flips_to_stationary() -> void:

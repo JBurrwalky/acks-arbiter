@@ -114,18 +114,19 @@ func test_load_test_dungeon() -> void:
 		return
 	check(map.id == "test_dungeon_goblin_warrens", "id should match")
 	check(map.cell_count() > 100, "should have > 100 cells, got %d" % map.cell_count())
-	check(map.entry_pos == Vector3i(3, 3, 0),
-		"entry_pos should be (3,3,0), got %s" % str(map.entry_pos))
+	check(map.entry_pos == Vector3i(2, 5, 0),
+		"entry_pos should be (2,5,0), got %s" % str(map.entry_pos))
 
 	# Verify the entry cell is walkable
 	var entry_cell := map.get_cell(map.entry_pos)
 	check(entry_cell.solidity == "air", "entry cell should be air")
 	check(entry_cell.floor_type == "stone", "entry cell should have stone floor")
 
-	# Verify levels exist
+	# Verify both bands exist (composed two-band volume: entrance band walks at
+	# level 0 with headroom 1; the deeper band walks at -2 with headroom -1).
 	var levels := map.get_levels()
-	check(0 in levels, "level 0 should exist")
-	check(2 in levels, "level 2 should exist (old level 2)")
+	check(0 in levels, "entrance band walk level 0 should exist")
+	check(-2 in levels, "deeper band walk level -2 should exist")
 
 
 func test_load_nonexistent_returns_null() -> void:

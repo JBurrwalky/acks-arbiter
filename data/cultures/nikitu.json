@@ -3,16 +3,11 @@
   "mechanical": {
     "identity": {
       "culture_id": "nikitu",
-      "catalog_number": 44,
       "demonym": "Nikitu",
-      "toponym": "Thracia",
+      "toponym": "Nikutea",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ",
-      "synthesis_sources": [
-        2,
-        15
-      ],
       "culture_class": "hybrid",
       "csv_id": "HYB_49",
       "culture_synthesis_parents": [

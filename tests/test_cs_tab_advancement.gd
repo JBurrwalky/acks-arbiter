@@ -160,6 +160,10 @@ func test_abort_pending_level_up_clears_popup_and_restores_character() -> void:
 	var bundle: CharacterBundle = _load_bundle(character_id)
 	var original_title: String = bundle.character.title
 	var tab: CSTabAdvancement = CSTabAdvancement.new()
+	# The popup is a child of `tab`; _on_open_proficiency_popup() calls
+	# PopupPanel.popup_centered_ratio, which errors with !is_inside_tree() unless
+	# the tab (and thus the popup) is actually in the scene tree.
+	add_child(tab)
 
 	var engine: LevelUpEngine = _start_level_up(tab, bundle)
 	check(tab._proficiency_popup != null,
@@ -180,6 +184,7 @@ func test_abort_pending_level_up_clears_popup_and_restores_character() -> void:
 		"abort_pending_level_up should clear the picker reference after rebuilding")
 	check(engine.can_level_up(bundle.character),
 		"abort_pending_level_up should leave the character eligible to level up again")
+	tab.queue_free()
 	print("  abort_pending_level_up_clears_popup_and_restores_character: OK")
 
 

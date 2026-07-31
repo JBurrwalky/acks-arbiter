@@ -256,7 +256,7 @@ func test_wave2_schedules_wave3_event() -> void:
 	check(capture.schedule_calls.size() >= 1,
 		"wave 2 must schedule at least one POST_COMPLETION event; got %d" % capture.schedule_calls.size())
 	var call: Dictionary = capture.schedule_calls[0]
-	check(String(call.get("event_type", "")) == "follower_arrival_post_completion",
+	check(String(call.get("event_type", "")) == FollowerArrivalResolver.POST_COMPLETION_EVENT,
 		"scheduled event_type should match POST_COMPLETION constant; got '%s'" % call.get("event_type"))
 	check(String(call.get("entity_id", "")) == stub_stronghold_id,
 		"scheduled entity_id should be the stronghold id")
@@ -274,15 +274,22 @@ func test_wave2_schedules_wave3_event() -> void:
 ## stronghold so the test can drive a fresh wave-1/wave-2 cycle without colliding
 ## with the running test state. Returns the new stronghold id.
 func _make_completed_stronghold_for_wave2_scheduling_test() -> String:
-	var new_id: String = CampaignRepository.generate_id()
-	CampaignRepository.db.query_with_bindings("""
-		INSERT INTO strongholds
-			(id, campaign_id, domain_id, name, structure_type, archetype,
-			 cp_value, shp, max_shp, status, owner_character_id, ruler_class_id)
-		VALUES (?, ?, ?, 'WaveSchedTestKeep', 'keep_with_walls', 'fortress',
-				2500000, 100, 100, 'completed', ?, 'fighter')
-	""", [new_id, _campaign_id, _domain_id, _ruler_id])
-	return new_id
+	# Use the repository builder (which owns the real strongholds column set +
+	# cp_value→gp_value mapping) rather than a hand-written INSERT — the old raw
+	# INSERT listed columns the table doesn't have (campaign_id, name, max_shp,
+	# ruler_class_id), so it silently failed and the resolver saw "no stronghold
+	# for id". Mirrors _setup()'s create_stronghold call, but completed + sufficient.
+	return CampaignRepository.create_stronghold({
+		"domain_id": _domain_id,
+		"owner_character_id": _ruler_id,
+		"archetype": "fortress",
+		"structure_type": "keep_with_walls",
+		"cp_value": 2500000,
+		"shp": 100,
+		"completion_pct": 100,
+		"is_conforming_to_class": true,
+		"status": "completed",
+	})
 
 
 ## Lightweight scheduler stub that records schedule_at calls so tests can

@@ -17,7 +17,6 @@ func run_all_tests() -> void:
 	test_trap_placeholder_rooms()
 	test_unique_placeholder_rooms()
 	test_solvability_reaches_all_stairs()
-	test_determinism_same_seed()
 	test_1_floor_case()
 	test_tier_clamp_case()
 	test_invalid_floor_count()
@@ -220,26 +219,13 @@ func test_solvability_reaches_all_stairs() -> void:
 		"every adjacent band pair has at least one stairwell (covered: %s)" % str(pairs_covered.keys()))
 
 
-func test_determinism_same_seed() -> void:
-	var req1 := _make_3_floor_request()
-	var req2 := _make_3_floor_request()
-	var r1: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req1)
-	var r2: DungeonGeneratorResultV1 = DungeonGeneratorV1.generate(req2)
-	if r1 == null or r2 == null:
-		return
-	check(r1.floors.size() == r2.floors.size(),
-		"determinism: floor count should match (%d vs %d)" % [r1.floors.size(), r2.floors.size()])
-	for fi in range(min(r1.floors.size(), r2.floors.size())):
-		var f1: DungeonLayout = r1.floors[fi]
-		var f2: DungeonLayout = r2.floors[fi]
-		check(f1.rooms.size() == f2.rooms.size(),
-			"determinism: floor %d room count should match (%d vs %d)"
-			% [fi + 1, f1.rooms.size(), f2.rooms.size()])
-
-
 # ---------------------------------------------------------------------------
 # Additional cases
 # ---------------------------------------------------------------------------
+# NOTE: determinism is covered end-to-end by the composed pipeline —
+# scenario_composed_volume_determinism.gd (cell-for-cell VoxelMapData +
+# content-fingerprint equality) and test_dungeon_cutover_identity.gd. The old
+# count-only test_determinism_same_seed here was strictly subsumed by those.
 
 func test_1_floor_case() -> void:
 	var req := DungeonGeneratorRequestV1.new()

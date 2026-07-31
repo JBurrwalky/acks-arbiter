@@ -1,22 +1,23 @@
 # GDD: Combat Map Generation
 
 **Authority:** PROJECT-DESIGNED — the combat map generation algorithm, terrain-to-map-feature mapping, elevation modeling, and rendering approach are not derived from any ACKS sourcebook. ACKS combat rules (initiative, attack throws, movement, cover, climbing, falling) are defined in the XML rules reference library and applied on top of the generated map.
-**Status:** Draft
+**Status:** Revised for the voxel architecture — v2 (2026-07-17). The original draft predated the voxel migration and described a 2D elevation-score grid; this revision retargets every section onto `VoxelMapData` / `VoxelCell` and adds the terrain-driven wilderness generator requirements (dynamic heightfields, terrain-keyed obstacles, surface painting, movement-mode gating, spawn-reachability validation, split-map policy).
 **Depends on ACKS rules:** `acore_combat_and_wounds.xml` (combat movement, cover penalties, missile range bands, charging, defensive movement), `acore_adventures_and_encounters.xml` (wilderness encounter distance by terrain), `ax_conditions_catalog.xml` (engaged, prone, exhausted, and other combat-relevant conditions)
-**Depends on project GDDs:** `gdd-terrain-system.md` (hex terrain tags — elevation + biome + water + civilization), `gdd-dungeon-layout.md` (5' diamond grid, cell-based wall model, room detection), `gdd-settlement-layout.md` (district types, block structure), `gdd-stronghold-construction.md` (stronghold grid as battle map), `gdd_combat_behavior_tags.md` (AI engagement profiles, aggression, positioning)
+**Depends on project GDDs:** `gdd-voxel-tactical-architecture.md` (THE tactical grid data model — 5' voxel cells, solidity/feature/floor vocabulary, support rules), `gdd-continuous-geography.md` (hex terrain fields — elevation + biome + subtype + water + civilization), `gdd-dungeon-contiguous-3d.md` (one-movement-predicate rule; `MovementRules` is the single home for ground-step legality), `gdd_combat_behavior_tags.md` (AI engagement profiles, aggression, positioning)
+**Implementing files:** `engine/subsystems/generation/battlemap/battle_map_generator.gd`, `battle_map_templates.gd`, `battle_map_obstacle_catalog.gd`, `battle_map_validator.gd`; consumed by `engine/subsystems/session/states/combat_state.gd`; rendered by `scenes/ui/combat/combat_map_renderer_3d.gd` via `scenes/maps/tactical_grid_3d.gd`. Obstacle placeholder key: `docs/tactical-map-obstacle-key.md`.
 **Modifiable by Claude Code:** Yes — all algorithms, feature tables, placement logic, and rendering parameters are engineering decisions.
-**Last updated:** 2026-04-16
+**Last updated:** 2026-07-17
 
 ---
 
 ## 1. Purpose
 
-Define the unified 5' diamond grid system used by all tactical-scale maps in the game, and specify the procedural generation of battle maps for combat encounters that occur outside of dungeons or building interiors. Dungeons, interiors, and strongholds already have maps on this same grid and are used directly as the combat map when combat triggers inside them. This GDD covers the procedural generation of battle maps for two contexts:
+Define the procedural generation of tactical battle maps for combat encounters that occur outside of dungeons or building interiors, on the project's unified 5' voxel grid. Dungeons, interiors, and strongholds already have voxel maps and are used directly as the combat map when combat triggers inside them. This GDD covers:
 
-- **Wilderness encounters** — combat triggered by wandering monster checks, lair encounters, or ambushes while traveling overland.
-- **Urban encounters** — combat triggered inside a settlement but outside a building interior (street fights, market brawls, gate assaults).
+- **Wilderness encounters** — combat triggered by wandering monster checks, lair encounters, or ambushes while traveling overland. The battle map is generated dynamically from the hex's terrain fields: height variation, obstacles, watercourses, and surface painting all keyed to terrain type.
+- **Urban encounters** — combat triggered inside a settlement but outside a building interior. (Template defined here; generation deferred — see §6.)
 
-Each terrain type defined in `gdd-terrain-system.md` maps to a battle map template with terrain-appropriate features, obstacles, and elevation profiles. Urban encounters use a separate settlement battle map template. The generated map must support all ACKS combat mechanics: movement, missile fire with range bands, cover, charging, defensive movement, engagement, and any elevation-related mechanics per ACKS rules if any.
+The generated map must support all ACKS combat mechanics (movement, missile fire, cover, charging, defensive movement, engagement, climbing, falling) AND present clean, queryable data to the two downstream consumers that reason about the battlefield: the monster/NPC combat AI pathfinding (future session — more advanced than dungeon wall/door/open pathing) and the line-of-sight/cover resolvers (`VoxelLOS`). Every generation output must be expressible entirely in `VoxelMapData` cell fields plus the small set of extensions defined in §9 — no side-channel data structures that the AI or LOS resolvers would have to learn separately.
 
 ---
 
@@ -24,447 +25,242 @@ Each terrain type defined in `gdd-terrain-system.md` maps to a battle map templa
 
 ### 2.1 Dungeon and Interior Combat — No Generation Needed
 
-When combat triggers inside a dungeon, building interior, or any other space that already has a 5' diamond grid map, that existing map IS the battle map. No generation occurs. The combat system operates directly on the dungeon/interior grid, using its rooms, corridors, doors, walls, and furniture as the tactical environment. Because dungeons, interiors, and procedurally generated battle maps all share the same underlying diamond grid system (§3), combat mechanics work identically regardless of context.
-
-This includes:
-- Dungeon rooms and corridors (per `gdd-dungeon-layout.md`)
-- Building interiors entered during urban exploration
-- Stronghold interiors (per `gdd-stronghold-construction.md`)
-- Any pre-keyed interior map attached to a location
+When combat triggers inside a dungeon, building interior, or any other space that already has a voxel map, that existing map IS the battle map. No generation occurs, no data conversion occurs (the `VoxelMapData` is shared).
 
 ### 2.2 Wilderness Combat — Procedural Generation
 
-When a wilderness encounter triggers combat (wandering monster, lair discovery, ambush), the engine generates a temporary battle map based on the hex's terrain tags. The map is generated at combat trigger time and, by default, discarded after combat resolves.
+When a wilderness encounter triggers combat, the engine generates a temporary battle map from the hex's terrain fields (biome, elevation, biome_subtype, water tag, river adjacency, civilization class). The map is generated at combat trigger time and, by default, discarded after combat resolves.
 
-**Exception — Lair encounters:** If the encounter roll indicates the monsters are in their lair (per the % In Lair check from `acore-monster-stocking-rules.xml`), the generated battle map persists as campaign data attached to that lair's location. This lair map is reused if the party returns to the same location.
+**Exception — Lair encounters:** a lair's generated battle map persists as campaign data attached to the lair location and is reused on return visits (see §8).
 
-### 2.3 Urban Combat — Procedural Generation
+### 2.3 Urban Combat — Procedural Generation (deferred)
 
-When combat triggers in a settlement context but outside a building interior (a street encounter, market district brawl, gate assault, alley ambush), the engine generates a temporary battle map using the urban template. Urban battle maps do not persist after combat.
+Urban street encounters use the Town Street template (§6). Not yet implemented; wilderness combat that triggers in a civilized hex uses the civilized-grassland wilderness template until the urban generator exists.
 
 ### 2.4 Pre-Keyed Battle Maps
 
-Specific locations may have hand-authored or previously generated battle maps attached as campaign data. These override procedural generation. Examples: stronghold footprints (per `gdd-stronghold-construction.md` §11), persisted lair maps, or maps attached to scripted encounter locations.
+Specific locations may have hand-authored or previously generated battle maps attached as campaign data (persisted lair maps, stronghold footprints, scripted encounter locations). These override procedural generation — `CombatState` honors a `voxel_map` supplied in its context before invoking the generator.
 
 ### 2.5 Stronghold Assaults
 
-Stronghold battle maps are generated by the stronghold construction system, not by this GDD. The stronghold's grid footprint IS its battle map (per `gdd-stronghold-construction.md` §4.1 and §11). This GDD does not cover stronghold siege maps.
+Stronghold battle maps are generated by the stronghold construction system, not by this GDD.
 
 ---
 
 ## 3. Map Geometry
 
-### 3.1 Diamond Map Shape
+### 3.1 Grid Model
 
-All maps that operate on the 5' tactical grid are **diamond-shaped** — a grid rotated 45° so the map boundary forms a diamond (rhombus) when viewed in isometric projection. This matches the standard isometric tactical RPG presentation (as in Final Fantasy Tactics and similar games). This applies universally: procedurally generated wilderness and urban battle maps, dungeon maps, building interiors, and stronghold maps are all diamond maps on the same diamond grid.
+All tactical maps use the voxel grid defined in `gdd-voxel-tactical-architecture.md`: sparse `Vector3i(col, row, level)`-keyed 5-foot cube cells, diamond (isometric) presentation, level = 5 vertical feet. There is no separate battle-map grid type.
 
-The diamond shape means the map's bounding area is a square in grid coordinates, but its screen footprint is a diamond. The grid axes run diagonally relative to the screen, with one axis pointing screen-upper-right and the other pointing screen-upper-left.
-
-### 3.2 Grid Cell Shape
-
-All tactical-scale maps use **diamond (isometric) grid cells**. Each cell is 5' × 5' in world space. This is the single unified grid system for the project — dungeons, interiors, strongholds, and procedurally generated battle maps are all different applications of the same diamond grid, differing only in how the map content is generated and what execution rules apply during play (exploration turns vs. combat rounds, etc.).
-
-### 3.3 Map Dimensions
+### 3.2 Map Dimensions
 
 | Context | World Size | Grid Size | Cell Size |
 |---|---|---|---|
-| Wilderness battle map | 500' × 500' | 100 × 100 cells | 5' × 5' |
+| Wilderness battle map | 350' × 350' | **70 × 70 cells** | 5' × 5' |
 | Urban battle map | 250' × 250' | 50 × 50 cells | 5' × 5' |
 | Dungeon/interior (existing) | Varies | Varies | 5' × 5' |
-| Stronghold (existing) | Varies (up to 500' × 500') | Varies (up to 100 × 100) | 5' × 5' |
 
-Wilderness maps are large to accommodate the full range of ACKS wilderness encounter distances (which vary dramatically by terrain — from 5d4 yards in heavy forest to 5d20 × 10 yards on plains) and to allow meaningful ranged combat and maneuvering.
+**v2 change:** wilderness maps shrank ~30% linearly from the original 100 × 100 (500' × 500'). The 500' size was chosen to swallow extreme plains encounter-distance rolls, but in practice those rolls are edge-capped anyway (§7.3) and the extra area was dead space that hurt readability and generation/render cost. At 70 × 70 the map diagonal is ~495', which still contains the full rolled distance for every terrain except plains/desert/mountains outliers, which continue to edge-cap.
 
-Urban maps are smaller because city streets and blocks constrain sight lines and movement naturally. Most urban combat occurs at shorter ranges.
+### 3.3 Vertical Budget
+
+Wilderness maps use levels 0 through 7 (0'–35' of relief):
+
+| Elevation tag | Typical surface levels | Character |
+|---|---|---|
+| flat | 0–1 | Small fluctuations; the occasional 5' rise or dip |
+| hills | 0–3 | Rolling slopes, walkable almost everywhere, crest lines |
+| mountains | 0–7 | Steep grades, bluffs, 10'–25' cliff faces, plateaus |
+
+Levels are relative to the map's lowest carved point (watercourse beds may sit 1–2 levels below the base terrain around them).
 
 ---
 
 ## 4. Elevation Model
 
-### 4.1 Elevation Score
+### 4.1 Terrain Columns
 
-Each cell stores an integer **elevation score** from 0 to 30. Each unit represents 2.5 feet of vertical height, giving a total elevation range of 0' to 75' across a single map. Score 0 represents the lowest point on the generated map — elevation is relative, not absolute. Because every 2 units = 5', the system aligns naturally with ACKS's standard 5-foot height increments (10' walls = 4 units, 20' towers = 8 units, 30' ceilings = 12 units).
+Elevation is expressed directly in voxels. For a column at (col, row) with surface height `h`:
 
-```
-CellData:
-  elevation: int           # 0-30, each unit = 2.5 feet
-  terrain_feature: string  # "open", "tree", "boulder", "bush", "water", etc.
-  passable: bool           # Can a ground creature walk through this cell?
-  blocks_los: bool         # Does this cell block line of sight?
-  cover_value: int         # 0 = none, 1-4 = partial cover penalty (Judge-assigned per ACKS)
-  surface_type: string     # "grass", "dirt", "stone", "sand", "mud", "snow", "water", "cobblestone"
-```
+- Cells `level 0 .. h-1`: `solidity: "solid"`, `feature: "earth"` — the ground mass. Full stacks are stamped (not just the exposed shell) so LOS rays, climbing checks ("adjacent solid" rule), and burrowing all behave correctly with zero special-casing.
+- Cell `level h`: the **surface cell** — `solidity: "air"`, `floor_type` = surface material (§5.4), `feature` = `"open"` or an obstacle feature (§5.5). Walkers stand here; support comes from `floor_type != "none"` per `FallingResolver.has_support`.
+- Cells above `h`: absent (sparse default = open air).
 
-### 4.2 Elevation Difference and Vertical Surfaces
+### 4.2 Natural Slopes — the ±1 Level Rule
 
-When two adjacent cells differ in elevation, the height difference in feet = `abs(cell_a.elevation - cell_b.elevation) × 2.5`. This height difference creates a vertical surface between the cells that interfaces with:
+Dungeon ground movement requires a stair/ramp feature for any level change (`MovementRules.connects_via_feature`). Outdoor terrain instead uses **natural slopes**: on a map flagged `natural_slopes = true` (§9.2), a ground walker may step between horizontally-adjacent surface cells whose levels differ by exactly 1 (a 5' grade) with no feature required. The clause lives inside `MovementRules` itself — the project's single movement predicate — so combat pathing, exploration pathing, the reachability validator, and future AI all inherit it from one place.
 
-- **Climbing mechanics** — per ACKS rules, characters may need to climb vertical surfaces between cells of different elevation. The vertical distance to climb equals the elevation difference in feet.
-- **Rappelling and climbing equipment** — ropes, grappling hooks, and any other equipment applicable per ACKS rules may be used on these vertical surfaces.
-- **Fall damage** — a creature falling from one cell to an adjacent lower cell takes fall damage per ACKS rules based on the elevation difference in feet (elevation difference × 2.5 feet).
-- **Any other elevation-related mechanics** per ACKS rules, if any.
+| Adjacent surface Δlevel | Ground walker | Meaning |
+|---|---|---|
+| 0 | Free | Flat ground |
+| ±1 (5') | Free (natural slope) | Walkable grade |
+| ±2+ (10'+) | Blocked | Bluff/cliff — requires the `"climbing"` movement mode, flight, or a generated ramp/switchback |
 
-### 4.3 Movement Between Elevation Tiers
+Pure-vertical movement (same column) still requires a ladder/spiral feature — natural slopes are always diagonal.
 
-Movement between adjacent cells with small elevation differences (1-2 units = 2.5'-5') is treated as normal movement — the terrain slopes gently enough to walk. Movement between cells with larger differences requires climbing or is impassable depending on the specific difference and the creature's capabilities per ACKS rules.
+Falling: ACKS fall damage is 1d6 per 10' (`FallingResolver`, floor(distance/10) d6), so a 1-level drop (5') deals no damage — consistent with the slope rule. A 2-level drop is damaging terrain; the reachability guarantee (§7.5) never requires one.
 
-The threshold for "walkable slope" vs. "requires climbing" is:
-- **0-2 elevation units difference (0'-5'):** Normal movement. Gentle slope.
-- **3 elevation units difference (7.5'):** Steep but walkable. Costs double movement per ACKS difficult terrain conventions.
-- **4+ elevation units difference (10'+):** Vertical surface. Requires climbing, flight, or other special movement. Cannot be crossed by normal walking movement.
+### 4.3 Cliff Faces and Climbing
 
-### 4.4 FFT-Style Isometric Rendering
-
-The elevation model uses a true runtime 3D isometric presentation inspired by Final Fantasy Tactics to make height differences dramatically visible while preserving the same tactical rules:
-
-**Per-cell world elevation:** Each cell's rendered position is offset on the 3D scene's vertical axis by a value proportional to its elevation score. Higher cells occupy physically higher positions in world space while still reading as a diamond-grid tactical map from the fixed isometric camera.
-
-**Cliff faces:** When adjacent cells differ in elevation, the renderer draws visible **cliff face geometry** on the exposed edges between them. These faces are shaded darker than the cell's top face to communicate the vertical surface. Larger elevation differences produce taller, more dramatic cliff faces.
-
-**Camera and occlusion:** The tactical scene uses a fixed isometric camera and normal 3D occlusion. Renderer ordering should preserve clear readability of elevated cells, cliff faces, and units without changing the underlying grid logic.
-
-**Top face:** The walkable surface of each cell is rendered as a diamond-shaped top surface. Its visual treatment is determined by the cell's `surface_type`.
-
-**Elevation shading:** In addition to cliff geometry, the cell's top surface can use graduated shading, contour banding, or similar cel-shaded treatments to indicate relative height at a glance. The exact art treatment remains an art direction decision; the data model already exposes the elevation information needed for it.
-
-**Vertical surface indicators:** Cells where the elevation difference to a neighbor is 4+ units (the climbing threshold) should have a distinct visual marker on the cliff face — a different material treatment, color break, or edge highlight — so the player can immediately distinguish walkable slopes from climbing surfaces.
+Where adjacent surface levels differ by 2+, the exposed solid cells form a cliff face. Crossing requires the existing `"climbing"` movement mode (air cell adjacent to solid), flight, or a route around. The generator treats deliberate cliff bands as **dividers** (§7.4) and everything else as local texture that the validator may soften (§7.5).
 
 ---
 
 ## 5. Wilderness Battle Map Templates
 
-Each terrain tag combination from `gdd-terrain-system.md` maps to a battle map template that controls elevation profile, feature placement, and surface types. The template is selected based on the hex's terrain tags at the time of encounter.
+### 5.1 Template Selection Inputs
 
-### 5.1 Template Selection
-
-The primary template is selected by **biome tag** (Layer B from `gdd-terrain-system.md`). The **elevation tag** (Layer A) modifies the template's elevation profile. Water tags add water features.
+Templates key off the live hex-terrain vocabulary (from `hex_cells` / `HexTerrainData`), not the older draft tag names:
 
 ```
-1. Select base template from biome tag:
-   clear → Plains template
-   woods → Forest template
-   jungle → Jungle template
-   swamp → Swamp template
-   desert → Desert template
-
-2. Apply elevation modifier from elevation tag:
-   flat → minimal elevation variation
-   hills → moderate elevation variation, rolling terrain
-   mountains → high elevation variation, cliff faces, ridgelines
-
-3. Apply water overlay if present:
-   river → add river channel cutting across map
-   ocean → add coastline along one map edge (water on one side)
+biome:          clear | woods | jungle | swamp | desert
+elevation:      flat | hills | mountains
+biome_subtype:  "" | forest_dense | forest_taiga | mountains_volcanic |
+                mountains_glacial | clear_tundra | clear_savanna |
+                clear_grassland | clear_steppe | clear_scrub | desert_badlands
+water tag:      "" | ocean | lake
+river adjacency: HexTerrainData.has_river() (rivers are edge overlays, not a water tag)
+civilization:   civilized | borderlands | wilderness
 ```
 
-### 5.2 Template Definitions
+Selection pipeline:
+
+```
+1. Base template from biome (+ subtype refinements).
+2. Elevation tag drives the heightfield profile (§3.3 amplitudes).
+3. Water overlays:
+   - has_river()        → large watercourse (§5.6)
+   - water == "lake"    → pond/shore blob on one map region
+   - water == "ocean"   → coastline along one map edge
+   - otherwise          → chance of a small watercourse (stream), except deserts
+4. Civilization overlay (clear biome): civilized → field boundaries
+   (hedgerows, fences, low walls), chance of a farmstead;
+   borderlands/wilderness → lone trees, boulders, brush.
+5. Subtype overlays: mountains_volcanic → lava flow; tundra/glacial → snow
+   surfaces; desert_badlands → mesas and rock; taiga/dense → conifer/denser
+   tree coverage.
+6. Universal: small chance of ruined wall fragments in ANY locale.
+```
+
+### 5.2 Heightfield Profiles
+
+Seeded `FastNoiseLite` heightfield, quantized to integer levels, then feature carving:
+
+| Elevation | Noise amplitude | Post passes |
+|---|---|---|
+| flat | levels 0–1, long wavelength | Clamp neighbor deltas to ≤1 (everything walkable) |
+| hills | levels 0–3, medium wavelength | Clamp deltas to ≤1 except 0–2 short crest steps; ridge/valley shaping |
+| mountains | levels 0–6 (+1 for peaks), short wavelength | Allow deltas ≥2 (bluffs); optional escarpment band (§7.4); guarantee walkable switchback routes between major height tiers (validator, §7.5) |
+
+`desert_badlands` uses the hills profile with plateau quantization (flat-topped mesas, sharp 2-level edges).
+
+### 5.3 Obstacle Tables by Terrain
+
+Densities are for the 70 × 70 map; the obstacle catalog (§5.5) defines each feature's passability/LOS/cover data once, shared by generator, renderer, and docs. Counts scale with map area if dimensions change.
+
+**Clear (grassland/savanna/steppe/scrub), civilized:**
+| Feature | Density | Notes |
+|---|---|---|
+| hedgerow | 2–4 lines, 6–18 cells each | Field boundaries; tall, blocks LOS |
+| fence | 2–4 lines/enclosure arcs | Low, does not block LOS |
+| low_wall | 0–2 lines, 4–10 cells | Low stone, does not block LOS |
+| farmstead | 35% chance of 1 | 3×4 to 5×6 solid building footprint + yard fence |
+| tree | 2–5 lone | |
+| brush | 3–6 patches of 2–5 cells | |
+
+**Clear, borderlands/wilderness:**
+| Feature | Density |
+|---|---|
+| tree (lone) | 2–6 |
+| boulder | 2–5 |
+| brush | 4–8 patches of 2–6 cells |
+| tall grass (floor paint only) | ambient |
+
+**Woods (light forest; `forest_dense`/`forest_taiga` bump density one band):**
+| Feature | Density |
+|---|---|
+| tree | 12–20% of cells, organic clusters with clearings |
+| brush | 6–10% of cells, clustered in low ground |
+| fallen_log | 2–5 segments of 2–4 cells |
+| boulder | 1–3 (hills/mountains only) |
+
+**Jungle:**
+| Feature | Density |
+|---|---|
+| tree | 22–30% of cells |
+| brush | 15–20% of cells |
+| clearing | exactly 1, 8–15 cells |
+
+**Swamp:**
+| Feature | Density |
+|---|---|
+| shallow pools (water_shallow) | 25–35% of cells, connected blobs |
+| deep pools (water_deep) | 3–8% of cells inside shallow zones |
+| dead_tree | 4–8 |
+| reeds | 6–10 patches of 2–4 cells |
+| mud (floor paint) | remaining low ground |
+
+**Desert (rocky/sandy):**
+| Feature | Density |
+|---|---|
+| boulder | 3–6 |
+| rock_pile | 2–5 |
+| outcrop (multi-cell solid rock) | 1–3 of 3–6 cells |
+| scrub | 4–8 |
+| NO watercourses | dry by rule |
+
+**Mountains / rocky hills (any biome with elevation mountains):** add boulder 4–8, rock_pile 3–6, outcrop 2–4, scree (gravel floor paint) on steep faces.
+
+**`mountains_volcanic`:** 60% chance of a lava flow — a meandering 1–3 cell wide `lava` band (impassable liquid, damage hazard hook, emissive rendering). A crossing gap is guaranteed unless the flow is the map's rolled divider (§7.4).
+
+**Any locale:** 15% chance of 1–2 `wall_ruined` fragments (3–7 cells, low, LOS-transparent) — old foundations, a collapsed watchtower course.
+
+### 5.4 Surface Painting
+
+Each surface cell's `floor_type` is painted from the template plus local rules (elevation band, slope steepness, water proximity, noise-driven patchiness):
+
+| floor_type | Used for |
+|---|---|
+| grass | clear/woods base ground (bright/dark patch variation) |
+| dirt | worn ground, forest floor, farmstead yards |
+| stone | rocky ground, high mountain surfaces, outcrop bases |
+| sand | desert base, riverbanks in desert, beaches |
+| mud | swamp ground, riverbanks, rain-soaked lowland |
+| snow | tundra/glacial surfaces |
+| gravel | scree slopes, badlands floors |
+| water | the floor of shallow-water cells |
+| lava_rock | volcanic ground near lava flows |
 
-Each template defines ranges and probabilities for the generator. All measurements are in grid cells (1 cell = 5').
+The renderer maps floor_type → texture/color (reusing the wilderness hexmap texture set where it fits); the data layer knows only the floor_type string.
 
----
+### 5.5 Obstacle Catalog (single source of truth)
 
-#### 5.2.1 Plains (clear + flat)
+`battle_map_obstacle_catalog.gd` defines every obstacle feature once: cell stamping (solidity, floor, cover_value, water_depth), LOS class, and the placeholder rendering spec (color + shape code). The human-readable version is maintained at [docs/tactical-map-obstacle-key.md](../docs/tactical-map-obstacle-key.md). Three passability classes exist:
 
-Open grassland with minimal obstruction. Long sight lines. Very little cover.
+1. **Solid blockers** (tree, boulder, outcrop, hedgerow, farmstead walls, dead_tree): `solidity: "solid"` — block walkers, flyers at that level, and (unless low) LOS.
+2. **Low solids** (low_wall, fence, wall_ruined, rock_pile, fallen_log): `solidity: "solid"` but in `VoxelCell`'s low-feature LOS exception list — they block movement through the cell but NOT line of sight, and they grant cover (cover_value 1–3) via `VoxelLOS.get_cover_value`. (Vaulting/climbing over low obstacles is a future enhancement; v1 walkers path around.)
+3. **Soft cover** (brush, reeds, scrub): `solidity: "air"`, passable, cover_value 1, LOS-transparent. Difficult-terrain movement cost is deferred to the combat-AI pathfinding session (the BFS is currently uniform-cost); the features are stamped now so the cost layer has data to key off.
 
-**Elevation profile:**
-- Base: mostly flat (elevation 0-3 across the map)
-- Gentle undulation: Perlin noise with low amplitude (±1 unit) and long wavelength
-- Occasional shallow depression or low rise (±3 units)
+### 5.6 Watercourses and Standing Water
 
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Tall grass patch | 8-12 clusters | 3-6 cells each | Yes | No | 1 |
-| Lone tree | 2-4 | 1 cell | No | Yes | 2 |
-| Boulder | 1-3 | 1 cell | No | Yes | 2-3 |
-| Shallow ditch | 0-1 | 2-4 cells wide, spans partial map | Yes (difficult) | No | 1 |
+Water is expressed per-cell with two feature values plus an integer depth field (§9.1):
 
-**Surface type:** grass
+- **`water_shallow`** — `solidity: "air"`, `floor_type: "water"`, `water_depth: 0` (less than one voxel of water). Wadeable: any ground walker may enter without swimming. Streams, fords, banks, swamp pools, lake/ocean rims.
+- **`water_deep`** — `solidity: "liquid"`, `water_depth ≥ 1` (one or more full 5' voxels of water). Blocks ground walkers; requires the `"swimming"` movement mode (hook, §9.3), flight, or a crossing. River channels, deep pools, open lake/ocean water.
 
----
+Placement:
 
-#### 5.2.2 Plains (clear + hills)
-
-Rolling grassland with significant elevation changes. Ridgelines and valleys create natural cover through terrain shape rather than obstacles.
-
-**Elevation profile:**
-- Perlin noise with moderate amplitude (±6-9 units) and medium wavelength
-- 1-2 distinct ridgelines crossing the map
-- Valleys between ridges at elevation 0-4
-- Ridge crests at elevation 12-18
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Tall grass patch | 5-8 clusters | 3-6 cells each | Yes | No | 1 |
-| Lone tree | 3-6 | 1 cell | No | Yes | 2 |
-| Boulder cluster | 2-4 | 2-3 cells | No | Yes | 2-3 |
-| Rocky outcrop | 1-2 | 3-5 cells | No (impassable) | Yes | 4 |
-
-**Surface type:** grass, with dirt on steeper slopes
-
----
-
-#### 5.2.3 Plains (clear + mountains)
-
-Alpine meadow above the treeline, or a high mountain pass. Dramatic elevation changes with cliff faces.
-
-**Elevation profile:**
-- High amplitude (±9-15 units) with steep gradients
-- 1 dominant cliff face or escarpment dividing the map into upper and lower plateaus
-- Rocky ledges and switchback-like paths connecting the levels
-- Peak areas at elevation 20-30, valley floors at 0-6
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Boulder | 6-10 | 1-2 cells | No | Yes | 2-3 |
-| Rocky outcrop | 3-5 | 3-6 cells | No (impassable) | Yes | 4 |
-| Scree slope | 1-2 zones | 8-15 cells | Yes (difficult) | No | 0 |
-| Narrow ledge | 1-2 | 2-3 cells wide path | Yes | No | 0 |
-
-**Surface type:** stone, with dirt patches
-
----
-
-#### 5.2.4 Forest (woods + flat)
-
-Light to moderate forest. Trees provide cover and block sight lines but the ground is mostly level.
-
-**Elevation profile:**
-- Mostly flat (elevation 0-3)
-- Slight undulation from Perlin noise (±1 unit)
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Tree | 20-30% cell coverage | 1 cell each | No | Yes | 3 |
-| Undergrowth | 10-15% cell coverage | 1-3 cell clusters | Yes (difficult) | No | 1-2 |
-| Fallen log | 3-5 | 2-4 cells linear | No | Partial (half-height) | 2 |
-| Clearing | 1-2 | 8-15 cells | Yes | No | 0 |
-| Stream | 0-1 | 2-3 cells wide, partial map | Yes (difficult) | No | 0 |
-
-**Surface type:** dirt, with grass in clearings
-
-**Placement rule:** Trees should form organic clusters with natural-looking clearings between them, not uniform grids. Use Poisson disk sampling or similar to achieve natural spacing. Ensure at least one connected path exists from each map edge to the center.
-
----
-
-#### 5.2.5 Forest (woods + hills)
-
-Forested hills. Combination of tree cover and elevation changes creates complex tactical terrain.
-
-**Elevation profile:**
-- Moderate amplitude (±5-8 units) with medium wavelength
-- Hill crests may have fewer trees (rocky summit clearings)
-- Valleys tend to be denser with vegetation
-
-**Features:**
-Same as Forest (flat) but with these modifications:
-- Tree density reduced to 15-25% (thinner on slopes and crests)
-- Add 2-4 boulder clusters (2-3 cells each) on high-elevation areas
-- Add 1-2 rocky outcrops on ridge crests
-- Undergrowth concentrated in low-elevation areas
-
-**Surface type:** dirt, stone on high ground
-
----
-
-#### 5.2.6 Forest (woods + mountains)
-
-Steep mountain forest. Dense trees on slopes, cliff faces, narrow passages.
-
-**Elevation profile:**
-- High amplitude (±8-12 units) with steep gradients
-- One or more cliff faces with 4+ unit drops
-- Narrow traversable paths along ridgelines
-
-**Features:**
-Same as Forest (hills) but more extreme:
-- Tree density 15-20%
-- Rocky outcrops 4-6
-- At least one cliff face requiring climbing to cross
-- Fallen trees may bridge elevation gaps (improvised bridge)
-
-**Surface type:** dirt, stone on high ground and cliff faces
-
----
-
-#### 5.2.7 Jungle (jungle + flat)
-
-Dense tropical forest. Extremely limited sight lines. Heavy undergrowth.
-
-**Elevation profile:**
-- Mostly flat (elevation 0-3)
-- Slight Perlin undulation
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Dense tree | 25-35% cell coverage | 1 cell each | No | Yes | 3 |
-| Dense undergrowth | 20-25% cell coverage | 2-5 cell clusters | Yes (difficult) | Partial | 2 |
-| Giant root system | 3-5 | 2-3 cells | No | Yes | 3 |
-| Clearing | 1 | 5-10 cells | Yes | No | 0 |
-| Pool/stream | 0-1 | 3-6 cells | Yes (difficult) | No | 0 |
-
-**Surface type:** mud, with dirt in clearings
-
-**Placement rule:** Jungle maps should feel claustrophobic. Maximum unobstructed sight line should rarely exceed 30' (6 cells). The single clearing is the only open area.
-
----
-
-#### 5.2.8 Jungle (jungle + hills/mountains)
-
-As jungle flat, but with elevation layered in:
-- Hills: moderate elevation (±5-8 units), undergrowth thins on steep slopes
-- Mountains: high elevation (±8-12 units), cliff faces, waterfall feature possible (vertical water surface on cliff face, pool at base)
-
----
-
-#### 5.2.9 Swamp (swamp + flat)
-
-Wetland with shallow water, mud, and scattered solid ground. Movement is heavily restricted.
-
-**Elevation profile:**
-- Very flat (elevation 0-3)
-- Low areas (elevation 0) are flooded — shallow water cells
-- Slightly raised areas (elevation 1-3) are mud or solid ground
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Shallow water | 30-40% cell coverage | Large connected zones | Yes (difficult) | No | 0 |
-| Deep water | 5-10% cell coverage | 3-6 cell pools | No (swimming) | No | 0 |
-| Mud flat | 15-20% cell coverage | Connected zones | Yes (difficult) | No | 0 |
-| Dead tree | 4-8 | 1 cell | No | Partial | 2 |
-| Reed cluster | 6-10 | 2-4 cells | Yes (difficult) | Partial | 1-2 |
-| Solid ground island | 2-4 | 5-12 cells | Yes | No | 0 |
-| Fallen log | 2-3 | 3-5 cells linear | Yes (bridge) | No | 1 |
-
-**Surface type:** mud (solid ground), water (flooded areas)
-
-**Placement rule:** Solid ground islands must be connected by paths of shallow-water or mud cells so movement across the map is possible, even if slow. No island should be completely isolated.
-
----
-
-#### 5.2.10 Swamp (swamp + hills/mountains)
-
-Elevated swamp. Rare terrain — a marshy highland or mountain bog.
-- Hills: solid ground on higher elevation, swamp fills the valleys. Elevation ±5-8 units.
-- Mountains: steep with boggy ledges, cliff faces dripping with water. Elevation ±8-12 units.
-
----
-
-#### 5.2.11 Desert (desert + flat)
-
-Open arid wasteland. Long sight lines, minimal cover, sand or rocky ground.
-
-**Elevation profile:**
-- Mostly flat (elevation 0-4)
-- Gentle dune-like undulations: Perlin noise with low-moderate amplitude (±3 units) and long wavelength
-- Occasional flat-bottomed dry wash (depression at elevation 0, 4-8 cells wide)
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Sand dune crest | 2-3 | 5-10 cells linear | Yes | No | 1 (behind crest) |
-| Boulder | 2-5 | 1-2 cells | No | Yes | 2-3 |
-| Rocky outcrop | 0-2 | 3-5 cells | No (impassable) | Yes | 4 |
-| Scrub brush | 4-8 | 1 cell | Yes | No | 1 |
-| Dry wash | 0-1 | 4-8 cells wide channel | Yes | No (below grade provides cover from above) | 2 (from outside) |
-
-**Surface type:** sand, with stone near outcrops
-
----
-
-#### 5.2.12 Desert (desert + hills/mountains)
-
-Badlands or mountain desert. Canyon walls, mesas, steep rocky terrain.
-- Hills: mesas and arroyos, elevation ±6-9 units, flat-topped high areas with cliff drops
-- Mountains: deep canyons, tall cliff faces, elevation ±9-15 units, narrow passes between rock walls
-
----
-
-#### 5.2.13 River Overlay
-
-When the hex has a `river` water tag, a river channel is added to whatever base template was selected:
-
-- River width: 4-8 cells (20'-40')
-- River runs roughly across the map from one edge-pair to another (not necessarily straight — gentle curves)
-- River cells: deep water (impassable without swimming/boat) in center, shallow water (difficult terrain) at banks
-- Bank elevation: river surface is at elevation 0-3; banks are 2-4 units above water level
-- Bridge: 30% chance of a simple bridge (stone or wooden) spanning the river at one point. Bridge is 2 cells wide, elevation matches the banks, surface type stone or wood.
-- Ford: if no bridge, 50% chance of a ford (shallow water crossing 3-5 cells wide where depth allows wading — difficult terrain but passable)
-
----
-
-#### 5.2.14 Coastal Overlay
-
-When the hex has an `ocean` water tag:
-
-- One edge of the diamond map is coastline — ocean water fills roughly 15-25% of the map along that edge
-- Beach zone: 3-6 cells of sand at elevation 2-4 between water and inland terrain
-- Inland terrain is generated per the base template
-- Water cells at the ocean edge are deep water (impassable without swimming/boat)
-- Tidal rocks: 2-4 boulder-sized features partially in the water, providing cover near the shore
-- Cliffs: if elevation tag is mountains, the coastline may be a cliff face (elevation 10+ dropping directly to water level 0)
+- **Small watercourse (stream):** any non-desert template, ~35% chance. 1–2 cells wide, meandering edge-to-edge, ALL shallow — never splits the map. Banks may drop 1 level (walkable slope).
+- **Large watercourse (river):** only when the hex is river-adjacent (`has_river()`). 3–5 cells wide, meandering across the map; deep center line(s), shallow edges; banks carved 1 level down. Crossing roll: ford 45% / bridge 20% / none 35%. "None" makes the river a divider → split map (§7.4).
+- **Lake / ocean tag:** deep water mass on one region/edge with a shallow rim; one-sided, never a divider by itself.
+- **Bigger creatures:** creature size will eventually raise the wadeable threshold (a size-N creature wades `water_depth ≤ f(size)`). The hook exists now (`MovementRules.can_wade(cell, wade_depth_allowance)`); the sizing build session supplies the allowance. Until then all walkers use allowance 0 (shallow only).
 
 ---
 
 ## 6. Urban Battle Map Template
 
-### 6.1 Single Template (v1)
-
-For v1, all urban encounters use a single "town street" template regardless of district type. This covers the most common urban combat scenario: a fight in or near a street. District-specific variants (docks, market square, palace grounds, slums, etc.) are a post-v1 expansion.
-
-### 6.2 Urban Template: Town Street
-
-A section of settlement street with buildings along the edges, a central roadway, and incidental obstacles.
-
-**Map size:** 250' × 250' (50 × 50 cells), diamond shape.
-
-**Elevation profile:**
-- Mostly flat (elevation 0-3)
-- Street surface at elevation 0-2
-- Building floors at elevation 2 (single step up from street)
-- Occasional second-story balcony or rooftop areas at elevation 6-10 (accessible via stairs or ladder features, providing elevated positions)
-
-**Layout structure:**
-```
-1. STREET AXIS — a primary street runs across the map (roughly corner-to-corner
-   of the diamond, with slight curves). Width: 4-6 cells (20'-30').
-2. BUILDING ZONES — buildings fill the map area on both sides of the street.
-   Buildings are rectangular footprints (4-10 cells per side) defined by
-   impassable wall cells on their perimeter and inaccessible interior
-   (treated as off-map, not explorable rooms).
-3. ALLEYS — narrow passages (1-2 cells wide) between buildings, connecting
-   the street to the map edges and to each other. 2-4 alleys per side.
-4. OPEN AREA — one small plaza, courtyard, or wide intersection (8-15 cells)
-   where the street widens or alleys converge.
-5. ROOFTOP ACCESS — 1-2 buildings have exterior stairs or ladders (1-cell
-   feature) connecting street level to a flat rooftop area (elevation 6-10).
-   Rooftop area: 4-8 cells of passable flat surface.
-```
-
-**Features:**
-| Feature | Density | Size | Passable | Blocks LOS | Cover |
-|---|---|---|---|---|---|
-| Building wall | Per layout | 1 cell perimeter | No (impassable) | Yes | 4 |
-| Market stall | 2-4 | 2-3 cells | No | Partial | 2-3 |
-| Crate/barrel cluster | 4-8 | 1-2 cells | No | Partial | 2 |
-| Cart | 1-2 | 2-3 cells | No | Partial | 2 |
-| Well/fountain | 0-1 | 1-2 cells | No | Yes (if fountain) | 2-3 |
-| Rubble pile | 0-2 | 2-3 cells | Yes (difficult) | No | 1 |
-| Exterior stairs/ladder | 1-2 | 1 cell | Yes (vertical) | No | 0 |
-
-**Surface type:** cobblestone (street), stone (building floors and rooftops), dirt (alleys)
-
-**Placement rules:**
-- Buildings must not fully enclose the street — the street must connect to at least two map edges for entry/exit.
-- At least one alley per side must connect the street to a map edge.
-- Rooftop positions should have clear sight lines to the street below (making them tactically valuable for missile fire).
-- Market stalls and carts cluster near the open area or along the widest part of the street.
+Unchanged from v1 draft in intent; renumbered dimensions only (50 × 50 cells, level-based building shells). Deferred until after the wilderness generator ships. District-specific variants remain post-v1 (§13.1).
 
 ---
 
@@ -473,292 +269,220 @@ A section of settlement street with buildings along the edges, a central roadway
 ### 7.1 Core Pipeline
 
 ```
-1. DETERMINE CONTEXT
-   - Read hex terrain tags (elevation, biome, water, civilization)
-   - Determine if wilderness or urban encounter
-   - Check for pre-keyed battle map at this location → if found, use it instead
-
-2. SELECT TEMPLATE
-   - Wilderness: select base template from biome tag, apply elevation modifier
-   - Urban: use Town Street template
-   - Apply water overlay if applicable (river, ocean)
-
-3. INIT GRID
-   - Create 2D array of CellData (100×100 for wilderness, 50×50 for urban)
-   - All cells start as open/passable with elevation 0
-
-4. GENERATE ELEVATION
-   - Apply Perlin noise with template-specified amplitude and wavelength
-   - Carve specific elevation features (ridgelines, cliff faces, plateaus)
-     per the template's elevation profile
-   - Normalize so minimum elevation is 0
-
-5. PLACE MAJOR FEATURES
-   - Wilderness: place rivers, coastlines, clearings, major rock formations
-   - Urban: place street axis, building footprints, alleys, open area
-
-6. PLACE MINOR FEATURES
-   - Scatter trees, boulders, undergrowth, furniture per template density tables
-   - Use Poisson disk sampling for natural-looking distribution
-   - Respect feature placement rules (no features on water, features cluster
-     appropriately, etc.)
-
-7. VALIDATE CONNECTIVITY
-   - Flood-fill from map center to all map edges
-   - Ensure at least one passable path exists from the center to each
-     quadrant of the map edge (creatures must be able to enter and exit)
-   - If connectivity fails, remove obstructing features until paths exist
-
-8. SET SURFACE TYPES
-   - Assign surface_type to each cell based on template defaults,
-     elevation, and proximity to features
-
-9. COMPUTE DERIVED DATA
-   - For each cell, compute cover_value based on adjacent features
-   - For each cell-pair with elevation difference ≥ 4, flag the edge
-     as a climbing surface with height = difference × 2.5 feet
-
-10. PLACE COMBATANTS
-    - Determine encounter distance per ACKS Wilderness Encounter Distance
-      table (from `acore_adventures_and_encounters.xml`) based on terrain
-    - Place party at one region of the map, monsters at the rolled distance
-    - Both groups placed on passable cells with valid paths between them
-    - If surprise applies, position per ACKS surprise rules
-
-11. OUTPUT → BattleMap data structure
+1. CONTEXT    — receive terrain context (biome, elevation, subtype, water,
+                has_river, civilization, terrain_category fallback) + seed.
+2. TEMPLATE   — select per §5.1.
+3. HEIGHTFIELD— seeded FastNoiseLite → integer surface levels per column,
+                elevation-profile shaping + slope clamps (§5.2).
+4. WATER      — carve watercourses / lake / ocean; stamp water cells + depth;
+                roll crossing (ford/bridge) or divider status.
+5. DIVIDER    — mountains/badlands only: optional chasm or escarpment band
+                (§7.4) with crossing roll.
+6. VOXELIZE   — stamp solid earth stacks + surface cells (§4.1).
+7. OBSTACLES  — scatter per template tables (§5.3): Poisson-style min-distance
+                for lone features, cluster growth for brush/trees/pools,
+                line-walks for hedgerows/fences/walls, rectangle stamp for
+                farmstead. Never on water, never inside the party spawn
+                clearing, never sealing the guaranteed crossing.
+8. SURFACES   — paint floor_type per §5.4.
+9. VALIDATE   — reachability analysis + fix-up (§7.5). Stamp component ids.
+10. SPAWN ZONES — party anchor + enemy anchor/zone (§7.6); set entry_pos.
+11. FINALIZE  — fog all "visible" (open daylight), natural_slopes = true,
+                generation_seed recorded → VoxelMapData + result metadata.
 ```
 
 ### 7.2 Encounter Distance Integration
 
-The ACKS Wilderness Encounter Distance table provides the starting distance between the party and the encountered creatures, measured in yards. The generated map must be large enough to contain both groups at this distance.
+The ACKS Wilderness Encounter Distance table (`acore_adventures_and_encounters.xml` §encounter_distance_table — rolled in `CombatState._roll_encounter_distance_cells`) provides the starting separation. Distances that exceed the 70 × 70 map are edge-capped per §7.3:
 
-| Terrain | Encounter Distance | Fits in 500' Map? |
+| Terrain | Encounter Distance | Fits in 350' map? |
 |---|---|---|
-| Heavy forest / jungle | 5d4 yards (15'-60') | Yes — always |
-| Light forest | 5d8 yards (15'-120') | Yes — always |
-| Marsh | 8d10 yards (24'-240') | Yes — always |
-| Badlands | 2d6 × 10 yards (60'-360') | Yes — up to 360' (1080 feet max, but 500' map diagonal is ~700'. Outlier rolls place monsters near map edge) |
-| Mountains | 4d6 × 10 yards (120'-720') | Partial — extreme rolls exceed map. Cap at map diagonal and place monsters at map edge |
-| Desert / fields (fallow) | 4d6 × 10 yards (120'-720') | Same as mountains |
-| Plains | 5d20 × 10 yards (150'-3000') | No — extreme rolls far exceed map. See §7.3 |
+| Heavy forest / jungle | 5d4 yards (15'-60') | Always |
+| Light forest | 5d8 yards (15'-120') | Always |
+| Marsh | 8d10 yards (24'-240') | Always |
+| Mountains / desert | 4d6 × 10 yards (120'-720') | Median rolls fit (~420' avg); high rolls edge-cap |
+| Plains | 5d20 × 10 yards (150'-3000') | Low rolls fit; most edge-cap |
 
 ### 7.3 Handling Extreme Encounter Distances
 
-When the rolled encounter distance exceeds the map's effective diagonal (~700' for a 500' diamond), the encounter begins at the maximum map distance — monsters are placed at the far edge of the map and the party at the near edge. The implication is that both sides have spotted each other but actual combat engagement requires closing the distance.
+Unchanged policy: when the rolled distance exceeds the map, monsters are placed at the far edge, party at the near edge — both sides have spotted each other and must close. For very long plains distances where neither side commits, the encounter resolves at overland scale without a battle map.
 
-For very long distances on plains (>700'), if neither side wishes to engage, the encounter may resolve at the overland scale without entering the battle map at all (evasion, parley, or simply passing at distance). The battle map is only generated if at least one side commits to engagement.
+### 7.4 Split Maps — Policy
 
-### 7.4 Seeding
+A **split map** is one intentionally divided into two mutually-unreachable (for ground walkers) major regions by a river, chasm, or cliff face. Such encounters are ranged-only unless a side can fly, swim, or climb — this is desirable texture, but must stay uncommon.
 
-Each battle map is generated from a seed derived from: `hash(hex_coordinates, encounter_roll_seed, campaign_turn)`. For lair encounters that persist, the seed is stored with the lair data so the same map can be regenerated deterministically if needed.
+Rules:
+
+1. A split can ONLY arise from a rolled divider: a river with no ford/bridge (35% of river maps), or a mountains/badlands chasm/escarpment without a ramp (divider roll 15%, of which 30% uncrossed). Ordinary obstacle scatter and heightfield noise must never split the map — the validator repairs accidental splits (§7.5).
+2. Expected split-map rates: river-adjacent hexes ~35% of encounters; mountain/badlands hexes ~4–5%; everything else 0%. Global incidence stays well under "ubiquitous."
+3. A split map's two major regions must EACH hold ≥25% of the walkable surface (no sliver sides), and both sides get spawn zones (§7.6) — party on one side, monsters on the other.
+4. The result metadata flags `is_split` and names the divider so the encounter UI/AI can reason about it.
+
+### 7.5 Reachability Validation (pre-pathfinding)
+
+Run at generation time, before any combatant is placed. This is the guarantee the pathfinding AI builds on:
+
+1. Build the **walkable surface graph**: nodes = standable surface cells (air + support, including shallow water); edges = legal ground steps per `MovementRules.is_ground_step_open` with natural slopes. By construction an edge never requires a climbing throw and never includes a drop ≥2 levels (i.e., no forced falling damage).
+2. Flood-fill connected components. Stamp each surface cell's component id into `VoxelCell.zone_index` (reusing the dungeon zone field — documented dual use, §9.1) so ANY downstream consumer can answer "can A ground-walk to B?" with two dictionary reads.
+3. **Non-split maps:** the main component must contain ≥85% of walkable surface cells. Smaller components (a boulder top, an islet in a pond, a mesa without a ramp) are legal scenery but are excluded from spawn placement. If the main component is under threshold, repair deterministically: carve 1-level ramp steps through the offending height edges / remove the blocking obstacle cells nearest between the two largest components, re-flood, repeat (bounded iterations).
+4. **Split maps:** exactly the two divider-side components are spawn-eligible; each must meet the 25% floor or the divider is downgraded (a ford/ramp is carved) and the map becomes non-split.
+5. **Spawn-cell guarantee:** every cell used for ANY combatant spawn (party or monster) lies in a spawn-eligible component. No character can spawn on an isolated pillar, behind a sealed cliff, or on an island in a lake/river (unless that island IS the enemy side of a split map — and then only deliberately).
+
+### 7.6 Spawn Zones
+
+- **Party anchor** = `entry_pos`: a passable surface cell in the (party-side) main component near one map edge, with a cleared radius-2 pocket (no solid obstacles stamped there).
+- **Enemy anchor**: a passable surface cell in the enemy-side component at approximately the rolled encounter distance from the party anchor (edge-capped), preferring similar elevation unless the template placed the enemy zone on high ground.
+- Both zones are emitted as cell arrays (anchor + nearby passable same-component cells) in the generator result; `CombatState` walks these lists for actual placement instead of probing raw radii.
+
+### 7.7 Seeding and Determinism
+
+One seed drives the entire generation (`hash(encounter_id)` by default; lair maps store their seed). All randomness flows through a single seeded `RandomNumberGenerator` plus seeded `FastNoiseLite` instances — same context + seed ⇒ byte-identical `to_dict()` output. No wall-clock, no global RNG.
 
 ---
 
 ## 8. Persistence Rules
 
-| Encounter Type | Map Persists? | Storage |
-|---|---|---|
-| Wilderness wandering monster | No — discarded after combat | None |
-| Wilderness lair encounter | **Yes** — persists as campaign data | Attached to lair location record |
-| Urban street encounter | No — discarded after combat | None |
-| Pre-keyed location battle | Yes — pre-existing campaign data | Attached to location record |
-| Stronghold assault | Yes — stronghold grid | Stronghold data |
-
-When a lair battle map persists, it stores the complete `BattleMap` data structure (grid, elevation, features, surface types). If the party returns to the lair location, the stored map is loaded instead of generating a new one. If the lair is cleared and the party moves on, the map remains in campaign data until the lair location is removed or overwritten.
+Unchanged from v1: wandering-monster and urban maps are discarded; lair maps persist attached to the lair location (full `VoxelMapData` via the existing voxel persistence path, plus the generation seed); pre-keyed maps override generation.
 
 ---
 
 ## 9. Data Model
 
-### 9.1 BattleMap Structure
+### 9.1 VoxelCell — battle-map usage and extensions
+
+The battle map introduces NO parallel cell type. Extensions to `VoxelCell`:
+
+- **`water_depth: int = 0`** (serialized) — full voxels of water below the surface of a water cell. 0 on `water_shallow` (wadeable), ≥1 on `water_deep` (swim). 0 and meaningless on dry cells.
+- **Low-solid LOS exceptions** — `blocks_los()` returns false for the low obstacle features (`low_wall`, `fence`, `wall_ruined`, `rock_pile`, `fallen_log`) in addition to the existing `arrow_slit`/`window`/`portcullis` exceptions. These cells still block movement (solid) and carry `cover_value`.
+- **`zone_index` dual use** — on dungeon maps: room zone membership (DG-C3D §5.3). On battle maps: walkable-component id from §7.5. The map-level `natural_slopes` flag disambiguates which regime a map is in.
+- New `feature` vocabulary: `earth` (terrain mass), `tree`, `boulder`, `rock_pile`, `outcrop`, `brush`, `reeds`, `scrub`, `dead_tree`, `fallen_log`, `hedgerow`, `fence`, `low_wall`, `wall_ruined`, `lava`, plus the existing `water_shallow` / `water_deep`. New `floor_type` values per §5.4.
+
+### 9.2 VoxelMapData — extensions
+
+- **`natural_slopes: bool = false`** (serialized) — outdoor-terrain flag. Enables the ±1 natural-slope clause in `MovementRules` and surface-tracking movement in `MovementResolver`. Always false for dungeons/interiors; true for generated wilderness battle maps.
+- **`surface_level_at(col, row) -> int`** — topmost standable surface level in a column (−1 sentinel if none). The single helper the renderer (click picking, overlay projection), spawn placement, and movement wrappers use to resolve a 2D cell reference onto the terrain surface.
+
+### 9.3 Movement-Mode Gating
+
+`MovementRules` (the single step-legality home) gains:
+
+- The natural-slope clause (§4.2), gated on `map.natural_slopes`.
+- **`can_wade(cell, wade_depth_allowance := 0) -> bool`** — the water-depth gate: a ground walker may enter a water cell when `cell.water_depth <= allowance`. Default allowance 0 = shallow-only, matching "most characters traverse water less than 1 voxel deep without swimming." The creature-size build session will supply per-creature allowances; nothing else changes when it does.
+- `MovementResolver._can_enter_3d` gains a `"swimming"` movement-mode branch (liquid water cells passable, `lava` never) as the hook for swim-capable creatures; v1 has no swimmers wired.
+
+### 9.4 Generator Result Contract
+
+`BattleMapGenerator.generate(context) -> Dictionary`:
 
 ```
-BattleMap:
-  id: string                      # Unique identifier
-  seed: int                       # Generation seed for deterministic replay
-  map_type: string                # "wilderness" | "urban" | "dungeon" | "stronghold"
-  grid_width: int                 # 100 (wilderness) or 50 (urban)
-  grid_height: int                # 100 (wilderness) or 50 (urban)
-  cell_size_feet: int             # Always 5
-  shape: string                   # Always "diamond" — all tactical maps use the diamond grid
-  terrain_context: TerrainContext  # Source hex terrain tags
-  cells: Array[Array[CellData]]   # 2D grid of cell data
-  entry_zones: Array[Zone]        # Valid entry points for combatants
-  persists: bool                  # Whether this map is saved after combat
-  attached_to: string or null     # Location ID if persisted (lair, stronghold, etc.)
-
-TerrainContext:
-  elevation_tag: string           # "flat" | "hills" | "mountains"
-  biome_tag: string               # "clear" | "woods" | "jungle" | "swamp" | "desert"
-  water_tag: string or null       # "river" | "ocean" | null
-  civilization_tag: string        # "civilized" | "borderlands" | "wilderness"
-  has_city: bool
-
-CellData:
-  elevation: int                  # 0-30, each unit = 2.5 feet
-  terrain_feature: string         # "open", "tree", "boulder", "bush", "water_shallow",
-                                  #   "water_deep", "wall_stone", "wall_wood", "rock",
-                                  #   "building_wall", "stall", "crate", "cart", "rubble",
-                                  #   "stairs", "fallen_log", "reed", "dead_tree",
-                                  #   "scrub_brush", "root_system", "sand_dune_crest",
-                                  #   "undergrowth", "door", "door_locked", "door_secret",
-                                  #   "portcullis"
-  passable: bool                  # false for walls, closed doors; true for open doors, floor
-  blocks_los: bool
-  cover_value: int                # 0-4, per ACKS cover rules
-  surface_type: string            # "grass", "dirt", "stone", "sand", "mud", "snow",
-                                  #   "water", "cobblestone", "wood"
-  door_state: string or null      # null if not a door; "open", "closed", "locked", "stuck"
-  door_detected: bool             # For secret doors — false until found
-  room_id: int or null            # For dungeon maps — room association
-
-Zone:
-  cells: Array[Vector2i]          # Grid coordinates of cells in this zone
-  label: string                   # "party_start", "enemy_start", "entry_north", etc.
+{
+  "map":          VoxelMapData,       # natural_slopes=true, fog visible, zone_index stamped
+  "party_zone":   Array[Vector3i],    # spawn-eligible cells, anchor first
+  "is_split":     bool,
+  "divider":      String,             # "" | "river" | "chasm" | "cliff" | "lava"
+  "template_key": String,             # e.g. "clear_hills_civilized"
+  "components":   int,                # walkable component count after validation
+}
 ```
 
-### 9.2 Cell-Based Wall Model
+Enemy placement depends on the encounter-distance roll, which happens at combat
+time — so it is resolved by two static helpers rather than pre-baked in the
+result: `BattleMapGenerator.pick_enemy_anchor(map, party_anchor, desired_cells,
+is_split)` (nearest standable cell to the ideal spot that satisfies the
+component rule — party's component normally, the OTHER major component on a
+split map) and `BattleMapGenerator.spawn_cells_near(map, anchor, count)`
+(nearest-first standable same-component cells for group placement).
 
-All tactical-scale maps in the project use **cell-based walls**. A wall is simply an impassable cell — its `passable` flag is false and its `terrain_feature` identifies the wall type (`"wall_stone"`, `"wall_wood"`, `"rock"`, etc.). Wall thickness is always a multiple of 5' (one or more blocked cells). Doors are also cells: a door cell sits between two floor cells and is passable when open, impassable when closed. Its `terrain_feature` identifies the door type (`"door"`, `"door_locked"`, `"door_secret"`, `"portcullis"`, etc.).
+`context` keys: `seed:int`, `terrain_category:String` (fallback), and optionally the rich fields `biome`, `elevation`, `biome_subtype`, `water`, `has_river:bool`, `civilization` (attached to `encounter_data` by `SessionRunner.spawn_encounter_data`), `width`/`height` overrides.
 
-This model is shared across all map types — dungeons, strongholds, building interiors, and procedurally generated battle maps. Because every map type uses the same cell grid with the same passability check, dungeon maps function as combat maps with zero data conversion.
+### 9.5 The AI / LOS Data Contract
 
-Climbing surfaces between cells of different elevation are derived at runtime: when two adjacent passable cells differ in elevation by 4+ units (10'+), the boundary between them is a climbing surface with height = elevation difference × 2.5 feet. This is computed from the existing cell elevation data, not stored as a separate data structure.
+Everything the future combat-AI pathfinder and the LOS/cover resolvers need is answerable from `VoxelMapData` alone:
+
+| Question | Answer source |
+|---|---|
+| Can a walker stand here? | air + `FallingResolver.has_support` |
+| Can a walker step A→B? | `MovementRules.is_ground_step_open` (slope-aware) |
+| Can A reach B at all? | `zone_index` equality (surface cells) |
+| Does this cell need swimming? | `solidity == "liquid"` + `water_depth` vs. wade allowance |
+| Does this cell block sight? | `VoxelCell.blocks_los()` (low solids excepted) |
+| How much cover on this shot? | `VoxelLOS.get_cover_value` (max `cover_value` along the ray) |
+| Where is the surface? | `VoxelMapData.surface_level_at(col, row)` |
+| Is this map slope-walkable? | `VoxelMapData.natural_slopes` |
 
 ---
 
 ## 10. Line of Sight
 
-Line of sight (LOS) is calculated from cell center to cell center using a standard raycasting algorithm on the grid. A cell with `blocks_los: true` blocks LOS through it. Elevation affects LOS: a creature on a higher cell can see over obstacles on lower cells if the height difference is sufficient to clear the obstacle.
-
-LOS calculation details are an engineering decision for Claude Code. The key requirements are:
-- LOS must respect `blocks_los` flags on cells
-- Elevation differences must be considered (higher ground sees further over low obstacles)
-- The algorithm must be fast enough for real-time use during combat (checking LOS for every potential target each round)
+`VoxelLOS` (3D DDA, `blocks_los()` per intermediate cell) already handles terrain columns and elevation correctly: ridges block valley-to-valley shots, high ground sees over low obstacles, and the low-solid exception list keeps fences/ruins from blacking out sight while still granting cover through `get_cover_value`. No LOS algorithm changes are required by this GDD; wiring `get_cover_value` into ranged to-hit remains an open combat-system item (§15).
 
 ---
 
 ## 11. Integration Points
 
-### 11.1 Who Calls This Generator
+### 11.1 Data Flow
 
-The combat system calls this generator when combat triggers and no pre-existing battle map is available for the location. The caller provides:
-- Hex terrain tags (from the hex the party occupies)
-- Encounter type (wandering, lair, urban)
-- Encounter distance roll result
-- Monster placement data (number, size categories)
-- Party position data
+1. `SessionRunner.spawn_encounter_data` attaches terrain context (biome, elevation, subtype, water, has_river, civilization — additive keys) to `encounter_data`.
+2. `CombatState.enter` — if no pre-keyed `voxel_map` in context — calls `BattleMapGenerator.generate` with that context and a seed derived from the encounter id, then places the party from `party_zone` and monsters from `enemy_zone` at the rolled ACKS encounter distance.
+3. Combat runs on the returned map through the untouched controller/resolver stack.
+4. Lair persistence per §8.
 
-### 11.2 What Happens After Generation
+### 11.2 Rendering
 
-1. **Combatant placement** — party and monsters placed per encounter distance and surprise rules
-2. **Combat loop** — the standard ACKS combat system (from `acore_combat_and_wounds.xml`) runs on the map
-3. **AI movement** — monster tactical AI uses the map data (elevation, cover, LOS, features) to make movement and targeting decisions per `gdd_combat_behavior_tags.md`
-4. **Persistence check** — after combat, if the encounter was a lair encounter, the map is saved; otherwise it is discarded
-
-### 11.3 Rendering
-
-The `BattleMap` is rendered by the battle map renderer as a true runtime 3D tactical scene:
-- Diamond grid cells rendered as diamond-topped 3D surfaces
-- Elevation applied as world-space height, not a 2D screen offset
-- Cliff faces drawn as shaded side geometry between cells of different elevation
-- Terrain features instantiated as 3D battlefield props aligned to the cell grid
-- Combatants placed on the same 3D tactical surface with the existing grid coordinates
-- A fixed isometric camera preserves tactical readability while using normal 3D occlusion
-
-### 11.4 Dungeon and Interior Combat — Same System, No Conversion
-
-Because dungeons, interiors, strongholds, and procedurally generated battle maps all use the same diamond grid system, no data conversion occurs when combat triggers inside a dungeon. The dungeon map's grid, cells, edges, rooms, and doors ARE the battle map. The session runner switches from exploration mode to combat mode (showing initiative order, movement ranges, attack ranges) but the underlying grid data is identical. No separate `BattleMap` object is generated — the `DungeonLayout` already conforms to the same grid specification.
+`combat_map_renderer_3d.gd` (via `TacticalGrid3D` builders) renders:
+- All levels present in the map (terrain columns; the level-0-only combat assumption is retired).
+- Per-floor-type surface painting (texture/color batches per floor_type).
+- Water/lava surfaces reusing the hexmap water treatment (river shader/material) per the project's asset-reuse ruling.
+- Obstacle placeholders color/shape-coded from the obstacle catalog ([docs/tactical-map-obstacle-key.md](../docs/tactical-map-obstacle-key.md)) until real assets land.
+- Surface-aware click picking and overlay projection via `surface_level_at`.
 
 ---
 
 ## 12. Godot Implementation Notes
 
-### 12.1 3D Renderer Configuration
-
-The battle map renderer uses a 3D scene with a fixed isometric camera:
-- Tactical cells remain addressed in the same diamond-grid coordinate system
-- Ground surfaces, cliff faces, and blocking features are generated as 3D geometry or instanced meshes from `BattleMap.cells`
-- Terrain props and combatants align to cell centers in world space
-- HUD, action panels, and other interaction chrome remain 2D UI layered above the 3D combat scene
-
-### 12.2 Elevation Rendering in 3D
-
-To achieve the FFT-style stacked-height look in true runtime 3D:
-- Each cell's elevation score maps to an actual height offset in world space
-- Cliff faces are generated as separate side surfaces between cells of different elevation
-- Material/shading choices should emphasize bold silhouette readability and cel-shaded color separation rather than photoreal surface detail
-- Camera angle and zoom should be fixed or tightly constrained so the battlefield remains tactically legible
-
-### 12.3 Performance
-
-Generation is a one-time cost per encounter. The largest grid (100×100 = 10,000 cells) should generate in under 200ms on modern hardware. Perlin noise, Poisson disk sampling, and flood-fill validation are all well-understood algorithms with predictable performance at this scale.
-
-Runtime rendering of 10,000 tactical cells should remain feasible in Godot when cells and repeated terrain props are instanced efficiently and only the visible battlefield area is drawn at full detail. View culling and batched rendering remain important.
-
-### 12.4 Key Godot Classes
-
-- `Node3D` — root for the tactical combat scene
-- `Camera3D` — fixed isometric tactical camera
-- `MeshInstance3D` / `MultiMeshInstance3D` — battlefield surfaces, cliff faces, and repeated terrain features
-- `RandomNumberGenerator` — seeded RNG for deterministic generation
-- `FastNoiseLite` — Godot's built-in Perlin/simplex noise for elevation generation
-- `Vector2i` — grid coordinate math
-- `AStarGrid2D` — connectivity validation and pathfinding
+- `FastNoiseLite` + seeded `RandomNumberGenerator` for all generation randomness.
+- Generation target: < 200 ms for 70 × 70 (≈5k surface cells + ≈10–20k solid cells worst case in mountains).
+- Rendering: MultiMesh batches per level per category (existing pattern); camera bounds computed once from all levels and cached (the per-frame all-positions scan does not survive 20k-cell maps); `ZOOM_MAX` raised to frame the 70-cell diamond.
+- The renderer never invents passability — every visual derives from cell fields.
 
 ---
 
 ## 13. Future Expansion
 
-### 13.1 District-Specific Urban Templates (Post-v1)
-
-The single Town Street template can be expanded to district-specific variants:
-- **Market district** — wider open area, more stalls and merchant carts, fountain centerpiece
-- **Docks district** — waterfront on one edge, warehouses, gangplanks, cargo cranes
-- **Thieves' quarter** — narrow alleys, dead ends, rooftop-heavy with more vertical access points
-- **Temple district** — large central building (temple facade), courtyard, fewer market stalls
-- **Castle/palace grounds** — walls, gate, guard positions, open courtyard
-- **Slums** — tighter building spacing, rubble, fewer open areas, more alleys
-
-### 13.2 Weather Effects on Battle Maps
-
-At combat initiation, the combat map generator queries the current hex weather state from the weather system (`gdd-weather-generation.md` §4). Weather state channels map to battle map modifications:
-- precipitation_level 2+ (rain) → mud surface type replaces dirt; shallow water expands in swamp
-- precipitation_type snow at level 2+ → snow surface type
-- visibility_multiplier < 0.5 → LOS range cap at (base_LOS × visibility_multiplier)
-- fog == true → severe LOS range cap (visibility_multiplier 0.1)
-
-### 13.3 Time-of-Day Effects
-
-Night encounters could reduce base LOS range and require light sources, using the same light radius system as dungeon exploration (per design brief §6.3).
-
-### 13.4 Sea Battle Maps
-
-Naval combat is deferred to post-v1, but if implemented, would need an ocean battle map template (open water, ship decks as platforms, boarding actions).
+13.1 District-specific urban templates (unchanged).
+13.2 Weather effects on battle maps (precipitation → mud/snow surface swaps, visibility caps) — unchanged plan.
+13.3 Time-of-day light sources — unchanged plan.
+13.4 Sea battle maps — unchanged plan.
+13.5 Difficult-terrain movement costs (brush/mud/scree/shallow water) — lands with the combat-AI pathfinding session on top of the features stamped now.
+13.6 Vaulting/climbing low obstacles; swimming creatures; creature-size wade allowances (size build session).
 
 ---
 
 ## 14. Design Decisions (Resolved)
 
-- **Diamond map shape, diamond grid cells — unified system: DECIDED.** All tactical-scale maps (dungeons, interiors, strongholds, wilderness battle maps, urban battle maps) use the same diamond grid system. Diamond maps, diamond cells, same data model. Different map types are different applications of this single system with different execution rules (exploration turns vs. combat rounds), not separate grid systems.
-- **Fixed map sizes: DECIDED.** 500'×500' wilderness, 250'×250' urban. No dynamic sizing. These sizes accommodate the vast majority of ACKS encounter distances while keeping generation and rendering tractable.
-- **Elevation 0-30 at 2.5 feet per unit: DECIDED.** Provides up to 75' of elevation relief per map, sufficient for cliff faces, multi-story buildings, ridgelines, and dramatic FFT-style height differences. Every 2 units = 5', aligning naturally with ACKS's standard 5-foot height increments (10' walls = 4 units, 20' towers = 8 units, etc.).
-- **Lair maps persist, wandering monster maps do not: DECIDED.** This matches the fiction — a lair is a fixed location in the world, while a random encounter on the road happens wherever the party happens to be.
-- **Single urban template for v1: DECIDED.** One Town Street template covers the most common case. District variants are post-v1 expansion. This avoids overengineering a system before the combat loop is proven.
-- **No explicit height combat modifiers defined: DECIDED.** ACKS 1e does not define explicit bonuses or penalties for elevation in individual combat. Any such mechanics are applied per ACKS rules if any — the elevation data exists for climbing, falling, LOS, and visual presentation, not for project-invented combat modifiers.
-- **FFT-style visual elevation: DECIDED.** Cliff faces are rendered as shaded side geometry, cells are placed at true world-space height by elevation score, and the fixed isometric camera preserves clear tactical readability in runtime 3D.
-- **Templates not hand-authored maps: DECIDED.** Each terrain type defines generation parameters (density ranges, elevation profiles, feature tables), not fixed map layouts. Every encounter produces a unique map from the template, preventing repetition while maintaining terrain-appropriate tactical character.
+- **Voxel-native elevation: DECIDED (v2).** Terrain height is whole 5' voxel levels on the shared grid — the old 2.5'-unit elevation score is retired with the 2D model. FFT-style presentation survives via true world-height rendering.
+- **70 × 70 wilderness map: DECIDED (v2).** ~30% linear shrink from 100 × 100; edge-capping absorbs extreme encounter distances.
+- **Natural slopes as a MovementRules clause, not stamped ramp features: DECIDED (v2).** Slope-walkability is a property of outdoor terrain geometry (±1 level), not of authored features; keeping it in the single movement predicate means zero drift between combat, exploration, validation, and AI.
+- **Water as shallow-air / deep-liquid with an integer depth field: DECIDED (v2).** Wading gate = `water_depth ≤ allowance`, defaulting to shallow-only; size systems plug in later without schema changes.
+- **Split maps allowed, rare, divider-only: DECIDED (v2)** per §7.4.
+- **Obstacle catalog as single source of truth: DECIDED (v2)** — generator stamping, renderer placeholders, and the docs key all read one table.
+- **Lava contact: DECIDED (Jedidiah ruling, 2026-07-17).** ACKS 1e has no environmental lava rule (rules corpus searched; the only mention is a monster ability, `rules/le_monster_catalog_2_summary.xml:1522-1533`, lava projection for 2d6 burning — not an environment rule). Project ruling: a creature that contacts a lava surface makes a **saving throw versus Poison & Death**; on a failure it is **instantly killed**; on a success it takes **2d6 fire damage**. Implemented as `FallingResolver.resolve_lava_contact()`; every path that can put a creature in a lava cell resolves it: falls (`resolve_fall()` flags `lava_contact` landings), teleport mishaps, and the **force back** maneuver (2026-07-17 follow-up ruling: a push stopped by a lava flow forces the victim in — the lava contact REPLACES the RAW wall-collision knockdown, and the victim ends at the brink cell either way, never standing in the flow). Overrun moves the attacker through the target, never the target (`rules/acore_combat_and_wounds.xml:633-643`), so it cannot cause lava contact. Voluntary movement can never enter lava (liquid, not wadeable, not swimmable).
+- **Lair maps persist, wandering maps do not: DECIDED (v1, unchanged).**
+- **Templates not hand-authored maps: DECIDED (v1, unchanged).**
+- **No project-invented elevation combat modifiers: DECIDED (v1, unchanged).** Elevation data serves climbing, falling, LOS, and presentation only.
 
 ---
 
 ## 15. Open Questions
 
-- **Vegetation regrowth in persisted lair maps:** If the party visits a lair, fights, leaves, and returns months later, should the map features change (regrowth, weathering)? Probably not for v1 — persisted maps are static. Could be a post-v1 enhancement.
-- **Large creature cell occupancy:** ACKS large creatures occupy more than one 5' cell. The feature placement algorithm should leave enough open space for large creatures to maneuver. The exact multi-cell occupancy rules are defined in the combat system, not here, but the generator should be aware of the monster size category when placing features to avoid generating maps where large creatures physically cannot fit.
-- **Encounter distance capping on plains:** The current design caps encounter distance at the map diagonal (~700') and places monsters at the map edge. An alternative would be to scale the map size up for plains encounters, but this would require variable-size rendering and complicate the system. The fixed-size approach with edge-capping is simpler and adequate — if the party can see monsters 2,000' away on open plains, the tactical question is whether to engage, not where to position within a 2,000' map.
+- **Cover wiring:** `cover_value` is stamped and `VoxelLOS.get_cover_value` computes it, but ranged to-hit does not yet consume it. Combat-system session item.
+- **Difficult terrain cost:** brush/mud/scree/shallow-water are stamped but the BFS is uniform-cost until the AI pathfinding session adds weighted movement.
+- **Vegetation regrowth in persisted lair maps:** still deferred (static maps).
+- **Large-creature placement:** the generator keeps spawn pockets obstacle-free but multi-cell occupancy remains a combat-system concern; revisit at the size build session together with wade allowances.
 
 ---
 
 ## 16. Revision History
 
 - **2026-03-25:** Initial draft. Diamond maps, elevation 0-30 at 2.5'/unit, terrain templates, urban template, persistence rules, FFT-style rendering.
+- **2026-07-17:** v2 — voxel-architecture retarget. 70×70 map (30% shrink), voxel-level elevation + natural-slope rule, live hex-terrain vocabulary (subtypes incl. volcanic/badlands/tundra), civilized-clear obstacle set (hedgerows/fences/farmsteads), watercourse model with water_depth + wading gate, split-map policy, reachability validation with component stamping, obstacle catalog + placeholder key doc, movement-mode gating hooks (swim/wade/size), AI+LOS data contract.

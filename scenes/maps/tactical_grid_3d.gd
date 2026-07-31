@@ -298,6 +298,18 @@ static func floor_color_for_voxel(floor_type: String, feature: String = "") -> C
 			return Color(0.45, 0.55, 0.35)      # grass green
 		"dirt":
 			return Color(0.55, 0.45, 0.3)       # brown
+		"sand":
+			return Color(0.82, 0.74, 0.52)      # pale sand
+		"mud":
+			return Color(0.42, 0.36, 0.26)      # dark wet brown
+		"snow":
+			return Color(0.92, 0.93, 0.96)      # white
+		"gravel":
+			return Color(0.58, 0.56, 0.52)      # scree grey
+		"water":
+			return Color(0.16, 0.30, 0.38)      # streambed (water plane on top)
+		"lava_rock":
+			return Color(0.24, 0.20, 0.20)      # basalt
 		_:
 			return Color(0.831, 0.722, 0.588)    # default tan
 
@@ -311,6 +323,8 @@ static func wall_color_for_voxel(feature: String) -> Color:
 			return Color(0.55, 0.45, 0.35).darkened(0.15)
 		"pillar":
 			return Color(0.55, 0.55, 0.50).darkened(0.1)
+		"earth":
+			return Color(0.46, 0.38, 0.28)      # terrain column soil/rock
 		_:
 			return Color(0.45, 0.45, 0.45)
 
@@ -324,6 +338,8 @@ static func combat_ground_color_voxel(floor_type: String, _feature: String = "")
 			return Color(0.5, 0.5, 0.5)
 		"dirt":
 			return Color(0.55, 0.45, 0.3)
+		"sand", "mud", "snow", "gravel", "water", "lava_rock":
+			return floor_color_for_voxel(floor_type)
 		_:
 			return Color(0.4, 0.5, 0.35)
 
@@ -393,6 +409,10 @@ static func build_walls_voxel(map: VoxelMapData, level: int) -> MultiMeshInstanc
 	var wall_cells: Array = []
 	for cell: VoxelCell in map.get_cells_at_level(level):
 		if cell.solidity == "solid":
+			# Battle-map terrain mass and catalog obstacles have their own
+			# builders (build_terrain_columns_voxel / build_obstacles_voxel).
+			if cell.feature == "earth" or BattleMapObstacleCatalog.is_solid_obstacle(cell.feature):
+				continue
 			wall_cells.append(cell)
 
 	if wall_cells.is_empty():
@@ -446,6 +466,8 @@ static func build_walls_voxel_individual(map: VoxelMapData, level: int) -> Node3
 
 	for cell: VoxelCell in map.get_cells_at_level(level):
 		if cell.solidity != "solid":
+			continue
+		if cell.feature == "earth" or BattleMapObstacleCatalog.is_solid_obstacle(cell.feature):
 			continue
 
 		var world_pos := VoxelGrid.cell_to_world(cell.col, cell.row, level)
@@ -588,49 +610,34 @@ static func _is_passage_neighbor_voxel(pos: Vector3i, map: VoxelMapData) -> bool
 # Per-level feature builder (voxel — stairs, ramps, ladders)
 # ---------------------------------------------------------------------------
 
-## Build feature meshes (stairs, ramps, ladders) for a given level.
+## Build feature meshes (stairs, spiral, ramps, ladders, parapets) for a given
+## level. DG-C3D.G placeholder primitives: stepped stairs, a helical spiral, an
+## inclined ramp, and a balcony parapet rail (cover_value > 0) — simple boxes
+## flagged to gdd-dungeon-asset-integration-plan.md for real meshes. The
+## renderer architecture is unchanged (these live in the per-level Features
+## Node3D, so the tint/fade/fog machinery already covers them; every mesh sets a
+## "base_color" meta so set_level_group_tint can dim it below focus).
 static func build_features_voxel(map: VoxelMapData, level: int) -> Node3D:
 	var parent := Node3D.new()
 	parent.name = "Features"
 
+	const STAIR_COLOR := Color(0.9, 0.9, 0.85)
+	const RAMP_COLOR := Color(0.75, 0.62, 0.45)
+	const PARAPET_COLOR := Color(0.62, 0.6, 0.66)
+
 	for cell: VoxelCell in map.get_cells_at_level(level):
 		var world_pos := VoxelGrid.cell_to_world(cell.col, cell.row, level)
 
-		if cell.feature.begins_with("stairs_"):
-			# Stair ramp mesh
-			var box := BoxMesh.new()
-			box.size = Vector3(CELL_SIZE * 0.5, 0.1, CELL_SIZE * 0.6)
+		# Spiral is checked BEFORE the generic stairs branch — its feature has no
+		# compass suffix, so the generic path would mis-rotate it.
+		if cell.feature == "stairs_spiral":
+			_build_spiral_placeholder(parent, world_pos, STAIR_COLOR)
 
-			var stair_color := Color(0.9, 0.9, 0.85)
-			var stair_mat := StandardMaterial3D.new()
-			stair_mat.albedo_color = stair_color
-			stair_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			stair_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-			var mesh_inst := MeshInstance3D.new()
-			mesh_inst.mesh = box
-			mesh_inst.material_override = stair_mat
-			mesh_inst.set_meta("base_color", stair_color)
-			mesh_inst.position = world_pos + Vector3(0.0, 0.2, 0.0)
+		elif cell.feature.begins_with("stairs_"):
+			_build_stepped_placeholder(parent, world_pos, cell.feature, STAIR_COLOR)
 
-			# Rotate to face the direction encoded in the suffix
-			var dir_rotation := _stair_direction_rotation(cell.feature)
-			mesh_inst.rotation_degrees.y = dir_rotation
-			if cell.feature.begins_with("stairs_up"):
-				mesh_inst.rotation_degrees.x = -20.0
-			else:
-				mesh_inst.rotation_degrees.x = 20.0
-
-			# Arrow label
-			var is_up := cell.feature.begins_with("stairs_up")
-			var label := Label3D.new()
-			label.text = "▲" if is_up else "▼"
-			label.font_size = 32
-			label.modulate = Color.WHITE
-			label.position = world_pos + Vector3(0.0, 0.5, 0.0)
-			label.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-			label.no_depth_test = true
-			parent.add_child(mesh_inst)
-			parent.add_child(label)
+		elif cell.feature.begins_with("ramp_"):
+			_build_ramp_placeholder(parent, world_pos, cell.feature, RAMP_COLOR)
 
 		elif cell.feature == "ladder":
 			# Ladder: vertical thin box
@@ -659,7 +666,95 @@ static func build_features_voxel(map: VoxelMapData, level: int) -> Node3D:
 			label.no_depth_test = true
 			parent.add_child(label)
 
+		# Parapet rail on a balcony-edge cell (cover_value > 0), on the side(s)
+		# facing the atrium void. Independent of the feature branch above — the
+		# balcony floor cell's feature is "open".
+		if cell.cover_value > 0 and cell.floor_type != "none":
+			_build_parapet_placeholder(parent, world_pos, map, cell, level, PARAPET_COLOR)
+
 	return parent
+
+
+## An unshaded, double-sided box MeshInstance3D flagged with a "base_color" meta
+## (load-bearing for set_level_group_tint's below-focus dimming).
+static func _feature_box(size: Vector3, color: Color) -> MeshInstance3D:
+	var box := BoxMesh.new()
+	box.size = size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var inst := MeshInstance3D.new()
+	inst.mesh = box
+	inst.material_override = mat
+	inst.set_meta("base_color", color)
+	return inst
+
+
+## Stepped-stair placeholder: three rising treads (grouped + rotated to face the
+## suffix compass) plus the ▲/▼ arrow. Reads as steps rather than a flat slab.
+static func _build_stepped_placeholder(parent: Node3D, world_pos: Vector3, feature: String, color: Color) -> void:
+	var group := Node3D.new()
+	group.position = world_pos
+	group.rotation_degrees.y = _stair_direction_rotation(feature)
+	for i in 3:
+		var tread := _feature_box(Vector3(CELL_SIZE * 0.5, 0.08, CELL_SIZE * 0.22), color)
+		tread.position = Vector3(0.0, 0.08 + float(i) * 0.13, -0.22 + float(i) * 0.18)
+		group.add_child(tread)
+	parent.add_child(group)
+
+	var is_up := feature.begins_with("stairs_up")
+	var label := Label3D.new()
+	label.text = "▲" if is_up else "▼"
+	label.font_size = 32
+	label.modulate = Color.WHITE
+	label.position = world_pos + Vector3(0.0, 0.55, 0.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	label.no_depth_test = true
+	parent.add_child(label)
+
+
+## Spiral-stair placeholder: a central post + four quarter-treads at 90°
+## increments (a rough helix).
+static func _build_spiral_placeholder(parent: Node3D, world_pos: Vector3, color: Color) -> void:
+	var group := Node3D.new()
+	group.position = world_pos
+	var post := _feature_box(Vector3(0.12, CELL_SIZE * 0.85, 0.12), color)
+	post.position = Vector3(0.0, CELL_SIZE * 0.42, 0.0)
+	group.add_child(post)
+	for i in 4:
+		var tread := _feature_box(Vector3(CELL_SIZE * 0.34, 0.07, 0.14), color)
+		tread.position = Vector3(0.0, 0.12 + float(i) * 0.2, 0.0)
+		tread.rotation_degrees.y = float(i) * 90.0
+		# Offset outward along the tread's local +X so it reads as a fan.
+		tread.position += tread.transform.basis.x * (CELL_SIZE * 0.16)
+		group.add_child(tread)
+	parent.add_child(group)
+
+
+## Ramp placeholder: a single inclined slab (no risers) facing the suffix.
+static func _build_ramp_placeholder(parent: Node3D, world_pos: Vector3, feature: String, color: Color) -> void:
+	var inst := _feature_box(Vector3(CELL_SIZE * 0.6, 0.08, CELL_SIZE * 0.9), color)
+	inst.position = world_pos + Vector3(0.0, 0.2, 0.0)
+	inst.rotation_degrees.y = _stair_direction_rotation(feature)
+	inst.rotation_degrees.x = -18.0  # incline
+	parent.add_child(inst)
+
+
+## Parapet placeholder: a low rail on each void-facing edge of a balcony cell.
+static func _build_parapet_placeholder(parent: Node3D, world_pos: Vector3, map: VoxelMapData, cell: VoxelCell, level: int, color: Color) -> void:
+	# One low rail per 2D neighbour that is an atrium void (feature "air_open").
+	for nb in VoxelGrid.get_neighbors_2d(Vector3i(cell.col, cell.row, level)):
+		if map.get_cell(nb).feature != "air_open":
+			continue
+		var rail := _feature_box(Vector3(CELL_SIZE * 0.9, 0.18, 0.08), color)
+		# Place the rail on the shared edge, half a cell toward the void, raised.
+		var nb_world := VoxelGrid.cell_to_world(nb.x, nb.y, level)
+		rail.position = world_pos.lerp(nb_world, 0.5) + Vector3(0.0, 0.24, 0.0)
+		# Orient the rail perpendicular to the edge direction.
+		var edge := nb_world - world_pos
+		rail.rotation_degrees.y = rad_to_deg(atan2(edge.x, edge.z)) + 90.0
+		parent.add_child(rail)
 
 
 ## Compute Y rotation for stair direction suffix.
@@ -1025,6 +1120,336 @@ static func screen_to_cell_voxel(
 	var t := (plane_y - origin.y) / direction.y
 	var hit := origin + direction * t
 	return VoxelGrid.world_to_cell(hit)
+
+
+# ===========================================================================
+# TERRAIN BATTLE-MAP BUILDERS — generated wilderness maps
+# (gdd-combat-map-generation.md §11.2). Placeholder visuals: per-floor-type
+# texture painting, terrain-column cubes, color/shape-coded obstacle
+# primitives from BattleMapObstacleCatalog (key: docs/tactical-map-obstacle-key.md),
+# and water/lava planes reusing the hexmap water look.
+# ===========================================================================
+
+## floor_type → texture path for terrain surface painting. Reuses the
+## wilderness hexmap texture set as placeholder ground detail.
+const TERRAIN_FLOOR_TEXTURES: Dictionary = {
+	"grass": "res://assets/floors/grass_green_bright.png",
+	"dirt": "res://assets/wilderness_textures/savanna.png",
+	"stone": "res://assets/wilderness_textures/mountain.png",
+	"sand": "res://assets/wilderness_textures/desert.png",
+	"mud": "res://assets/wilderness_textures/swamp.png",
+	"snow": "res://assets/wilderness_textures/snow.png",
+	"gravel": "res://assets/wilderness_textures/badlands.png",
+	"lava_rock": "res://assets/wilderness_textures/volcanic.png",
+	"wood": "res://assets/walls/wood_oak_weathered.png",
+}
+
+## Terrain-column side texture (exposed earth/rock).
+const TERRAIN_COLUMN_TEXTURE := "res://assets/wilderness_textures/mountain.png"
+
+## Water/lava surface plane heights within a cell (cell bottom = level * 1.0).
+const WATER_SHALLOW_PLANE_Y := 0.18
+const WATER_DEEP_PLANE_Y := 0.65
+const LAVA_PLANE_Y := 0.35
+
+
+## Builds floor slabs for a terrain map level, batched per floor_type so each
+## surface gets its own texture ("map texture painting"). Slight per-instance
+## tint variation breaks up the tiling.
+static func build_terrain_floor_voxel(map: VoxelMapData, level: int) -> Node3D:
+	var parent := Node3D.new()
+	parent.name = "FloorSlabs"
+
+	var by_floor: Dictionary = {}
+	for cell: VoxelCell in map.get_cells_at_level(level):
+		if cell.floor_type == "none" or cell.solidity == "solid":
+			continue
+		if not by_floor.has(cell.floor_type):
+			by_floor[cell.floor_type] = []
+		(by_floor[cell.floor_type] as Array).append(cell)
+
+	for floor_type: String in by_floor:
+		var cells: Array = by_floor[floor_type]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = get_diamond_mesh()
+		mm.instance_count = cells.size()
+		for i in range(cells.size()):
+			var cell: VoxelCell = cells[i]
+			var xform := Transform3D.IDENTITY
+			xform.origin = VoxelGrid.cell_to_world(cell.col, cell.row, level)
+			mm.set_instance_transform(i, xform)
+			# Deterministic per-cell shade variation (no RNG — position hash).
+			var shade: float = 0.88 + 0.24 * float((cell.col * 31 + cell.row * 17) % 8) / 8.0
+			mm.set_instance_color(i, Color(shade, shade, shade))
+
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = floor_color_for_voxel(floor_type)
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.vertex_color_use_as_albedo = true
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var tex_path: String = TERRAIN_FLOOR_TEXTURES.get(floor_type, "")
+		if not tex_path.is_empty():
+			var tex := _load_texture(tex_path)
+			if tex != null:
+				mat.albedo_texture = tex
+				mat.uv1_scale = Vector3(FLOOR_UV_SCALE, FLOOR_UV_SCALE, FLOOR_UV_SCALE)
+				mat.texture_filter = \
+					BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		mmi.material_override = mat
+		mmi.name = "Floor_%s" % floor_type
+		mmi.set_meta("base_color", mat.albedo_color)
+		parent.add_child(mmi)
+
+	return parent
+
+
+## Builds the solid terrain mass ("earth" cells) for a level as one MultiMesh
+## of soil-toned cubes — the visible flanks of hills, bluffs, and cliff faces.
+static func build_terrain_columns_voxel(map: VoxelMapData, level: int) -> MultiMeshInstance3D:
+	var earth_cells: Array = []
+	for cell: VoxelCell in map.get_cells_at_level(level):
+		if cell.solidity == "solid" and cell.feature == "earth":
+			earth_cells.append(cell)
+
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "TerrainColumns"
+	if earth_cells.is_empty():
+		return mmi
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = get_cube_mesh()
+	mm.instance_count = earth_cells.size()
+	var base_color := wall_color_for_voxel("earth")
+	for i in range(earth_cells.size()):
+		var cell: VoxelCell = earth_cells[i]
+		var world_pos := VoxelGrid.cell_to_world(cell.col, cell.row, level)
+		world_pos.y += 0.5
+		var xform := Transform3D.IDENTITY
+		xform.origin = world_pos
+		mm.set_instance_transform(i, xform)
+		var shade: float = 0.85 + 0.3 * float((cell.col * 13 + cell.row * 7) % 8) / 8.0
+		mm.set_instance_color(i, base_color * Color(shade, shade, shade))
+
+	mmi.multimesh = mm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color.WHITE
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var tex := _load_texture(TERRAIN_COLUMN_TEXTURE)
+	if tex != null:
+		mat.albedo_texture = tex
+		mat.uv1_scale = Vector3(WALL_UV_SCALE, WALL_UV_SCALE, WALL_UV_SCALE)
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	mmi.material_override = mat
+	mmi.set_meta("base_color", Color.WHITE)
+	return mmi
+
+
+## Builds water and lava surface planes for a level. The material reuses the
+## hexmap river-water look (color/params from hex_map_renderer_3d._river_material)
+## per the asset-reuse ruling; the animated river shader can replace this once
+## the tactical water pass gets its own art session.
+static func build_water_overlay_voxel(map: VoxelMapData, level: int) -> Node3D:
+	var parent := Node3D.new()
+	parent.name = "WaterOverlay"
+
+	var groups: Dictionary = {"water_shallow": [], "water_deep": [], "lava": []}
+	for cell: VoxelCell in map.get_cells_at_level(level):
+		if groups.has(cell.feature):
+			(groups[cell.feature] as Array).append(cell)
+
+	for feature: String in groups:
+		var cells: Array = groups[feature]
+		if cells.is_empty():
+			continue
+		var plane_y: float
+		match feature:
+			"water_shallow": plane_y = WATER_SHALLOW_PLANE_Y
+			"water_deep": plane_y = WATER_DEEP_PLANE_Y
+			_: plane_y = LAVA_PLANE_Y
+
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = get_diamond_mesh()
+		mm.instance_count = cells.size()
+		for i in range(cells.size()):
+			var cell: VoxelCell = cells[i]
+			var world_pos := VoxelGrid.cell_to_world(cell.col, cell.row, level)
+			world_pos.y += plane_y
+			var xform := Transform3D.IDENTITY
+			xform.origin = world_pos
+			mm.set_instance_transform(i, xform)
+
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = _water_surface_material(feature)
+		mmi.name = "Water_%s" % feature
+		mmi.set_meta("base_color", Color.WHITE)
+		parent.add_child(mmi)
+
+	return parent
+
+
+## Water/lava surface material. Mirrors the hexmap river material parameters
+## (hex_map_renderer_3d.gd _river_material: albedo 0.20/0.48/0.74, alpha
+## transparency, low roughness, faint emission) so tactical water reads the
+## same as overland water.
+static func _water_surface_material(feature: String) -> StandardMaterial3D:
+	var key := "terrain_water_%s" % feature
+	if _material_cache.has(key):
+		return _material_cache[key]
+	var m := StandardMaterial3D.new()
+	var entry: Dictionary = BattleMapObstacleCatalog.OBSTACLES.get(feature, {})
+	m.albedo_color = entry.get("color", Color(0.20, 0.48, 0.74, 0.95))
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.1
+	m.metallic = 0.0
+	m.metallic_specular = 0.8
+	m.emission_enabled = true
+	if feature == "lava":
+		m.emission = Color(0.85, 0.30, 0.05)
+		m.emission_energy_multiplier = 1.4
+	else:
+		m.emission = Color(0.05, 0.16, 0.26)
+		m.emission_energy_multiplier = 0.5
+	_material_cache[key] = m
+	return m
+
+
+## Builds color/shape-coded placeholder meshes for every catalog obstacle on a
+## level (docs/tactical-map-obstacle-key.md is the player-facing key). Water
+## and lava are handled by build_water_overlay_voxel, not here.
+static func build_obstacles_voxel(map: VoxelMapData, level: int) -> Node3D:
+	var parent := Node3D.new()
+	parent.name = "Obstacles"
+
+	for cell: VoxelCell in map.get_cells_at_level(level):
+		var entry: Dictionary = BattleMapObstacleCatalog.OBSTACLES.get(cell.feature, {})
+		if entry.is_empty() or entry.get("shape", "") == "surface":
+			continue
+		var world_pos := VoxelGrid.cell_to_world(cell.col, cell.row, level)
+		var color: Color = entry["color"]
+		var shape: String = entry["shape"]
+		# Deterministic per-cell jitter (no RNG — position hash).
+		var jitter: float = float((cell.col * 41 + cell.row * 23) % 90)
+		match shape:
+			"canopy":
+				var trunk := _feature_box(Vector3(0.12, 0.45, 0.12), Color(0.36, 0.26, 0.16))
+				trunk.position = world_pos + Vector3(0.0, 0.22, 0.0)
+				parent.add_child(trunk)
+				var canopy := _obstacle_sphere(0.34, color)
+				canopy.position = world_pos + Vector3(0.0, 0.62, 0.0)
+				parent.add_child(canopy)
+			"trunk":
+				var trunk := _feature_box(Vector3(0.14, 0.8, 0.14), color)
+				trunk.position = world_pos + Vector3(0.0, 0.4, 0.0)
+				trunk.rotation_degrees.y = jitter
+				parent.add_child(trunk)
+			"rock":
+				var rock := _feature_box(Vector3(0.55, 0.5, 0.5), color)
+				rock.position = world_pos + Vector3(0.0, 0.25, 0.0)
+				rock.rotation_degrees.y = jitter
+				parent.add_child(rock)
+			"rock_low":
+				for k in range(3):
+					var stone := _feature_box(Vector3(0.22, 0.18, 0.2), color)
+					var angle: float = jitter + float(k) * 120.0
+					stone.position = world_pos + Vector3(
+						cos(deg_to_rad(angle)) * 0.16, 0.09 + float(k % 2) * 0.05,
+						sin(deg_to_rad(angle)) * 0.16)
+					stone.rotation_degrees.y = angle
+					parent.add_child(stone)
+			"mass":
+				var mass := _feature_box(Vector3(CELL_SIZE * 0.8, 0.85, CELL_SIZE * 0.8), color)
+				mass.position = world_pos + Vector3(0.0, 0.42, 0.0)
+				mass.rotation_degrees.y = 45.0
+				parent.add_child(mass)
+			"line_low":
+				var rail := _feature_box(Vector3(CELL_SIZE * 0.9, 0.28, 0.16), color)
+				rail.position = world_pos + Vector3(0.0, 0.14, 0.0)
+				rail.rotation_degrees.y = _line_orientation(map, cell, level)
+				parent.add_child(rail)
+			"line_tall":
+				var hedge := _feature_box(Vector3(CELL_SIZE * 0.95, 0.75, 0.32), color)
+				hedge.position = world_pos + Vector3(0.0, 0.38, 0.0)
+				hedge.rotation_degrees.y = _line_orientation(map, cell, level)
+				parent.add_child(hedge)
+			"log":
+				var log_box := _feature_box(Vector3(CELL_SIZE * 0.85, 0.2, 0.2), color)
+				log_box.position = world_pos + Vector3(0.0, 0.1, 0.0)
+				log_box.rotation_degrees.y = _line_orientation(map, cell, level)
+				parent.add_child(log_box)
+			"tuft":
+				for k in range(2):
+					var tuft := _obstacle_sphere(0.17, color)
+					var angle: float = jitter + float(k) * 180.0
+					tuft.position = world_pos + Vector3(
+						cos(deg_to_rad(angle)) * 0.14, 0.12,
+						sin(deg_to_rad(angle)) * 0.14)
+					parent.add_child(tuft)
+
+	return parent
+
+
+## An unshaded sphere MeshInstance3D with "base_color" meta (tint-compatible).
+static func _obstacle_sphere(radius: float, color: Color) -> MeshInstance3D:
+	var sphere := SphereMesh.new()
+	sphere.radius = radius
+	sphere.height = radius * 1.7
+	sphere.radial_segments = 10
+	sphere.rings = 6
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var inst := MeshInstance3D.new()
+	inst.mesh = sphere
+	inst.material_override = mat
+	inst.set_meta("base_color", color)
+	return inst
+
+
+## Orients a linear obstacle (fence/hedgerow/wall/log) along its run: if a 2D
+## neighbor carries the same feature, the mesh points at that neighbor's world
+## position; isolated segments default to the diamond's 45°.
+static func _line_orientation(map: VoxelMapData, cell: VoxelCell, level: int) -> float:
+	var here := Vector3i(cell.col, cell.row, level)
+	var here_world := VoxelGrid.cell_to_world(cell.col, cell.row, level)
+	for nb: Vector3i in VoxelGrid.get_neighbors_2d(here):
+		# Linear features on terrain follow the surface, so the neighbor
+		# segment may sit one level up/down — match on column feature.
+		var nz: int = map.surface_level_at(nb.x, nb.y)
+		if nz < 0:
+			continue
+		if map.get_cell(Vector3i(nb.x, nb.y, nz)).feature == cell.feature:
+			var nb_world := VoxelGrid.cell_to_world(nb.x, nb.y, nz)
+			var edge := nb_world - here_world
+			return rad_to_deg(atan2(edge.x, edge.z)) + 90.0
+	return 45.0
+
+
+## Assembles the complete per-level Node3D for a generated terrain battle map:
+## textured floor batches, terrain columns, non-terrain walls (farmstead),
+## obstacle placeholders, water/lava planes, and grid lines. No fog/door/
+## transition builders — outdoor daylight maps have none of those.
+static func build_terrain_level_group(map: VoxelMapData, level: int) -> Node3D:
+	var group := Node3D.new()
+	group.name = "Level_%d" % level
+	group.add_child(build_terrain_floor_voxel(map, level))
+	group.add_child(build_terrain_columns_voxel(map, level))
+	group.add_child(build_walls_voxel(map, level))
+	group.add_child(build_obstacles_voxel(map, level))
+	group.add_child(build_water_overlay_voxel(map, level))
+	group.add_child(build_grid_lines_voxel(map, level))
+	return group
 
 
 # ---------------------------------------------------------------------------

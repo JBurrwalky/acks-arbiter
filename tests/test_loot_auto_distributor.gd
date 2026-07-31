@@ -16,7 +16,10 @@ func run_all_tests() -> void:
 	test_heavy_item_highest_str()
 	test_ammunition_weapon_match()
 	test_band_worsening_skipped()
-	test_no_valid_target_unassigned()
+	test_band_crossing_placed_via_capacity_fallback()
+	test_over_hard_cap_unassigned()
+	test_coin_unassigned_reason()
+	test_describe_unassigned_reason()
 	test_rations_creatures_first()
 	test_magic_items_pcs_round_robin()
 
@@ -124,13 +127,20 @@ func test_multiple_taggers_round_robin() -> void:
 
 func test_heavy_item_highest_str() -> void:
 	var dist := LootAutoDistributor.new(_mock_catalog)
+	# Both carriers are already in band 3 (severe, >10000) with capacity to spare,
+	# so the plate does NOT worsen either band. Among band-free candidates a heavy
+	# item routes to the highest-STR carrier (pc2). (When a heavy item WOULD worsen
+	# every carrier's band it is NOT dropped: the capacity fallback places it on
+	# the strongest carrier that still fits it under raw hard-cap — see
+	# test_band_crossing_placed_via_capacity_fallback. It only stays unassigned
+	# when it exceeds every carrier's hard cap — see test_over_hard_cap_unassigned.)
 	var carriers := [
-		_make_carrier("pc1", "pc", 0, 20000, [], [], 10),
-		_make_carrier("pc2", "pc", 0, 20000, [], [], 16),
+		_make_carrier("pc1", "pc", 12000, 20000, [], [], 10),
+		_make_carrier("pc2", "pc", 12000, 20000, [], [], 16),
 	]
 	var items := [_make_item("plate_armor", 1)]
 	var result := dist.distribute(items, carriers)
-	check(result.moves.size() == 1, "plate armor should be assigned")
+	check(result.moves.size() == 1, "plate armor should be assigned (fits both in-band)")
 	check(result.moves[0].to_carrier == "pc2",
 		"heavy item should go to highest STR (pc2=16), got %s" % str(result.moves[0].to_carrier))
 
@@ -156,29 +166,77 @@ func test_band_worsening_skipped() -> void:
 		_make_carrier("pc1", "pc", 4900, 20000, ["torch_bearer"]),
 		_make_carrier("pc2", "pc", 0, 20000, ["torch_bearer"]),
 	]
-	var items := [_make_item("torch", 2)]  # 100 enc each, qty 2 = 200 total
+	# One stack of 2 torches = one item entry (200 enc total). distribute emits
+	# ONE move per item entry, so the whole stack is a single move.
+	var items := [_make_item("torch", 2)]
 	var result := dist.distribute(items, carriers)
-	check(result.moves.size() == 2, "both torches should be assigned")
-	# pc1 would go from 4900→5100 (band 0→1), so first torch skips to pc2.
-	# Actually: item total enc = 100 * 2 = 200 per item entry. Wait, each item is qty=2?
-	# No — each item in the array is a separate entry with qty=2. So one item = 200 enc.
-	# pc1 at 4900 + 200 = 5100 → band 0 to 1 → worsened → skip.
+	check(result.moves.size() == 1, "the torch stack should be assigned")
+	# pc1 at 4900 + 200 = 5100 crosses band 0→1 (worsened), so the round-robin
+	# skips pc1 and assigns the stack to pc2 (which stays in band 0).
 	check(result.moves[0].to_carrier == "pc2",
-		"first torch should skip pc1 (band worsening) and go to pc2, got %s" %
+		"stack should skip pc1 (band worsening) and go to pc2, got %s" %
 		str(result.moves[0].to_carrier))
 
 
-func test_no_valid_target_unassigned() -> void:
+func test_band_crossing_placed_via_capacity_fallback() -> void:
 	var dist := LootAutoDistributor.new(_mock_catalog)
-	# Both carriers nearly full — heavy_chest (2000 enc) would worsen both.
+	# Both carriers nearly full — heavy_chest (2000 enc) would worsen both bands
+	# (4500 → 6500 crosses band 0→1). Per the loot policy, crossing a band is a
+	# soft-cap penalty, NOT a reason to drop loot: the capacity fallback places
+	# it on the strongest carrier that still fits it under raw hard-cap (20000).
 	var carriers := [
-		_make_carrier("pc1", "pc", 4500, 20000),
-		_make_carrier("pc2", "pc", 4500, 20000),
+		_make_carrier("pc1", "pc", 4500, 20000, [], [], 10),
+		_make_carrier("pc2", "pc", 4500, 20000, [], [], 16),
 	]
 	var items := [_make_item("heavy_chest", 1)]
 	var result := dist.distribute(items, carriers)
+	check(result.unassigned.is_empty(),
+		"heavy chest fits under hard cap — should NOT be unassigned")
+	check(result.moves.size() == 1, "heavy chest should be placed via fallback")
+	check(result.moves[0].reason == "capacity_fallback",
+		"placement reason should be capacity_fallback, got %s" % str(result.moves[0].reason))
+	check(result.moves[0].to_carrier == "pc2",
+		"heavy item fallback should prefer strongest carrier (pc2=16), got %s" %
+		str(result.moves[0].to_carrier))
+
+
+func test_over_hard_cap_unassigned() -> void:
+	var dist := LootAutoDistributor.new(_mock_catalog)
+	# Both carriers have a tiny hard cap (1000) — heavy_chest (2000 enc) exceeds
+	# every carrier's RAW capacity, so it TRULY does not fit anyone. Only now does
+	# it stay unassigned, tagged over_capacity for the loot modal to surface.
+	var carriers := [
+		_make_carrier("pc1", "pc", 0, 1000),
+		_make_carrier("pc2", "pc", 500, 1000),
+	]
+	var items := [_make_item("heavy_chest", 1)]
+	var result := dist.distribute(items, carriers)
+	check(result.moves.is_empty(), "over-capacity chest should not be placed")
 	check(result.unassigned.size() == 1,
-		"heavy chest should be unassigned when all carriers would worsen band")
+		"heavy chest should be unassigned when it exceeds every hard cap")
+	check(result.unassigned[0].get("unassigned_reason", "") == "over_capacity",
+		"unassigned reason should be over_capacity, got %s" %
+		str(result.unassigned[0].get("unassigned_reason", "")))
+
+
+func test_coin_unassigned_reason() -> void:
+	var dist := LootAutoDistributor.new(_mock_catalog)
+	var items := [_make_item("coins_gp", 100)]
+	var result := dist.distribute(items, [_make_carrier("pc1")])
+	check(result.unassigned.size() == 1, "coins should go to unassigned")
+	check(result.unassigned[0].get("unassigned_reason", "") == "coin_excluded",
+		"coin unassigned reason should be coin_excluded, got %s" %
+		str(result.unassigned[0].get("unassigned_reason", "")))
+
+
+func test_describe_unassigned_reason() -> void:
+	# Pure/static helper the loot modal uses to build its alert text.
+	check(LootAutoDistributor.describe_unassigned_reason("over_capacity")
+		== "no one has enough carrying capacity", "over_capacity phrase")
+	check(LootAutoDistributor.describe_unassigned_reason("coin_excluded")
+		== "coins are shared separately", "coin_excluded phrase")
+	check(not LootAutoDistributor.describe_unassigned_reason("mystery").is_empty(),
+		"unknown reason should still produce a non-empty phrase")
 
 
 func test_rations_creatures_first() -> void:

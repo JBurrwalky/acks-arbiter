@@ -39,8 +39,15 @@ var feature: String = "open"
 
 ## Floor at the bottom face of this cube. "none" means empty airspace.
 ## Common values: "none", "stone", "wood", "grate", "pit_cover", "trap_door",
-## "rubble", "ice", "grass", "dirt"
+## "rubble", "ice", "grass", "dirt". Battle maps add: "sand", "mud", "snow",
+## "gravel", "water", "lava_rock" (gdd-combat-map-generation.md §5.4).
 var floor_type: String = "none"
+
+## Full 5' voxels of water below the surface of a water cell
+## (gdd-combat-map-generation.md §5.6). 0 on "water_shallow" (wadeable without
+## swimming), >= 1 on "water_deep" (swim required). 0 and meaningless on dry
+## cells. The wading gate lives in MovementRules.can_wade().
+var water_depth: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -153,12 +160,24 @@ func is_walkable_with_open_door() -> bool:
 	return true
 
 
+## Solid features that do NOT block line of sight. arrow_slit/window/portcullis
+## are dungeon openings; the rest are the battle-map "low solids" — half-height
+## obstacles (a fence, a ruined wall course, a rock pile, a fallen log) that
+## block movement through the cell but can be seen and shot over. They grant
+## cover instead, via cover_value + VoxelLOS.get_cover_value
+## (gdd-combat-map-generation.md §5.5).
+const LOS_TRANSPARENT_SOLID_FEATURES: Array[String] = [
+	"arrow_slit", "window", "portcullis",
+	"low_wall", "fence", "wall_ruined", "rock_pile", "fallen_log",
+]
+
+
 ## Whether this cell blocks line of sight for ranged attacks / fog reveals.
-## Solid cells block except arrow_slit, window, and portcullis features.
+## Solid cells block except the LOS_TRANSPARENT_SOLID_FEATURES set.
 ## Closed/locked doors block except portcullis type.
 func blocks_los() -> bool:
 	if solidity == "solid":
-		return feature != "arrow_slit" and feature != "window" and feature != "portcullis"
+		return feature not in LOS_TRANSPARENT_SOLID_FEATURES
 	if door_state == "closed" or door_state == "locked":
 		return door_type != "portcullis"
 	return false
@@ -188,6 +207,7 @@ static func from_dict(data: Dictionary) -> VoxelCell:
 	cell.solidity = data.get("solidity", "air")
 	cell.feature = data.get("feature", "open")
 	cell.floor_type = data.get("floor_type", "none")
+	cell.water_depth = int(data.get("water_depth", 0))
 	cell.door_state = data.get("door_state", "")
 	cell.door_type = data.get("door_type", "")
 	cell.door_detected = data.get("door_detected", false)
@@ -209,6 +229,7 @@ func to_dict() -> Dictionary:
 		"solidity": solidity,
 		"feature": feature,
 		"floor_type": floor_type,
+		"water_depth": water_depth,
 		"door_state": door_state,
 		"door_type": door_type,
 		"door_detected": door_detected,

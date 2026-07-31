@@ -26,11 +26,28 @@ var tileset_group: String = ""
 var entry_pos: Vector3i = Vector3i.ZERO
 var generation_seed: int = 0
 
+## Outdoor-terrain flag (gdd-combat-map-generation.md §4.2 / §9.2). When true,
+## ground walkers may step between horizontally-adjacent cells whose levels
+## differ by exactly 1 with no stair/ramp feature (a natural 5' slope), and
+## MovementResolver's 2D wrappers resolve cell references onto the terrain
+## surface via surface_level_at(). Always false for dungeons/interiors.
+var natural_slopes: bool = false
+
 ## Sparse cell storage. Key: Vector3i(col, row, level) -> VoxelCell.
 var _cells: Dictionary = {}
 
 ## Entity positions. Key: entity_id (String) -> Vector3i(col, row, level).
+## This is the entity's ANCHOR cell (the rear-center of its footprint for
+## multi-cell creatures). Single-anchor contract — unchanged by the footprint work.
 var entity_positions: Dictionary = {}
+
+## Multi-cell footprint occupancy. Key: entity_id (String) -> Array[Vector3i] of
+## every cell the entity currently occupies (derived from anchor + facing + size
+## by the combat layer via CreatureFootprint and pushed here with
+## set_entity_footprint). An entity ABSENT from this dict occupies exactly its
+## single anchor cell — so every 1x1 creature and all dungeon-exploration/party
+## code behaves identically to before the footprint work (no entry = no change).
+var entity_footprints: Dictionary = {}
 
 ## Designated entry/exit transition cells.
 var transition_cells: Array[Vector3i] = []
@@ -50,6 +67,12 @@ var lever_links: Dictionary = {}
 ## Optional per-dungeon wandering monster table. Empty array means "fall back
 ## to the level-based default catalog." Entries: {monster_key: String, weight: int}.
 var wandering_monster_table: Array = []
+
+## Cached level bounds for surface_level_at() column scans. Kept current by
+## set_cell(); remove_cell() marks them dirty for lazy recompute.
+var _level_bounds_dirty: bool = true
+var _min_level: int = 0
+var _max_level: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +99,11 @@ func set_cell(pos: Vector3i, cell: VoxelCell) -> void:
 	cell.col = pos.x
 	cell.row = pos.y
 	cell.level = pos.z
+	if _level_bounds_dirty or _cells.is_empty():
+		_level_bounds_dirty = true  # recompute lazily; is_empty case seeds below
+	else:
+		_min_level = mini(_min_level, pos.z)
+		_max_level = maxi(_max_level, pos.z)
 	_cells[pos] = cell
 
 
@@ -87,6 +115,8 @@ func has_cell(pos: Vector3i) -> bool:
 ## Removes the cell at [param pos] if one exists.
 func remove_cell(pos: Vector3i) -> void:
 	_cells.erase(pos)
+	if pos.z == _min_level or pos.z == _max_level:
+		_level_bounds_dirty = true
 
 
 # ---------------------------------------------------------------------------
@@ -138,39 +168,79 @@ func get_entity_pos(entity_id: String) -> Vector3i:
 	return entity_positions.get(entity_id, Vector3i(-1, -1, -1))
 
 
-## Sets the grid position of [param entity_id].
+## Sets the grid position of [param entity_id]. This sets only the ANCHOR cell;
+## any registered multi-cell footprint is stale until the combat layer pushes a
+## fresh one via set_entity_footprint (MovementResolver does both together).
 func set_entity_pos(entity_id: String, pos: Vector3i) -> void:
 	entity_positions[entity_id] = pos
 
 
-## Returns all entity IDs at [param pos].
+## Records the full set of cells [param entity_id] occupies (a multi-cell
+## creature's footprint). Passing a single-cell array or clearing the entry both
+## collapse the entity back to single-anchor occupancy. The combat layer computes
+## these via CreatureFootprint.cells(anchor, facing, size).
+func set_entity_footprint(entity_id: String, cells: Array[Vector3i]) -> void:
+	if cells.size() <= 1:
+		entity_footprints.erase(entity_id)
+	else:
+		entity_footprints[entity_id] = cells.duplicate()
+
+
+## Clears any multi-cell footprint for [param entity_id] (back to single anchor).
+func clear_entity_footprint(entity_id: String) -> void:
+	entity_footprints.erase(entity_id)
+
+
+## Returns every cell [param entity_id] occupies. For an entity with no
+## registered footprint this is just its anchor cell; for a multi-cell creature
+## it is the full footprint. Empty when the entity is not placed.
+func get_entity_footprint_cells(entity_id: String) -> Array[Vector3i]:
+	if entity_footprints.has(entity_id):
+		return (entity_footprints[entity_id] as Array[Vector3i]).duplicate()
+	if entity_positions.has(entity_id):
+		var out: Array[Vector3i] = [entity_positions[entity_id]]
+		return out
+	return []
+
+
+## True when [param entity_id] occupies [param pos] (anchor OR any footprint cell).
+func _entity_occupies(entity_id: String, pos: Vector3i) -> bool:
+	if entity_footprints.has(entity_id):
+		return pos in (entity_footprints[entity_id] as Array)
+	return entity_positions.get(entity_id, Vector3i(-1, -1, -1)) == pos
+
+
+## Returns all entity IDs occupying [param pos] — footprint-aware, so a multi-cell
+## creature is returned from any of its cells, not only its anchor.
 func get_entities_at(pos: Vector3i) -> Array[String]:
 	var result: Array[String] = []
 	for eid in entity_positions.keys():
-		if entity_positions[eid] == pos:
+		if _entity_occupies(eid, pos):
 			result.append(eid)
 	return result
 
 
-## Returns true if any entity occupies [param pos].
+## Returns true if any entity occupies [param pos] (footprint-aware).
 func is_occupied(pos: Vector3i) -> bool:
 	for eid in entity_positions:
-		if entity_positions[eid] == pos:
+		if _entity_occupies(eid, pos):
 			return true
 	return false
 
 
-## Returns true if any entity other than [param exclude_id] occupies [param pos].
+## Returns true if any entity other than [param exclude_id] occupies [param pos]
+## (footprint-aware).
 func is_occupied_by_other(pos: Vector3i, exclude_id: String) -> bool:
 	for eid in entity_positions:
-		if eid != exclude_id and entity_positions[eid] == pos:
+		if eid != exclude_id and _entity_occupies(eid, pos):
 			return true
 	return false
 
 
-## Removes [param entity_id] from entity_positions.
+## Removes [param entity_id] from entity_positions and clears its footprint.
 func remove_entity(entity_id: String) -> void:
 	entity_positions.erase(entity_id)
+	entity_footprints.erase(entity_id)
 
 
 # ---------------------------------------------------------------------------
@@ -238,6 +308,48 @@ func get_door_type(pos: Vector3i) -> String:
 ## Returns true if the cell at [param pos] blocks line of sight.
 func blocks_los(pos: Vector3i) -> bool:
 	return get_cell(pos).blocks_los()
+
+
+## Returns the topmost occupiable surface level in column (col, row), or -1 if
+## the column has no surface (gdd-combat-map-generation.md §9.2). A surface is
+## the cell a creature would occupy standing (air cell with a floor, or air
+## directly above solid ground) or floating (a liquid cell — deep water/lava
+## surface). The single helper for resolving a 2D cell reference onto terrain:
+## renderer click-picking, overlay projection, spawn placement, and
+## MovementResolver's surface-aware 2D wrappers all use this.
+func surface_level_at(col: int, row: int) -> int:
+	if _level_bounds_dirty:
+		_recompute_level_bounds()
+	for z in range(_max_level, _min_level - 1, -1):
+		var pos := Vector3i(col, row, z)
+		if not _cells.has(pos):
+			continue
+		var cell: VoxelCell = _cells[pos]
+		if cell.solidity == "liquid":
+			return z
+		if cell.solidity == "air":
+			if cell.floor_type != "none":
+				return z
+			var below = _cells.get(Vector3i(col, row, z - 1))
+			if below != null and below.solidity == "solid":
+				return z
+	return -1
+
+
+## Recomputes the cached min/max level bounds from stored cells.
+func _recompute_level_bounds() -> void:
+	_min_level = 0
+	_max_level = 0
+	var first := true
+	for pos: Vector3i in _cells:
+		if first:
+			_min_level = pos.z
+			_max_level = pos.z
+			first = false
+		else:
+			_min_level = mini(_min_level, pos.z)
+			_max_level = maxi(_max_level, pos.z)
+	_level_bounds_dirty = false
 
 
 ## Sets an arbitrary field on the cell at [param pos]. Creates cell if absent.
@@ -443,6 +555,7 @@ static func from_dict(data: Dictionary) -> VoxelMapData:
 	map.theme = str(data.get("theme", ""))
 	map.tileset_group = str(data.get("tileset_group", ""))
 	map.generation_seed = int(data.get("generation_seed", 0))
+	map.natural_slopes = bool(data.get("natural_slopes", false))
 
 	var entry_dict: Dictionary = data.get("entry", {})
 	var has_explicit_entry := not entry_dict.is_empty()
@@ -533,6 +646,7 @@ func to_dict() -> Dictionary:
 		"theme": theme,
 		"tileset_group": tileset_group,
 		"generation_seed": generation_seed,
+		"natural_slopes": natural_slopes,
 		"entry": {
 			"col": entry_pos.x,
 			"row": entry_pos.y,

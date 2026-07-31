@@ -53,6 +53,11 @@ static func reverse_direction(dir: String) -> String:
 ## - Pure-vertical, same column: a `ladder` OR a `stairs_spiral` shaft cell —
 ##   the spiral clause (voxel GDD §10.5): ±1 level in-column at normal cost, no
 ##   climb throw. Either endpoint carrying the feature suffices.
+## - Natural slope (outdoor battle maps, gdd-combat-map-generation.md §4.2):
+##   when the map is flagged `natural_slopes`, ANY diagonal-vertical ±1 step is
+##   legal — a 5' grade is walkable terrain, no feature required. Pure-vertical
+##   still needs a ladder/spiral (slopes are always diagonal). Air/support
+##   checks remain the caller's (is_ground_step_open) responsibility.
 static func connects_via_feature(map: VoxelMapData, from: Vector3i, to: Vector3i) -> bool:
 	var going_up: bool = to.z > from.z
 	var h_delta := Vector2i(to.x - from.x, to.y - from.y)
@@ -63,6 +68,8 @@ static func connects_via_feature(map: VoxelMapData, from: Vector3i, to: Vector3i
 		# Pure vertical (same column): ladder or spiral shaft.
 		return from_cell.feature == "ladder" or to_cell.feature == "ladder" \
 			or from_cell.feature == "stairs_spiral" or to_cell.feature == "stairs_spiral"
+	if map.natural_slopes:
+		return true
 	var rev := reverse_direction(suffix)
 	if going_up:
 		if from_cell.feature == "stairs_up_" + suffix:
@@ -83,6 +90,17 @@ static func connects_via_feature(map: VoxelMapData, from: Vector3i, to: Vector3i
 		if to_cell.feature == "ramp_" + rev:
 			return true
 	return false
+
+
+## Water-depth wading gate (gdd-combat-map-generation.md §5.6 / §9.3). A ground
+## walker may enter a water cell when its water_depth (full 5' voxels of water)
+## is within the walker's wade allowance. Default allowance 0 = shallow water
+## only ("most characters can traverse water that is less than 1 voxel deep
+## without swimming"). Bigger creatures get more leeway once the creature-size
+## build session supplies per-creature allowances — callers pass that value
+## here; nothing else changes.
+static func can_wade(cell: VoxelCell, wade_depth_allowance: int = 0) -> bool:
+	return cell.water_depth <= wade_depth_allowance
 
 
 ## Legality of the level change alone: 0 = flat (free), 1 = requires a matching

@@ -146,18 +146,16 @@ func test_transition_emits_signal() -> void:
 	runner._current_state_key = "old"
 	runner._current_state = SessionState.new()
 	runner._state_registry["new_state"] = func() -> SessionState: return SessionState.new()
-	var emitted := false
-	var from_val := ""
-	var to_val := ""
-	runner.state_transitioned.connect(func(f: String, t: String):
-		emitted = true
-		from_val = f
-		to_val = t
-	)
+	# Lambdas capture primitives by value; accumulate into an Array (reference
+	# type) so the observed transition survives back to the assertions — mirrors
+	# the `sigs.append(...)` pattern in test_nested_transition_skips_stale_postamble.
+	var sigs: Array = []
+	runner.state_transitioned.connect(func(f: String, t: String): sigs.append([f, t]))
 	runner.transition_to_state("new_state")
-	check(emitted, "signal emitted")
-	check(from_val == "old", "from_key = old")
-	check(to_val == "new_state", "to_key = new_state")
+	check(not sigs.is_empty(), "signal emitted")
+	var last: Array = sigs[sigs.size() - 1] if not sigs.is_empty() else ["", ""]
+	check(String(last[0]) == "old", "from_key = old")
+	check(String(last[1]) == "new_state", "to_key = new_state")
 	print("  transition_emits_signal: OK")
 
 
@@ -291,7 +289,10 @@ func test_load_session_sets_ids() -> void:
 
 func test_end_session_clears_ids() -> void:
 	_reset_game_state()
-	var runner := _make_runner()
+	# end_session() drives the scheduler/handler-registry clean-up path
+	# (session_runner.gd:1713 `_scheduler_loop.pause()`), which a bare _make_runner()
+	# leaves null. Use the helper that stubs in the scheduler + hex controller.
+	var runner := _make_runner_with_hex_controller()
 	runner._campaign_id = "c1"
 	runner._party_id = "p1"
 	runner._effect_ticker.connect_signals()
@@ -300,6 +301,7 @@ func test_end_session_clears_ids() -> void:
 	check(runner.get_party_id() == "", "party_id cleared")
 	check(runner._party_data == null, "party_data cleared")
 	check(not runner._effect_ticker.is_connected_to_timekeeping(), "ticker disconnected")
+	runner._hex_controller.free()
 	_reset_game_state()
 	print("  end_session_clears_ids: OK")
 
@@ -320,6 +322,10 @@ func test_encounter_no_trigger_high_roll() -> void:
 
 func test_encounter_triggers_on_one() -> void:
 	var runner := _make_runner()
+	# _make_runner() skips the _ready init, so _monster_registry is null and
+	# _pick_encounter_monster returns "" (no monster → no encounter). Populate it
+	# so the encounter actually spawns, matching the real session path.
+	runner._monster_registry = MonsterRegistry.new()
 	var terrain := _make_terrain("wilderness")
 	# Override dice to 1 (encounter!)
 	GameState.dice_overrides["encounter_check"] = 1
@@ -343,6 +349,9 @@ func test_encounter_civilized_never_triggers() -> void:
 
 func test_encounter_dungeon_mode() -> void:
 	var runner := _make_runner()
+	# _make_runner() skips the _ready init, so _monster_registry must be set
+	# manually or _pick_encounter_monster returns "" and nothing spawns.
+	runner._monster_registry = MonsterRegistry.new()
 	# null terrain = dungeon mode
 	GameState.dice_overrides["encounter_check"] = 1
 	var result: Dictionary = runner.do_encounter_check(null)
@@ -454,10 +463,11 @@ func test_effect_ticker_round_tick() -> void:
 
 func test_cancel_pending_roll_emits_signal() -> void:
 	var runner := _make_runner()
-	var emitted := false
-	EventBus.player_roll_cancelled.connect(func(): emitted = true, CONNECT_ONE_SHOT)
+	# Lambda primitive-capture is by value; accumulate into an Array instead.
+	var sink: Array = []
+	EventBus.player_roll_cancelled.connect(func(): sink.append(true), CONNECT_ONE_SHOT)
 	runner.cancel_pending_roll()
-	check(emitted, "player_roll_cancelled emitted")
+	check(not sink.is_empty(), "player_roll_cancelled emitted")
 	print("  cancel_pending_roll_emits_signal: OK")
 
 
@@ -466,10 +476,11 @@ func test_transition_cancels_pending_roll() -> void:
 	runner._current_state_key = "old"
 	runner._current_state = SessionState.new()
 	runner._state_registry["new"] = func() -> SessionState: return SessionState.new()
-	var emitted := false
-	EventBus.player_roll_cancelled.connect(func(): emitted = true, CONNECT_ONE_SHOT)
+	# Lambda primitive-capture is by value; accumulate into an Array instead.
+	var sink: Array = []
+	EventBus.player_roll_cancelled.connect(func(): sink.append(true), CONNECT_ONE_SHOT)
 	runner.transition_to_state("new")
-	check(emitted, "transition emits player_roll_cancelled")
+	check(not sink.is_empty(), "transition emits player_roll_cancelled")
 	print("  transition_cancels_pending_roll: OK")
 
 

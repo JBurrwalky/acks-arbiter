@@ -261,25 +261,26 @@ func test_signals_carry_vector3i() -> void:
 	_place_voxel_door(map, Vector3i(1, 0, 0), "unlocked", "closed")
 	var ctrl := _make_controller_with_map(map)
 
-	var moved_from_is_v3 := false
-	var moved_to_is_v3 := false
+	# GDScript lambdas capture primitives BY VALUE — reassigning a captured bool
+	# inside the handler never reaches the outer scope. Mutate a shared Dictionary
+	# (a reference type) so the observed values survive back to the assertions.
+	var sink := {"moved_from_is_v3": false, "moved_to_is_v3": false, "door_pos_is_v3": false}
 	ctrl.party_moved.connect(func(f, t) -> void:
-		moved_from_is_v3 = f is Vector3i
-		moved_to_is_v3 = t is Vector3i
+		sink["moved_from_is_v3"] = f is Vector3i
+		sink["moved_to_is_v3"] = t is Vector3i
 	)
 
-	var door_pos_is_v3 := false
 	ctrl.door_state_changed.connect(func(p, _old: String, _new: String) -> void:
-		door_pos_is_v3 = p is Vector3i
+		sink["door_pos_is_v3"] = p is Vector3i
 	)
 
 	# Move: move_party emits party_moved(Vector3i, Vector3i) in the single-entity branch.
 	ctrl.move_party(Vector3i(0, 1, 0))
-	check(moved_from_is_v3, "party_moved from_pos should be Vector3i")
-	check(moved_to_is_v3, "party_moved to_pos should be Vector3i")
+	check(sink["moved_from_is_v3"], "party_moved from_pos should be Vector3i")
+	check(sink["moved_to_is_v3"], "party_moved to_pos should be Vector3i")
 
 	# Door interaction emits door_state_changed(Vector3i, String, String).
 	# Hero is now at (0,1,0); the door at (1,0,0) is still adjacent (Chebyshev=1).
 	ctrl.interact_door(Vector3i(1, 0, 0))
-	check(door_pos_is_v3, "door_state_changed pos should be Vector3i")
+	check(sink["door_pos_is_v3"], "door_state_changed pos should be Vector3i")
 	ctrl.queue_free()

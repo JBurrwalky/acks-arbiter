@@ -185,7 +185,8 @@ func test_clanhold_annex_establishment_writes_clanhold_style() -> void:
 		"name": "Annex Test Domain",
 		"territory_type": "wilderness",
 		"establishment_method": "clanhold_annex",
-		"domain_style": "civilized",  # caller passes wrong value; flow force-locks
+		# Phase 11D.4: omit domain_style so the flow force-locks 'clanhold'.
+		# (An explicit contradictory 'civilized' now yields a hard error.)
 	})
 	check(result["errors"].is_empty(),
 		"establish OK, errors=%s" % str(result["errors"]))

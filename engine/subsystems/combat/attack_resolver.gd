@@ -236,6 +236,13 @@ func resolve_melee_attack(
 				var d = _dice_system.roll_expression("1d4", "swarm_warding_attack")
 				clamped = int(d.modified_total) if d != null else 4
 			damage_total = maxi(1, clamped)
+			# Attacking a swarm with a torch/weapon IS "warding it off": flag the
+			# attacker so the swarm's damage tick halves and its confusion/paralysis
+			# saves gain +4 (SwarmDriver / SpellCombatHooks read is_warding). Cleared
+			# at round start by SwarmDriver.on_round_start.
+			var a_flags: EntityFlags = attacker.get_flags() if attacker.has_method("get_flags") else null
+			if a_flags != null:
+				a_flags.set_flag("is_warding", "swarm_ward")
 
 		# Apply damage through target's resistance pipeline
 		damage_result = target.apply_damage(damage_total, "physical")

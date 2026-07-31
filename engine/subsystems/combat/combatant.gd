@@ -945,6 +945,81 @@ func get_special_abilities() -> Array:
 	return _monster_data.get("special_abilities", [])
 
 
+# ---------------------------------------------------------------------------
+# Size & tactical footprint (creature-size build session)
+# ---------------------------------------------------------------------------
+
+## Returns the ACKS size category ("small".."colossal"). PCs, henchmen, and
+## trained creatures are man_sized by default (they have no monster catalog size).
+## Monsters read `size_category` from their catalog entry.
+func get_size_category() -> String:
+	if is_character:
+		return "man_sized"
+	return str(_monster_data.get("size_category", "man_sized"))
+
+
+## Returns the creature's LOCAL-frame grid footprint Vector2i(length, width).
+## Reads the monster catalog `footprint.cells_local` when present, otherwise
+## (1, 1). PCs/henchmen and every creature without an explicit footprint block
+## occupy a single cell — so the vast majority of combatants keep the fast
+## single-cell path.
+func get_footprint_local() -> Vector2i:
+	if is_character:
+		return Vector2i(1, 1)
+	var fp: Dictionary = _monster_data.get("footprint", {})
+	if fp.has("cells_local"):
+		var cl: Array = fp["cells_local"]
+		if cl.size() == 2:
+			return Vector2i(int(cl[0]), int(cl[1]))
+	# No explicit footprint block => single cell. Deliberately does NOT derive a
+	# footprint from size_category alone: entries the data pass FLAGGED (swarms,
+	# elementals, uncertain-body-form rows) still carry a size_category but must
+	# stay 1x1 until explicitly wired (docs/monster_size_flags.md). Deriving here
+	# would wrongly make, e.g., a large-size insect_swarm a 2x1 body.
+	return Vector2i(1, 1)
+
+
+## True when this combatant occupies more than one grid cell.
+func is_multi_cell() -> bool:
+	return not CreatureFootprint.is_single_cell(get_footprint_local())
+
+
+## Returns the swarm's DIFFUSE-area footprint Vector2i(length, width) in the
+## creature's LOCAL frame, read from the monster catalog `swarm_area.cells_local`
+## block. This is DELIBERATELY SEPARATE from `footprint` (get_footprint_local):
+## a swarm's `footprint` stays 1x1 so it moves as a single-cell, non-blocking
+## anchor (never routed through the multi-cell movement gate), while its
+## `swarm_area` describes the larger rectangle it ENVELOPS. RAW 10'x30' (2x6
+## cells) scaled by HD — 2 HD = 10'x20' (4x2), 3 HD = 10'x30' (6x2), 4 HD =
+## 10'x40' (8x2). Returns (1, 1) for non-swarms or swarms lacking the block, so
+## a swarm with no area data still covers exactly its anchor cell.
+## See coding_conventions §126.
+func get_swarm_area_local() -> Vector2i:
+	if is_character:
+		return Vector2i(1, 1)
+	var area: Dictionary = _monster_data.get("swarm_area", {})
+	if area.has("cells_local"):
+		var cl: Array = area["cells_local"]
+		if cl.size() == 2:
+			return Vector2i(int(cl[0]), int(cl[1]))
+	return Vector2i(1, 1)
+
+
+## The swarm flavour ("insect" | "rat" | "bat") from the monster's sub_types.
+## Returns "" when the combatant is not a swarm or carries no flavour sub_type.
+## Consumed by SwarmDriver to pick the `swarmed_<flavour>` condition + effect.
+func get_swarm_type() -> String:
+	if is_character:
+		return ""
+	var subs: Array = _monster_data.get("sub_types", [])
+	if "swarm" not in subs:
+		return ""
+	for flavour in ["insect", "rat", "bat"]:
+		if flavour in subs:
+			return flavour
+	return ""
+
+
 ## Creature-type query helpers used by magic-item conditional bonuses
 ## (Flame Tongue, Frost Brand) and other vs-creature-type mechanics
 ## (Magic Sword's invulnerable-monster gate is a separate sibling check).

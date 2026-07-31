@@ -280,9 +280,9 @@ func test_large_map_sim_performance() -> void:
 
 
 func test_full_pipeline_determinism() -> void:
-	var cid2 := CampaignRepository.create_campaign("Stage4a Det B", "w")
-	check(SettingGenerator.new().generate(cid2, 42, SettingParameters.new()),
-		"second generate() failed")
+	# Determinism is a global property of SettingGenerator; compare this suite's
+	# seed-42 world against one shared reference (SettingWorldFixture) instead of
+	# regenerating a full seed-42 world in every stage suite.
 	check(SettingDatasetHasher.compute_world_hash(_cid)
-			== SettingDatasetHasher.compute_world_hash(cid2),
+			== SettingWorldFixture.reference_world_hash(42),
 		"full pipeline (incl. the history sim) is not deterministic for the same seed")

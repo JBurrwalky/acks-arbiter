@@ -21,6 +21,9 @@ const PAN_SPEED := 8.0
 const EDGE_MARGIN := 40.0
 const ZOOM_MIN := 4.0
 const ZOOM_MAX := 30.0
+## Generated terrain maps are a 70-cell diamond — they need a much longer
+## zoom-out leash than the old small open field to frame the whole battlefield.
+const ZOOM_MAX_TERRAIN := 64.0
 const ZOOM_STEP := 1.0
 const HIT_RADIUS_SCREEN := 20.0
 
@@ -62,6 +65,11 @@ var _target_rings: Array[String] = []
 var _active_entity_id: String = ""
 var _token_scene: PackedScene = null
 var _character_token_scene: PackedScene = null
+## Cached world-space map bounds over ALL levels (computed once in setup —
+## _clamp_camera_to_map runs every pan frame and must not rescan 15k cells).
+var _map_min_corner := Vector3.INF
+var _map_max_corner := -Vector3.INF
+var _zoom_max: float = ZOOM_MAX
 
 const CharacterModelRegistryScript := preload("res://scenes/ui/components/character_model_registry.gd")
 
@@ -101,6 +109,11 @@ func setup(voxel_map: VoxelMapData, roster) -> void:
 	_env = TacticalGrid3D.create_environment()
 	add_child(_env)
 
+	# Cache world bounds across all levels for camera framing/clamping.
+	_compute_map_bounds()
+	if _voxel_map != null and _voxel_map.natural_slopes:
+		_zoom_max = ZOOM_MAX_TERRAIN
+
 	# Build terrain
 	_build_terrain()
 
@@ -130,16 +143,43 @@ func _populate_tokens(roster) -> void:
 		_tokens[c.id] = token
 
 		# Position token on grid — snap, don't animate, on initial placement.
-		if c.grid_position != Vector3i(-1, -1, 0):
+		# Guard both unplaced sentinels: (-1,-1,0) legacy and (-1,-1,-1) from
+		# VoxelMapData.get_entity_pos.
+		if c.grid_position.x >= 0 and c.grid_position.y >= 0:
 			var world_pos := VoxelGrid.cell_to_world(
 				c.grid_position.x, c.grid_position.y, c.grid_position.z)
 			token.position = world_pos
+
+		# Swarms: render the diffuse ENVELOPING area (translucent, HD-scaled),
+		# NOT a solid multi-cell body — the swarm still MOVES as a 1x1 anchor.
+		# Checked before is_multi_cell because a swarm's footprint is 1x1.
+		if token.has_method("set_swarm_area") and c.is_swarm():
+			token.set_swarm_area(c.get_swarm_area_local())
+			token.set_facing(c.facing)
+			if c.grid_position.x >= 0 and c.grid_position.y >= 0:
+				token.apply_grid_footprint(c.grid_position)
+		# Multi-cell creatures: stretch the placeholder to its footprint and
+		# straddle its cells. Single-cell tokens are untouched (fast path).
+		elif token.has_method("set_creature_size") and c.is_multi_cell():
+			token.set_creature_size(
+				c.get_footprint_local(),
+				CreatureSize.height_scale(c.get_size_category()))
+			token.set_facing(c.facing)
+			if c.grid_position.x >= 0 and c.grid_position.y >= 0:
+				token.apply_grid_footprint(c.grid_position)
 
 
 func _build_terrain() -> void:
 	if _voxel_map == null:
 		return
-	# Single Level_0 group today; future multi-level combat adds sibling groups here.
+	if _voxel_map.natural_slopes:
+		# Generated wilderness terrain: every level renders (columns, textured
+		# floors, obstacle placeholders, water) — outdoor daylight, no fog.
+		for level: int in _voxel_map.get_levels():
+			_grid_meshes.add_child(
+				TacticalGrid3D.build_terrain_level_group(_voxel_map, level))
+		return
+	# Legacy flat battle map: single Level_0 group.
 	var color_func := Callable(TacticalGrid3D, "combat_ground_color_voxel")
 	var group := TacticalGrid3D.build_level_group(_voxel_map, 0, color_func, false)
 	_grid_meshes.add_child(group)
@@ -212,9 +252,24 @@ func set_active_token(entity_id: String) -> void:
 func move_token(entity_id: String, to_cell) -> void:
 	if not _tokens.has(entity_id):
 		return
-	var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, 0)
-	var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-	_tokens[entity_id].update_position(world_pos)
+	var pos: Vector3i
+	if to_cell is Vector3i:
+		pos = to_cell
+	else:
+		# Legacy 2D callers: land on the terrain surface, not the z=0 plane.
+		var z: int = 0
+		if _voxel_map != null and _voxel_map.natural_slopes:
+			z = maxi(0, _voxel_map.surface_level_at(to_cell.x, to_cell.y))
+		pos = Vector3i(to_cell.x, to_cell.y, z)
+	var token: Node3D = _tokens[entity_id]
+	# Multi-cell bodies re-straddle their (possibly rotated) footprint on the new
+	# anchor; single-cell tokens use the plain position update.
+	if token.has_method("apply_grid_footprint") \
+			and not CreatureFootprint.is_single_cell(token.footprint_local):
+		token.apply_grid_footprint(pos)
+	else:
+		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+		token.update_position(world_pos)
 
 
 func set_token_facing(entity_id: String, facing: Vector2i) -> void:
@@ -304,6 +359,7 @@ func _rebuild_highlights() -> void:
 	for child in _highlight_layer.get_children():
 		child.queue_free()
 
+	var terrain: bool = _voxel_map.natural_slopes
 	for layer in _highlight_layers:
 		var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
 		var cells_3d: Array[Vector3i] = []
@@ -311,7 +367,12 @@ func _rebuild_highlights() -> void:
 			if pos is Vector3i:
 				cells_3d.append(pos)
 			elif pos is Vector2i:
-				cells_3d.append(Vector3i(pos.x, pos.y, 0))
+				# Legacy 2D callers: project onto the terrain surface so the
+				# overlay hugs the hillside instead of the buried z=0 plane.
+				var z: int = 0
+				if terrain:
+					z = maxi(0, _voxel_map.surface_level_at(pos.x, pos.y))
+				cells_3d.append(Vector3i(pos.x, pos.y, z))
 		var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
 		_highlight_layer.add_child(mmi)
 
@@ -328,17 +389,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Mouse-wheel zoom on the orthographic camera. ZOOM_MIN gives a
 		# tactical close-up; ZOOM_MAX shows the full map.
 		if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_camera.size = clampf(_camera.size - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			_camera.size = clampf(_camera.size - ZOOM_STEP, ZOOM_MIN, _zoom_max)
 			get_viewport().set_input_as_handled()
 			return
 		if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_camera.size = clampf(_camera.size + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			_camera.size = clampf(_camera.size + ZOOM_STEP, ZOOM_MIN, _zoom_max)
 			get_viewport().set_input_as_handled()
 			return
 		if not event.pressed:
 			return
 
-		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
+		var cell_pos_3d := _screen_to_surface_cell(event.position)
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			var hit_eid := _entity_id_near(event.position)
 			if not hit_eid.is_empty():
@@ -394,34 +455,56 @@ func _process(delta: float) -> void:
 		_clamp_camera_to_map()
 
 
+## Computes the world-space bounds of all stored cells (every level — terrain
+## maps have columns well above level 0). Called once from setup().
+func _compute_map_bounds() -> void:
+	_map_min_corner = Vector3.INF
+	_map_max_corner = -Vector3.INF
+	if _voxel_map == null:
+		return
+	for pos in _voxel_map.get_all_positions():
+		var w := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+		_map_min_corner = _map_min_corner.min(w)
+		_map_max_corner = _map_max_corner.max(w)
+
+
 ## Keeps the camera target above the voxel-map's bounds so the player cannot
 ## scroll into empty void. The orthographic camera's anchor is offset along
-## CAM_BACKWARD; we clamp the projected XZ origin against the cell extents.
+## CAM_BACKWARD; we clamp the projected XZ origin against the cached extents.
 func _clamp_camera_to_map() -> void:
 	if _camera == null or _voxel_map == null:
 		return
-	var min_corner := Vector3.INF
-	var max_corner := -Vector3.INF
-	for pos in _voxel_map.get_all_positions():
-		if pos.z != 0:
-			continue
-		var w := VoxelGrid.cell_to_world(pos.x, pos.y, 0)
-		min_corner = min_corner.min(w)
-		max_corner = max_corner.max(w)
-	if min_corner == Vector3.INF:
+	if _map_min_corner == Vector3.INF:
 		return
-	# The camera floats above the map at +CAM_BACKWARD * 50; clamp the XZ
-	# foot-print so the camera target stays inside the cell bounds.
 	var cam_pos := _camera.position
 	var anchor := cam_pos - CAM_BACKWARD * 50.0
-	anchor.x = clampf(anchor.x, min_corner.x, max_corner.x)
-	anchor.z = clampf(anchor.z, min_corner.z, max_corner.z)
+	anchor.x = clampf(anchor.x, _map_min_corner.x, _map_max_corner.x)
+	anchor.z = clampf(anchor.z, _map_min_corner.z, _map_max_corner.z)
 	_camera.position = anchor + CAM_BACKWARD * 50.0
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+## Resolves a screen click to a map cell. On flat maps this is the legacy
+## z=0 plane raycast; on terrain maps the ray is tested against each level
+## plane from the top down and the first column whose SURFACE sits at that
+## level wins — so clicking a hilltop selects the hilltop, not the ground
+## cell hidden underneath it.
+func _screen_to_surface_cell(screen_pos: Vector2) -> Vector3i:
+	if _voxel_map == null or not _voxel_map.natural_slopes:
+		return TacticalGrid3D.screen_to_cell_voxel(_camera, screen_pos, 0)
+	var levels: Array[int] = _voxel_map.get_levels()
+	for i in range(levels.size() - 1, -1, -1):
+		var level: int = levels[i]
+		var candidate := TacticalGrid3D.screen_to_cell_voxel(_camera, screen_pos, level)
+		if candidate == Vector3i(-1, -1, -1):
+			continue
+		if _voxel_map.surface_level_at(candidate.x, candidate.y) == level:
+			return candidate
+	return TacticalGrid3D.screen_to_cell_voxel(_camera, screen_pos, 0)
+
 
 func _entity_id_near(screen_pos: Vector2) -> String:
 	if _camera == null:
@@ -441,12 +524,15 @@ func _entity_id_near(screen_pos: Vector2) -> String:
 func _center_camera() -> void:
 	if _camera == null or _voxel_map == null:
 		return
-	var sum := Vector3.ZERO
-	var count := 0
-	for pos in _voxel_map.get_all_positions():
-		if pos.z == 0:
-			sum += VoxelGrid.cell_to_world(pos.x, pos.y, 0)
-			count += 1
-	if count > 0:
-		var center := sum / float(count)
-		_camera.position = center + CAM_BACKWARD * 50.0
+	if _map_min_corner == Vector3.INF:
+		return
+	# On terrain maps, open on the party entry rather than the map midpoint —
+	# the encounter starts there and the full 70-cell diamond doesn't fit at
+	# tactical zoom anyway.
+	var center: Vector3
+	if _voxel_map.natural_slopes:
+		var entry := _voxel_map.entry_pos
+		center = VoxelGrid.cell_to_world(entry.x, entry.y, entry.z)
+	else:
+		center = (_map_min_corner + _map_max_corner) * 0.5
+	_camera.position = center + CAM_BACKWARD * 50.0

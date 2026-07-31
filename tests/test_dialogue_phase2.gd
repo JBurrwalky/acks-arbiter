@@ -55,7 +55,6 @@ func run_all_tests() -> void:
 	# hiring.
 	test_hireable_as_eligibility()
 	test_hire_accept_finalizes()
-	test_hire_refuse_slander_penalty()
 	# gather info.
 	test_gather_information_dual_path()
 	# EXIT TEST.
@@ -455,21 +454,10 @@ func test_hire_accept_finalizes() -> void:
 	check(_str_or(c.get("employer_id", ""), "") == employer, "employer set")
 
 
-func test_hire_refuse_slander_penalty() -> void:
-	var employer := _make_pc("Rude", 4)   # low CHA -> penalty
-	var recruit := _make_npc("Proud", 10, {}, "", "named_npc", "fighter")
-	_set_attitude(recruit, "friendly")
-	var ctx := _ctx(recruit, false, employer)
-	# Fixed roll 2 -> Refuse and slander.
-	var s := DialogueSession.begin(ctx, _dice_of(2))
-	var r := s.submit_move("offer_hire_henchman", "", {"employer_id": employer, "settlement_id": "town_slander"})
-	check(String(r.get("disposition", "")) == "refuse_slander", "roll 2 -> refuse and slander")
-	# Settlement-scoped -1 reputation delta (§11.4).
-	var rep := ReputationSystem.new(CampaignRepository, _campaign_id, _party_id)
-	check(rep.get_score(ReputationEntry.SCOPE_SETTLEMENT, "town_slander") == -1,
-		"refuse-and-slander writes the settlement -1 (acore_equipment:683-685)")
-
-
+# NOTE: test_hire_refuse_slander_penalty was removed here — it is strictly
+# subsumed by test_exit_hire_through_negotiation_then_slander (below), whose
+# second NPC re-runs the identical roll-2 refuse-and-slander scenario and also
+# asserts the slandering NPC writes a grudge memory.
 func test_gather_information_dual_path() -> void:
 	var interlocutor := _make_npc("Townsfolk", 10)
 	_set_attitude(interlocutor, "neutral")

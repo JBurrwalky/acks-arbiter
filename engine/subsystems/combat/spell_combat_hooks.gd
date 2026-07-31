@@ -426,11 +426,14 @@ func _apply_swarm_condition_to(target: Variant, condition_key: String,
 		was_present = target.has_condition(condition_key)
 	target.add_condition(condition_key)
 	var hd: int = _wall_get_hd(target)
-	# Sub-3-HD: auto-drive-off (RAW). HD > 3: per the user's design literal,
-	# `frightened` also applies via the same swarmed-target logic. HD == 3
-	# falls between the two cases — neither RAW nor the user's wording calls
-	# for `frightened` exactly at the threshold, so we leave that case alone.
-	if hd < drive_off_threshold or hd > drive_off_threshold:
+	# RAW: Insect Plague (acore_spell_catalog_a-i_summary.xml:1280) — "Creatures
+	# of less than 3 Hit Dice are automatically driven off." So ONLY sub-threshold
+	# creatures are frightened (driven off); HD >= threshold are engulfed but keep
+	# full agency (they may ward the swarm off — frightened would forbid that).
+	# The earlier ">3 HD also frightened" behavior was a P3 design-literal, NOT
+	# RAW; removed 2026-07-24 so the spell matches RAW and the monster-swarm
+	# driver (SwarmDriver._apply_swarm_condition), which share this threshold.
+	if hd < drive_off_threshold:
 		target.add_condition("frightened")
 	if not was_present:
 		EventBus.condition_changed.emit(target.id, {
@@ -458,11 +461,13 @@ func _tick_swarm_damage_for(target: Variant, condition_key: String,
 	if ac_threshold > 0 and target.has_method("get_effective_ac"):
 		if int(target.get_effective_ac()) <= ac_threshold:
 			dmg *= 2
-	# Warding/fleeing halve — flags are set by movement-out + warding-attack
-	# paths (deferred polish). Honor them defensively if present.
-	var flags = target.get_flags() if target.has_method("get_flags") else null
-	if flags != null and bool(entry.get("tick_halves_if_warding_or_fleeing", false)):
-		if flags.has_flag("is_fleeing") or flags.has_flag("is_warding"):
+	# Warding/fleeing halve — the `is_warding` flag is set by the warding-attack
+	# path (attack_resolver / ranged_attack_resolver clamp block) and fleeing is
+	# read from the morale / defensive-movement state. SwarmDriver.is_warding_or_fleeing
+	# is the single shared predicate so the Insect Plague spell tick and the
+	# monster-swarm driver halve identically.
+	if bool(entry.get("tick_halves_if_warding_or_fleeing", false)):
+		if SwarmDriver.is_warding_or_fleeing(target):
 			dmg = maxi(1, dmg / 2)
 	if target.has_method("apply_damage"):
 		target.apply_damage(dmg, "physical")

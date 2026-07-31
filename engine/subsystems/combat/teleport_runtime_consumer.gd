@@ -130,6 +130,7 @@ func process_target(
 	else:
 		combatant.grid_position = dest
 	var fall_damage: int = 0
+	var lava_result: Dictionary = {}
 	# Above-ground check (Teleport RAW: off-target above ground → falling damage).
 	if _voxel_map != null and not FallingResolver.has_support(_voxel_map, dest):
 		var fall: Dictionary = FallingResolver.resolve_fall(_voxel_map, dest)
@@ -140,10 +141,25 @@ func process_target(
 		if fall_damage > 0:
 			combatant.apply_damage(fall_damage, "physical")
 			EventBus.damage_dealt.emit(target_id, fall_damage, "physical", "fall")
+		# Falling into a lava surface (Jedidiah ruling 2026-07-17, gdd-combat-
+		# map-generation.md §14): save vs Poison & Death — fail = instant death,
+		# success = 2d6 fire damage.
+		if bool(fall.get("lava_contact", false)):
+			lava_result = FallingResolver.resolve_lava_contact(combatant, _dice_system)
+			if not bool(lava_result.get("survived", true)):
+				var hp_max: int = combatant.get_hp_max() if combatant.has_method("get_hp_max") else 0
+				combatant.apply_damage(maxi(1, hp_max), "fire")
+				EventBus.combatant_downed.emit(target_id, "")
+				return {"action": "instant_kill", "target_id": target_id,
+					"reason": "lava", "lava": lava_result}
+			var lava_damage: int = int(lava_result.get("damage", 0))
+			if lava_damage > 0:
+				combatant.apply_damage(lava_damage, "fire")
+				EventBus.damage_dealt.emit(target_id, lava_damage, "fire", "lava")
 	return {
 		"action": "snapped", "target_id": target_id,
 		"destination_cell": dest, "fall_damage": fall_damage,
-		"outcome_kind": outcome_kind,
+		"outcome_kind": outcome_kind, "lava": lava_result,
 	}
 
 

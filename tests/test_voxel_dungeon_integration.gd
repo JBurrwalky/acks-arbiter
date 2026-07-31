@@ -1,6 +1,7 @@
 extends "res://tests/test_suite_base.gd"
 
-## Integration tests for the converted voxel test dungeon (Goblin Warrens).
+## Integration tests for the composed voxel test dungeon (Sunken Hall — the
+## DG-C3D.G re-authored two-band fixture: switchback + two-story atrium hall).
 ##
 ## Verifies structural correctness of the voxel format: wall stacks, stair
 ## direction suffixes, door states, LOS through rooms, and entry cell walkability.
@@ -16,10 +17,10 @@ func run_all_tests() -> void:
 		check(false, "test_dungeon.json must be loadable")
 		return
 
-	test_load_goblin_warrens()
+	test_fixture_identity()
 	test_entry_cell_is_walkable()
 	test_level_0_has_open_cells()
-	test_level_2_has_open_cells()
+	test_deeper_band_has_open_cells()
 	test_wall_stacks_at_floor_and_ceiling()
 	test_stair_cells_exist()
 	test_stair_direction_suffix_valid()
@@ -30,11 +31,11 @@ func run_all_tests() -> void:
 		print("VoxelDungeonIntegration: all tests passed.")
 
 
-func test_load_goblin_warrens() -> void:
+func test_fixture_identity() -> void:
 	check(_map.id == "test_dungeon_goblin_warrens",
-		"id should be test_dungeon_goblin_warrens")
+		"id should be test_dungeon_goblin_warrens (stable key)")
 	check(_map.cell_count() > 0, "map should have cells")
-	check(_map.theme == "humanoid_warren", "theme should be humanoid_warren")
+	check(_map.theme == "wizards_dungeon", "theme should be wizards_dungeon")
 
 
 func test_entry_cell_is_walkable() -> void:
@@ -53,13 +54,16 @@ func test_level_0_has_open_cells() -> void:
 	check(open_count > 10, "level 0 should have > 10 open cells, got %d" % open_count)
 
 
-func test_level_2_has_open_cells() -> void:
-	var cells := _map.get_cells_at_level(2)
+func test_deeper_band_has_open_cells() -> void:
+	# The composed fixture's deeper band walks at voxel level -2 (subterranean
+	# §5.1: walk = 2*dir*(entrance_floor - floor_index)); its main-floor hall is
+	# the largest open region there.
+	var cells := _map.get_cells_at_level(-2)
 	var open_count := 0
 	for cell: VoxelCell in cells:
 		if cell.solidity == "air" and cell.feature == "open":
 			open_count += 1
-	check(open_count > 5, "level 2 should have > 5 open cells, got %d" % open_count)
+	check(open_count > 5, "deeper band (level -2) should have > 5 open cells, got %d" % open_count)
 
 
 func test_wall_stacks_at_floor_and_ceiling() -> void:

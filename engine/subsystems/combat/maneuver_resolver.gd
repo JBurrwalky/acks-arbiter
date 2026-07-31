@@ -212,12 +212,13 @@ func _resolve_force_back(
 	# Grid-based push
 	var wall_collision := false
 	var collision_damage := 0
+	var lava_result: Dictionary = {}
 	if _movement_resolver != null and _movement_resolver.has_voxel_grid() and push_cells > 0:
 		var target_pos: Vector3i = target.grid_position
 		var attacker_pos: Vector3i = attacker.grid_position
 		if target_pos != Vector3i(-1, -1, 0) and attacker_pos != Vector3i(-1, -1, 0):
-			# Push direction: away from attacker (unit vector in grid coords,
-			# preserves z = 0 so the push stays on the same level).
+			# Push direction: away from attacker (unit vector in grid coords;
+			# walk_direction_3d tracks the terrain surface on natural-slope maps).
 			var direction := Vector3i(
 				signi(target_pos.x - attacker_pos.x),
 				signi(target_pos.y - attacker_pos.y),
@@ -227,8 +228,25 @@ func _resolve_force_back(
 			var cells_pushed: int = walk.get("cells_traveled", 0)
 			wall_collision = walk.get("wall_collision", false)
 			_movement_resolver.set_grid_position_3d(target, walk.get("final_pos", target_pos))
-			if wall_collision:
-				# Knocked down + 1d6 per 10' traveled
+			if wall_collision and str(walk.get("blocked_feature", "")) == "lava":
+				# Forced into lava (Jedidiah ruling 2026-07-17, gdd-combat-map-
+				# generation.md §14): save vs Poison & Death — fail = instant
+				# death, success = 2d6 fire damage. Replaces the RAW
+				# wall-collision knockdown (the lava consequence is strictly
+				# harsher). Either way the victim ends at the brink cell, never
+				# standing in the flow (movement rules forbid occupying lava;
+				# a corpse "in" the lava would also strand its loot).
+				lava_result = FallingResolver.resolve_lava_contact(target, _dice)
+				if not bool(lava_result.get("survived", true)):
+					var hp_max: int = target.get_hp_max() if target.has_method("get_hp_max") else 0
+					target.apply_damage(maxi(1, hp_max), "fire")
+				else:
+					var lava_damage: int = int(lava_result.get("damage", 0))
+					if lava_damage > 0:
+						target.apply_damage(lava_damage, "fire")
+			elif wall_collision:
+				# RAW: knocked down + 1d6 per 10' traveled
+				# (rules/acore_combat_and_wounds.xml:605-609).
 				if _condition_manager != null:
 					_condition_manager.apply_condition(target, "prone", attacker.id, -1)
 				var collision_dice := maxi(1, (cells_pushed * MovementResolver.FEET_PER_CELL) / 10)
@@ -249,6 +267,7 @@ func _resolve_force_back(
 		"push_distance_ft": push_distance_ft,
 		"wall_collision": wall_collision,
 		"collision_damage": collision_damage,
+		"lava": lava_result,
 		"hit_result": hit_result,
 	}
 

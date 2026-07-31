@@ -12,6 +12,8 @@ func run_all_tests() -> void:
 	test_disarm_target_saves()
 	test_force_back_pushes_target()
 	test_force_back_target_saves()
+	test_force_back_into_lava_failed_save_kills()
+	test_force_back_into_lava_made_save_burns()
 	test_incapacitate_deals_nonlethal()
 	test_incapacitate_miss()
 	test_knock_down_applies_prone()
@@ -111,6 +113,76 @@ func test_force_back_target_saves() -> void:
 	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "force_back", {})
 	check(result.get("forced_back") == false,
 		"force back should fail when target saves")
+
+
+## Force back into a lava flow (Jedidiah ruling 2026-07-17, gdd-combat-map-
+## generation.md §14): the push stops at the brink and the victim resolves
+## lava contact — save vs Poison & Death, fail = instant death, success =
+## 2d6 fire. The RAW wall-collision knockdown does NOT apply to lava.
+func test_force_back_into_lava_failed_save_kills() -> void:
+	# Rolls: attack 20 (hit), damage 4, paralysis save 1 (fail),
+	# push 10' (2 cells), lava save vs death 1 (fail vs orc target 14).
+	var env := _make_lava_env([20, 4, 1, 10, 1])
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "force_back", {})
+	check(result.get("forced_back") == true, "push should succeed")
+	check(result.get("wall_collision") == true, "lava stops the push")
+	var lava: Dictionary = result.get("lava", {})
+	check(lava.get("survived") == false, "failed save vs death in lava = dead")
+	check(not env.monster.is_alive(), "victim should be dead")
+	check(env.monster.grid_position == Vector3i(2, 0, 0),
+		"victim ends at the brink cell, not inside the flow")
+
+
+func test_force_back_into_lava_made_save_burns() -> void:
+	# Same as above but lava save 20 (success vs 14), then 2d6 fire forced to 7.
+	# The maneuver's melee attack applies its own weapon damage before the push,
+	# so the lava damage is asserted on top of whatever the attack dealt.
+	var env := _make_lava_env([20, 4, 1, 10, 20, 7])
+	var hp_before: int = env.monster.get_hp_current()
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "force_back", {})
+	var lava: Dictionary = result.get("lava", {})
+	check(lava.get("survived") == true, "made save vs death = survives the brink")
+	check(int(lava.get("damage", 0)) == 7, "lava burn is the forced 2d6 total")
+	var attack_damage: int = int(
+		result.get("hit_result", {}).get("damage_result", {}).get("hp_damage", 0))
+	check(env.monster.get_hp_current() == hp_before - attack_damage - 7,
+		"survivor takes the 2d6 fire damage on top of the attack damage")
+	check(env.monster.is_alive(), "survivor lives through the burn")
+	check(not env.monster.has_condition("prone"),
+		"lava contact replaces the wall-collision knockdown")
+	check(env.monster.grid_position == Vector3i(2, 0, 0),
+		"survivor stays at the brink cell")
+
+
+## Env with a real voxel map: attacker (0,0,0) → target (1,0,0) → open ground
+## (2,0,0) → lava flow (3,0,0). A 2-cell push runs the victim to the brink.
+func _make_lava_env(rolls: Array) -> Dictionary:
+	var env := _make_env_sequence(rolls)
+	# A tougher orc so the made-save case survives attack damage + 2d6 burn.
+	env.monster = _make_monster("m_1", 20, 3)
+	var map := VoxelMapData.new()
+	map.natural_slopes = true
+	for col in range(3):
+		var cell := VoxelCell.new()
+		cell.solidity = "air"
+		cell.feature = "open"
+		cell.floor_type = "grass"
+		map.set_cell(Vector3i(col, 0, 0), cell)
+	var lava := VoxelCell.new()
+	lava.solidity = "liquid"
+	lava.feature = "lava"
+	lava.floor_type = "lava_rock"
+	map.set_cell(Vector3i(3, 0, 0), lava)
+
+	var movement := MovementResolver.new(null)
+	movement.set_voxel_map(map)
+	env.resolver = ManeuverResolver.new(env.dice, AttackResolver.new(env.dice), movement, null)
+	env.pc.grid_position = Vector3i(0, 0, 0)
+	env.monster.grid_position = Vector3i(1, 0, 0)
+	map.set_entity_pos(env.pc.id, env.pc.grid_position)
+	map.set_entity_pos(env.monster.id, env.monster.grid_position)
+	env["map"] = map
+	return env
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +295,12 @@ func test_combat_trickery_reduces_penalty() -> void:
 	# Use STR 10 (modifier 0) so to_hit_bonus is purely the maneuver penalty.
 	var env := _make_env(20)  # Hit regardless
 	env.pc._character.strength = 10  # Modifier 0
-	env.pc._character.proficiencies = [{"proficiency_key": "combat_trickery", "rank": 1}]
+	# Combat Trickery is taken per-maneuver: the -2 (vs -4) only applies to the
+	# specialization the character selected. resolve_maneuver checks
+	# has_proficiency_with_specialization("combat_trickery", maneuver_key), so the
+	# fixture must grant the "disarm" specialization, not a bare combat_trickery.
+	env.pc._character.proficiencies = [
+		{"proficiency_key": "combat_trickery", "specialization": "disarm", "rank": 1}]
 	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "disarm", {})
 	var hit_result: Dictionary = result.get("hit_result", {})
 	check(hit_result.get("to_hit_bonus", -99) == -2,

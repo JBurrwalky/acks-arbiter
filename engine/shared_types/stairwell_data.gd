@@ -122,3 +122,70 @@ static func _cell_from_variant(v: Variant) -> Vector3i:
 	if v is Array and (v as Array).size() >= 3:
 		return Vector3i(int(v[0]), int(v[1]), int(v[2]))
 	return UNSET_CELL
+
+
+# ---------------------------------------------------------------------------
+# UI labels (minimap glyphs + main-view tooltips, DG-C3D.G)
+# ---------------------------------------------------------------------------
+
+## True when [param cell] belongs to this stairwell's geometry (a run cell or a
+## landing approach). Glyph/tooltip lookups key off cell POSITIONS, never
+## room_id — positions survive the persisted round-trip but a loaded volume's
+## global room ids do not (conventions §121).
+func covers_cell(cell: Vector3i) -> bool:
+	return cell == bottom_cell or cell == top_cell or run_cells.has(cell)
+
+
+## Human-readable tooltip for a viewer looking at this stairwell on the focus
+## voxel level [param viewer_z] (an even band walk level). bottom_cell sits on
+## the physically LOWER band (ascending -> upper_band); top_cell on the
+## physically UPPER band (descending -> lower_band). §11.4 examples:
+## "Stairs down to Level 3", "Spiral stair up".
+func label_at(viewer_z: int) -> String:
+	if is_entrance:
+		return "Dungeon entrance"
+	var prefix: String = _type_prefix()
+	if viewer_z == top_cell.z:
+		return "%s down to Level %d" % [prefix, lower_band]
+	return "%s up to Level %d" % [prefix, upper_band]
+
+
+func _type_prefix() -> String:
+	match type:
+		TYPE_SWITCHBACK: return "Switchback stair"
+		TYPE_SPIRAL: return "Spiral stair"
+		TYPE_RAMP: return "Ramp"
+		_: return "Stairs"
+
+
+## The label for a hovered [param cell], resolved against the dungeon's
+## [param stairwells] list. Returns "" when no stairwell covers the cell (e.g.
+## hand-authored fixtures persist no stairwell rows — the caller falls back to
+## [method generic_label_for_feature]).
+static func label_for_cell(stairwells: Array, cell: Vector3i) -> String:
+	for s in stairwells:
+		var sw: StairwellData = s
+		if sw.covers_cell(cell):
+			return sw.label_at(cell.z)
+	return ""
+
+
+## A generic label derived from a stair cell's [param feature] alone, for
+## content with no StairwellData record. "" when the feature is not a connector.
+static func generic_label_for_feature(feature: String) -> String:
+	if feature == "stairs_spiral":
+		return "Spiral stair"
+	if feature.begins_with("stairs_up"):
+		return "Stairs up"
+	if feature.begins_with("stairs_down"):
+		return "Stairs down"
+	if feature.begins_with("ramp_"):
+		return "Ramp"
+	return ""
+
+
+## True when [param feature] is any vertical-connector cell (stairs/ramp) — the
+## signal the minimap/renderer use to draw a stair glyph even without a
+## StairwellData record.
+static func is_connector_feature(feature: String) -> bool:
+	return feature.begins_with("stairs_") or feature.begins_with("ramp_")

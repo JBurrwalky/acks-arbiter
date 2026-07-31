@@ -63,6 +63,12 @@ var spawn_roster_integrator: SpawnRosterIntegrator = null
 ## result but no runtime entity movement.
 var teleport_runtime_consumer: TeleportRuntimeConsumer = null
 
+## Monster-swarm driver — applies the `swarmed_<type>` envelope + flavour effect
+## (insect damage / bat confusion + morale / rat prone) on each swarm's
+## initiative tick and when combatants walk into a swarm's area. Constructed in
+## _init; its cell-entry hook is connected on combat start, disconnected on end.
+var swarm_driver: SwarmDriver = null
+
 ## Current state
 var round_number: int = 0
 var phase: int = Phase.NOT_STARTED
@@ -162,6 +168,10 @@ func _init(
 	if attack_resolver != null:
 		maneuver_resolver = ManeuverResolver.new(
 			attack_resolver._dice_system, attack_resolver, movement_resolver, condition_manager)
+	# Monster-swarm driver (reuses SpellCombatHooks' insect tick + the shared
+	# DiceSystem; works with or without a grid).
+	var swarm_dice = attack_resolver._dice_system if attack_resolver != null else null
+	swarm_driver = SwarmDriver.new(spell_hooks, morale_resolver, movement_resolver, swarm_dice)
 
 
 # ---------------------------------------------------------------------------
@@ -456,6 +466,10 @@ func _start_combat() -> Dictionary:
 	if teleport_runtime_consumer != null:
 		teleport_runtime_consumer.connect_signals()
 
+	# --- Swarm driver subscribes to combatant_moved for the cell-entry envelope ---
+	if swarm_driver != null:
+		swarm_driver.connect_signals(roster)
+
 	# --- P8: MonsterAI subscribes to elemental_uncontrolled for hostility flip ---
 	if monster_ai != null:
 		monster_ai.connect_signals()
@@ -476,6 +490,10 @@ func _resolve_declaration() -> Dictionary:
 	# --- Spell hooks: on_round_start ---
 	if spell_hooks != null:
 		spell_hooks.on_round_start(round_number, roster)
+
+	# --- Swarm driver: clear last round's transient warding flags ---
+	if swarm_driver != null:
+		swarm_driver.on_round_start(roster)
 
 	# Reset per-round state on all combatants. Note: the spell-declaration
 	# fields (declared_spell, damaged_since_declaration, declared_spell_choice)
@@ -1566,6 +1584,10 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			return _resolve_combatant_action(combatant, "pass",
 				{"note": "withdrawal expired, now fleeing"})
 
+	# --- Swarm turn: envelope aura instead of an attack routine ---
+	if combatant.is_swarm() and swarm_driver != null:
+		return _resolve_swarm_action(combatant)
+
 	# Compute condition modifier for monster attacks
 	var condition_atk_mod: int = 0
 	if condition_manager != null:
@@ -1719,6 +1741,48 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 		results[0].get("target_id", ""),
 		{"action": "attack_melee", "result": combined_result})
 
+	return event
+
+
+## Swarm turn: a swarm has no attack routine — its "action" is the diffuse
+## envelope. It drifts toward the nearest enemy (moving as a 1x1, non-blocking
+## anchor) when pursuit is allowed, then SwarmDriver.apply_swarm_tick marks +
+## damages every enemy inside its area. RAW: a swarm that has taken damage
+## chases a fleeing character, but not past its line of sight; an undamaged
+## swarm does not chase a fleeing target at all (SwarmDriver.should_pursue).
+func _resolve_swarm_action(swarm: Combatant) -> Dictionary:
+	var target: Combatant = _auto_select_target(swarm)
+
+	# Drift toward the target (envelop it) when pursuit is permitted and it is
+	# not already inside the area's reach.
+	if target != null and movement_resolver != null and movement_resolver.has_grid() \
+			and swarm_driver.should_pursue(swarm, target) \
+			and not movement_resolver.is_adjacent(swarm, target):
+		var adj_cell: Vector2i = movement_resolver.find_adjacent_cell_to(swarm, target)
+		if adj_cell != Vector2i(-1, -1):
+			var start_pos: Vector2i = movement_resolver.get_grid_position(swarm)
+			var path: Array[Vector2i] = movement_resolver.find_path(
+				start_pos, adj_cell, true, 50, swarm.side, 0, swarm.id)
+			if not path.is_empty():
+				var moved := movement_resolver.move_along_path(
+					swarm, path, swarm.get_combat_movement_cells(), swarm.side)
+				if moved > 0:
+					swarm.has_moved_this_round = true
+					_update_engagement()
+
+	# Apply the envelope (marks swarmed + delivers the flavour effect + bat morale).
+	swarm_driver.apply_swarm_tick(swarm, roster)
+
+	var event := {
+		"phase": "action",
+		"status": "action_resolved",
+		"combatant_id": swarm.id,
+		"action": "swarm_envelop",
+		"result": {"note": "swarm envelops nearby creatures", "swarm_type": swarm.get_swarm_type()},
+	}
+	combat_log.add_entry(
+		CombatLog.EntryType.ATTACK, round_number, swarm.id, "",
+		{"action": "swarm_envelop", "result": event["result"]})
 	return event
 
 
@@ -2509,6 +2573,10 @@ func _emit_combat_ended() -> Dictionary:
 	# Disconnect SpellCombatHooks from EventBus.combatant_moved.
 	if spell_hooks != null:
 		spell_hooks.disconnect_signals()
+
+	# Disconnect the swarm driver + drop its per-swarm state.
+	if swarm_driver != null:
+		swarm_driver.disconnect_signals()
 
 	EventBus.combat_ended.emit(encounter_id, outcome)
 	return outcome

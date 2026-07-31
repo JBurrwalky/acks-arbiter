@@ -155,6 +155,10 @@ func test_character_creation_finalize_does_not_grant_alignment_languages() -> vo
 	GameState.party_id = _party_id
 
 	var screen = CHARACTER_CREATION_SCREEN.new()
+	# .new() skips _ready(), which normally builds the registries. Without them
+	# _finalize_character() null-derefs on _generator.stamp_powers (screen line
+	# ~601) and aborts before saving the language proficiency rows (line ~646).
+	screen._init_registries()
 	var character := _make_character("Finalize Cleanup")
 	character.intelligence = 13
 
@@ -210,6 +214,9 @@ func test_character_creation_finalize_applies_elf_language_defaults() -> void:
 	GameState.party_id = _party_id
 
 	var screen = CHARACTER_CREATION_SCREEN.new()
+	# .new() skips _ready(); build the registries so _finalize_character() has a
+	# live _generator (see the alignment-language test above).
+	screen._init_registries()
 	var character := _make_character("Elf Language Defaults")
 	character.race = "elf"
 	character.alignment = "neutral"

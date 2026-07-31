@@ -96,7 +96,7 @@ func test_deactivate() -> void:
 func test_radius_cells() -> void:
 	var tracker := LightSourceTracker.new()
 	tracker.activate("torch")
-	check(tracker.get_radius_cells(5.0) == 6, "30ft / 5ft = 6 cells")
+	check(tracker.get_radius_cells(5.0) == 10, "50ft / 5ft = 10 cells (torch house rule)")
 	tracker.activate("infravision")
 	check(tracker.get_radius_cells(5.0) == 12, "60ft / 5ft = 12 cells")
 

@@ -73,6 +73,11 @@ var _level_strip_widget: Node = null                # Session 8 HUD
 var _offscreen_indicators: Node = null              # Session 8 HUD
 var _dungeon_id: String = ""
 
+## Stairwell records for the main-view stair-cell hover tooltip (DG-C3D.G).
+## Lazily loaded from the relational table on first hover.
+var _stairwells: Array = []
+var _stairwells_loaded: bool = false
+
 ## CombatantToken3D nodes indexed by entity_id.
 var _tokens: Dictionary = {}
 
@@ -996,6 +1001,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _drag_selecting:
 			_drag_select_end = event.position
 			get_viewport().set_input_as_handled()
+		else:
+			# Hover: show a tooltip when the cursor is over a stair cell.
+			_update_stair_tooltip(event.position)
 
 	elif event is InputEventKey and event.pressed:
 		if event.ctrl_pressed:
@@ -1168,6 +1176,35 @@ func _handle_right_click(event: InputEventMouseButton) -> void:
 	context_menu_requested.emit(cell_pos, event.position)
 	cell_right_clicked.emit(cell_pos, event.position)
 	get_viewport().set_input_as_handled()
+
+
+## DG-C3D.G: main-view stair-cell hover tooltip. Reuses the dormant HUD
+## TooltipPanel/TooltipLabel. Labels a hovered stair cell from StairwellData
+## (rich "Stairs down to Level 3") or the cell feature (generic fallback for
+## hand-authored content); hides otherwise. Stairwells load lazily on first
+## hover (they live only in the relational table, not the voxel payload).
+func _update_stair_tooltip(screen_pos: Vector2) -> void:
+	if _tooltip_panel == null or _camera == null or _voxel_map == null:
+		return
+	if not _stairwells_loaded:
+		if _controller != null:
+			_stairwells = DungeonGeneratorRepository.get_stairwells(_controller.get_dungeon_id())
+		_stairwells_loaded = true
+	var fl: int = _visibility_manager.focus_level if _visibility_manager != null else 0
+	var cell := TacticalGrid3D.screen_to_cell_voxel(_camera, screen_pos, fl)
+	var label := ""
+	if _voxel_map.has_cell(cell):
+		label = StairwellData.label_for_cell(_stairwells, cell)
+		if label == "":
+			label = StairwellData.generic_label_for_feature(_voxel_map.get_cell(cell).feature)
+	if label == "":
+		_tooltip_panel.visible = false
+		return
+	if _tooltip_label != null:
+		_tooltip_label.text = label
+	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_panel.visible = true
+	_tooltip_panel.position = screen_pos + Vector2(16, 16)
 
 
 ## Returns the entity_id of the token nearest to screen_pos within HIT_RADIUS_SCREEN.

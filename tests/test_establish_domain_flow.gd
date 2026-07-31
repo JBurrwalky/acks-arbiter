@@ -207,13 +207,31 @@ func test_clanhold_annex_forces_clanhold_domain_style() -> void:
 		"name": "Chaotic Clanhold A",
 		"territory_type": "wilderness",
 		"establishment_method": "clanhold_annex",
-		"domain_style": "civilized",  # Caller passes civilized; flow forces clanhold.
+		# Phase 11D.4: when the caller OMITS domain_style, the flow force-locks
+		# 'clanhold' for clanhold-only methods. (Passing an explicit contradictory
+		# 'civilized' is now a hard ERR_INVALID_STYLE_FOR_METHOD — see the
+		# dedicated validation test below.)
 	})
 	check(result["errors"].is_empty(),
 		"establish ok, errors=%s" % str(result["errors"]))
 	var domain := CampaignRepository.get_domain(result["domain_id"])
 	check(String(domain.get("domain_style", "")) == "clanhold",
 		"clanhold_annex forces domain_style=clanhold, got %s" % str(domain.get("domain_style", "?")))
+
+	# Phase 11D.4 (intentional behavior): an EXPLICIT contradictory
+	# domain_style='civilized' with a clanhold-only method is a hard error,
+	# not a silent override.
+	var contradiction := EstablishDomainFlow.establish_domain({
+		"campaign_id": _campaign_id,
+		"owner_character_id": "char_chaotic_b",
+		"character": chaotic,
+		"name": "Chaotic Clanhold B",
+		"territory_type": "wilderness",
+		"establishment_method": "clanhold_annex",
+		"domain_style": "civilized",  # explicit contradiction — must be rejected
+	})
+	check(EstablishDomainFlow.ERR_INVALID_STYLE_FOR_METHOD in contradiction["errors"],
+		"explicit civilized + clanhold_annex must error, got %s" % str(contradiction["errors"]))
 
 
 # ----- Validation -----

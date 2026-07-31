@@ -41,6 +41,9 @@ static func has_support(map: VoxelMapData, pos: Vector3i) -> bool:
 ##   "distance_feet": int — total fall distance in feet
 ##   "damage_dice": int — number of d6 for falling damage
 ##   "spike_dice": int — additional d6 from spikes at the landing site
+##   "lava_contact": bool — landing cell is a lava surface; the caller must
+##       resolve the contact via resolve_lava_contact() (Jedidiah ruling
+##       2026-07-17, gdd-combat-map-generation.md §14)
 static func resolve_fall(map: VoxelMapData, from_pos: Vector3i) -> Dictionary:
 	# If the starting position already has support, no fall occurs.
 	if has_support(map, from_pos):
@@ -49,6 +52,7 @@ static func resolve_fall(map: VoxelMapData, from_pos: Vector3i) -> Dictionary:
 			"distance_feet": 0,
 			"damage_dice": 0,
 			"spike_dice": 0,
+			"lava_contact": map.get_cell(from_pos).feature == "lava",
 		}
 
 	# Scan downward to find the first supported cell.
@@ -93,9 +97,43 @@ static func resolve_fall(map: VoxelMapData, from_pos: Vector3i) -> Dictionary:
 		"distance_feet": distance_feet,
 		"damage_dice": damage_dice,
 		"spike_dice": spike_dice,
+		"lava_contact": landing_cell.feature == "lava",
 	}
 
 
 ## Returns true if [param cell] has spike features (pit trap spikes, etc.).
 static func _has_spikes(cell: VoxelCell) -> bool:
 	return cell.feature.contains("spike")
+
+
+## Resolves contact with a lava surface (falling in, being forced in — any
+## path that puts a creature in a "lava" cell).
+##
+## Jedidiah ruling 2026-07-17 — ACKS 1e has no environmental lava rule (the
+## rules corpus was searched; only a monster ability mentions lava), so this is
+## PROJECT-DESIGNED per gdd-combat-map-generation.md §14: the creature makes a
+## saving throw versus Poison & Death; on a FAILURE it is instantly killed; on
+## a SUCCESS it takes 2d6 fire damage.
+##
+## Returns a Dictionary:
+##   "survived": bool — false = instant death
+##   "save_roll": int, "save_target": int — the throw (d20 >= target succeeds)
+##   "damage": int — 2d6 fire damage on a successful save, else 0
+static func resolve_lava_contact(combatant, dice) -> Dictionary:
+	var target: int = 14  # Normal Man Poison & Death fallback
+	if combatant != null and combatant.has_method("get_effective_save"):
+		target = combatant.get_effective_save("save_poison_death")
+	if dice == null:
+		# Diceless fallback (tests without a dice system): auto-save, mid damage.
+		return {"survived": true, "save_roll": target, "save_target": target, "damage": 7}
+	var roll = dice.roll_digital(20, 1, 0, "save_poison_death")
+	var rolled: int = int(roll.modified_total)
+	if rolled >= target:
+		var dmg = dice.roll_digital(6, 2, 0, "lava_damage")
+		return {
+			"survived": true,
+			"save_roll": rolled,
+			"save_target": target,
+			"damage": maxi(1, int(dmg.modified_total)),
+		}
+	return {"survived": false, "save_roll": rolled, "save_target": target, "damage": 0}

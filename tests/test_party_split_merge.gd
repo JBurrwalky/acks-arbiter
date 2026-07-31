@@ -215,18 +215,20 @@ func test_split_copies_position() -> void:
 
 func test_split_emits_signal() -> void:
 	_setup_party_4()
-	var emitted_source := ""
-	var emitted_new := ""
+	# GDScript lambdas capture primitives by value, so reassigning captured
+	# Strings never propagates out. Accumulate into a Dictionary (reference type)
+	# and assert on it after the signal fires.
+	var sink := {"source": "", "new": ""}
 	var handler := func(src: String, nw: String) -> void:
-		emitted_source = src
-		emitted_new = nw
+		sink["source"] = src
+		sink["new"] = nw
 	EventBus.party_split.connect(handler)
 
 	var new_id := CampaignRepository.split_party(TEST_PARTY, "Scouts", [PC_A])
 	_created_party_ids.append(new_id)
 
-	check(emitted_source == TEST_PARTY, "split_signal: source id should match")
-	check(emitted_new == new_id, "split_signal: new id should match")
+	check(sink["source"] == TEST_PARTY, "split_signal: source id should match")
+	check(sink["new"] == new_id, "split_signal: new id should match")
 	EventBus.party_split.disconnect(handler)
 	_cleanup()
 	print("  split_emits_signal: OK")
@@ -317,17 +319,18 @@ func test_merge_emits_signal() -> void:
 	check(not new_id.is_empty(), "merge_signal: split should succeed")
 	_created_party_ids.append(new_id)
 
-	var emitted_target := ""
-	var emitted_dissolved := ""
+	# Captured-primitive reassignment does not escape a GDScript lambda; use a
+	# Dictionary (reference type) accumulator instead.
+	var sink := {"target": "", "dissolved": ""}
 	var handler := func(tgt: String, src: String) -> void:
-		emitted_target = tgt
-		emitted_dissolved = src
+		sink["target"] = tgt
+		sink["dissolved"] = src
 	EventBus.party_merged.connect(handler)
 
 	var ok := CampaignRepository.merge_parties(TEST_PARTY, new_id)
 	check(ok, "merge_signal: merge should succeed")
-	check(emitted_target == TEST_PARTY, "merge_signal: target should match")
-	check(emitted_dissolved == new_id, "merge_signal: dissolved should match")
+	check(sink["target"] == TEST_PARTY, "merge_signal: target should match")
+	check(sink["dissolved"] == new_id, "merge_signal: dissolved should match")
 
 	EventBus.party_merged.disconnect(handler)
 	_cleanup()

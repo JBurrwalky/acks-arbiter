@@ -233,6 +233,12 @@ func resolve_ranged_attack(
 				var d = _dice_system.roll_expression("1d4", "swarm_warding_attack")
 				clamped = int(d.modified_total) if d != null else 4
 			damage_total = maxi(1, clamped)
+			# Missile fire at a swarm counts as warding it off (RAW). Flag the
+			# attacker so the swarm's tick halves + save +4 apply. Cleared at
+			# round start by SwarmDriver.on_round_start.
+			var a_flags: EntityFlags = attacker.get_flags() if attacker.has_method("get_flags") else null
+			if a_flags != null:
+				a_flags.set_flag("is_warding", "swarm_ward")
 
 		damage_result = target.apply_damage(damage_total, "physical")
 

@@ -7796,6 +7796,15 @@ func update_cache_raid_modifier(cache_id: String, new_modifier: int) -> bool:
 
 ## Deletes a location cache. ON DELETE CASCADE handles items automatically.
 func delete_location_cache(cache_id: String) -> bool:
+	# The schema declares inventory_items.location_cache_id ON DELETE CASCADE,
+	# but godot-sqlite runs with foreign_keys OFF, so the cascade never fires —
+	# delete the cache's items explicitly first, or they orphan (dangling
+	# location_cache_id rows). Mirrors the explicit deletes used everywhere else
+	# in this repository and the loose-cache decay path.
+	if not db.query_with_bindings(
+			"DELETE FROM inventory_items WHERE location_cache_id = ?", [cache_id]):
+		push_error("CampaignRepository.delete_location_cache: item purge failed. id=%s" % cache_id)
+		return false
 	if not db.query_with_bindings(
 		"DELETE FROM location_caches WHERE id = ?", [cache_id]):
 		push_error("CampaignRepository.delete_location_cache: failed. id=%s" % cache_id)

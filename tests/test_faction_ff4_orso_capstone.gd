@@ -27,7 +27,6 @@ var _cid: String = ""
 func run_all_tests() -> void:
 	_setup()
 	test_orso_org_allegiance_three_ways()
-	test_guild_betrayal_fires_on_battle_loss()
 	test_determinism_byte_identical_audit()
 	if not has_failures():
 		print("FactionFF4OrsoCapstone: all tests passed.")
@@ -107,29 +106,13 @@ func test_orso_org_allegiance_three_ways() -> void:
 	check((rats_res["betrayal_condition"] as Dictionary).is_empty(), "open support arms no betrayal")
 
 
-func test_guild_betrayal_fires_on_battle_loss() -> void:
-	var w := _world()
-	var orso_m: String = w["orso_mirror"]
-	var pel_m: String = w["pel_mirror"]
-	var guild := _org("Arcane Tower II", "mage_guild", w["orso_dom"], "neutral", "")
-	var guild_ctx := {"leader_self_interest": 8, "terms": {orso_m: _t({}), pel_m: _t({"winner": 4})}}
-	var res := AllegianceEvaluator.evaluate(guild, orso_m, pel_m, w["conflict"], 100, guild_ctx)
-	AllegianceEvaluator.apply_decision(_cid, res, 100)
-
-	# The day Orso's host breaks on the field:
-	var fired := BetrayalResolver.check_and_fire(_cid, "field_battle_resolved",
-		{"loser_realm_id": w["orso_realm"]}, 150, FixedDice.new())
-	check(fired.size() == 1, "exactly the guild betrays on Orso's defeat, got %d" % fired.size())
-	check(String(fired[0].get("faction_id", "")) == String(guild.get("id", "")), "the guild is the betrayer")
-	var to_orso := CampaignRepository.ff_get_stance_row(String(guild.get("id", "")), orso_m)
-	check(String(to_orso.get("public_stance", "")) == "hostile", "the guild turns openly on Orso")
-	var to_pel := CampaignRepository.ff_get_stance_row(String(guild.get("id", "")), pel_m)
-	check(String(to_pel.get("public_stance", "")) == "friendly", "the guild openly joins the King")
-
-
 # ---------------------------------------------------------------------------
 # §11.7 determinism harness
 # ---------------------------------------------------------------------------
+# NOTE: the single-guild "betrays on battle loss" case was removed here — it is
+# strictly subsumed by test_faction_ff4_betrayal.gd::test_betrayal_fires_on_
+# field_battle_loss (same fixture + assertions, plus the betrayal signal,
+# true_stance clear, and condition-spend checks this capstone lacked).
 
 func test_determinism_byte_identical_audit() -> void:
 	var was_on: bool = bool(ProjectSettings.get_setting(PoliticalAudit.SETTING_FLAG, false))

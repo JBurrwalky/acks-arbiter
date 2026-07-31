@@ -115,9 +115,7 @@ func test_find_path_with_wall() -> void:
 	# Place a wall across the middle
 	for row in range(10):
 		if row != 5:  # Leave a gap at row 5
-			env.map.set_cell_field(Vector3i(5, row, 0), "terrain_feature", "wall_stone")
-			env.map.set_cell_field(Vector3i(5, row, 0), "passable", false)
-			env.map.set_cell_field(Vector3i(5, row, 0), "blocks_los", true)
+			_wall(env.map, Vector3i(5, row, 0))
 	var path: Array[Vector2i] = env.resolver.find_path(Vector2i(3, 3), Vector2i(7, 3))
 	check(not path.is_empty(), "should find path through gap")
 	check(path[-1] == Vector2i(7, 3), "should reach goal through gap")
@@ -127,8 +125,7 @@ func test_find_path_unreachable() -> void:
 	var env := _make_grid_env(10, 10)
 	# Completely wall off column 5
 	for row in range(10):
-		env.map.set_cell_field(Vector3i(5, row, 0), "terrain_feature", "wall_stone")
-		env.map.set_cell_field(Vector3i(5, row, 0), "passable", false)
+		_wall(env.map, Vector3i(5, row, 0))
 	var path: Array[Vector2i] = env.resolver.find_path(Vector2i(3, 3), Vector2i(7, 3))
 	check(path.is_empty(), "path should be empty when fully blocked")
 
@@ -169,8 +166,7 @@ func test_los_clear() -> void:
 
 func test_los_blocked() -> void:
 	var env := _make_grid_env(10, 10)
-	env.map.set_cell_field(Vector3i(3, 3, 0), "terrain_feature", "wall_stone")
-	env.map.set_cell_field(Vector3i(3, 3, 0), "blocks_los", true)
+	_wall(env.map, Vector3i(3, 3, 0))
 	check(not env.resolver.has_line_of_sight(Vector2i(0, 0), Vector2i(5, 5)),
 		"LOS should be blocked by wall at (3,3)")
 
@@ -207,8 +203,7 @@ func test_charge_blocked() -> void:
 	for row in range(-2, 3):
 		var wall_pos := Vector3i(4, row, 0)
 		if env.map.has_cell(wall_pos):
-			env.map.set_cell_field(wall_pos, "terrain_feature", "wall_stone")
-			env.map.set_cell_field(wall_pos, "passable", false)
+			_wall(env.map, wall_pos)
 	var result: Dictionary = env.resolver.validate_charge(env.pc, env.monster)
 	check(result["valid"] == false,
 		"charge should be invalid when path is blocked")
@@ -292,9 +287,12 @@ func test_move_along_path_stops_at_zoc() -> void:
 		Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0)]
 	var moved: int = env.resolver.move_along_path(
 		env.monster, path, 10, Combatant.Side.ENEMY)
-	check(moved == 3, "ZoC stop: should stop after entering ZoC cell (3,0), moved %d" % moved)
-	check(env.resolver.get_grid_position(env.monster) == Vector2i(3, 0),
-		"ZoC stop: monster should be at ZoC cell (3,0)")
+	# The PC at (3,1) threatens all 8 of its neighbours — including (2,0), (3,0)
+	# AND (4,0) on the mover's row. The mover therefore stops on the FIRST
+	# threatened cell it enters, (2,0), after 2 steps (not (3,0) after 3).
+	check(moved == 2, "ZoC stop: should stop on first ZoC cell (2,0), moved %d" % moved)
+	check(env.resolver.get_grid_position(env.monster) == Vector2i(2, 0),
+		"ZoC stop: monster should be at first ZoC cell (2,0)")
 
 
 func test_allied_zoc_ignored() -> void:
@@ -337,6 +335,18 @@ func _make_grid_env(w: int, h: int) -> Dictionary:
 func _make_open_map(w: int, h: int) -> VoxelMapData:
 	## Create a fully open single-level voxel grid.
 	return VoxelMapData.generate_open_field(w, h)
+
+
+func _wall(map: VoxelMapData, pos: Vector3i) -> void:
+	## Turn a cell into a solid wall — blocks walkers AND line of sight.
+	## The voxel model gates movement/LOS on `solidity` (VoxelCell has no
+	## "passable"/"blocks_los"/"terrain_feature" fields), so blocking must set
+	## solidity="solid" rather than writing those non-existent fields.
+	var cell := VoxelCell.new()
+	cell.solidity = "solid"
+	cell.feature = "rock"
+	cell.floor_type = "none"
+	map.set_cell(pos, cell)
 
 
 func _make_pc_combatant(id: String, hp: int, ac: int) -> Combatant:

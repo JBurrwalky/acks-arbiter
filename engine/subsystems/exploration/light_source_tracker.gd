@@ -6,12 +6,17 @@ extends RefCounted
 ## Manages light type, radius, and remaining duration. Emits notifications
 ## at warning thresholds (5 turns, 2 turns, expired).
 ##
-## Light sources (ACKS Core):
-##   Torch:           30' radius, 6 turns (1 hour)
-##   Lantern:         30' radius, 24 turns (4 hours)
-##   Continual Light: 30' radius, permanent
+## Light sources (radii are a project HOUSE RULE, not ACKS RAW — see note):
+##   Torch:           50' radius, 6 turns (1 hour)
+##   Lantern:         50' radius, 24 turns (4 hours)
+##   Continual Light: 50' radius, permanent
 ##   Infravision:     60' radius, permanent (racial ability)
 ##   None:            0' radius (darkness)
+##
+## HOUSE RULE (Jedidiah): ACKS Core lists a 30' radius for torch / lantern /
+## continual light. This project widens those three to 50' deliberately, so
+## dungeon play is less frustratingly dark. Infravision stays at RAW 60'.
+## If ACKS-RAW behavior is ever wanted, revert LIGHT_SOURCES to radius_feet 30.
 
 const LIGHT_SOURCES := {
 	"torch": {"radius_feet": 50, "duration_turns": 6, "name": "Torch"},

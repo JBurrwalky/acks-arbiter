@@ -2,9 +2,9 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "hoshtara",
-      "demonym": "Hoshtara",
-      "toponym": "Hinostan",
+      "culture_id": "hoshtaran",
+      "demonym": "Hoshtaran",
+      "toponym": "Hoshtara",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ",

@@ -455,6 +455,19 @@ static func _generate_attempt(
 		for gw in telemetry.get("gate_warnings", []):
 			attempt_warnings.append(str(gw))
 
+	# [FALL] audit telemetry (§10.2 check 5) once, against the accepted state.
+	# Soft playtest signal — per-band count of walkable zoned cells adjacent to a
+	# >=10' drop (balcony/shaft edges). NEVER a gate (result.success is governed
+	# only by hard_pass + solv + placement). Suppressed when there are no drop
+	# edges (flat single-band dungeons) so it rides the existing warnings path
+	# without noise. fall_audit draws no RNG (reads committed volume/zone state).
+	if compose_result != null and compose_result.ok:
+		var fall_audit: Dictionary = DungeonNavigabilityValidator.fall_audit(
+			compose_result.volume, compose_result.zones, band_walk)
+		var per_band: Dictionary = fall_audit.get("per_band", {})
+		if not per_band.is_empty():
+			attempt_warnings.append("[FALL] per-band >=10' drop-edge cells: %s" % str(per_band))
+
 	# Surface the accepted (or final) attempt's composer/placer/gate warnings.
 	for aw in attempt_warnings:
 		result.warnings.append(aw)

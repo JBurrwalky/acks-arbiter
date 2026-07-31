@@ -27,7 +27,8 @@ func run_all_tests() -> void:
 	test_walk_level_stamping_subterranean()
 	test_above_ground_ascends()
 	test_atrium_void_ring_parapet_zones()
-	test_atrium_degrades_without_access()
+	test_atrium_keeps_ring_via_guarantee_stair()
+	test_atrium_degrades_when_too_small_for_a_stair()
 	test_disconnected_regions_distinct_zones()
 	test_band_honesty()
 	test_floor_integrity_detects_corrupt_slab()
@@ -297,9 +298,38 @@ func test_atrium_void_ring_parapet_zones() -> void:
 	check(balcony_zones >= 1, "atrium has a balcony zone on band 1")
 
 
-func test_atrium_degrades_without_access() -> void:
+## §7.2 connectivity GUARANTEE (DG-C3D.G): a valid >=5x5 atrium with no
+## upper-band door and no flavor internal-stair roll STILL keeps its balcony ring
+## — the composer force-carves the internal grand stair as the guaranteed access
+## rather than degrading. Degradation is now the genuine last resort (only when
+## the geometry cannot fit a stair — see the next test).
+func test_atrium_keeps_ring_via_guarantee_stair() -> void:
 	var foot := Rect2i(2, 2, 5, 5)
-	var atrium := _atrium_plan_obj(2, 1, foot, false)  # no internal stair
+	var atrium := _atrium_plan_obj(2, 1, foot, false)  # no flavor internal stair
+	var plan := _plan(Vector2i(14, 14), VerticalPlan.DIRECTION_DOWN, 1,
+		[_band(1, 0), _band(2, -2)], [], [atrium])
+	var f2 := _layout(14, 14, 2, [{"rect": foot, "kind": DungeonRoomData.KIND_CHAMBER}])
+	var f1 := _layout(14, 14, 1, [{"rect": foot, "blocked": true}])  # no door reaching the ring
+	var res := DungeonVolumeComposer.compose(plan, [f1, f2], 888, "atrium_guaranteed")
+	check(res.ok, "guaranteed atrium compose ok: %s" % res.error)
+	var degraded := false
+	for w in res.warnings:
+		if w.contains("degraded"):
+			degraded = true
+	check(not degraded, "a >=5x5 atrium does NOT degrade — the ring is guaranteed")
+	# The ring corner is a real balcony floor, not void.
+	check(_cell(res.volume, 2, 2, 0).floor_type != "none",
+		"guaranteed ring corner is a balcony floor, got '%s'" % _cell(res.volume, 2, 2, 0).floor_type)
+	# The guarantee is delivered by a force-carved internal grand stair.
+	check(res.stairwells.size() >= 1, "the guarantee force-carves an internal grand stair")
+
+
+## The surviving degradation path: an atrium footprint too small to fit an
+## internal grand stair (needs >=4 deep x >=3 wide) AND with no upper-band door
+## has no possible balcony access, so the ring is voided and degradation logged.
+func test_atrium_degrades_when_too_small_for_a_stair() -> void:
+	var foot := Rect2i(2, 2, 5, 3)  # 3 deep < the stair's 4-cell run
+	var atrium := _atrium_plan_obj(2, 1, foot, false)
 	var plan := _plan(Vector2i(14, 14), VerticalPlan.DIRECTION_DOWN, 1,
 		[_band(1, 0), _band(2, -2)], [], [atrium])
 	var f2 := _layout(14, 14, 2, [{"rect": foot, "kind": DungeonRoomData.KIND_CHAMBER}])
@@ -311,7 +341,7 @@ func test_atrium_degrades_without_access() -> void:
 		if w.contains("degraded"):
 			degraded = true
 	check(degraded, "degradation logged")
-	# The ring is void too (main zone only) — corner is now void, not balcony.
+	# The ring is void too (main zone only) — corner is void, not balcony.
 	check(_cell(res.volume, 2, 2, 0).floor_type == "none", "degraded ring corner is void")
 
 

@@ -1117,6 +1117,13 @@ func _create_ui_panels() -> void:
 	_minimap.cell_clicked.connect(_on_minimap_cell_clicked)
 	hud.add_child(_minimap)
 
+	# Stairwell glyphs/tooltips (DG-C3D.G): fetch the dungeon's StairwellData once
+	# from the relational table (they are NOT in the voxel payload). Hand-authored
+	# dungeons persist none — the minimap degrades to feature-driven glyphs.
+	if _controller != null:
+		_minimap.set_stairwells(
+			DungeonGeneratorRepository.get_stairwells(_controller.get_dungeon_id()))
+
 	# Initial minimap update.
 	_update_minimap()
 

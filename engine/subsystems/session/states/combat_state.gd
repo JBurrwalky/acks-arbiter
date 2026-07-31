@@ -16,6 +16,9 @@ var _encounter_id: String = ""
 var _combat_screen: CombatScreen = null
 var _runner_ref = null
 var _finalizer := CombatFinalizer.new()
+## Result of BattleMapGenerator.generate() for this encounter (empty when the
+## map came pre-built from context or the open-field fallback was used).
+var _battle_map_result: Dictionary = {}
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -50,13 +53,17 @@ func enter(runner, context: Dictionary) -> void:
 	var attack_resolver := AttackResolver.new(DiceSystem, spell_hooks)
 	var ranged_resolver := RangedAttackResolver.new(DiceSystem, spell_hooks)
 
-	# 500'×500' wilderness battle map per gdd-combat-map-generation.md §3.
-	# 100×100 cells at 5'/cell accommodates the full ACKS encounter-distance
-	# range (5d4 yards in heavy forest up to 5d20×10 yards in plains).
-	# Context may provide a pre-built map (future battle-map generation).
+	# Wilderness battle map per gdd-combat-map-generation.md §3: 350'×350'
+	# (70×70 cells at 5'/cell), generated from the hex's terrain context.
+	# Extreme encounter-distance rolls edge-cap per gdd §7.3. Context may
+	# provide a pre-built map (dungeon combat, persisted lair maps).
 	var voxel_map: VoxelMapData = context.get("voxel_map", null)
+	_battle_map_result = {}
 	if voxel_map == null:
-		voxel_map = VoxelMapData.generate_open_field(100, 100)
+		_battle_map_result = _generate_battle_map()
+		voxel_map = _battle_map_result.get("map", null)
+	if voxel_map == null:
+		voxel_map = VoxelMapData.generate_open_field(70, 70)
 
 	# Create Session 3 subsystems: AI, morale, cleave.
 	# MovementResolver is created early so MonsterAI can use spatial queries.
@@ -182,11 +189,48 @@ func get_controller() -> CombatController:
 	return _controller
 
 
+## Builds the generator context from encounter_data and runs the terrain-driven
+## battle map generator (gdd-combat-map-generation.md §11.1). Returns {} for
+## dungeon-context encounters (those always carry a pre-built map) so the
+## caller falls through to the open-field fallback if a map is truly missing.
+func _generate_battle_map() -> Dictionary:
+	var terrain_category: String = _encounter_data.get("terrain_category", "clear")
+	if terrain_category == "dungeon":
+		return {}
+	var ctx: Dictionary = {
+		# Deterministic per-encounter seed — lair maps can regenerate
+		# identically from the stored encounter id (gdd §7.7).
+		"seed": hash(_encounter_id) if not _encounter_id.is_empty() \
+			else hash(str(_encounter_data)),
+		"terrain_category": terrain_category,
+	}
+	for key in ["biome", "elevation", "biome_subtype", "water", "has_river",
+			"civilization", "territory"]:
+		if _encounter_data.has(key):
+			ctx[key] = _encounter_data[key]
+	return BattleMapGenerator.generate(ctx)
+
+
 func _place_combatants_on_grid(
 		roster: CombatRoster,
 		vmap: VoxelMapData) -> void:
 	## Place party near the entry position, monsters at the rolled ACKS
 	## encounter distance (clamped to map bounds per gdd §7.3).
+	# Phase 2: weather visibility shrinks the rolled distance.
+	# `visibility_multiplier` is attached to encounter context by
+	# WildernessHandlers when an encounter triggers; default 1.0 keeps prior
+	# behavior for callers that don't provide it. Source:
+	# `acore_adventures_and_encounters.xml` §encounter_distance + DaW
+	# §severe_weather_effects (reconnaissance penalties).
+	var terrain_category: String = _encounter_data.get("terrain_category", "clear")
+	var visibility: float = float(_encounter_data.get("visibility_multiplier", 1.0))
+	var distance_cells: int = _roll_encounter_distance_cells(
+		terrain_category, DiceSystem, visibility)
+
+	if not _battle_map_result.is_empty() and vmap.natural_slopes:
+		_place_on_generated_map(roster, vmap, distance_cells)
+		return
+
 	var entry: Vector3i = vmap.entry_pos
 	var party_cells := VoxelGrid.get_cells_in_radius_3d(entry, 2)
 	var idx := 0
@@ -195,22 +239,10 @@ func _place_combatants_on_grid(
 		while idx < party_cells.size():
 			var cell: Vector3i = party_cells[idx]
 			idx += 1
-			if vmap.is_passable(cell) and vmap.get_entities_at(cell).is_empty():
-				c.grid_position = cell
-				vmap.set_entity_pos(c.id, cell)
+			if _try_place(c, cell, vmap):
 				break
 
 	# Place monsters at the rolled encounter distance, clamped to the map.
-	var terrain_category: String = _encounter_data.get("terrain_category", "clear")
-	# Phase 2: weather visibility shrinks the rolled distance.
-	# `visibility_multiplier` is attached to encounter context by
-	# WildernessHandlers when an encounter triggers; default 1.0 keeps prior
-	# behavior for callers that don't provide it. Source:
-	# `acore_adventures_and_encounters.xml` §encounter_distance + DaW
-	# §severe_weather_effects (reconnaissance penalties).
-	var visibility: float = float(_encounter_data.get("visibility_multiplier", 1.0))
-	var distance_cells: int = _roll_encounter_distance_cells(
-		terrain_category, DiceSystem, visibility)
 	var max_offset: int = _max_offset_from_entry(entry, vmap)
 	var clamped_offset: int = mini(distance_cells, max_offset)
 	var monster_center := Vector3i(entry.x + clamped_offset, entry.y, entry.z)
@@ -224,9 +256,62 @@ func _place_combatants_on_grid(
 			idx += 1
 			if not vmap.has_cell(cell):
 				continue
-			if vmap.is_passable(cell) and vmap.get_entities_at(cell).is_empty():
-				c.grid_position = cell
-				vmap.set_entity_pos(c.id, cell)
+			if _try_place(c, cell, vmap):
+				break
+
+
+## Attempts to place [param c] with its ANCHOR at [param cell]. A multi-cell
+## creature only fits when EVERY footprint cell (derived from its facing + size)
+## is passable and unoccupied — so an oversized monster is never spawned half in
+## a wall or wedged into a corridor too narrow for its body. On success this
+## records the anchor AND the full footprint on the map (single-cell creatures
+## collapse to a plain anchor) and returns true; false leaves the map untouched.
+func _try_place(c: Combatant, cell: Vector3i, vmap: VoxelMapData) -> bool:
+	var body: Array[Vector3i] = CreatureFootprint.cells(
+		cell, c.facing, c.get_footprint_local())
+	for bc: Vector3i in body:
+		if not vmap.is_passable(bc):
+			return false
+		if not vmap.get_entities_at(bc).is_empty():
+			return false
+	c.grid_position = cell
+	vmap.set_entity_pos(c.id, cell)
+	vmap.set_entity_footprint(c.id, body)
+	return true
+
+
+## Placement on a generated terrain map (gdd §7.6): party from the validated
+## spawn zone, monsters from the enemy anchor picked at the rolled distance —
+## same walkable component as the party normally, the OTHER major component on
+## a split map (ranged-only stand-off across the divider).
+func _place_on_generated_map(
+		roster: CombatRoster,
+		vmap: VoxelMapData,
+		distance_cells: int) -> void:
+	var party_zone: Array = _battle_map_result.get("party_zone", [])
+	var idx := 0
+	for c: Combatant in roster.get_alive_on_side(Combatant.Side.PARTY):
+		while idx < party_zone.size():
+			var cell: Vector3i = party_zone[idx]
+			idx += 1
+			if _try_place(c, cell, vmap):
+				break
+
+	var is_split: bool = _battle_map_result.get("is_split", false)
+	var enemies: Array = roster.get_alive_on_side(Combatant.Side.ENEMY)
+	var anchor: Vector3i = BattleMapGenerator.pick_enemy_anchor(
+		vmap, vmap.entry_pos, distance_cells, is_split)
+	if anchor.x < 0:
+		# Degenerate map — fall back to the party zone's far cells.
+		anchor = vmap.entry_pos
+	var enemy_cells: Array[Vector3i] = BattleMapGenerator.spawn_cells_near(
+		vmap, anchor, enemies.size() + 20)
+	idx = 0
+	for c: Combatant in enemies:
+		while idx < enemy_cells.size():
+			var cell: Vector3i = enemy_cells[idx]
+			idx += 1
+			if _try_place(c, cell, vmap):
 				break
 
 

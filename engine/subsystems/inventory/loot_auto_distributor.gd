@@ -109,7 +109,14 @@ func _init(catalog: RefCounted) -> void:
 ## Returns:
 ##   {
 ##     moves: Array of {item: Dictionary, to_carrier: String, reason: String},
-##     unassigned: Array of item dicts that couldn't be placed,
+##       reason ∈ "preference_tag" | "heuristic" | "capacity_fallback"
+##       ("capacity_fallback" = placed across an encumbrance band because every
+##        carrier was already band-full but at least one had raw hard-cap room —
+##        the loot policy places rather than drops).
+##     unassigned: Array of item dicts that couldn't be placed. Each carries an
+##       "unassigned_reason": "over_capacity" (no carrier has raw hard-cap room —
+##       the loot modal surfaces these for a drop-to-make-room pass) or
+##       "coin_excluded" (coins, handled separately by the gold-share mechanism).
 ##     summary: {total_items: int, moved: int, unassigned_count: int}
 ##   }
 func distribute(items: Array, carriers: Array, _context: Dictionary = {}) -> Dictionary:
@@ -133,6 +140,7 @@ func distribute(items: Array, carriers: Array, _context: Dictionary = {}) -> Dic
 
 		# Step 1: Skip coins — handled separately by gold-share mechanism.
 		if category == "treasure":
+			item["unassigned_reason"] = "coin_excluded"
 			unassigned.append(item)
 			continue
 
@@ -152,7 +160,24 @@ func distribute(items: Array, carriers: Array, _context: Dictionary = {}) -> Dic
 			moves.append({"item": item, "to_carrier": target_id, "reason": "heuristic"})
 			continue
 
-		# Step 4: No valid target — unassigned.
+		# Step 4: Capacity fallback — the loot policy forbids silently dropping
+		# loot to the ground when a carrier could physically hold it. Steps 2-3
+		# decline to WORSEN a carrier's encumbrance band, but a band is only the
+		# soft cap (a movement penalty), not a hard limit (GDD gdd-inventory-tab
+		# O-I6: auto-distribute must respect the HARD cap only). So before giving
+		# up, place the item on the best carrier that still fits it under raw
+		# hard-cap capacity, accepting the heavier band.
+		target_id = _find_capacity_fallback_carrier(item, carriers, carrier_enc)
+		if not target_id.is_empty():
+			var item_enc: int = _item_total_enc(item)
+			carrier_enc[target_id] += item_enc
+			moves.append({"item": item, "to_carrier": target_id, "reason": "capacity_fallback"})
+			continue
+
+		# Step 5: Over hard-cap for every carrier — the item TRULY does not fit
+		# anyone. Surface it unassigned with a reason the loot modal shows the
+		# player, who can drop other gear to make room (never a silent discard).
+		item["unassigned_reason"] = "over_capacity"
 		unassigned.append(item)
 
 	return {
@@ -436,10 +461,65 @@ func _pick_highest_str(carriers: Array, item: Dictionary, carrier_enc: Dictionar
 		return rem_a > rem_b
 	)
 
+	# Strongest carrier that can take it WITHOUT worsening a band. When none can
+	# (a heavy item that would push every carrier into a worse encumbrance band),
+	# return "" — but this is NOT the end of the line for the item: distribute()
+	# then runs the capacity fallback (_find_capacity_fallback_carrier), which
+	# places band-crossing heavy loot on the strongest carrier that still fits it
+	# under raw hard-cap capacity. Only when NO carrier has hard-cap room does the
+	# item stay unassigned, and even then the loot modal surfaces it for a
+	# drop-to-make-room pass. Loot is never silently discarded.
 	for c in pcs:
 		if not _would_worsen_band(c, item, carrier_enc):
 			return c["carrier_id"]
 	return ""
+
+
+# ---------------------------------------------------------------------------
+# Capacity fallback (loot policy: place rather than drop)
+# ---------------------------------------------------------------------------
+
+## Last-resort placement used by distribute() when preference/heuristic passes
+## all decline because the item would WORSEN every carrier's encumbrance band.
+## Crossing a band is only a movement penalty, not a hard limit, so this pass
+## places the item on the best carrier that can still hold it within raw hard-cap
+## capacity. Heavy items prefer the strongest carrier (matching GDD §6.5 heavy
+## routing); other items prefer the carrier with the most remaining capacity.
+## Characters/henchmen are tried before creatures/vehicles. Returns "" only when
+## NO carrier has raw room — i.e. the item is genuinely over capacity for all.
+func _find_capacity_fallback_carrier(item: Dictionary, carriers: Array, carrier_enc: Dictionary) -> String:
+	var item_enc: int = _item_total_enc(item)
+	var is_heavy: bool = item.get("is_heavy", false) or item_enc >= 1000
+
+	# Prefer PCs/henchmen; fall back to pack animals/vehicles as a final resort.
+	var ordered: Array = _filter_pcs(carriers) + _filter_by_type(carriers, ["creature", "vehicle"])
+
+	var best_id: String = ""
+	var best_score: int = -1
+	for c in ordered:
+		var cid: String = c["carrier_id"]
+		var current: int = carrier_enc.get(cid, 0)
+		var max_units: int = c.get("max_enc_units", 20000)
+		if current + item_enc > max_units:
+			continue  # over hard cap for this carrier — cannot physically hold it
+		# Score: strongest wins for heavy items, most-remaining wins otherwise.
+		var score: int = c.get("strength", 10) if is_heavy else (max_units - current)
+		if best_id.is_empty() or score > best_score:
+			best_id = cid
+			best_score = score
+	return best_id
+
+
+## Maps an `unassigned_reason` tag to a short player-facing phrase the loot modal
+## interpolates into its alert. Pure/static so it is headless-testable.
+static func describe_unassigned_reason(reason: String) -> String:
+	match reason:
+		"over_capacity":
+			return "no one has enough carrying capacity"
+		"coin_excluded":
+			return "coins are shared separately"
+		_:
+			return "it couldn't be placed"
 
 
 func _filter_pcs(carriers: Array) -> Array:
@@ -463,8 +543,13 @@ func _filter_by_type(carriers: Array, types: Array) -> Array:
 # Encumbrance band checking (GDD §6.5 rule 4)
 # ---------------------------------------------------------------------------
 
-## Returns true if adding the item to this carrier would push them into a worse
-## encumbrance band. For creatures/vehicles, checks pure capacity overflow only.
+## Returns true when the item should NOT be placed on this carrier in the
+## band-respecting pass — either because it would exceed the carrier's raw
+## hard-cap capacity (never allowed for anyone) or push a character into a worse
+## encumbrance band. Bands top out at 10000 units while the hard cap is higher,
+## so the explicit hard-cap guard is required: without it the heuristic could
+## place an item that overflows raw capacity. The capacity fallback in
+## distribute() may still cross a band, but it too honors the hard cap.
 func _would_worsen_band(carrier: Dictionary, item: Dictionary, carrier_enc: Dictionary) -> bool:
 	var carrier_id: String = carrier["carrier_id"]
 	var carrier_type: String = carrier.get("carrier_type", "")
@@ -473,9 +558,13 @@ func _would_worsen_band(carrier: Dictionary, item: Dictionary, carrier_enc: Dict
 	var item_enc: int = _item_total_enc(item)
 	var proposed_units: int = current_units + item_enc
 
-	# Creatures/vehicles: simple capacity check (no bands).
+	# Hard cap: no carrier may exceed raw capacity, regardless of band.
+	if proposed_units > max_units:
+		return true
+
+	# Creatures/vehicles: capacity only (no bands) — covered by the guard above.
 	if carrier_type in ["creature", "vehicle"]:
-		return proposed_units > max_units
+		return false
 
 	# Characters (PC/henchman): band comparison.
 	var current_band: int = _encumbrance_band(current_units)

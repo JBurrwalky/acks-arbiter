@@ -220,6 +220,7 @@ extends Node
 @onready var _entity_promotion_tests = $EntityPromotionTests
 @onready var _loot_generator_tests = $LootGeneratorTests
 @onready var _loot_auto_distributor_tests = $LootAutoDistributorTests
+@onready var _loot_distribution_modal_tests = $LootDistributionModalTests
 @onready var _dungeon_loot_placement_tests = $DungeonLootPlacementTests
 @onready var _party_membership_invariant_tests = $PartyMembershipInvariantTests
 @onready var _voxel_cell_tests = $VoxelCellTests
@@ -327,6 +328,9 @@ extends Node
 @onready var _session_p8_ai_polish_tests = $SessionP8AIPolishTests
 @onready var _session_p9_smite_undead_tests = $SessionP9SmiteUndeadTests
 @onready var _swarm_conditions_tests = $SwarmConditionsTests
+@onready var _swarm_monsters_tests = $SwarmMonstersTests
+@onready var _creature_footprint_tests = $CreatureFootprintTests
+@onready var _monster_footprint_data_tests = $MonsterFootprintDataTests
 @onready var _domain_revenue_calculator_tests = $DomainRevenueCalculatorTests
 @onready var _domain_expense_calculator_tests = $DomainExpenseCalculatorTests
 @onready var _domain_morale_resolver_tests = $DomainMoraleResolverTests
@@ -591,6 +595,12 @@ extends Node
 @onready var _dungeon_composed_navigation_tests = $DungeonComposedNavigationTests
 # 2026-07-12 — DG-C3D.F.2c: atomic cutover single-band byte-identity gate
 @onready var _dungeon_cutover_identity_tests = $DungeonCutoverIdentityTests
+@onready var _dg_c3d_g_ui_tests = $DgC3dGUiTests
+# 2026-07-17 — Terrain-driven wilderness battle maps (gdd-combat-map-generation v2)
+@onready var _battle_map_generator_tests = $BattleMapGeneratorTests
+# 2026-07-13 — DG-C3D.G: balcony feature scenarios + whole-volume determinism
+@onready var _scenario_balcony_features = $ScenarioBalconyFeatures
+@onready var _scenario_composed_volume_determinism = $ScenarioComposedVolumeDeterminism
 # 2026-05-28 — Treasure item backing (value_cp + hoard→inventory bridge)
 @onready var _treasure_instantiator_tests = $TreasureInstantiatorTests
 @onready var _magic_item_catalog_tests = $MagicItemCatalogTests
@@ -806,6 +816,7 @@ func run() -> void:
 			_entity_promotion_tests,
 			_loot_generator_tests,
 			_loot_auto_distributor_tests,
+			_loot_distribution_modal_tests,
 			_dungeon_loot_placement_tests,
 			_party_membership_invariant_tests,
 			_voxel_cell_tests,
@@ -916,6 +927,7 @@ func run() -> void:
 			_session_p8_ai_polish_tests,
 			_session_p9_smite_undead_tests,
 			_swarm_conditions_tests,
+			_swarm_monsters_tests,
 			_domain_revenue_calculator_tests,
 			_domain_expense_calculator_tests,
 			_domain_morale_resolver_tests,
@@ -1190,6 +1202,12 @@ func run() -> void:
 			_dungeon_composed_navigation_tests,
 			# 2026-07-12 — DG-C3D.F.2c: cutover single-band byte-identity gate
 			_dungeon_cutover_identity_tests,
+			_dg_c3d_g_ui_tests,
+			# 2026-07-17 — Terrain-driven wilderness battle maps
+			_battle_map_generator_tests,
+			# 2026-07-13 — DG-C3D.G: balcony feature scenarios + whole-volume determinism
+			_scenario_balcony_features,
+			_scenario_composed_volume_determinism,
 			_treasure_instantiator_tests,
 			_magic_item_catalog_tests,
 			_character_ac_calculator_tests,
@@ -1391,7 +1409,10 @@ func run() -> void:
 			# 2026-07-09 — Wave 3 Track B: Faction FF-5 (Dungeon Tie-In)
 			_dungeon_tie_in_additive_tests,
 			_dungeon_tie_in_linker_tests,
-			_dungeon_tie_in_consequences_tests]:
+			_dungeon_tie_in_consequences_tests,
+			# 2026-07-18 — Creature size / multi-cell footprints
+			_creature_footprint_tests,
+			_monster_footprint_data_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

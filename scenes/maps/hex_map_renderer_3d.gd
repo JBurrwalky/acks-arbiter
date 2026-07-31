@@ -1902,16 +1902,10 @@ func _on_enter_dungeon_pressed() -> void:
 	var dungeon_dict = JSON.parse_string(str(entrance.get("dungeon_data", "")))
 	if not (dungeon_dict is Dictionary):
 		return
-	var entry_pos: Vector2i
-	if dungeon_dict.has("cells"):
-		var entry_dict: Dictionary = dungeon_dict.get("entry", {})
-		entry_pos = Vector2i(int(entry_dict.get("col", 0)), int(entry_dict.get("row", 0)))
-	else:
-		var levels: Array = dungeon_dict.get("levels", [])
-		if levels.is_empty():
-			return
-		var level1: Dictionary = levels[0]
-		entry_pos = Vector2i(int(level1.get("entry_col", 0)), int(level1.get("entry_row", 0)))
+	if not dungeon_dict.has("cells"):
+		return
+	var entry_dict: Dictionary = dungeon_dict.get("entry", {})
+	var entry_pos := Vector2i(int(entry_dict.get("col", 0)), int(entry_dict.get("row", 0)))
 	dungeon_entry_requested.emit(entrance, entry_pos)
 
 

@@ -585,10 +585,18 @@ static func _carve_atrium(
 			rd.height_levels = 4
 			break
 
-	# Decide balcony connectivity (§7.2): internal grand stair, OR an existing
-	# upper-band door reaching the ring, else degrade to a plain hall.
-	var has_upper_door: bool = _footprint_has_door(rect, atrium.upper_band, layout_by_floor)
-	var keep_ring: bool = atrium.internal_stair or has_upper_door
+	# Decide balcony connectivity (§7.2). The guarantee: every kept balcony ring
+	# is reachable by (a) an upper-band door reaching the ring — the PREFERRED
+	# path — or (b) an internal grand stair from the atrium main floor. We carve
+	# the grand stair when the vertical plan rolled it (flavor, §7.2b) OR as the
+	# guarantee when no door reaches the ring, so degradation is the genuine last
+	# resort the GDD intends (only when the geometry cannot fit a stair) rather
+	# than the default. This is a pure function of (atrium, band layouts) — no
+	# RNG (§119): the internal_stair flavor roll is drawn once at plan time.
+	var has_upper_door: bool = _footprint_has_door(rect, atrium.ring_depth, atrium.upper_band, layout_by_floor)
+	var stair_fits: bool = _internal_stair_fits(rect)
+	var carve_stair: bool = stair_fits and (atrium.internal_stair or not has_upper_door)
+	var keep_ring: bool = has_upper_door or carve_stair
 
 	# Interior (deeper than ring_depth from the edge) is always void; the ring is
 	# balcony floor when kept, void when degraded.
@@ -613,7 +621,7 @@ static func _carve_atrium(
 
 	if keep_ring:
 		_apply_parapet(volume, rect, wu)
-		if atrium.internal_stair:
+		if carve_stair:
 			_carve_internal_stair(volume, atrium, wb, wu, atrium_room, result, openings)
 	else:
 		result.warnings.append(
@@ -943,10 +951,17 @@ static func _atrium_room_id(
 	return -1
 
 
-## True when the upper band layout has any door cell inside [param footprint]
-## (a corridor reaching the balcony ring, §7.2a).
+## True when an upper-band door reaches the balcony ring (§7.2a — the composer's
+## PREFERRED balcony access). The corridor router places a ring-connecting door
+## on the atrium_upper stub's PERIMETER — one cell OUTSIDE the footprint (the
+## endpoint lands just past the reserved bounds) — so an inside-the-rect test
+## would never match it. A door reaches the ring when the door cell is itself a
+## ring cell, OR one of its 4-neighbours is a ring cell (the inward step into
+## the balcony). Ring cells are the [param ring_depth]-deep perimeter of the
+## footprint, exactly as _carve_atrium carves them.
 static func _footprint_has_door(
 		footprint: Rect2i,
+		ring_depth: int,
 		upper_floor: int,
 		layout_by_floor: Dictionary) -> bool:
 	if not layout_by_floor.has(upper_floor):
@@ -954,6 +969,31 @@ static func _footprint_has_door(
 	var layout: DungeonLayout = layout_by_floor[upper_floor]
 	for d in layout.doors:
 		var door: DungeonDoorData = d
-		if footprint.has_point(door.position):
+		var p: Vector2i = door.position
+		if _is_ring_cell(footprint, ring_depth, p):
 			return true
+		for nb in [Vector2i(p.x + 1, p.y), Vector2i(p.x - 1, p.y),
+				Vector2i(p.x, p.y + 1), Vector2i(p.x, p.y - 1)]:
+			if _is_ring_cell(footprint, ring_depth, nb):
+				return true
 	return false
+
+
+## True when [param cell] is a balcony-ring cell of [param footprint]: inside the
+## rect and within [param ring_depth] of its edge (mirrors _carve_atrium's
+## is_ring test at line 600-601).
+static func _is_ring_cell(footprint: Rect2i, ring_depth: int, cell: Vector2i) -> bool:
+	if not footprint.has_point(cell):
+		return false
+	var dx: int = cell.x - footprint.position.x
+	var dy: int = cell.y - footprint.position.y
+	var edge_dist: int = mini(mini(dx, dy), mini(footprint.size.x - 1 - dx, footprint.size.y - 1 - dy))
+	return edge_dist < ring_depth
+
+
+## True when the internal grand stair geometry (_carve_internal_stair: a 4-long,
+## 2-wide run anchored one cell in from the footprint edge) fits inside the
+## atrium footprint. Always true for the §7.3 >=5x5 gate; the guard keeps the
+## §7.2 connectivity guarantee honest if the size gate ever loosens.
+static func _internal_stair_fits(footprint: Rect2i) -> bool:
+	return footprint.size.y >= 4 and footprint.size.x >= 3

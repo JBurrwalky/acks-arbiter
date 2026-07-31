@@ -36,11 +36,14 @@ const STAIR_COLOR := Color(0.4, 0.7, 0.9)
 # State
 # ---------------------------------------------------------------------------
 
+const GLYPH_COLOR := Color(0.95, 0.98, 1.0)
+
 var _draw_control: Control = null
 var _voxel_map: VoxelMapData = null
 var _focus_level: int = 0
 var _party_positions: Dictionary = {}  # entity_id -> Vector3i
 var _offset: Vector2 = Vector2.ZERO
+var _stairwells: Array = []  # Array[StairwellData] for glyph/tooltip labels
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +84,16 @@ func update(vmap: VoxelMapData, party_positions: Dictionary, focus_level: int) -
 	_party_positions = party_positions
 	_focus_level = focus_level
 	_compute_offset()
+	if _draw_control != null:
+		_draw_control.queue_redraw()
+
+
+## Provide the dungeon's stairwell records (DungeonGeneratorRepository.
+## get_stairwells) so hovered stair cells resolve a rich label ("Stairs down to
+## Level 3"). Hand-authored dungeons persist none — glyphs still render off cell
+## features and tooltips fall back to a generic feature label.
+func set_stairwells(stairwells: Array) -> void:
+	_stairwells = stairwells
 	if _draw_control != null:
 		_draw_control.queue_redraw()
 
@@ -154,6 +167,12 @@ func _on_draw() -> void:
 
 		_draw_control.draw_rect(rect, color)
 
+		# Stairwell glyph: a small up/down chevron on any stair cell of the focus
+		# level (driven by StairwellData when present, else the cell feature so
+		# hand-authored dungeons still mark their stairs).
+		if _is_stair_glyph_cell(cell):
+			_draw_stair_glyph(rect.get_center(), _stair_ascends(cell), cell.fog_state == "visible")
+
 	# Draw party pips for members on the focus level.
 	for eid in _party_positions:
 		var pos: Vector3i = _party_positions[eid]
@@ -172,7 +191,9 @@ func _color_for_cell(solidity: String, feature: String) -> Color:
 		return WALL_COLOR
 	if feature.begins_with("door"):
 		return DOOR_COLOR
-	if feature.begins_with("stairs_up") or feature.begins_with("stairs_down"):
+	# Matches straight/switchback (stairs_up/down_*), spiral (stairs_spiral) and
+	# ramp_* — the composed connector vocabulary the old check missed.
+	if StairwellData.is_connector_feature(feature):
 		return STAIR_COLOR
 	return VISIBLE_COLOR
 
@@ -183,11 +204,49 @@ func _dim_color_for_cell(solidity: String) -> Color:
 	return EXPLORED_COLOR
 
 
+## A cell shows a stair glyph if a StairwellData covers it (rich content) or its
+## feature is a connector (hand-authored / lower-band steps).
+func _is_stair_glyph_cell(cell: VoxelCell) -> bool:
+	if StairwellData.is_connector_feature(cell.feature):
+		return true
+	for s in _stairwells:
+		if (s as StairwellData).covers_cell(cell.pos):
+			return true
+	return false
+
+
+## True when the connector rises from this cell's band (a ▲ glyph); false on the
+## upper landing where it descends (▼).
+func _stair_ascends(cell: VoxelCell) -> bool:
+	for s in _stairwells:
+		var sw: StairwellData = s
+		if sw.covers_cell(cell.pos):
+			return cell.level != sw.top_cell.z
+	return not cell.feature.begins_with("stairs_down")
+
+
+func _draw_stair_glyph(center: Vector2, ascends: bool, bright: bool) -> void:
+	var h := float(CELL_PX) * 0.75
+	var color: Color = GLYPH_COLOR if bright else GLYPH_COLOR * 0.6
+	var pts: PackedVector2Array
+	if ascends:
+		pts = PackedVector2Array([
+			center + Vector2(0.0, -h), center + Vector2(-h, h), center + Vector2(h, h)])
+	else:
+		pts = PackedVector2Array([
+			center + Vector2(0.0, h), center + Vector2(-h, -h), center + Vector2(h, -h)])
+	_draw_control.draw_colored_polygon(pts, color)
+
+
 # ---------------------------------------------------------------------------
 # Input
 # ---------------------------------------------------------------------------
 
 func _on_minimap_input(event: InputEvent) -> void:
+	# Hover: update the stair tooltip for the cell under the cursor.
+	if event is InputEventMouseMotion:
+		_draw_control.tooltip_text = _stair_tooltip(_cell_at(event.position))
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var mb: InputEventMouseButton = event as InputEventMouseButton
@@ -195,9 +254,23 @@ func _on_minimap_input(event: InputEvent) -> void:
 		return
 	if _voxel_map == null:
 		return
-	var local_pos: Vector2 = mb.position - _offset
-	var cell_x: int = int(floor(local_pos.x / CELL_PX))
-	var cell_y: int = int(floor(local_pos.y / CELL_PX))
-	var cell_3d := Vector3i(cell_x, cell_y, _focus_level)
+	var cell_3d := _cell_at(mb.position)
 	if _voxel_map.has_cell(cell_3d):
 		cell_clicked.emit(cell_3d)
+
+
+## Screen position (local to _draw_control) -> the focus-level cell under it.
+func _cell_at(screen_pos: Vector2) -> Vector3i:
+	var local_pos: Vector2 = screen_pos - _offset
+	return Vector3i(int(floor(local_pos.x / CELL_PX)), int(floor(local_pos.y / CELL_PX)), _focus_level)
+
+
+## Tooltip for a hovered stair cell: the rich StairwellData label if one covers
+## it, else a generic feature label, else "" (no tooltip).
+func _stair_tooltip(cell: Vector3i) -> String:
+	if _voxel_map == null or not _voxel_map.has_cell(cell):
+		return ""
+	var label: String = StairwellData.label_for_cell(_stairwells, cell)
+	if label != "":
+		return label
+	return StairwellData.generic_label_for_feature(_voxel_map.get_cell(cell).feature)

@@ -195,7 +195,7 @@ static func _dungeon_section(db, campaign_id: String, map_id: String, q: int, r:
 		rows.append(_row("Name", str(de.get("name", "?"))))
 		var dd = JSON.parse_string(str(de.get("dungeon_data", "{}")))
 		if dd is Dictionary:
-			var generated: bool = dd.has("cells") or dd.has("levels")
+			var generated: bool = dd.has("cells")
 			rows.append(_row("Generated", "yes (entered)" if generated else "no (lazy — generates on first entry)"))
 			var spec = dd.get("spec", {})
 			if spec is Dictionary and not (spec as Dictionary).is_empty():

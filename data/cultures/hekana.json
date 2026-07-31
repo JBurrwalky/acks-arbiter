@@ -2,9 +2,9 @@
   "schema_version": 1,
   "mechanical": {
     "identity": {
-      "culture_id": "hekana",
-      "demonym": "Hekana",
-      "toponym": "Zarkemet",
+      "culture_id": "hekanan",
+      "demonym": "Hekanan",
+      "toponym": "Hekana",
       "tier": "human",
       "race": "human",
       "civ_or_clan": "civ",

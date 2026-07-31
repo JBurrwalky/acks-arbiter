@@ -128,6 +128,16 @@ func _cleanup() -> void:
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM domain_hexes WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)",
 		[CAMPAIGN_ID])
+	# Stock leaves strongholds + garrison troop_units behind. Delete them here
+	# so they do NOT leak into a later suite: DomainStocker skips any domain_id
+	# that already has a stronghold (keyed cross-campaign), which otherwise
+	# starves test_domain_stocker of its 16 garrisons. troop_units first
+	# (FK → strongholds), then strongholds (FK → domains), then domains.
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM troop_units WHERE campaign_id = ?", [CAMPAIGN_ID])
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM strongholds WHERE domain_id IN (SELECT id FROM domains WHERE campaign_id = ?)",
+		[CAMPAIGN_ID])
 	CampaignRepository.db.query_with_bindings(
 		"DELETE FROM domains WHERE campaign_id = ?", [CAMPAIGN_ID])
 	CampaignRepository.db.query_with_bindings(

@@ -237,10 +237,8 @@ func test_owned_hexes_are_populated() -> void:
 
 
 func test_determinism() -> void:
-	var cid2 := CampaignRepository.create_campaign("Stage4b Det B", "w")
-	check(SettingGenerator.new().generate(cid2, 42, SettingParameters.new()), "second generate failed")
 	check(SettingDatasetHasher.compute_world_hash(_cid)
-			== SettingDatasetHasher.compute_world_hash(cid2),
+			== SettingWorldFixture.reference_world_hash(42),
 		"expansion made the pipeline non-deterministic for the same seed")
 
 

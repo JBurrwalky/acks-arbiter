@@ -367,27 +367,15 @@ func _on_enter_dungeon_pressed() -> void:
 		return
 
 	# Voxel format: single "cells" array + top-level "entry" + optional
-	# "transition_cells". Legacy format: "levels" array with per-level fields.
-	var tc_array: Array
-	var entry_pos: Vector2i
-
-	if dungeon_dict.has("cells"):
-		tc_array = dungeon_dict.get("transition_cells", [])
-		var entry_dict: Dictionary = dungeon_dict.get("entry", {})
-		entry_pos = Vector2i(
-			int(entry_dict.get("col", 0)),
-			int(entry_dict.get("row", 0))
-		)
-	else:
-		var levels: Array = dungeon_dict.get("levels", [])
-		if levels.is_empty():
-			return
-		var level1: Dictionary = levels[0]
-		tc_array = level1.get("transition_cells", [])
-		entry_pos = Vector2i(
-			int(level1.get("entry_col", 0)),
-			int(level1.get("entry_row", 0))
-		)
+	# "transition_cells".
+	if not dungeon_dict.has("cells"):
+		return
+	var tc_array: Array = dungeon_dict.get("transition_cells", [])
+	var entry_dict: Dictionary = dungeon_dict.get("entry", {})
+	var entry_pos := Vector2i(
+		int(entry_dict.get("col", 0)),
+		int(entry_dict.get("row", 0))
+	)
 
 	if tc_array.is_empty():
 		# No transition cells — fall back to single entry point.

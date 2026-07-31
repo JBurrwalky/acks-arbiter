@@ -1869,6 +1869,16 @@ func spawn_encounter_data(terrain: HexTerrainData,
 		"hex_id": hex_id,
 		"roll": trigger_roll,
 	}
+	# Rich terrain context for battle-map generation
+	# (gdd-combat-map-generation.md §5.1 / §11.1). Additive keys — older
+	# consumers keep reading terrain_category/territory.
+	if terrain != null:
+		encounter_data["biome"] = terrain.biome
+		encounter_data["elevation"] = terrain.elevation
+		encounter_data["biome_subtype"] = terrain.biome_subtype
+		encounter_data["water"] = terrain.water
+		encounter_data["has_river"] = terrain.has_river()
+		encounter_data["civilization"] = terrain.civilization
 	EventBus.encounter_triggered.emit(encounter_data)
 	return encounter_data
 

@@ -6,7 +6,7 @@ extends "res://tests/test_suite_base.gd"
 ## P4 attack-roll Insect Plague tick. Coverage:
 ##   - cell-entry application via EventBus.combatant_moved (defense-in-depth
 ##     also catches combatants standing on a swarm cell at round start)
-##   - HD>3 layered `frightened` per the user's design literal
+##   - HD>=3 NOT frightened (RAW: only <3 HD driven off — keeps the ward-off option)
 ##   - HD<3 auto-drive-off (`frightened` with no save) preserved
 ##   - 3-round persistence countdown after target leaves the swarm
 ##   - countdown reset on re-entry
@@ -25,11 +25,12 @@ func run_all_tests() -> void:
 	test_swarm_combatant_does_not_emit_zoc()
 	test_swarm_combatant_ignores_zoc_stops()
 	test_round_end_applies_swarmed_condition_to_target_in_cell()
-	test_hd_above_threshold_also_gets_frightened()
+	test_hd_above_threshold_not_frightened()
 	test_hd_below_threshold_gets_frightened_via_auto_drive_off()
 	test_persistence_countdown_clears_after_three_rounds_outside()
 	test_persistence_resets_on_reentry()
 	test_tick_damage_doubles_vs_low_ac()
+	test_tick_damage_halves_when_target_fleeing()
 	test_warding_attack_clamps_to_1d4_against_swarm()
 	test_warding_clamp_does_not_apply_to_non_swarm_target()
 	if not has_failures():
@@ -207,19 +208,23 @@ func test_round_end_applies_swarmed_condition_to_target_in_cell() -> void:
 		"target in swarm cell at round-end gets swarmed_insect")
 
 
-func test_hd_above_threshold_also_gets_frightened() -> void:
+func test_hd_above_threshold_not_frightened() -> void:
+	# RAW: Insect Plague (acore_spell_catalog_a-i_summary.xml:1280) drives off ONLY
+	# "creatures of less than 3 Hit Dice." A >=3 HD creature is engulfed
+	# (swarmed_insect) but keeps full agency — it is NOT frightened, so it can
+	# still ward the swarm off. (The earlier ">3 HD also frightened" behavior was a
+	# P3 design-literal, not RAW; corrected 2026-07-24.)
 	var env := _make_environment()
 	var caster := _spawn_target(env, "caster", Vector3i(0, 0, 0),
 		Combatant.Side.PARTY, 5, 4)
-	# HD = 5 > threshold 3: should get both swarmed_insect AND frightened.
 	var target := _spawn_target(env, "veteran", Vector3i(5, 5, 0),
-		Combatant.Side.PARTY, 5, 5)
+		Combatant.Side.PARTY, 5, 5)  # HD 5 >= threshold 3
 	var effect := _make_plague_effect(Vector3i(5, 5, 0), caster.id)
 	env.tracker.add_effect(effect)
 	env.spell_hooks.on_round_end(1, env.roster)
 	check(target.has_condition("swarmed_insect"), "swarmed_insect applied")
-	check(target.has_condition("frightened"),
-		"HD>3 target also gets frightened per design literal")
+	check(not target.has_condition("frightened"),
+		"HD>=3 target is NOT frightened (can still ward off the swarm) — RAW")
 
 
 func test_hd_below_threshold_gets_frightened_via_auto_drive_off() -> void:
@@ -312,6 +317,26 @@ func test_tick_damage_doubles_vs_low_ac() -> void:
 	# Expect 4 hp damage on AC 3 (2 base × 2 doubling).
 	check(hp_before - hp_after == 4,
 		"low-AC target takes 2x tick (4 hp); got %d" % (hp_before - hp_after))
+
+
+func test_tick_damage_halves_when_target_fleeing() -> void:
+	# The Insect Plague tick now consults SwarmDriver.is_warding_or_fleeing, so a
+	# target whose Combatant.is_fleeing (morale/defensive-movement) is set takes
+	# HALF damage — wiring the previously-deferred warding/fleeing halve path.
+	var env := _make_environment()
+	var caster := _spawn_target(env, "caster", Vector3i(0, 0, 0),
+		Combatant.Side.PARTY, 5, 4)
+	# AC 5 (no doubling), HD 4. Base tick 2 → halved to 1 while fleeing.
+	var target := _spawn_target(env, "runner", Vector3i(5, 5, 0),
+		Combatant.Side.PARTY, 5, 4)
+	target.is_fleeing = true
+	var hp_before: int = target.get_hp_current()
+	var effect := _make_plague_effect(Vector3i(5, 5, 0), caster.id)
+	env.tracker.add_effect(effect)
+	env.spell_hooks.on_round_end(1, env.roster)
+	check(hp_before - target.get_hp_current() == 1,
+		"fleeing target takes halved tick (1 hp); got %d"
+			% (hp_before - target.get_hp_current()))
 
 
 func test_warding_attack_clamps_to_1d4_against_swarm() -> void:

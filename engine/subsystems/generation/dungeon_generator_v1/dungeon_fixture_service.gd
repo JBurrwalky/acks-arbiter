@@ -15,7 +15,7 @@ extends RefCounted
 ##             "tier_max": <int>, "size": "<lair|small|medium|large>",
 ##             "floors": <int>, "entrance_floor_index": 1}}
 ##
-## Cache hit detection: the parsed dungeon_data dict has a "cells" OR "levels" key
+## Cache hit detection: the parsed dungeon_data dict has a "cells" key
 ## AND its "generator_version" (missing = 0) matches
 ## DungeonGeneratorV1.GENERATOR_VERSION. A stale version regenerates lazily
 ## (DG-C3D.A; gdd-dungeon-contiguous-3d.md §13 "regenerate, no migration"): the
@@ -34,7 +34,7 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 	var dungeon_json: String = entrance.get("dungeon_data", "")
 
 	# -------------------------------------------------------------------------
-	# 1. Parse existing dungeon_data. If it already has "cells" or "levels" it
+	# 1. Parse existing dungeon_data. If it already has "cells" it
 	#    is a generated voxel payload — return it unchanged (cache hit), UNLESS
 	#    its generator version is stale (DG-C3D.A; contiguous GDD §13
 	#    "regenerate, no migration"): then discard the stored dungeon and fall
@@ -45,7 +45,7 @@ static func get_or_generate_voxel(entrance: Dictionary) -> String:
 	if not dungeon_json.is_empty():
 		existing = JSON.parse_string(dungeon_json)
 	if existing is Dictionary:
-		if existing.has("cells") or existing.has("levels"):
+		if existing.has("cells"):
 			var stored_version: int = int((existing as Dictionary).get("generator_version", 0))
 			if stored_version == DungeonGeneratorV1.GENERATOR_VERSION:
 				return dungeon_json  # cache hit — already generated, current version

@@ -146,6 +146,7 @@
 [ext_resource type="Script" path="res://tests/test_entity_promotion.gd" id="99_entity_promotion_tests"]
 [ext_resource type="Script" path="res://tests/test_loot_generator.gd" id="100_loot_generator_tests"]
 [ext_resource type="Script" path="res://tests/test_loot_auto_distributor.gd" id="101_loot_auto_distributor_tests"]
+[ext_resource type="Script" path="res://tests/test_loot_distribution_modal.gd" id="101b_loot_distribution_modal_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_loot_placement.gd" id="102_dungeon_loot_placement_tests"]
 [ext_resource type="Script" path="res://tests/test_party_membership_invariants.gd" id="103_party_membership_invariant_tests"]
 [ext_resource type="Script" path="res://tests/test_voxel_cell.gd" id="104_voxel_cell_tests"]
@@ -250,6 +251,9 @@
 [ext_resource type="Script" path="res://tests/test_session_p8_ai_polish.gd" id="201_session_p8_ai_polish_tests"]
 [ext_resource type="Script" path="res://tests/test_session_p9_smite_undead.gd" id="202_session_p9_smite_undead_tests"]
 [ext_resource type="Script" path="res://tests/test_swarm_conditions.gd" id="198_swarm_conditions_tests"]
+[ext_resource type="Script" path="res://tests/test_swarm_monsters.gd" id="607_swarm_monsters_tests"]
+[ext_resource type="Script" path="res://tests/test_creature_footprint.gd" id="605_creature_footprint_tests"]
+[ext_resource type="Script" path="res://tests/test_monster_footprint_data.gd" id="606_monster_footprint_data_tests"]
 [ext_resource type="Script" path="res://tests/test_domain_revenue_calculator.gd" id="203_domain_revenue_calculator_tests"]
 [ext_resource type="Script" path="res://tests/test_domain_expense_calculator.gd" id="204_domain_expense_calculator_tests"]
 [ext_resource type="Script" path="res://tests/test_domain_morale_resolver.gd" id="205_domain_morale_resolver_tests"]
@@ -438,6 +442,8 @@
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_entrance_in_middle.gd" id="389_scenario_entrance_in_middle"]
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_placeholder_fallbacks_active.gd" id="390_scenario_placeholder_fallbacks_active"]
 [ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_invalid_dungeon_type_fallback.gd" id="391_scenario_invalid_dungeon_type_fallback"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_balcony_features.gd" id="601_scenario_balcony_features"]
+[ext_resource type="Script" path="res://tests/scenarios/generation/dungeon_generator_v1/scenario_composed_volume_determinism.gd" id="602_scenario_composed_volume_determinism"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_fixture_service.gd" id="393_dungeon_fixture_service_tests"]
 [ext_resource type="Script" path="res://tests/test_treasure_instantiator.gd" id="394_treasure_instantiator_tests"]
 [ext_resource type="Script" path="res://tests/test_magic_item_catalog.gd" id="395_magic_item_catalog_tests"]
@@ -565,6 +571,8 @@
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_volume_composer.gd" id="575_dungeon_volume_composer_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_composed_navigation.gd" id="576_dungeon_composed_navigation_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_cutover_identity.gd" id="577_dungeon_cutover_identity_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dg_c3d_g_ui.gd" id="603_dg_c3d_g_ui_tests"]
+[ext_resource type="Script" path="res://tests/subsystems/generation/battlemap/test_battle_map_generator.gd" id="604_battle_map_generator_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -898,6 +906,9 @@ script = ExtResource("100_loot_generator_tests")
 
 [node name="LootAutoDistributorTests" type="Node" parent="."]
 script = ExtResource("101_loot_auto_distributor_tests")
+
+[node name="LootDistributionModalTests" type="Node" parent="."]
+script = ExtResource("101b_loot_distribution_modal_tests")
 
 [node name="DungeonLootPlacementTests" type="Node" parent="."]
 script = ExtResource("102_dungeon_loot_placement_tests")
@@ -1775,6 +1786,12 @@ script = ExtResource("390_scenario_placeholder_fallbacks_active")
 [node name="ScenarioInvalidDungeonTypeFallback" type="Node" parent="."]
 script = ExtResource("391_scenario_invalid_dungeon_type_fallback")
 
+[node name="ScenarioBalconyFeatures" type="Node" parent="."]
+script = ExtResource("601_scenario_balcony_features")
+
+[node name="ScenarioComposedVolumeDeterminism" type="Node" parent="."]
+script = ExtResource("602_scenario_composed_volume_determinism")
+
 
 [node name="DungeonFixtureServiceTests" type="Node" parent="."]
 script = ExtResource("393_dungeon_fixture_service_tests")
@@ -1796,6 +1813,12 @@ script = ExtResource("576_dungeon_composed_navigation_tests")
 
 [node name="DungeonCutoverIdentityTests" type="Node" parent="."]
 script = ExtResource("577_dungeon_cutover_identity_tests")
+
+[node name="DgC3dGUiTests" type="Node" parent="."]
+script = ExtResource("603_dg_c3d_g_ui_tests")
+
+[node name="BattleMapGeneratorTests" type="Node" parent="."]
+script = ExtResource("604_battle_map_generator_tests")
 
 [node name="TreasureInstantiatorTests" type="Node" parent="."]
 script = ExtResource("394_treasure_instantiator_tests")
@@ -2260,3 +2283,12 @@ script = ExtResource("570_dungeon_tie_in_linker_tests")
 
 [node name="DungeonTieInConsequencesTests" type="Node" parent="."]
 script = ExtResource("571_dungeon_tie_in_consequences_tests")
+
+[node name="CreatureFootprintTests" type="Node" parent="."]
+script = ExtResource("605_creature_footprint_tests")
+
+[node name="MonsterFootprintDataTests" type="Node" parent="."]
+script = ExtResource("606_monster_footprint_data_tests")
+
+[node name="SwarmMonstersTests" type="Node" parent="."]
+script = ExtResource("607_swarm_monsters_tests")

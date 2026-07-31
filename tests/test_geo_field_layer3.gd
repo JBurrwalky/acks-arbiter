@@ -49,6 +49,11 @@ func test_mountain_override_and_plurality() -> void:
 	var f := _synthetic(4, 4)
 	for i in range(5):  # 5/16 = 0.31 >= 0.25 → mountains override (flat is plurality)
 		f.surface[i] = 0.85
+		# Elevation is a height+slope+prominence decision (HeightmapGenerator
+		# .elevation_tag_for), not height alone: a cell is 'mountains' only when
+		# height ≥ MTN_HEIGHT_GATE (0.72) AND it is steep or prominent. Give these
+		# cells prominence ≥ MTN_PROM (0.150) so they actually read as mountains.
+		f.prominence[i] = 0.16
 	for i in range(9):  # 9 woods vs 7 clear
 		f.biome[i] = GeoField.BIOME_WOODS
 	var tag := GeoFieldSampler.tag_for_footprint(f, 0.0, 0.0, 4.0, 4)
@@ -61,11 +66,14 @@ func test_mountain_override_and_plurality() -> void:
 func test_uniform_field_mean() -> void:
 	var f := _synthetic(4, 4)
 	for i in range(f.size_cells()):
-		f.surface[i] = 0.6  # uniform hills-height
+		f.surface[i] = 0.6  # uniform height, zero slope + zero prominence
 	var tag := GeoFieldSampler.tag_for_footprint(f, 0.0, 0.0, 4.0, 4)
 	check(absf(float(tag["elevation_raw"]) - 0.6) < 1.0e-4,
 		"uniform 0.6 field should give elevation_raw ~0.6, got %f" % tag["elevation_raw"])
-	check(tag["elevation"] == "hills", "uniform 0.6 (>=0.55) should read 'hills', got '%s'" % tag["elevation"])
+	# A uniform field has no slope/prominence, so it reads 'flat' regardless of
+	# raw height — hills/mountains require relief in the multi-factor model.
+	check(tag["elevation"] == "flat",
+		"uniform zero-slope field should read 'flat', got '%s'" % tag["elevation"])
 
 
 func test_cross_scale_biome_consistency() -> void:
