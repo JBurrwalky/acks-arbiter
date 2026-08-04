@@ -39654,3 +39654,841 @@ static func is_warding_or_fleeing(target) -> bool
 **Tests added/updated:** Two swarm frighten tests flipped to the RAW ">=3 HD not frightened" assertion (test_swarm_conditions + test_session_p4_clouds_swarms); no net count change.
 **Known issues:** None new. (Prior [NEEDS-OPUS-REVIEW] on the >threshold-frighten reconciliation is now CLOSED.)
 **Next session should:** Optional godot-ai MCP visual smoke of the translucent swarm cloud (still deferred); continue any residual monster_size_flags cleanup.
+
+## Session 2026-07-31 — Domain acquisition audit + rulings + Tier-0 cp/arithmetic fixes
+
+**Task:** Deep audit of the domain creation and grant system — RAW fidelity, the NPC-grant and player-conquest/establishment avenues, the UI/UX surfaces that expose them, and whether domain ownership actually transfers. Then capture Jedidiah's rulings and begin implementation in the forced dependency order.
+
+**Model used:** Opus 5 throughout — 14-agent adversarially-verified audit workflow, then 3-agent rulings scoping, then a 2-agent garrison-economics spec, then direct implementation.
+
+**Completed:**
+
+- **NEW `docs/domain-acquisition-audit-2026-07-28.md`** — the audit. 91 findings survived adversarial refutation (1 critical, 31 high, 39 medium, 20 low), plus four end-to-end acquisition stories traced hop by hop and a "what works" inventory. Headline: the domain *economy* is sound; the *acquisition* layer is a façade. Three of RAW's four acquisition stories cannot be told (NPC land grant impossible, PC conquest awards the domain to a phantom "Foreign Warlord", domain devolution to a vassal has no code path at all).
+- **NEW `docs/handoff-domain-rulings-implementation.md`** — the implementable plan: forced sequencing, per-ruling specs with signatures and call sites, the RAW garrison economics, and the full decision record (R-1..R-7, D-1..D-7, O-1..O-3 outstanding).
+- **`docs/coding_conventions.md` §127 (NEW)** — copper pieces are the canonical monetary unit, integers only, gp converted at the point of entry and rendered as gp only at the display boundary. §56 annotated to withdraw its gp-native-internal-math allowance.
+- **`engine/subsystems/realm_ai/tribute_calculator.gd`** — converted to a cp-native API. `compute_tribute_base_gp`/`compute_tribute_received_gp` DELETED and replaced by `compute_tribute_base_cp`/`compute_tribute_received_cp`; `describe()` now returns `base_cp`/`received_cp`. RAW's 18gp coefficient converted once at the point of entry (`_TRIBUTE_COEFFICIENT_CP := 1800.0`) so rounding lands once, at cp precision. Rounding moved from the legacy `XPAwardCalculator.bankers_round` delegate to `MathUtils.bankers_round` per §116.
+- **`engine/subsystems/session/handlers/domain_handlers.gd`** — four unit fixes:
+  - `:332` deleted a second `* 100` on an already-cp stronghold sum. This was inflating EVERY domain's stronghold value 100×, holding the RAW income gate permanently open and suppressing the insufficient-stronghold morale penalty for every domain holding any stronghold.
+  - `:360` `_compute_tribute_in_for_ruler` now returns `total_received_cp`; the gp-named key was being fed straight into `DomainRevenueCalculator`'s `tribute_in_cp` parameter, crediting every liege 1/100th of the tribute owed.
+  - `_compute_tribute_out_for_vassal_domain` now returns cp, matching the `domains.tribute_out_owed` column that the materializer, `AbstractTributeResolver` and `DomainExpenseCalculator` all already treat as cp. The monthly tick was silently redenominating the column on the first tick of play.
+  - `_on_siege_concluded` now CHECKS `LifecycleHandler.conquer_domain`'s return value and push_errors on refusal; it was discarded, so a refused conquest failed silently.
+- **`engine/subsystems/domains/lifecycle_handler.gd`** — `conquer_domain` validation reordered into an explicit gate ABOVE `apply_pillage` and `_cascade_vassals`. Previously both side effects ran first and the outcome-specific checks could then return false, so a REFUSED conquest still pillaged the domain and marked every one of the prior owner's vassals 'departed'. The function is now all-or-nothing.
+- **`engine/subsystems/realm_ai/favors_duties_resolver.gd`** — construction-expenditure result keys renamed `monthly_expenditure` → `monthly_expenditure_cp` and the pre-divided gp `total_expended` dropped; the local `* 100` is gone now that TributeCalculator is cp-native.
+- **`engine/subsystems/domains/abstract_tribute_resolver.gd`**, **`setting_materializer.gd`** — dropped their `* 100` scaling of the (now cp-native) tribute base.
+- **`scenes/ui/notebook/domain/sub_tabs/realm_sub_tab.gd`** — dropped three display-boundary `* 100`s that were overstating every figure on the tribute card 100× against a gp-returning calculator.
+
+**Decisions made:**
+
+- **Copper is canonical project-wide (Jedidiah ruling).** cp is the lowest ACKS denomination, so every monetary value stays an integer and never a float. Captured as conventions §127.
+- **`domains.tribute_out_owed` stays named as-is for now.** It is already documented and consumed as cp everywhere except the one buggy writer, so this session fixed the ARITHMETIC. The `_cp` suffix rename is a migration + project-wide grep and belongs to the P3 column sweep in the handoff doc.
+- **`conquer_domain` is all-or-nothing.** Either it returns false having changed nothing, or true having applied every effect. Locked by a new regression test.
+- **Rounding at cp precision, not gp precision.** `compute_tribute_base_cp` rounds `1800 × f^0.6` once rather than rounding `18 × f^0.6` and multiplying. Slightly more accurate; the affected tests were updated to compute expectations the same way.
+
+**Interfaces defined or changed:**
+
+- `TributeCalculator.compute_tribute_base_cp(realm_families) -> int` — NEW, cp. Replaces `compute_tribute_base_gp` (DELETED).
+- `TributeCalculator.compute_tribute_received_cp(realm_families, direct_vassal_count) -> int` — NEW, cp. Replaces `compute_tribute_received_gp` (DELETED).
+- `TributeCalculator.describe(...)` — keys `base_gp`/`received_gp` → `base_cp`/`received_cp`.
+- `DomainHandlers._compute_tribute_in_for_ruler(...)` — summary key `total_received_gp` → `total_received_cp`; per-vassal keys `base_gp`/`received_gp` → `base_cp`/`received_cp`.
+- `FavorsDutiesResolver.roll_monthly_construction_expenditure(...)` — result key `monthly_expenditure` → `monthly_expenditure_cp`; `total_expended` (gp) removed, `total_expended_cp` retained.
+- `LifecycleHandler.conquer_domain(...)` — signature unchanged; behaviour now all-or-nothing (validation precedes all side effects).
+
+**Database changes:** None this session. Migration 212 is reserved in the handoff doc for the P3 column renames + `domains.domain_xp_awarded_through_day`.
+
+**Tests added/updated:**
+
+- `tests/test_tribute_calculator.gd` — converted to the cp API; RAW gp table values kept visible in comments and compared × 100. NEW `test_tribute_base_is_copper_not_gold` regression lock.
+- `tests/test_lifecycle_conquest_outcomes.gd` — NEW `test_refused_conquest_changes_nothing`: a refused conquest must leave the vassal edge active, the owner unchanged, the treasury unlooted, the population unculled and the hexes unreleased.
+- `tests/test_abstract_tribute_resolver.gd`, `tests/test_setting_materialization.gd`, `tests/test_phase_8_polish.gd` — updated to the cp API/keys.
+
+**Test results:** `bash tools/run_tests.sh` (2 runs, isolated APPDATA) — **572 suites passed, 0 failed** on the second consecutive run. All directly-affected suites green: `TributeCalculator`, `LifecycleConquestOutcomes`, `AbstractTributeResolver`, `SettingMaterializationTests` (214 checks), `Phase8Polish`.
+
+**CAVEAT on that number:** a concurrent session (chip `task_b9d5936a`, the battle-rating fix) was working in the SAME working tree, not an isolated worktree — its in-flight `domain_stocker.gd` / `test_domain_stocker.gd` edits and its new `engine/subsystems/troops/troop_battle_rating_table.gd` were present during the run. So 572/0 validates both changesets together, not this session's in isolation. Nothing in this session touched those three files.
+
+**Known issues:**
+
+- The **battle_rating 3× overstatement** at `domain_stocker.gd:239` (0.025/soldier is VETERAN Light Infantry; average LI is 0.00833) was spun off to its own session — chip `task_b9d5936a`. Not fixed here.
+- `_cascade_vassals` is still **liege-wide rather than domain-scoped** — losing one frontier domain still dissolves the whole realm. Deliberately NOT fixed in this wave; it belongs with the R-5 sub-vassal-loyalty work (audit Tier-1 item 6) and its fix must land in the same wave as R-1, because turning on `vassal_assignments` makes the bug live world-wide.
+- `[NEEDS-JEDIDIAH]` O-1..O-3 in the handoff doc remain open (same-alignment +1; whether the −2 attaches to the taking or the taker; the acquisition mode for LOOTED_LOCAL_SUCCESSION). Each has a stated default the build agent proceeds on.
+
+**Next session should:**
+
+- Continue the handoff doc's forced order: finish R-2's P1 display-boundary sweep (`status_header.gd` renders cp as gp on the most-seen money surface in the game; `commission_wizard.gd`; `overview_sub_tab.gd`; delete `EquipmentCatalog.format_cost`), then P2 (six gp-named EventBus signal params + the `cache_raided` float).
+- Then R-4 (M2b-2 ruler promotion) — it totally blocks R-1, because `vassal_assignments` has NOT NULL FKs to `characters` on both ends and generated domains are ownerless.
+- Then R-1 + the cascade scoping fix + hoisting the Favors & Duties roll out of the per-domain loop, all in one wave.
+
+
+## Session 2026-07-31 — Garrison battle rating: RAW per-creature vs per-unit tables (chip task_b9d5936a)
+
+**Task:** Fix the 3×-overstated garrison battle rating at `domain_stocker.gd:239` (`0.025 * count` for average-tier Light Infantry), found in passing during the domain acquisition/grant/conquest audit (`docs/domain-acquisition-audit-2026-07-28.md`; handoff §5). Scoped deliberately small and independent of the D-5 conscript/militia/mercenary-mix work, but shaped so D-5 can consume it.
+**Model used:** Opus 5 — RAW verification, implementation, tests, cross-site audit.
+**Completed:**
+- **New shared lookup `engine/subsystems/troops/troop_battle_rating_table.gd`** (`class_name TroopBattleRatingTable`). `per_soldier(troop_type, tier) -> float` and `for_unit(troop_type, tier, count) -> float`; `canonical_troop_type()` and `has_troop_type()` helpers. Covers the 15 human troop types at untrained / average / veteran.
+- **`domain_stocker.gd` fixed.** `battle_rating` is now `TroopBattleRatingTable.for_unit(_GARRISON_TROOP_TYPE, _GARRISON_TIER, count)`; the troop type and tier are named constants (`_GARRISON_TROOP_TYPE = "Light Infantry"`, `_GARRISON_TIER = "average"`) so the D-5 mix can add slices that each look up their own rating. Per-soldier BR goes from 0.025 to **0.008** — every stocked NPC garrison was ≈3× too strong in battle.
+- **`docs/coding_conventions.md` §128** added — "Troop Battle Rating is a per-CREATURE figure — never read it off the per-unit table."
+- **`docs/handoff-domain-rulings-implementation.md` §5** marked FIXED, with the two figure corrections D-5 needs (see Decisions).
+- **Cross-site audit of every hardcoded per-soldier BR** in `engine/`. Verified CORRECT against the per-creature table, no change made: `conscript_troops.gd:90` and `levy_militia.gd:98` (0.003, L102); `tribal_warrior_registry.gd` light_infantry 0.008 (L105), heavy_infantry 0.017 (L129), hunters 0.008 (L117), slingers 0.008 (L141), bowmen 0.013 (L144), crossbowmen 0.025 (L147), longbowmen 0.025 (L150), light_cavalry 0.061 (L156), medium_cavalry 0.082 (L168), horse_archers 0.082 (L165); all 8 human templates in `data/troops/unit_templates.json`; `threat_force_composer.gd:28` (0.008, PROJECT-tunable brigand value that happens to equal RAW LI).
+**Decisions made:**
+- **The per-soldier source is RAW's per-CREATURE table, not the per-unit table.** `daw_campaigns_troop_tables_summary.xml` publishes BR twice: §troop_tables L101-186 per creature (L9 states it explicitly), and §unit_characteristics_summary L296-333 per unit (L278; unit = 120 infantry / 60 cavalry, L273). The per-unit values are the per-creature ones re-rounded to convenient halves — 0.008 × 120 = 0.96 is listed as 1, and 0.003 × 120 = 0.36 is listed as 0.5 — so dividing the per-unit figure out yields a number RAW never states. The audit's 0.00833 (LI) and 0.004167 (conscripts) figures came from the per-unit table and are superseded by **0.008** and **0.003**. The bug's magnitude is unchanged. Choosing per-creature also makes the new table agree with `TribalWarriorRegistry` and `unit_templates.json`, which were already right.
+- **Veterans are the one derived case,** because the per-creature table has no veteran rows (RAW's only per-creature veteran text is L264-266, the "25% of human units are veterans" composition rule). Veteran entries are written as `unit_BR / UNIT_SIZE` in the constant itself, with both RAW lines cited, so the derivation is visible rather than baked into a decimal.
+- **`tier='untrained'` overrides troop type** and returns 0.003 for any unit. RAW has exactly one untrained row (L102) and the training rules (L333-343) treat a troop type as something conscripts are trained *into*, so there is no "untrained longbowmen" row to consult. Flagged in-code as a PROJECT reading, not RAW verbatim.
+- **Unknown troop type warns and falls back to light infantry; never returns 0.0.** A 0.0 rating would silently erase the unit from every downstream BR sum (`FieldBattleResolver`, `SiegeResolver`, `CallToArmsHandler`'s `ORDER BY battle_rating DESC`) — that reads as "unit doesn't exist" rather than "lookup failed".
+- **Free-text troop_type is normalized in the lookup, not at call sites.** `troop_units.troop_type` is unconstrained TEXT and the codebase genuinely writes both `"Light Infantry"` and `"light_infantry"`; centralizing the normalization is what lets one table serve every minting path.
+- **Scope held.** The two out-of-scope bugs below were left unfixed and given chips, per the handoff's instruction that this task stay independent.
+**Interfaces defined or changed:**
+- NEW `TroopBattleRatingTable.per_soldier(troop_type: String, tier: String = "average") -> float`
+- NEW `TroopBattleRatingTable.for_unit(troop_type: String, tier: String, count: int) -> float` — returns the whole-unit total, which is what `troop_units.battle_rating` stores and therefore what a `TroopUnitRepository.create_unit` payload wants.
+- NEW `TroopBattleRatingTable.canonical_troop_type(troop_type: String) -> String`, `TroopBattleRatingTable.has_troop_type(troop_type: String) -> bool`
+- NEW consts `INFANTRY_UNIT_SIZE = 120`, `CAVALRY_UNIT_SIZE = 60`, `UNTRAINED_BATTLE_RATING_PER_SOLDIER = 0.003`, `FALLBACK_TROOP_TYPE = "light_infantry"`
+- `DomainStocker` gained private consts `_GARRISON_TROOP_TYPE` / `_GARRISON_TIER`; `stock_garrison` signature and return shape unchanged.
+**Database changes:** None. No migration — `troop_units.battle_rating` already exists and is REAL; only newly-minted rows change. Garrison rows stocked by earlier runs keep their 0.025-derived value until re-stocked (see Known issues).
+**Tests added/updated:**
+- `tests/test_domain_stocker.gd` gained `test_battle_rating_table_matches_raw` (RAW figures re-transcribed in the test as `_RAW_BR_PER_SOLDIER` with line cites, so the test fails loudly if the production table drifts; covers untrained / average / veteran, infantry and cavalry, free-text spelling equivalence, and that a 120-man company totals 0.96 ≈ the RAW per-unit 1) and `test_garrison_battle_rating_is_raw_light_infantry` (stocks a fixture domain in all three classifications, reads the persisted row back, asserts `battle_rating == per_soldier(its own troop_type, its own tier) × count`, plus an explicit guard that the value is NOT the veteran rating). Both registered in `run_all_tests`.
+- No new suite registration needed — extended an existing suite rather than adding a file.
+- **Verification:** run in a throwaway worktree (`C:/Users/jttau/wtbr`) at pristine HEAD 13d291f + these 3 files only, because a concurrent session had `favors_duties_resolver.gd:741` in a non-compiling state (`monthly_tribute` undeclared) in the shared tree. `bash tools/run_tests.sh` twice-consecutive, own APPDATA hash; run 2 = **571 suites passed, 1 failed**. `DomainStocker: all tests passed.` The single failure is `DungeonGeneratorDataFreshness`, which reproduces at pristine HEAD on files this change never touches, and is an LF/CRLF artifact of the fresh worktree checkout (`git diff data/dungeon_generator/` after re-extraction is EMPTY — content is byte-identical modulo line endings). **Net-zero NEW failures.**
+**Known issues:**
+- **`solicit_followers.gd:76` writes `0.5 * merc_count`** for untrained light infantry — the per-UNIT 0.5 (L297) applied once per soldier, ≈167× the RAW 0.003. Every bardic follower cohort is minted this way. Out of scope; chip `task_a359d66a`.
+- **`tribal_warrior_registry.gd:73` `beast_riders` br_per_warrior 0.025** — RAW gives Goblin Wolf Riders 0.107 and Orc Boar Riders 0.131 per creature; ≈4-5× too low. The entry's wage (15gp) matches Wolf Riders exactly, so the BR column looks mis-transcribed. `composite_bowmen` 0.020 also has no RAW row (nearest is Longbowmen B at 0.025, whose 18gp wage it already matches). Out of scope; chip `task_a135c456`. That chip also carries a design question for Jedidiah: `_TROOP_TYPE_STATS` is race-agnostic by design, but RAW makes beastman BR race-dependent (Goblin Bowmen 0.004 vs Orc Bowmen 0.008 vs human Bowmen 0.013).
+- **Existing campaigns keep their inflated garrison BRs.** The fix only affects newly-stocked rows; a saved campaign stocked before today still has 0.025-derived garrisons. No backfill migration was written because the stocker is bootstrap-only and the affected rows are test/scenario data. If a live save matters, a one-line UPDATE keyed on `source_type='mercenary' AND assignment_kind='garrison'` would do it.
+- **`DungeonGeneratorDataFreshness` is EOL-sensitive** — `tools/extract_dungeon_generator_data.py --check` compares raw bytes, so any fresh checkout or worktree on Windows with CRLF conversion fails it even though the JSON content is identical. Pre-existing, unrelated to this change, will bite anyone verifying in a worktree.
+**Next session should:**
+- Resume D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker mix. It must mint every slice through `TroopBattleRatingTable.for_unit`, and must NOT "correct" `conscript_troops.gd` / `levy_militia.gd` to 0.004167; 0.003 is RAW.
+- Optionally take the two chips above (`task_a359d66a` bard followers, `task_a135c456` beast riders), which are independent of each other and of D-5.
+
+
+## Session 2026-07-31 (cont.) — Bardic follower battle rating: per-unit figure applied per soldier (chip task_a359d66a)
+
+**Task:** Fix the ≈167×-overstated battle rating at `solicit_followers.gd:76` (`0.5 * merc_count`), the second of the two out-of-scope bugs surfaced by the earlier garrison battle-rating audit this session. Verify the rest of the minted row against the same RAW line while there.
+**Model used:** Opus 5 — RAW verification, implementation, tests, full write-site audit.
+**Completed:**
+- **`engine/subsystems/activities/handlers/bardic/solicit_followers.gd` fixed.** `battle_rating` is now `TroopBattleRatingTable.for_unit("light_infantry", "untrained", merc_count)` → 0.003/soldier. The old `0.5 * merc_count` was RAW's per-UNIT rating for a 120-man untrained company (`daw_campaigns_troop_tables_summary.xml:297`) applied once PER SOLDIER; a 50-merc cohort was minted at BR 25, more than an entire veteran cataphract army. RAW cite + a pointer to conventions §128 left at the call site.
+- **Rest of the minted row verified against the same RAW row (L102) — all four cost fields already correct, no change made:** `monthly_wage_cp` 300 (RAW wage 3gp); `monthly_supply_cp` 400 (RAW L297 gives the untrained unit 120gp/week ÷ 120 troops = 1gp/soldier/week — untrained units pay MORE supply than trained infantry's 60gp/week because they have no quartermaster, L274); `monthly_specialist_cp` 0 (L275 excepts conscripts and militia from the assumed-specialist package); `monthly_cost_cp` 700 = wage + supply + specialist. `tier='untrained'`, `is_trained=false`, `is_veteran=false`, `assignment_kind='available'` all consistent.
+- **Completed the battle-rating write-site audit across `engine/` AND `scenes/`** (the earlier pass this session covered `engine/` only). All 8 `"battle_rating":` write sites now account for: 2 table-driven (`solicit_followers`, `domain_stocker`), 2 RAW-correct literals (`conscript_troops.gd:90`, `levy_militia.gd:98` at 0.003 per L102), 2 registry/template-driven (`levy_tribal_warriors.gd:159` via `TribalWarriorRegistry`, `follower_arrival_resolver.gd:313` via `unit_templates.json`), 1 PROJECT-tunable (`threat_force_composer.gd:54`, 0.008), and 1 non-write (`troops_tab_page.gd:222` sums persisted BRs for display — correct per RAW L453 "unit battle rating equals the sum of constituent creature battle ratings").
+**Decisions made:**
+- **Looked the rating up rather than writing `0.003`,** even though this handler mints exactly one troop type. The literal is what caused both bugs in this family; conventions §128 makes the lookup the rule, and `per_soldier` already collapses any troop type at `tier='untrained'` onto the single RAW untrained row, so the call reads correctly regardless of the `light_infantry` label the handler uses.
+- **Left `morale: 0` alone and flagged it instead.** RAW L102 gives Untrained Conscripts/Militia morale **-2**, and both sibling handlers that mint untrained units (`conscript_troops.gd`, `levy_militia.gd`) already use -2, so this handler is the outlier. But a bard's hall volunteers being better-motivated than pressed conscripts is a plausible deliberate design call, and the fix in that case is a cited modifier rather than a bare 0. Chip `task_90ccb60e` carries the question to Jedidiah rather than resolving it unilaterally.
+- **Kept the `troop_type='light_infantry'` label.** It is a pre-existing project choice documented in the handler header; RAW's untrained row is not troop-type-specific, and the wage the handler pays (3gp) is the untrained wage, not the 6gp light-infantry wage — so the row is internally consistent as an untrained unit and the lookup resolves it correctly.
+**Interfaces defined or changed:** None. `SolicitFollowersHandler.on_complete` signature, return shape, and emitted signals (`EventBus.bard_followers_solicited`, `EventBus.follower_joined`) all unchanged.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_phase_10a3.gd::test_solicit_followers_troop_row_matches_raw_untrained` (new, registered in `run_all_tests`). Diffs the domain's active troop_units before/after the handler runs to isolate the newly-minted row, then asserts: count in 20..50; `tier == 'untrained'`; `battle_rating` equals `TroopBattleRatingTable.per_soldier(its own troop_type, its own tier) × count`; an INDEPENDENT cross-check that it equals `0.003 × count` (so the test still fails if the shared lookup itself ever drifts); an explicit guard that it is NOT `0.5 × count` (the regression); and the four cost fields against the same RAW line, including `monthly_cost_cp == wage + supply + specialist`. Morale is deliberately not asserted — see chip `task_90ccb60e`.
+- Confirmed no existing test depended on the old 0.5 value; `test_phase_10a3.gd` and `test_phase_10b1a.gd` are the only suites touching this handler and both assert on row COUNTS, not ratings.
+- **Verification:** throwaway worktree `C:/Users/jttau/wtbr2` at pristine HEAD 13d291f plus the 5 uncommitted files this arc touches, because the shared tree had ~30 files mid-flight from a concurrent cp-conversion session. `bash tools/run_tests.sh` twice-consecutive, own APPDATA hash; run 2 = **572 suites passed, 0 failed**. `Phase10A3: all tests passed.`, `DomainStocker: all tests passed.`
+- **The earlier entry's single failure is now explained and closed.** `DungeonGeneratorDataFreshness` was purely an LF/CRLF artifact of a fresh Windows worktree checkout: setting `core.autocrlf=false` and re-checking-out `data/dungeon_generator/*.json` made `extract_dungeon_generator_data.py --check` report OK with no content change, and the suite passes in this run. Not a product defect, but see Known issues.
+**Known issues:**
+- **`solicit_followers.gd` `morale: 0` vs RAW L102 `-2`** — flagged, not fixed; chip `task_90ccb60e` asks Jedidiah whether the 0 is deliberate before anyone changes it.
+- **`tribal_warrior_registry.gd:73` `beast_riders` 0.025** vs RAW Wolf Riders 0.107 / Boar Riders 0.131 — still open, chip `task_a135c456` (carries a design question about whether `_TROOP_TYPE_STATS` should become per-race).
+- **`DungeonGeneratorDataFreshness` is EOL-sensitive.** `tools/extract_dungeon_generator_data.py --check` compares raw bytes, so a fresh clone or worktree on Windows with `core.autocrlf=true` fails it even though the JSON is byte-identical modulo line endings. Worth either normalizing the comparison in the script or adding `data/dungeon_generator/*.json` to `.gitattributes` with `-text`; otherwise every worktree-based verification carries a phantom failure.
+- **Existing campaigns keep inflated BRs on rows minted before today** (both this handler and the stocker). Bootstrap/activity data, no backfill migration written.
+**Next session should:**
+- Resume D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix, minting every slice through `TroopBattleRatingTable.for_unit`.
+- Optionally clear the two open chips (`task_a135c456` beast riders, `task_90ccb60e` bardic morale), both of which need a Jedidiah answer before code changes.
+
+## Session 2026-08-01 — cp convention sweep P1 (display boundary) + P2 (signal contracts)
+
+**Task:** Continue `docs/handoff-domain-rulings-implementation.md` in its forced order. R-2 (copper canonical, conventions §127) phases P1 and P2, following the previous session's Tier-0/P0 arithmetic fixes.
+
+**Model used:** Opus 5 throughout.
+
+**Completed:**
+
+- **`StrongholdRepository.classification_minimum_gp` → `classification_minimum_cp`** across all 12 call sites (`manage_stronghold`, `ruler_action_catalog`, `ruler_ai`, `stronghold_repository` internals, `status_header`, `overview_sub_tab`, `stronghold_sub_tab`, `treasury_sub_tab`, `test_ruler_action_catalog`). The function has returned cp since Migration 116 while keeping a `_gp` name; that stale name is how `status_header.gd` came to render the RAW minimum as gold. Safe to rename in one pass because a missed caller fails to PARSE (unlike a renamed column, which godot-sqlite would silently read as 0).
+- **Deduplicated the RAW §minimum_stronghold_value table.** `DomainHandlers._classification_minimum_cp` carried its own copy of the 1,500,000 / 2,250,000 / 3,200,000 cp-per-hex values alongside `StrongholdRepository._CLASSIFICATION_MIN_CP_PER_HEX`. Now a thin delegate — two copies of a Layer-1 table can silently diverge, and the monthly tick disagreeing with the Stronghold sub-tab about the minimum is the exact bug class the audit found elsewhere.
+- **`scenes/ui/notebook/domain/status_header.gd`** — the banner pinned above all nine domain sub-tabs, and the most-seen money surface in the game. Stronghold value, stronghold minimum and treasury were rendered through `_format_count`, printing raw copper as though it were gold (a 5,000 gp treasury read "500,000" while the Treasury sub-tab one click away read "5,000 gp"). All three now go through `Currency.format_cost`. Also fixed `_format_count` itself — its single-group `"%d,%03d"` form rendered 3,200,000 as "3200,000" — and retyped `_sufficiency_glyph`'s parameters, which were named `_gp` while every caller passed cp.
+- **`scenes/ui/strongholds/commission_wizard.gd`** — `engineer_monthly_wage_cp` (25,000 cp = RAW 250 gp/month per engineer) was printed under a `%d gp/month` label, so one engineer read as "25000 gp/month" on the confirmation step the player uses to decide whether to commit a stronghold build. Now `Currency.format_cost`.
+- **DELETED `EquipmentCatalog.format_cost`** — a second, divergent money formatter (space-joined "15gp 5sp" vs Currency's comma-joined "15gp, 5sp"). Its 5 call sites in `equipment_shop_panel.gd` / `character_sheet_panel.gd` redirect to `Currency.format_cost`; its 5 redundant test functions were removed from `tests/test_equipment_catalog.gd` because `tests/test_currency.gd` already covers the same behaviour on the canonical formatter.
+- **P2 — eight EventBus signal parameters renamed from gp to cp** after checking each EMITTER rather than trusting the declared name. All eight declared gold while the emitter passed copper: `cache_raided(value_lost_gp: float → value_lost_cp: int)`, `treatment_adjusted(bonus_gp → bonus_cp)`, `domain_treasury_changed(old_gp, new_gp → old_cp, new_cp)`, `army_supply_consumed(gp_consumed, remaining_gp → consumed_cp, remaining_cp)`, `army_requisition_completed(gp_yield → yield_cp)`, `army_loot_completed(gp_yield → yield_cp)`, `vassal_tribute_paid(gp_paid → paid_cp)`, `ship_operating_cost_unpaid(owed_gp → owed_cp)`.
+- **`engine/subsystems/inventory/location_cache_manager.gd`** — `cache_raided` was the only FLOAT money value on any public contract in the codebase. The emitter already held the exact integer (`removed_value_cp`) and divided it by 100.0 purely to satisfy the wrong signature; it now emits the integer directly.
+
+**Decisions made:**
+
+- **`spellcasting_service_purchased(unit_cost_gp)` deliberately NOT renamed.** It is genuinely gp and agrees with its `settlement_poi_spell_offers.unit_cost_gp` column (RAW `acore_equipment.xml`). Renaming the signal without the column would break that agreement — both move together in the P3 column sweep.
+- **The activity action-vocabulary key `gp_committed` deliberately NOT converted.** It spans magical research, faith handlers, `data/activities/*.json` and ~20 test files, and includes a unit embedded in a string-encoded formula (`"ceil(gp_committed / 500)"`) that no `* 100` grep would find. That is P4, and pulling it into this wave would have made the wave unverifiable.
+- **Signal-parameter renames are declaration-only.** GDScript binds signal arguments positionally, so `.connect()` callers are unaffected; verified every consumer of a renamed signal either discards the money argument (`.unbind(3)`, `_a = null`) or is a refresh handler.
+
+**Interfaces defined or changed:**
+
+- `StrongholdRepository.classification_minimum_cp(territory_type, hex_count) -> int` — renamed from `classification_minimum_gp`. Value unchanged (cp).
+- `EquipmentCatalog.format_cost(cost_cp) -> String` — **DELETED**. Use `Currency.format_cost`.
+- EventBus signal parameter names (eight signals, listed above). Positional arity unchanged in all cases; `cache_raided`'s third parameter changed TYPE from `float` to `int`.
+
+**Database changes:** None. Migration 212 remains reserved for the P3 column renames.
+
+**Tests added/updated:**
+
+- `tests/test_equipment_catalog.gd` — removed 5 redundant `format_cost` test functions (coverage lives in `tests/test_currency.gd`).
+- `tests/test_ruler_action_catalog.gd` — updated to the renamed `classification_minimum_cp`.
+
+**Test results:** `bash tools/run_tests.sh` (2 runs, isolated APPDATA) — **572 suites passed, 0 failed** on the second consecutive run, for BOTH the P1 wave and the P2 wave, matching the pre-change baseline exactly.
+
+**Known issues:**
+
+- One suite run **hung in run 2** (last progress at the GeoField suites) and was killed. It did NOT reproduce on re-run and produced no `database is locked` errors. Cause unidentified; treated as environmental. Worth watching — if it recurs at the same suite it is real.
+- **Diagnostic note for future sessions:** Godot's `Godot_v4.6.1-stable_win64_console.exe` RELAUNCHES `Godot_v4.6.1-stable_win64.exe` as a child. Two Godot processes with identical `--headless --path ... test_runner.tscn` arguments and the same start second are ONE run, not two colliding sessions. Killing the console parent ends both. (This session initially misread that pair as a cross-session DB collision.)
+- P3 (migration 212, 11 gp-named columns incl. `domains.tribute_out_owed`, plus the `domain_extraction_ledger` REAL→INTEGER) and P4 (action vocabulary) remain.
+
+**Next session should:**
+
+- **R-4, the M2b-2 ruler promotion** — it TOTALLY blocks R-1 (`vassal_assignments` has NOT NULL FKs to `characters` on both edge ends and generated domains are ownerless). Scoping recommends a HYBRID: eager-cheap `persistence_tier='named'` stub for every ownerless domain at materialization (one INSERT: name, class, level, race, alignment, culture_id, rolled CHA), with the full `ClassedNpcBuilder` / `PromotionEngine.promote_b_to_a` + `StrategicDispositionBuilder` bundle deferred to first contact / LOD activation per the GDD's promote-on-visit path. Pure-lazy cannot satisfy R-1; pure-eager is what the GDD rejected on perf grounds (750-1,100 domains per eager window). **Needs Jedidiah's sign-off before building.**
+- Resolve the level-table conflict first: `NpcRulerGenerator.LEVEL_BY_TITLE` (Baron 6, Duke 10, no Marquis) contradicts `DomainTierTable.ruler_level_for_tier` (Barony 4, March 6, Duchy 9), which is the RAW-cited table. Recommend `DomainTierTable`.
+- Then R-1 + the `_cascade_vassals` domain-scoping fix + hoisting the Favors & Duties roll out of the per-domain loop, ALL IN ONE WAVE.
+
+
+## Session 2026-08-01 — Tribal warrior stats go per-race (chip task_a135c456; Jedidiah ruling)
+
+**Task:** Fix the understated `beast_riders` battle rating in `TribalWarriorRegistry._TROOP_TYPE_STATS`, the last of the three bugs surfaced by the 2026-07-31 garrison battle-rating audit. Escalated into a table-shape ruling once the RAW spread turned out to be ~10×, not a rounding difference.
+**Model used:** Opus 5 — RAW extraction and cross-checking, design question, implementation, tests.
+**Completed:**
+- **`_TROOP_TYPE_STATS` replaced by a per-race structure** in `engine/subsystems/troops/tribal_warrior_registry.gd`: `_HUMAN_TROOP_TYPE_STATS` (11 troop types, used by the three human tribal cultures) + `_BEASTMAN_TROOP_TYPE_STATS` (8 races × their RAW troop types, 25 rows), resolved through a new `stats_for(race, troop_type) -> Dictionary` with the human table as fallback. New `unit_size_for(race, troop_type) -> int`.
+- **`composition_for_race` now looks stats up per race** and carries `unit_size` through in each returned row (additive; `is_cavalry` retained). `default_template_for_domain` inherits the fix through it. `LevyTribalWarriorsHandler` needed no change — it reads `wage_cp` / `supply_cp` / `br_per_warrior` off the composition rows.
+- **Five wrong entries corrected in the human table** (all five the audit flagged, plus the two I had mis-reported on 2026-07-31 — see Decisions): `hunters` BR 0.008→**0.006** (0.008 is the Light Infantry E row @6gp; the entry's 4gp wage is the F/G/H "Hunters" rows, which are 0.006); `crossbowmen` wage 1500→**1800** (Crossbowmen A is 18gp; the BR 0.025 was already right); `composite_bowmen` BR 0.020→**0.025** (RAW has no Composite Bowmen row — Longbowmen B IS the composite-bow loadout, same 18gp); `horse_archers` BR 0.045→**0.082** AND wage 6000→**4500** (human Horse Archers are 0.082 @45gp; the stored 60gp matched no human row); `beast_riders` split per race (below).
+- **`beast_riders` is now two RAW rows, not one guess:** goblin Wolf Riders 0.107 @15gp and orc Boar Riders 0.131 @33gp, against the old race-agnostic 0.025 @15gp — 4–5× understated. Their supply also went 1600→**6400 cp**: RAW bills wolf/boar-rider units 960gp/week per 60 riders, four times a normal squadron, per L274's "carnivorous units pay more".
+- **Ogres are 60-strong units, not 120.** RAW L273 sizes a unit at 60 for cavalry *or large creatures*; ogre infantry is large, so it takes the 60-unit supply rate (1600cp, not 200cp) — 8× the old value. Confirmed independently by the per-unit wage arithmetic (2,400gp ÷ 60 = the 40gp per-creature wage; ÷120 would give 20gp and contradict the per-creature table).
+- Docs: `docs/coding_conventions.md` §72 rewritten (the per-race correction + the unit-size/supply rules) and §128's tribal bullet updated to point at `stats_for`. `troop_battle_rating_table.gd`'s header reference updated.
+**Decisions made:**
+- **[Jedidiah ruling 2026-08-01] The stat table is keyed by (race, troop_type), not troop_type alone** — option (a) of two offered. The deciding fact: RAW's per-creature light-infantry rating runs kobold 0.003 @2gp, goblin 0.004 @3gp, orc/human 0.008 @6gp, hobgoblin 0.017, gnoll 0.025, lizardman 0.036, bugbear 0.050, ogre 0.077 @40gp. The old single 0.008 @6gp value therefore left an ogre clanhold's levy **9.6× too weak and underpaid 6.7×**, and a kobold's 2.7× too strong — a domain-economy error as much as a battle one. The "v1 representative value" framing in the original 2026-05-22 comment was not a simplification but a defect.
+- **No value is interpolated.** Before proposing the per-race option I verified that *every* `(race, troop_type)` pair reachable from `_COMPOSITION_PER_120` has an exact RAW per-creature row — all four goblin types, all five orc, all six hobgoblin, gnoll/lizardman/bugbear/ogre, and the human cultures. So the change is transcription, not design, which is what made option (a) cheap enough to be obviously right.
+- **[Jedidiah ruling] Fix all five wrong entries in this pass**, not just `beast_riders` — same class of transcription error in one constant, and one test can pin the whole table.
+- **`unit_size` is an explicit field, not derived from `is_cavalry`.** Ogre infantry is not cavalry yet forms 60-strong units, so the two concepts are genuinely independent. `is_cavalry` is kept (it has no consumer outside the registry's own return dict today, but is part of the returned shape).
+- **Per-creature wins where RAW's two tables disagree.** Hobgoblin longbowmen are 25gp per creature but 2,880 ÷ 120 = 24gp per unit; ogre LI is 0.077 per creature but 4 ÷ 60 = 0.067 per unit. Per §128 the per-creature table is authoritative for per-warrior figures. Noted at the constant.
+- **`TroopBattleRatingTable` and this registry stay separate.** The former models human troops only and says so; merging them would re-introduce exactly the race-blindness being removed. §128 updated to state this positively rather than as "do not reconcile".
+**Corrections to the 2026-07-31 entry:** that session's cross-site audit listed `hunters 0.008` and `horse_archers 0.082` as verified-correct. Both were wrong — `hunters` should be 0.006 for the 4gp row it stores, and the registry actually held **0.045 @ 60gp** for horse archers, which I mis-transcribed as 0.082 @45gp when reading it. `crossbowmen` was reported correct on BR (it was) but its 15gp wage is also wrong. The other eight entries in that list stand.
+**Interfaces defined or changed:**
+- NEW `TribalWarriorRegistry.stats_for(race: String, troop_type: String) -> Dictionary` — returns a COPY of `{wage_cp, supply_cp, br_per_warrior, unit_size, is_cavalry}`, or `{}` for an unknown troop type.
+- NEW `TribalWarriorRegistry.unit_size_for(race: String, troop_type: String) -> int`.
+- REMOVED `TribalWarriorRegistry._TROOP_TYPE_STATS` (private; replaced by `_HUMAN_TROOP_TYPE_STATS` + `_BEASTMAN_TROOP_TYPE_STATS`).
+- `composition_for_race` return rows gained `unit_size`. Existing keys unchanged, so callers are source-compatible.
+- `DEFAULT_WAGE_CP_PER_WARRIOR` / `DEFAULT_SUPPLY_CP_PER_WARRIOR` / `DEFAULT_BATTLE_RATING_PER_WARRIOR` retained as fallbacks (now unreachable from `composition_for_race`, per the new invariant test).
+**Database changes:** None. Existing `troop_units` rows keep the values they were minted with.
+**Tests added/updated:**
+- `tests/test_tribal_warriors.gd` gained five tests, all registered in `run_all_tests`: `test_stats_for_matches_raw_per_race` (a `_RAW_STATS` const re-transcribing all 31 (race, troop_type) pairs independently from the XML — wage, BR, supply and unit size each asserted, so the suite fails loudly on any drift); `test_every_composition_pair_resolves_to_a_raw_row` (the load-bearing invariant — every pair `composition_for_race` can emit resolves to a non-empty stat row, so no levy silently falls back to the human-light-infantry DEFAULT_* constants); `test_beast_riders_are_race_specific_and_carnivorous` (goblin 0.107 vs orc 0.131, an explicit guard that neither is back to 0.025, and the 6400cp carnivore supply); `test_ogre_units_are_sixty_strong` (unit_size 60 + not cavalry + 1600cp supply, plus an ogre-vs-kobold spread assertion); `test_composition_rows_carry_per_race_stats` (the per-race stats survive into the Array the levy handler consumes).
+- Existing tribal tests assert on composition COUNTS only and were unaffected. Verified no test anywhere asserted on the old wage/BR values.
+- **Verification:** throwaway worktree `C:/Users/jttau/wtbr3` at pristine HEAD 13d291f plus the seven uncommitted files of this arc (the shared tree has ~30 files mid-flight from a concurrent cp-conversion session). `core.autocrlf=false` + re-checkout of `data/dungeon_generator/*.json` first, to clear the EOL artifact documented in the previous entry. `bash tools/run_tests.sh` twice-consecutive, own APPDATA hash; run 2 = **572 suites passed, 0 failed**. `TribalWarriors: all tests passed.` with all five new tests reporting OK.
+- Transcription spot-checked a second time by grepping six rows (goblin Wolf Riders, orc Boar Riders, hobgoblin Medium Cavalry, gnoll Longbowmen, bugbear Light Infantry, ogre Heavy Infantry) directly out of the XML rather than trusting the bulk regex extraction — all six matched.
+**Known issues:**
+- **`LevyTribalWarriorsHandler.UNIT_SIZE_CAP` is still a flat constant** and does not consult the new per-row `unit_size`, so an ogre or beast-rider levy chunks into 120-strong rows where RAW would make them 60. Only affects row cardinality and display, not per-warrior economics or total BR. The field is now available on every composition row whenever someone wants to wire it.
+- **`is_cavalry` has no consumer** outside the registry's own return dict (`pursuit_resolver.gd` has its own unrelated `_is_cavalry_or_flyer`). Left in place as part of the returned shape.
+- **Existing campaigns keep tribal units minted at the old race-agnostic values.** No backfill migration; consistent with how the stocker and bard-follower fixes were handled this arc.
+- `docs/phase-11-handoff.md:96` still describes `_TROOP_TYPE_STATS` as providing per-troop-type stats — stale historical text in a phase handoff, left as a record of what that phase shipped.
+**Next session should:**
+- The three-bug battle-rating arc from the 2026-07-31 audit is now fully closed (garrison stocker, bard followers, tribal warriors). Remaining open chip from it: `task_90ccb60e` (bardic mercenary morale 0 vs RAW -2) — needs a Jedidiah answer before code.
+- Resume D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix, minting each slice through `TroopBattleRatingTable.for_unit`.
+- Optionally make `DungeonGeneratorDataFreshness` EOL-insensitive (script-side normalization or `-text` in `.gitattributes`), so worktree-based verification stops carrying a phantom failure.
+
+## Session 2026-08-01 — R-4 groundwork: ruler level tables unified (handoff D-9)
+
+**Task:** Land handoff decision D-9 (Jedidiah 2026-08-01) — resolve the conflicting NPC-ruler level tables — as the first bounded piece of R-4 (M2b-2 ruler promotion).
+
+**Model used:** Opus 5.
+
+**Completed:**
+
+- **Root cause found: the two tables spoke DIFFERENT VOCABULARIES**, which is how they drifted unnoticed. `DomainTierTable.TIERS` keys on DOMAIN titles (Barony / March / County / Duchy / Principality / Kingdom / Empire); `NpcRulerGenerator.LEVEL_BY_TITLE` keyed on RULER titles (Baron / Count / Duke / Prince / King / Emperor). Unifying them needed a mapping, not just a winner.
+- **`engine/subsystems/generation/world/domain_tier_table.gd`** — every `TIERS` entry gained a `ruler_title` key, plus three accessors: `ruler_title_for_tier(tier)`, `tier_for_ruler_title(title)` (accepts EITHER vocabulary, because `domains.realm_title` stores the ruler form while the tier ladder speaks the domain form; unknown titles fall back to BARONY), and `ruler_level_for_title(title)` — the canonical entry point for new code.
+- **`engine/subsystems/domains/npc_ruler_generator.gd`** — `LEVEL_BY_TITLE` RETIRED. Replaced by a derived `level_by_title() -> Dictionary` view built from DomainTierTable so existing readers keep working; `generate_for_domain` now calls `DomainTierTable.ruler_level_for_title(title)` directly.
+
+**Decisions made:**
+
+- **D-9 (Jedidiah): DomainTierTable governs NPC ruler level.** It is the RAW-cited table (`acore_axioms` §titles_of_nobility) and the world generator already used it. Effect on the world: Baron 6→4, Duke 10→9, Prince 12→11; Count/King/Emperor unchanged; **Marquis now exists at all** — it was absent from the retired table, so every March-tier ruler silently fell through to the Baron default.
+- **Kept a derived view rather than deleting the symbol outright.** `level_by_title()` costs nothing, keeps the title→level map available to callers that want the whole dict, and makes the retirement non-breaking.
+
+**Interfaces defined or changed:**
+
+- `DomainTierTable.ruler_title_for_tier(tier_index: int) -> String` — NEW.
+- `DomainTierTable.tier_for_ruler_title(title: String) -> int` — NEW. Accepts ruler OR domain title; unknown → BARONY.
+- `DomainTierTable.ruler_level_for_title(title: String) -> int` — NEW. **Canonical NPC ruler level lookup; prefer this over any local table.**
+- `DomainTierTable.TIERS` entries gained a `ruler_title` key.
+- `NpcRulerGenerator.LEVEL_BY_TITLE` — **REMOVED** (const). Replaced by `NpcRulerGenerator.level_by_title() -> Dictionary` (static, derived).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_npc_ruler_generator.gd` `test_level_by_title` rewritten against the DomainTierTable values, and extended to assert: the derived view and `ruler_level_for_title` agree; "Barony" and "Baron" resolve to the same tier; Marquis is present (the gap in the retired table); an unknown title falls back to the Barony floor.
+
+**Test results:** `bash tools/run_tests.sh` — **572 suites passed, 0 failed** on the second consecutive run. `NpcRulerGenerator`, `StockRulersAndTribute` and `SettingMaterializationTests` (214 checks) all green.
+
+**Known issues:**
+
+- Practical blast radius of this change is currently SMALL: `NpcRulerGenerator` has exactly one production construction site (`test_content_seeder.gd:148`, the legacy Avalon seeder) and is NOT on the generated-world path. The value is that R-4's stub minter now has a canonical mapping instead of inheriting the conflict.
+
+**Next session should:**
+
+- **Build the R-4 stub minter — the substantial half, not yet started.** Per handoff D-8 (Jedidiah 2026-08-01): mint a `persistence_tier='named'` character row for EVERY ownerless domain at materialization (one INSERT: name, class, level via `DomainTierTable.ruler_level_for_title`, race, alignment, culture_id, rolled CHA — NO proficiencies/powers/spells/equipment/personality/disposition), wired into the four `setting_materializer` sites that currently write `"owner_character_id": null` (~:1581 `_create_sub_domain`, ~:1844 `_create_sub_clanhold`, ~:2623 `_create_crown_domain`, ~:2682 `_create_ladder_for_polity`). Defer the full `ClassedNpcBuilder` / `PromotionEngine.promote_b_to_a` + `StrategicDispositionBuilder` bundle to first contact / LOD activation.
+- **Watch the unique index:** `idx_vassal_assignments_unique_active(liege_character_id, vassal_character_id) WHERE status='active'` allows only ONE active edge per character pair, so the minter must produce a DISTINCT character per domain — reusing one across sibling domains under a liege makes the second `create_assignment` silently return "".
+- Then R-1 + the `_cascade_vassals` domain-scoping fix + hoisting the Favors & Duties roll to a per-RULER pass, ALL IN ONE WAVE.
+
+
+## Session 2026-08-01 (cont.) — Base morale belongs to the troop, not the leader (Jedidiah ruling)
+
+**Task:** Resolve the `solicit_followers.gd` `morale: 0` question flagged the previous session. Jedidiah ruled directly: *"base morale doesnt change for bards, they just grant a +2 morale bonus. It shouldnt have been hard coded the way it was and should just be a modifier granted by the bard."*
+**Model used:** Opus 5 — RAW verification, implementation, tests.
+**Completed:**
+- **`TroopBattleRatingTable` gained base morale**: a `_BASE_MORALE` constant (16 troop types, each line-cited from the `morale` attribute on the same per-creature rows that supply the ratings) plus `base_morale(troop_type, tier) -> int`, `UNTRAINED_BASE_MORALE = -2` and `VETERAN_MORALE_BONUS = 1`. Untrained overrides the troop-type label (RAW has one untrained row); veterans add +1 per L266.
+- **`solicit_followers.gd`** now writes `TroopBattleRatingTable.base_morale("light_infantry", "untrained")` → **-2**, replacing the hardcoded `0`.
+- **`TribalWarriorRegistry`**: every per-race stat row gained `base_morale` (RAW per-creature `morale`, race-dependent: kobold -2, goblin -1, orc/hobgoblin/gnoll 0, lizardman/bugbear/ogre +2, wolf- and boar-riders +2); `composition_for_race` carries it through.
+- **`levy_tribal_warriors.gd` fixed — same defect, found while wiring the above.** It stored `"morale": morale_modifier`, i.e. the domain-morale adjustment ALONE, dropping the troop type's own morale and directly contradicting `ax_domains_of_chaos.xml` §tribal_warrior_morale ("Tribal warriors use the base morale of their troop type"). A kobold levy (RAW -2) and an ogre levy (RAW +2) both came out at the same number. Now stores `base_morale + morale_modifier`.
+- **`docs/coding_conventions.md` §129** added — "Base morale belongs to the troop; leader effects are roll-time modifiers", with the stored-vs-roll-time test and the one-time-vs-conditional distinction.
+- **Audited the two remaining morale surfaces, both already correct, no change made:** `data/troops/unit_templates.json` — all 17 templates match RAW (10 human + Cataphracts +2 + Untrained Conscripts/Militia -2, and the demi-human rows: dwarven Heavy Infantry A 0 / Crossbowmen 0, elven Light Infantry -1 / Longbowmen 0 / Horse Archers +1); and `follower_arrival_resolver.gd:318`, which already uses the correct `template morale + bonus` shape.
+**Decisions made:**
+- **RAW gives the bard +1, in two separate places, and neither belongs in the stored value.** `acore_campaign_classes.xml:569-575` (hireling_inspiration, L5): "+1 morale if the bard is present to witness and record their deeds", explicitly conditional. `daw_armies_recruitment.xml:773-779` (officer morale modifier): Charisma bonus, +1 for a bard/fighter/explorer/barbarian/paladin of 5th level or higher, +2 for Command proficiency, +1 for legendary leader — and "affects Unit Morale rolls for units under the officer's command". For a L9 bard commanding them those two +1s do sum to the +2 Jedidiah described, but both are contingent on the bard being there and in command, so the ruling's structural point stands either way: store the base, apply the bonus.
+- **The modifier mechanism already existed and needed no work.** `ChroniclesOfBattleAura.compute_aura_bonus` returns `{morale_delta, bard_character_id}`, gated on party co-location and Bard L5+, with `AURA_MORALE_BONUS = 1` citing the RAW line. So the fix was purely to stop pre-applying it.
+- **Stored vs roll-time is decided by whether RAW makes the effect permanent at creation.** The tribal warrior domain-morale adjustment is explicitly "one-time" at levy, so it IS stored (added to the base). The bard's aura and the officer modifier are contingent, so they are not. Written up as the governing rule in §129.
+- **Extended the ruling to `levy_tribal_warriors.gd` rather than only the bard handler.** RAW states the tribal base-morale rule in one unambiguous sentence, the defect is identical in kind, and it sits in the table rewritten earlier the same day. Flagged in the response so it can be scoped back if unwanted.
+**Interfaces defined or changed:**
+- NEW `TroopBattleRatingTable.base_morale(troop_type: String, tier: String = "average") -> int`; NEW consts `UNTRAINED_BASE_MORALE`, `VETERAN_MORALE_BONUS`.
+- `TribalWarriorRegistry.stats_for` rows and `composition_for_race` rows gained `base_morale`. Existing keys unchanged.
+- No signal or handler signature changes.
+**Database changes:** None. Rows minted before today keep their old morale values.
+**Tests added/updated:**
+- `tests/test_domain_stocker.gd::test_battle_rating_table_matches_raw` extended with six base-morale assertions (light infantry -1, untrained conscripts -2, an untrained *longbowman* also -2, heavy infantry 0, light cavalry +1, and veteran == average + 1).
+- `tests/test_phase_10a3.gd::test_solicit_followers_troop_row_matches_raw_untrained` now asserts the persisted morale is **-2** AND equals `base_morale(its own troop_type, its own tier)` — so a future bonus baked back in fails the suite.
+- `tests/test_tribal_warriors.gd::test_levied_units_keep_their_troop_type_base_morale` (new, registered): per-race `base_morale` on composition rows for all eight beastman races, +2 on both beast-rider rows, and an end-to-end levy asserting every stored row equals base + domain modifier. Includes a `saw_nonzero` guard because the fixture clanhold is orc at neutral morale (base 0, modifier 0) — most rows are legitimately 0 either way, and the orc **beast_riders** row (+2) is what actually discriminates against the old behaviour. Without that guard the test could have gone vacuous.
+- **Verification:** throwaway worktree `C:/Users/jttau/wtbr4` at pristine HEAD 13d291f plus the eight uncommitted files of this arc, `core.autocrlf=false` + JSON re-checkout to clear the EOL artifact. `bash tools/run_tests.sh` twice-consecutive, own APPDATA; run 2 = **572 suites passed, 0 failed**. `Phase10A3`, `TribalWarriors`, `DomainStocker` all green. (The tested copy of `troop_battle_rating_table.gd` differs from the tree by one doc-comment block added after the copy — comment-only, no behavioural delta; the other seven files are byte-identical.)
+**Known issues:**
+- **`DepartureLogRecorder.VALID_EVENT_TYPES` has drifted from the schema CHECK — silent data loss.** The GDScript whitelist (`departure_log_recorder.gd:33-55`) stops at "restored" with 21 entries; `db/schema.sql`'s `domain_departure_log.event_type` CHECK allows 27, including the six `tribal_warriors_*` types added by Migration 129. So `record()` rejects every tribal-warrior departure-log write before it reaches a column that would have accepted it, returns "", and callers ignore the return. Live proof: `ERROR: DepartureLogRecorder.record: invalid event_type 'tribal_warriors_levied'` appears 7× in one suite run, from `levy_tribal_warriors.gd:88`. PRE-EXISTING (first occurrence at log line 361, long before any test added today). Chip `task_cc7511e5`. Note `test_event_type_check_accepts_tribal_warrior_events` passes because it exercises the DB CHECK by direct insert and never touches the GDScript guard — the two-lists-one-tested trap.
+- **`LevyTribalWarriorsHandler.UNIT_SIZE_CAP` still ignores the per-row `unit_size`** (carried over from the previous entry) — ogre and beast-rider levies chunk into 120-strong rows where RAW uses 60. Row cardinality only.
+- Existing campaigns keep units minted at the old morale values; no backfill migration, consistent with the rest of this arc.
+**Next session should:**
+- Take chip `task_cc7511e5` (departure-log enum drift) — small, unambiguous, and it is losing data today.
+- Resume D-5 (`docs/handoff-domain-rulings-implementation.md`): the stocker conscript/militia/mercenary mix, minting each slice through `TroopBattleRatingTable.for_unit` **and** `base_morale` — the D-5 rows are conscripts and militia, so they take the RAW -2, not 0.
+- Optionally make `DungeonGeneratorDataFreshness` EOL-insensitive so worktree verification stops needing the manual `core.autocrlf` dance.
+
+
+## Session 2026-08-01 (cont.) — Departure-log enum drift: silent data loss on every tribal levy (chip task_cc7511e5)
+
+**Task:** `DepartureLogRecorder.VALID_EVENT_TYPES` had drifted from the `domain_departure_log.event_type` CHECK, so `record()` rejected every tribal-warrior entry before it reached a column that would have stored it. Fix the list, and fix the guard test that was supposed to prevent exactly this.
+**Model used:** Opus 5 — verification, fix, test redesign, codebase-wide drift audit.
+**Completed:**
+- **Added the six migration-129 types** to `VALID_EVENT_TYPES` (`engine/subsystems/domains/departure_log_recorder.gd`): `tribal_warriors_levied`, `_stood_down`, `_released_for_population_loss`, `_morale_check_triggered`, `_loyalty_failed`, `_called_to_arms`. The schema is ground truth per CLAUDE.md; the GDScript copy was the side that lagged. Constant's docstring rewritten to record what happened and to stop claiming a guarantee it did not have.
+- **Rewrote `test_valid_event_types_matches_check_constraint`** to assert set EQUALITY in both directions plus a size check, reading the constraint from `sqlite_master` — the live post-migration DDL, not `db/schema.sql`.
+- **Added `test_every_valid_event_type_round_trips_through_record`** — every entry in `VALID_EVENT_TYPES` goes through `record()` (the front door, not raw SQL), asserts a non-empty id AND that `get_entry` reads back the same event_type, then asserts the persisted row count equals the list size.
+- **Added `test_tribal_warrior_event_types_reach_the_table_through_record`** — all six migration-129 types specifically, the two live ones and the four reserved.
+- **Audited every `DepartureLogRecorder.record(` call site** (script-extracted the event_type literal from each). Ten distinct types are passed across `lifecycle_handler.gd`, `ruler_death_handler.gd`, `levy_tribal_warriors.gd` and `stand_down_tribal_warriors.gd`; eight were already valid, and exactly two were broken — `tribal_warriors_levied` (`levy_tribal_warriors.gd:88`) and `tribal_warriors_stood_down` (`stand_down_tribal_warriors.gd:88`). The other four migration-129 types have no caller yet.
+- **Swept the whole codebase for the same drift pattern** — every GDScript `const` array of lowercase string literals that is a strict subset of a schema `CHECK(col IN (...))` enum. The departure log was the ONLY genuine instance. `RealmRepository.VALID_DISPOSITIONS` matches `realm_relations.disposition` exactly; `OverrideManager.VALID_DISPOSITIONS` is the complete five-tier RAW reaction set (the scan matched it against unrelated `public_stance`/`attitude` columns); `WORN_WEIGHTLESS_SLOTS`, `MAGE_PROGRESSION_CLASSES`, `HUNT_BIOMES` and `FRIENDLY_OR_BETTER` are deliberately narrower filters over a column's domain, not mirrors of it.
+- **`docs/coding_conventions.md` §130** added — "A constant mirroring a DB CHECK is tested for set EQUALITY, against the live schema", including the subset-vs-equality trap, the sqlite_master technique, and the rule that the audit above found no other instances (so future readers do not redo it).
+**Decisions made:**
+- **The real defect was the test's proposition, not the missing entries.** `test_valid_event_types_matches_check_constraint` walked `VALID_EVENT_TYPES` and asserted the DB accepted each — that is `constant ⊆ CHECK`, which a LAGGING constant satisfies automatically. The failure mode is the constant being smaller than the schema, so the load-bearing direction is `CHECK ⊆ constant`. Adding the six entries without fixing the test would have left the next migration free to repeat this exactly.
+- **Read the constraint from `sqlite_master`, not `db/schema.sql`.** The old test's comment asserted "we can't read the constraint directly", which is false and is what left it guessing. `SELECT sql FROM sqlite_master WHERE type='table' AND name=...` returns the DDL as it exists after all migrations have actually run — a strictly better oracle than a file that could itself drift from the applied migration set. The parser strips `-- ...` comments (migration 129's additions are comment-annotated inside the CHECK) and walks to the matching close-paren so an adjacent constraint cannot bleed in.
+- **At least one test must go through the front door.** `tests/test_tribal_warriors.gd::test_event_type_check_accepts_tribal_warrior_events` inserted with raw SQL, proving the CHECK accepts the value and nothing about the guard in front of it — it passed throughout while every real write was dropped. Left that test alone (it correctly tests the constraint) and added round-trip coverage through `record()` alongside it.
+- **`record()` keeps returning `""` on rejection; call sites are NOT changed.** The chip asked whether that deserves a louder failure. It push_errors already, and no caller can meaningfully recover — a levy cannot roll itself back because a chronicle line failed. Threading a return check through ~10 call sites would add noise without changing behaviour. The honest conclusion is that with an unrecoverable, ignored-return write path, the equality test IS the mechanism preventing this class of loss, which is why it was worth rewriting rather than patching. Recorded as such in §130.
+**Interfaces defined or changed:** `DepartureLogRecorder.VALID_EVENT_TYPES` grew from 21 to 27 entries (additive; nothing removed or renamed). `departure_log_sub_tab.gd:130` builds its filter dropdown from this constant, so the six new types now appear there as filter options — intended, and the reason the constant is public.
+**Database changes:** None. The schema already allowed all 27; no migration needed. Departure-log entries lost before today are unrecoverable (the writes never happened) — nothing to backfill.
+**Tests added/updated:**
+- `tests/test_departure_log_recorder.gd`: `test_valid_event_types_matches_check_constraint` rewritten to bidirectional set equality against `sqlite_master`; two new tests registered in `run_all_tests` (`test_every_valid_event_type_round_trips_through_record`, `test_tribal_warrior_event_types_reach_the_table_through_record`); new helpers `_event_types_from_live_check()` and `_count()`. Existing `_cleanup` already deletes by campaign_id, so the new rows are covered.
+- **Verification:** throwaway worktree `C:/Users/jttau/wtbr5` at pristine HEAD 13d291f plus the ten uncommitted files of this arc, `core.autocrlf=false` + JSON re-checkout for the EOL artifact. `bash tools/run_tests.sh` twice-consecutive, own APPDATA; run 2 = **572 suites passed, 0 failed**. `DepartureLogRecorder`, `TribalWarriors`, `Phase10A3`, `DomainStocker` all green.
+- **Direct proof the data loss is fixed:** `grep -c "invalid event_type 'tribal_warriors"` on the run-2 log is **0**, down from 7 before the change. The only remaining rejection in the log is `'not_a_real_event_type'`, from the deliberate negative test.
+- Note the equality test passing is itself evidence the `sqlite_master` parse worked — an empty or failed parse trips its first assertion, which would have failed the suite rather than passing vacuously.
+**Known issues:**
+- The four reserved migration-129 event types (`_released_for_population_loss`, `_morale_check_triggered`, `_loyalty_failed`, `_called_to_arms`) still have no caller. The pool-maintenance hooks that were meant to emit them (build log 2026-05-22, "11D.5 polish pass") either never wired the departure-log write or were written against the rejecting guard and had it fail silently. Worth a look when someone next touches tribal-warrior pool maintenance.
+- `LevyTribalWarriorsHandler.UNIT_SIZE_CAP` still ignores the per-row `unit_size` (carried from the previous two entries) — row cardinality only.
+**Next session should:**
+- Resume D-5 (`docs/handoff-domain-rulings-implementation.md`): the stocker conscript/militia/mercenary mix, minting each slice through `TroopBattleRatingTable.for_unit` and `base_morale` (conscripts and militia take the RAW -2, not 0).
+- Optionally check whether the four unused tribal-warrior event types should be emitted by the pool-maintenance hooks.
+- Optionally make `DungeonGeneratorDataFreshness` EOL-insensitive so worktree verification stops needing the manual `core.autocrlf` dance.
+
+
+## Session 2026-08-01 (cont.) — Punch-list close-out: garrison morale, RAW unit-size chunking, EOL-insensitive freshness check
+
+**Task:** Jedidiah asked what remained to make the troop subsystem functioning and RAW-accurate, then approved items 1, 2 and 4 of the resulting punch-list. (Item 3, the unimplemented tribal-warrior lifecycle RAW, and item 5, D-5, were left as separate work.)
+**Model used:** Opus 5 — audit, fixes, tests.
+**Completed:**
+- **[1] `domain_stocker.gd` garrison morale was still hardcoded `0`** where RAW L105 gives Light Infantry A **-1** — the same defect fixed in `solicit_followers` and `levy_tribal_warriors` earlier the same day, left behind in the file this whole arc started in. Now `TroopBattleRatingTable.base_morale(_GARRISON_TROOP_TYPE, _GARRISON_TIER)`.
+- **Swept every `troop_units` morale write to prove that was the last one.** `conscript_troops` -2 ✓ and `levy_militia` -2 ✓ (RAW L102, and their wage 300cp / supply 100cp-per-week also verified against L102 and L297); `follower_arrival_resolver` uses template morale + bonus ✓; `threat_force_composer` -1 is PROJECT (brigands have no RAW troop row). `inspect_troops`, `oversee_troop_training` and `army_casualty_resolver` apply deltas to existing rows, which is the correct pattern. No other base-morale literal remains.
+- **[2] `LevyTribalWarriorsHandler` now chunks at the per-row RAW unit size**, not a flat `UNIT_SIZE_CAP := 120`. RAW L273 sizes a unit at 120 for infantry but 60 for cavalry OR large creatures, so goblin wolf riders, orc boar riders and ALL ogre troop types form 60-strong units. `composition_for_race` already carried `unit_size`; the handler now reads it, falling back to the flat cap only if a row lacks the field.
+- **[4] `tools/extract_dungeon_generator_data.py` freshness check is EOL-insensitive.** `_files_byte_identical` → `_files_match`, normalizing `\r\n`/`\r` → `\n` on both sides. Line endings are the ONLY normalization: whitespace, key order and indentation are still compared exactly, so genuine formatting drift is still caught.
+- **[4] Stale doc corrected** — `docs/phase-11-handoff.md:96` still described the removed `_TROOP_TYPE_STATS`; now points at `stats_for(race, troop_type)` and conventions §72.
+**Decisions made:**
+- **Fixed the freshness check in the script, not via `.gitattributes`.** A byte-compare on generated text is the actual defect; fixing it there is config-independent and works on any clone, whereas `-text` in `.gitattributes` would only mask it for this repo and would churn the working tree of a session already mid-flight. No `.gitattributes` was added.
+- **Did NOT write the backfill migration** for rows minted before this arc (old battle ratings and morale on saved campaigns). I had recommended defaulting to skip and Jedidiah's approval of "item 2" is read as the unit-size fix; mutating existing save data is not something to infer from an ambiguous approval. Still available if there are live saves worth migrating.
+- **Left `is_cavalry` in place.** It has no consumer outside the registry's own return dict, but it is part of a published return shape and removing it is a contract change for no benefit.
+**Interfaces defined or changed:** None. `LevyTribalWarriorsHandler.UNIT_SIZE_CAP` is retained as the fallback constant; `composition_for_race`'s row shape is unchanged (it already carried `unit_size`).
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_domain_stocker.gd`: the garrison round-trip test now asserts persisted `morale == -1` AND `== base_morale(its own troop_type, its own tier)`.
+- `tests/test_tribal_warriors.gd::test_levy_chunks_at_the_raw_unit_size` (new, registered): every composition row across all 11 races at 600 warriors carries a unit_size of exactly 60 or 120 matching `unit_size_for`; all ogre rows are 60; and an end-to-end 600-warrior levy asserts no spawned row exceeds its own troop type's RAW unit size, with a `checked_a_60` guard so the test cannot pass vacuously if the 60-cap types ever drop out of the composition.
+- **Verification:** throwaway worktree `C:/Users/jttau/wtbr6` at pristine HEAD 13d291f plus the 11 uncommitted files of this arc. `bash tools/run_tests.sh` twice-consecutive, own APPDATA; run 2 = **572 suites passed, 0 failed**, and `grep -c "ASSERTION FAILED"` on the log is **0**.
+- **Item 4 proven directly, twice.** (a) Converted all 12 committed JSON files to genuine CRLF (58 CR bytes in `npc_class.json`) and ran `--check`: **OK**, where that exact state previously reported all 12 as DRIFT. (b) The suite then ran against those CRLF files and `DungeonGeneratorDataFreshness: all tests passed` — so this verification run needed none of the `core.autocrlf` workaround the previous three runs required.
+**A test defect I introduced and caught:** the first run of this batch reported 571/1. The failure was mine, not the product's — the garrison round-trip test's `SELECT` fetched only four columns, so my new `morale` assertions read the `99` sentinel from `row.get("morale", 99)`. Widened the SELECT and added an explicit `row.has(col)` check for all five columns, so a missing column now fails as "query did not return 'morale'" instead of masquerading as a wrong value. Re-ran twice: 572/0.
+**Also worth knowing for reading these logs:** the per-test `print("  <name>: OK")` lines in this repo are UNCONDITIONAL — `garrison_battle_rating_is_raw_light_infantry: OK` printed in that failing run despite six failed assertions inside it. Only the suite-level `X: all tests passed.` (gated on `has_failures()` in `test_suite_base.gd`) and the `=== TEST RESULTS ===` total are trustworthy evidence. Do not cite a per-test OK line as proof a test passed.
+**Known issues:**
+- **[Punch-list item 3, NOT done] Tribal-warrior lifecycle RAW is unimplemented.** `ax_domains_of_chaos.xml` §levy_rules requires releasing warriors when population falls (`tribal_warriors_released_for_population_loss`: signal declared, **0 emitters**), and §tribal_warrior_morale requires loyalty rolls on calamity — rout, ≥25% casualties, out of supply, a month unpaid, 3 months without spoils (`tribal_warriors_loyalty_failed`: **0 emitters**). `_morale_check_triggered` and `_called_to_arms` have one emitter each but neither writes its departure-log line. Consistent with the 2026-05-22 entry's "pool maintenance hooks shipped (4 of 6 items)". This is a feature build, roughly a half-day with tests.
+- **No backfill** for pre-existing campaign rows (see Decisions).
+- `git config core.autocrlf` was set to `false` at REPO scope by earlier verification runs this session (worktrees share `.git/config` unless `extensions.worktreeConfig` is set — the per-worktree assumption was wrong). Unset on 2026-08-01; it now resolves to `true` from the system gitconfig, which is where it was before. No files were re-checked-out in the main tree, and `git status` shows no EOL churn.
+**Next session should:**
+- D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix, minting each slice through `TroopBattleRatingTable.for_unit` AND `base_morale` (conscripts and militia are RAW -2, and 0.003 BR — do not "correct" those to 0.004167).
+- Or punch-list item 3, the tribal-warrior lifecycle RAW above.
+
+
+## Session 2026-08-01 (cont.) — Tribal-warrior lifecycle RAW: population-loss release + Unit Loyalty rolls (punch-list item 3)
+
+**Task:** Build the unimplemented tribal-warrior lifecycle RAW flagged as punch-list item 3 — population-loss release (`ax_domains_of_chaos.xml:402`) and loyalty rolls on calamity (`:454-456`) — plus departure-log lines for the four migration-129 event types that had none.
+**Model used:** Opus 5 — RAW re-derivation, verification, design, implementation, tests.
+
+**Verification pass first (the handoff asked for it, and it changed the plan):**
+
+- **All RAW citations in the handoff check out**, with tightened spans: population-loss release `ax_domains_of_chaos.xml:402`; triggers `:452-457`; departure rules `:459-463`; the loyalty mechanic `daw_armies_recruitment.xml:93-109`; the Unit Loyalty table `daw_armies_recruitment.xml:265-275`. The "p. XX" note at `ax_domains_of_chaos.xml:477` is indeed only about the Axioms book's own broken cross-reference — the table is present in DaW, so this was never blocked.
+- **All three code gaps confirmed independently.** `domain_handlers.gd:701` had only the `> 0` branch; `tribal_warriors_released_for_population_loss` and `tribal_warriors_loyalty_failed` had zero emitters; only `_levied` and `_stood_down` had `record()` calls.
+- **THE HANDOFF'S THREE "JEDIDIAH DECISIONS" WERE ALREADY DECIDED**, in `generation/gdd-tribal-warriors.md`, and escalating them would have wasted a round trip. §3.2 gives the population-shrink algorithm *including* force-standing-down levied units (dormant first, then lowest tier first). Q-TW-8 was **RESOLVED 2026-05-22 as not-applicable** — not "deferred" as the handoff said; it quoted the earlier same-day entry that a later one superseded. And GDD §7.4 already rules out a brigand force in v1.
+- **The handoff's own correction was also half wrong.** It claimed the gaps "appear to have simply never been scheduled". The 2026-05-22 entry explicitly labels the morale-check emitter *"signal-only stub in v1; full roll mechanic + departure resolution land in a future polish"*, and GDD §11 lists the population-shrink release hook as an 11D.5 roadmap item. Both were scheduled and silently not built.
+
+**Three RAW findings the handoff did not mention, all of which changed the build:**
+
+- **`daw_armies_recruitment.xml:775` — the officer morale modifier does NOT apply to Unit Loyalty rolls** ("Morale modifier affects Unit Morale rolls for units under the officer's command; it does not affect Unit Loyalty rolls"). So the bard aura, commander Charisma, Command proficiency and legendary-leader bonuses are all excluded. This is what makes §129's stored-vs-roll-time split load-bearing: a unit carrying a baked-in bard +1 would smuggle it into a roll RAW says the bard cannot touch.
+- **The DaW Unit Loyalty carryover is NOT the henchman ladder's**, despite sharing all five 2d6 bands. DaW gives Fanatic **+1** (`:107`) and makes two **consecutive** Grudging results a departure (`:105`); henchman loyalty gives Fanatic +2 and Grudging a one-shot −1. Mirroring `VassalLoyaltyResolver`'s *pattern* was right; calling `HenchmanLoyaltyResolver` would have been wrong by 1 point and by an entire departure condition.
+- **RAW's out-of-supply calamity is PER WEEK** (`daw_campaigning_armies.xml:360-361` — "Each week a unit is partially or completely unsupplied counts as a calamity. Each such unit must make a loyalty roll"), not the 2-consecutive-week threshold `ArmySupplyTracker`'s `calamity_triggered` placeholder assumed.
+
+**Jedidiah rulings this session:**
+
+- **The 3-month-spoils "morale roll" is a RAW error.** *"Later errata clarify it is just a straight loyalty roll after 3 months without spoils equal to at least their monthly wage. No morale roll for this, just a loyalty roll. If the result is desertion they return to their clanhold if it still exists, and may be called up again later as normal."* This dissolved the one genuine design gap — the only morale table in the corpus is the battle-phase one (rout/flee/waver/stand_firm/rally), whose results have no out-of-battle meaning, and GDD §7.3's "on failure a loyalty roll fires" cascade never had a defined failure band.
+- **Unit Loyalty outcomes are unit-level, per RAW.** GDD §7.4's "partial departure (some count departs)" has no basis in `daw_armies_recruitment.xml:103-107` and is corrected.
+
+**Completed:**
+
+- **NEW `engine/subsystems/troops/tribal_warrior_loyalty_resolver.gd`** — `roll_loyalty(unit_id, calamities, calendar_day, dice = null) -> Dictionary`. Resolves the DaW Unit Loyalty table locally (`outcome_for_total`) with its own citation rather than borrowing `HenchmanTables.loyalty_result`, so a future henchman-table change cannot silently move unit loyalty. Modifier stack is exactly `unit morale − 2 per calamity after the first + 1 if already fanatic` and nothing else. Handles the `:107` fanatic-suppression-when-unpaid rule at the OUTCOME level (a unit that was already fanatic keeps its status), the `:105` two-consecutive-Grudging departure, and the return-to-clanhold refill. Dice go through `DiceSystem.roll_digital`, with the project's standard `dice.roll(count, sides)` fake seam.
+- **Migration 212** — `troop_units.loyalty_is_fanatic` + `troop_units.loyalty_consecutive_grudging`. A run COUNTER rather than a "last roll was grudging" boolean, so the run length is auditable and a test can assert the reset happened rather than infer it from a departure that didn't occur. Both added to `TroopUnitRepository._UPDATE_FIELDS` and `db/schema.sql`.
+- **`DomainHandlers._save_domain` gained the negative branch** (`_release_tribal_warriors_for_population_loss` + `_force_stand_down_tribal_warriors`), implementing GDD §3.2: dormant first, then levied lowest-tier-first (untrained → average → veteran, `id` breaking ties for determinism), emitting `tribal_warriors_released_for_population_loss` and writing the chronicle line. `_save_domain` gained a `calendar_day` param (defaulted, single caller updated).
+- **`DomainHandlers._tick_tribal_warrior_retention` now rolls.** It previously emitted a signal and stopped, leaving the counter stuck at 3 forever. Now writes the `tribal_warriors_morale_check_triggered` chronicle line and calls `roll_loyalty` with `CALAMITY_NO_SPOILS`; the resolver resets the counter, so a survivor restarts its clock instead of re-rolling monthly on the same stretch. Guard widened `== 3` → `>= 3` so a missed month can't wedge it permanently.
+- **Calamity trigger points wired as a fan-out (§70).** `ArmyCasualtyResolver._resolve_side` supplies rout (folding in `fleeing`, which RAW itself treats as routed at `daw_axioms_pitching_battle.xml:546`) and ≥25% casualties, skipping destroyed units. `ArmySupplyTracker.run_supply_tick` supplies out-of-supply on every shortfall week per RAW, via a new `_roll_tribal_warrior_supply_loyalty` helper returning `tribal_warrior_loyalty_rolls` in the result dict.
+- **`FavorsDutiesResolver`** now writes the `tribal_warriors_called_to_arms` chronicle line alongside the signal it already emitted.
+- **GDD §7.3 and §7.4 rewritten** to the errata'd rule and the unit-level outcome table, with the officer-modifier exclusion and the not-the-henchman-ladder warning called out.
+- **`docs/coding_conventions.md` §131** added — "Unit Loyalty is its own ladder — not the henchman one, and no leader bonuses", including the three-ladder comparison table, the suppression-applies-to-the-outcome rule, and the control-case testing note.
+
+**Decisions made:**
+
+- **Kept the `tribal_warriors_morale_check_triggered` name even though it now drives a loyalty roll.** Renaming costs a migration plus a schema `CHECK` rebuild plus a UI filter-dropdown change, for a cosmetic gain. Documented in the code, the GDD and §131 as "the 3-month spoils trigger fired". It is a wart; it is a cheap one.
+- **Did NOT redefine `ArmySupplyTracker.calamity_triggered`.** RAW says per-week, the flag says `>= 2 consecutive` — but it is a published return key with a test pinning it (`test_army_supply_tracker.gd:125-129`) and nothing consumes it mechanically. Added the RAW-correct per-unit roll alongside it and documented the discrepancy in place rather than silently redefining someone else's tested contract.
+- **Only departures are chronicled.** The event type is `tribal_warriors_loyalty_failed`; logging a survived calamity under it would make the log assert something false.
+- **Only `abandoned` / `salted_to_ruin` clanholds refuse returning warriors.** `ruined_stronghold` and `succession_pending` domains keep ticking per migration 122, and a clanhold whose chieftain just died is exactly where warriors go home to. First draft gated on `== STATE_ACTIVE`, which was too strict.
+- **Left `starting_count` untouched on a partial population-loss release**, matching the existing `StandDownTribalWarriorsHandler` precedent for "warriors leave without dying" rather than diverging from it.
+
+**Interfaces defined or changed:**
+
+- NEW `TribalWarriorLoyaltyResolver.roll_loyalty(unit_id: String, calamities: Array, calendar_day: int, dice = null) -> Dictionary` — returns `{ok, unit_id, outcome, departs, departure_kind, roll, morale, modifier, total, calamities, calamity_penalty, fanatic_bonus_applied, fanatic_suppressed_by_unpaid, consecutive_grudging, loyalty_is_fanatic, returned_to_pool}`.
+- NEW `TribalWarriorLoyaltyResolver.outcome_for_total(total: int) -> String`.
+- NEW consts: `CALAMITY_ROUT / _CASUALTIES / _OUT_OF_SUPPLY / _UNPAID / _NO_SPOILS`, `VALID_CALAMITIES`, `OUTCOME_ENMITY / _RESIGNATION / _GRUDGING / _LOYALTY / _FANATIC`, `DEPARTURE_ENMITY / _RESIGNATION / _GRUDGING`, `PENALTY_PER_EXTRA_CALAMITY = -2`, `FANATIC_BONUS = 1`, `GRUDGING_RUN_TO_DEPART = 2`.
+- `DomainHandlers._save_domain(domain_data, result, calendar_day := 0)` — third param added.
+- `ArmySupplyTracker.run_supply_tick` result gained `tribal_warrior_loyalty_rolls: Array`. `calamity_triggered` unchanged.
+- `TroopUnitRepository._UPDATE_FIELDS` gained `loyalty_is_fanatic`, `loyalty_consecutive_grudging`.
+
+**Database changes:** Migration 212 (additive, two columns on `troop_units`, both defaulting to 0 — the correct state for every pre-existing unit). No backfill needed.
+
+**Tests added/updated:**
+
+19 new tests in `tests/test_tribal_warriors.gd` (48 total; the suite was already registered, so no runner wiring was needed). New inner classes `_FakeDice` (deterministic 2d6 seam, matching the project's existing `dice.roll(count, sides)` convention) and `_StubRunner`, plus an `_insert_tw_unit` helper.
+
+- **Unit Loyalty:** all five table bands including the boundaries and out-of-range totals; the modifier stack is morale + calamity penalty and nothing else; duplicate calamities collapse; fanatic-never-from-unpaid **with a control case** rolling the same 12 on a non-pay calamity so the test cannot pass merely because the total missed the band; fanatic bonus is +1 and not the henchman ladder's +2; two consecutive Grudging results depart while a Loyalty result in between resets the run; departure returns survivors to the clanhold and chronicles it; the return respects the peasant_families ceiling; an `abandoned` clanhold takes nobody back while a `succession_pending` one does; departed units and empty calamity lists are rejected.
+- **3-month trigger:** the tick now consumes the counter and writes its chronicle line (both were absent before — the counter used to stick at 3 forever); at 2 months nothing rolls.
+- **Population loss:** dormant released first with units in service untouched; force stand-down takes untrained → average and leaves veterans at full strength; the pool invariant is restored and chronicled; a shrink the pool already fits is a no-op that writes no spurious log line.
+
+**Test results:** baseline (pristine HEAD + this session's starting uncommitted work, throwaway worktree `C:/Users/jttau/wtw1`, own APPDATA) = **572 suites passed, 0 failed** on run 2, 0 assertion failures. Verified tree (`C:/Users/jttau/wtw2`, byte-identical to the working tree across all 54 changed files) = **572 passed, 0 failed** on run 2, 0 assertion failures — **net zero**. `TribalWarriors`, `DepartureLogRecorder`, `DomainStocker`, `ArmySupplyTracker`, `Phase10A3` and `Scenario.ChaoticClanhold` all green. Run 1 of both trees was **identically** 495/77 (the documented fresh-DB FK noise), which is itself evidence the changes moved nothing: same pass count, same fail count, under FK stress.
+
+Migration 212 confirmed applied by direct `PRAGMA table_info` on the two isolated test DBs — both columns PRESENT in wtw2, MISSING in wtw1. Worth stating because the log prints nothing per-migration, and my first check read the wrong worktree's DB (a sibling agent worktree that shares the temp dir) and briefly looked like a failure.
+
+**A process error worth recording:** the first baseline attempt hung and looked like a product failure — cascading `Identifier "BattleMapGenerator" not declared`, autoloads resolving to `Nil`, and finally `Nonexistent function 'wipe_for_tests' in base 'Nil'`. Cause: a fresh `git worktree` has no `.godot/global_script_class_cache.cfg`, so **every** `class_name` reference fails to resolve. The memory note "new `.gd` files need `--import`" understates it — a fresh worktree needs a full `--import` before `run_tests.sh`, or the entire suite collapses in a way that reads like a real regression.
+
+**Known issues:**
+
+- **The "went a month without pay" calamity is the one trigger left unwired, deliberately.** `CALAMITY_UNPAID` exists and its RAW-specific rule (fanatic suppression) is implemented and tested, but there is no per-unit wage-payment or arrears tracking anywhere in the project — troop wages are aggregated into `DomainExpenseCalculator` and never paid per unit. Wiring it means building a payment-arrears subsystem (the henchman `unpaid_months` pattern, per troop unit), which is a feature, not a wiring job. Flagged rather than invented.
+- **Found in the wider sweep the handoff asked for: RAW `ax_domains_of_chaos.xml:399` ("Any additional levies are treated as militia") is in tension with `:36` ("Clanhold chieftains cannot conscript peasants or levy militia").** `LevyTribalWarriorsHandler` currently caps at `available` and refuses the excess. For a *clanhold* that looks right — `:36` bars militia outright. `:399` sits in the general tribal-warriors section, which `:394` says covers "beastman clanholds **and chaotic domains**", so it most likely governs chaotic non-clanhold tribal domains. **[NEEDS-JEDIDIAH]** — and relatedly, `TribalWarriorRegistry.can_levy` rejects every non-clanhold domain, so chaotic tribal domains cannot levy tribal warriors at all today, which `:394` says they should be able to.
+- **RAW's partial-supply allocation is not modelled** (`daw_campaigning_armies.xml:365-367` — leader picks who eats; starved units take an extra −1 on loyalty). The project's supply model is all-or-nothing per army, so every unit starves together. Noted in the helper.
+- Only tribal-warrior units roll loyalty. Mercenaries, conscripts, militia and followers are entitled to the same rolls (`daw_armies_recruitment.xml:353`, `:458`, `:477`) and have no departure pipeline. Migration 212's columns are deliberately source_type-agnostic so that build is additive.
+
+**Next session should:**
+
+- Get Jedidiah's read on the `:399` vs `:36` militia-overflow tension and on whether chaotic non-clanhold tribal domains should be able to levy at all.
+- D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale` (conscripts and militia are RAW −2, 0.003 BR).
+- Optionally extend Unit Loyalty to the other four source_types now that the resolver and columns exist.
+
+## Session 2026-08-02 — The last RAW Unit Loyalty calamity: "going without pay for a month"
+
+**Task:** Wire the fourth and final RAW calamity trigger for troop Unit Loyalty rolls (`rules/ax_domains_of_chaos.xml:455`, `rules/daw_armies_recruitment.xml:98`). Deferred on 2026-08-01 because there is no per-unit wage payment or arrears tracking anywhere in the project — wages are aggregated into `DomainExpenseCalculator` / `GarrisonExpenditureCalculator` and settled as one number, so nothing could say that a SPECIFIC unit went unpaid.
+
+**Model used:** Opus 5.
+
+**Completed:**
+
+- **`engine/subsystems/troops/troop_pay_shortfall_resolver.gd` (NEW, `TroopPayShortfallResolver`)** — implements Jedidiah's 2026-08-01 approach: pay stays aggregate, and the unpaid units are designated **ex post facto** from the shortfall. Nothing on the payment path changed and no migration was needed.
+  - `resolve_for_domain(domain_id, funds_available_cp, designator := Callable()) -> Dictionary` → `{domain_id, wage_bill_cp, funds_available_cp, shortfall_cp, unpaid_unit_ids, unpaid_wage_cp, considered_unit_ids, designator}`.
+  - `wage_requiring_units(domain_id) -> Array` — every ACTIVE unit assigned to the domain with `monthly_wage_cp > 0 AND monthly_cost_cp > 0`, `ORDER BY monthly_wage_cp ASC, id ASC` (deterministic tie-break).
+  - `designate_cheapest_first(shortfall_cp, units) -> Array` — the default rule; accumulates cheapest units until the designated wages cover the shortfall.
+- **`engine/subsystems/session/handlers/domain_handlers.gd`** — `_resolve_domain_month` computes `pay_shortfall` just before the tribal-warrior tick and passes the designation in; the result dict gained a `pay_shortfall` key. `_tick_tribal_warrior_retention` gained a third parameter `unpaid_unit_ids: Array = []` and is now the domain tick's single monthly loyalty pass: it increments the spoils counter, collects BOTH monthly calamity kinds, and makes ONE `roll_loyalty` call per unit.
+- **`docs/coding_conventions.md` §132** — "Aggregate pay, ex-post-facto unpaid designation". §131's fan-out bullet updated to name the new trigger.
+
+**Decisions made:**
+
+- **"Cheapest" = lowest `troop_units.monthly_wage_cp`, which is the WHOLE unit's monthly wage, not per soldier.** Every mint site multiplies by count before storing (`levy_tribal_warriors.gd:166`, `conscript_troops.gd:77`), so a 120-strong unit at 5 gp/soldier stores 60,000 cp. That is also the right unit of choice: a ruler picks between units, not soldiers. Deliberately NOT `monthly_cost_cp`, the denormalized wage + specialist + 4 × weekly supply figure — supply is not pay, and RAW's calamity is about pay.
+- **Troop pay takes FIRST claim on `treasury_cp + revenue.total`.** This is not an invented priority: `DomainExpenseCalculator.calculate_monthly_expenses` already zeroes liturgy / maintenance / tithe / tribute / repression under the income gate while keeping the garrison line, so garrison-before-everything is the established expense ordering in this codebase. It is also the conservative reading — the calamity fires only when the domain genuinely could not pay its soldiers out of everything it had. `treasury_cp` read at that point is still the PRE-settlement figure (`_save_domain` applies `net_income` at the end of the tick), and negative treasuries floor at 0 so the shortfall can never exceed the wage bill.
+- **The designation spans the whole roster; only the ROLL is gated by source type.** The wage bill covers every `source_type` and every `assignment_kind` — who a ruler can afford is a question about all of them at once, and a clanhold with one tribal unit and twenty mercenaries should weigh all twenty-one. Only `source_type = 'tribal_warrior'` units actually roll, stated explicitly in the tick's docstring: mercenaries, conscripts, militia and followers are entitled to the identical roll per `daw_armies_recruitment.xml:353` / `:458` / `:477`, but none has a departure pipeline (`_return_warriors_to_clanhold` is clanhold-specific; a departing mercenary should return to the hireable pool, not vanish). Extending them later changes ONE condition in the tick and nothing in the money layer.
+- **NOT filtered on `assignment_kind = 'garrison'`, unlike `GarrisonExpenditureCalculator`.** That calculator filters because it computes the RAW garrison *morale threshold*, a different question. Levied tribal warriors are minted `assignment_kind = 'available'` (`levy_tribal_warriors.gd:187`) and `ExtractionResistanceRouter` flips garrison units to `on_campaign` and back for the length of a muster — borrowing that filter would have made this rule a **no-op for the only source type that can currently roll**, and made the calamity flicker on and off with musters.
+- **`monthly_cost_cp > 0` is the "actually on the payroll" test.** Cost-0 units are the RAW by-value-only cases the garrison calculator already separates out — faithful cleric/bladedancer followers (barred from calamity loyalty rolls outright by `daw_armies_recruitment.xml:481`) and trained militia counted toward garrison expense without money changing hands (`acore_axioms` §garrison L229-230). There is no pay for them to go without.
+- **Both monthly calamities combine into ONE roll.** RAW `daw_armies_recruitment.xml:100` — "-2 to the loyalty roll per calamity after the first" — so a unit three months without spoils that ALSO went unpaid is suffering two calamities at once. Rolling twice would hand it two independent chances to depart at full strength: strictly harsher than the printed rule. This is why the unpaid designation is fed INTO `_tick_tribal_warrior_retention` rather than resolved in a separate pass. Generalized into §132: when adding a calamity trigger point, check whether an existing one shares its tick.
+- **A custom designation that under-covers the shortfall is topped up cheapest-first, not rejected** (`DESIGNATOR_CUSTOM_TOPPED_UP`). The money is gone either way; leaving part of the shortfall unassigned would silently pretend those wages were paid. Ids the designator returns that are not on the domain's payroll are dropped with a `push_error`.
+- **No new departure-log event type, so no migration.** Per §131 only DEPARTURES are chronicled, and `roll_loyalty` already writes that line with the calamity list in its metadata. The unpaid trigger reuses the existing migration-129 `tribal_warriors_morale_check_triggered` signal with `reason = CALAMITY_UNPAID` — the `reason` parameter exists precisely to distinguish which calamity fired, and the signal has no consumers to confuse.
+
+**Interfaces defined or changed:**
+
+- `TroopPayShortfallResolver.resolve_for_domain(domain_id: String, funds_available_cp: int, designator: Callable = Callable()) -> Dictionary`
+- `TroopPayShortfallResolver.wage_requiring_units(domain_id: String) -> Array`
+- `TroopPayShortfallResolver.designate_cheapest_first(shortfall_cp: int, units: Array) -> Array`
+- Constants `DESIGNATOR_CHEAPEST_FIRST` / `DESIGNATOR_CUSTOM` / `DESIGNATOR_CUSTOM_TOPPED_UP` (values `"cheapest_first"` / `"custom"` / `"custom_topped_up"`), reported back as the result's `designator` key.
+- **The player-override seam:** `designator` is `(shortfall_cp: int, units: Array) -> Array` returning unit ids. NPC domains never supply one and always get cheapest-first (Jedidiah: no player input on NPC domains). When the player-facing "choose who goes unpaid" option is built it passes its own Callable at the `DomainHandlers` call site — one argument, no restructuring. The UI itself is deliberately NOT built.
+- `DomainHandlers._tick_tribal_warrior_retention(domain_id, calendar_day, unpaid_unit_ids: Array = [])` — third parameter added; existing 2-arg callers are unaffected.
+- `_resolve_domain_month`'s monthly-report dict gained `pay_shortfall` (the full resolver dict, present whether or not anything went unpaid).
+- `EventBus.tribal_warriors_morale_check_triggered(troop_unit_id, reason)` now also fires with `reason = "without_pay_for_a_month"`.
+
+**Database changes:**
+
+- None. That was the point of the ex-post-facto design — no per-unit payment rows, no arrears columns, no change to how money moves.
+
+**Tests added/updated:**
+
+- `tests/test_tribal_warriors.gd` — nine new tests plus a `_insert_payroll_unit` helper (exposes wage / cost / assignment_kind / source_type / morale, which `_insert_tw_unit` hardcodes):
+  - `test_pay_shortfall_is_zero_when_funds_cover_the_wage_bill`
+  - `test_pay_shortfall_designates_cheapest_units_first` (with a smaller-shortfall control that stops at one unit, so the accumulate-until-covered loop is actually exercised)
+  - `test_pay_shortfall_designates_everyone_when_the_domain_can_pay_nothing` (negative funds floor at 0)
+  - `test_pay_shortfall_ignores_by_value_only_units`
+  - `test_pay_shortfall_spans_every_assignment_kind_and_source_type`
+  - `test_pay_shortfall_custom_designator_replaces_cheapest_first`
+  - `test_pay_shortfall_tops_up_a_designator_that_under_covers`
+  - `test_unpaid_designation_alone_fires_a_loyalty_roll`
+  - `test_unpaid_and_spoils_calamities_make_one_combined_roll`
+- **Technique worth reusing:** the monthly tick owns its own dice with no injection seam, so the end-to-end tests set unit morale to -20, which puts every possible 2d6 result in the 2- Enmity band. "Departed" then deterministically means "rolled" and "active" means "did not roll" — with an un-designated control unit in the same domain to prove the *trigger* fired rather than just the tick.
+
+**Known issues:**
+
+- **Mercenaries, conscripts, militia and followers still do not roll**, for the reason above. The designation already covers them, so the remaining work is a departure pipeline per source type, not money plumbing.
+- The domain expense ledger still only bills for `assignment_kind = 'garrison'` units, while the wage bill here covers the whole roster. That gap predates this session (on-campaign wages are not charged anywhere) and is left alone deliberately — it makes the shortfall test conservative, never over-eager.
+- RAW's partial-supply analogue (`daw_campaigning_armies.xml:365-367`, where the leader picks who eats and the starved units take an extra -1) has no equivalent here: an unpaid unit takes no extra modifier beyond the -2/extra-calamity stack. RAW does not print one for pay.
+
+**Next session should:**
+
+- Extend Unit Loyalty to the other four source_types — the resolver, the columns and now the unpaid designation all exist; what is missing is a departure pipeline per source type (mercenaries back to the hireable pool, conscripts/militia as desertion per `daw_armies_recruitment.xml:353` / `:458`, followers per `:477`).
+- Resume the domain-acquisition arc: the R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`), which is still the forced next step and blocks R-1.
+- D-5 — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale` (conscripts and militia are RAW -2, 0.003 BR).
+
+
+## Session 2026-08-03 — Excess tribal levy + the standing levy penalties (§100 gap closed)
+
+**Task:** Resolve the `ax_domains_of_chaos.xml:399` vs `:36` levy conflict per Jedidiah's ACKS-Discord ruling, and implement the domain penalties it depends on.
+**Model used:** Opus 5 — RAW verification, design, implementation, tests.
+
+**The ruling (Jedidiah, 2026-08-03, sourced from the ACKS Discord):** tribal warriors levy free up to 1/family; a chieftain MAY levy beyond that but takes the same domain morale and income penalties a normal domain takes for militia. RAW puts no cap on the excess, but the economics are degenerate without one (each excess warrior costs a family's revenue, so 2/family means zero income against undiminished expenses, then morale collapse, families leaving with their warriors, rebellion). Cap invented at 2 warriors per 10 families beyond the free allotment — 1.2 warriors/family total, ~20% income cut, still nearly 4× what a standard domain musters without mercenaries (1 conscript + 2 militia per 10) and at far better training. Dial back if play proves it strong.
+
+**Two findings that shaped the build:**
+
+- **The "invented" cap is RAW's own number.** `daw_armies_recruitment.xml:428` — "Up to 2 additional peasants per 10 families may be levied" — is exactly 2-per-10, and `:429-432` supply the whole rest of the package (revenue −1 family each, morale −1/−2 by density, penalties until sent home, permanent on death). So `:399`'s "additional levies are treated as militia" resolves cleanly as *militia limits and costs, not militia stat blocks*. The ruling and RAW converged independently.
+- **The machinery the ruling references did not exist.** "The same as a normal domain does when levying militia" — normal domains took NO such penalties in this codebase. `domain_revenue_calculator.gd` and `domain_morale_resolver.gd` had zero militia references and `levy_militia.gd` never touched either; only the permanent-on-death loss was ever built. Conventions §100 flagged precisely this on 2026-07-04 and left it for Jedidiah. So this was writing the reference implementation, not matching one. **Jedidiah chose to close §100 and wire militia through the same model.**
+
+**Completed:**
+
+- **NEW `engine/subsystems/troops/levy_penalty_calculator.gd`** — the source-agnostic standing-penalty model. `levy_cap_for_families`, `morale_penalty`, `revenue_family_reduction`, `levied_peasants_for_domain`, `penalties_for_domain`. The penalty basis is a LIVE query over active `militia` + `is_excess_levy=1 tribal_warrior` rows, which is what makes `:431` "until sent home" true for free — stand-down, battle death and loyalty departure all relieve it with no extra wiring.
+- **Migration 213** — `troop_units.is_excess_levy` + a partial index. Per-unit flag rather than a domain counter, because rows are the thing that leave; threaded through `TroopUnitRepository.create_unit`.
+- **`DomainRevenueCalculator.calculate_monthly_revenue(..., levied_peasants := 0)`** — levied peasants drop out of the revenue-bearing family count for service, tax AND land (`:429` says "domain revenue", not one stream). `peasant_families` is untouched: they are under arms, not dead. Returns `levied_peasants` + `revenue_families_lost_to_levy` on both the normal and income-gated paths.
+- **`DomainMoraleResolver.resolve_base_morale(..., levy_morale_penalty := 0)`** — lands in BASE morale, alongside classification and stronghold, because `:431` makes it standing rather than a monthly event.
+- **`DomainHandlers._resolve_domain_month`** reads the penalty ONCE and feeds both consumers, so they cannot disagree about how many peasants are levied.
+- **`LevyTribalWarriorsHandler`** — draws the free allotment first, then the capped excess; composes the two portions SEPARATELY so no row is a mix; decrements `available_tribal_warriors` by the free portion only (previously it would have driven the pool negative); the cap is STANDING, enforced against excess already under arms.
+- **Free/excess split in the pool invariant.** `TribalWarriorRegistry._sum_levied_count` now filters `is_excess_levy = 0` and `pool_for_domain` gained `excess_levied` / `excess_cap` / `excess_room` / `excess_cap_ok` / `total_under_arms`; `excess_levied_count` is public. Same filter on `DomainHandlers._sum_active_tribal_warrior_count`.
+- **Population shrink enforces BOTH ceilings** — the §3.2 free-allotment release and a trim of excess above the shrunken cap, via a shared `_stand_down_tribal_rows(domain_id, needed, calendar_day, excess_flag)` row-walker.
+- **`generation/gdd-tribal-warriors.md` §5.1a** written; §5.1 validation/effects rewritten. **`docs/coding_conventions.md` §132** added.
+
+**A bug I introduced and caught:** the first pass early-returned from `_release_tribal_warriors_for_population_loss` when the free side still fit, which silently skipped the excess trim — so a domain whose free pool was fine would have kept excess warriors above its shrunken ceiling indefinitely. The two overages are INDEPENDENT (a shrink can breach either, both, or neither). Restructured to compute the free side without returning on it, then always trim. Covered by `test_population_loss_releases_excess_over_the_shrunken_cap`, which deliberately uses a fixture where the free side needs nothing.
+
+**Decisions made:**
+
+- **`ax_domains_of_chaos.xml:36` still stands** — a clanhold cannot raise militia UNITS. The excess levy is not militia; it borrows militia's price. Both rules survive intact.
+- **Did NOT reduce `peasant_families` for the revenue penalty.** RAW takes the family's REVENUE, not the family. Reducing the population would double-charge against the permanent-on-death mechanic and shrink the levy cap that bounds the resource.
+- **Rewrote two obsolete tests rather than deleting them.** `test_levy_caps_at_available` and `test_levy_rejects_zero_available` both encoded the old cap-and-refuse rule and correctly went red. Each now pins the NEW ceiling; the rejection test uses a 9-family clanhold (where `(9/10)*2 == 0` gives genuinely zero excess room) and gained a CONTROL case — same empty pool on a 500-family domain, expect success — because "levy refused" would otherwise pass just as happily if the excess path had never been wired.
+
+**Interfaces defined or changed:**
+
+- NEW `LevyPenaltyCalculator` (consts `MAX_LEVIED_PER_10_FAMILIES = 2`, `MORALE_PENALTY_LIGHT = -1`, `MORALE_PENALTY_HEAVY = -2`, `HEAVY_DENSITY_PER_10 = 2`).
+- `DomainRevenueCalculator.calculate_monthly_revenue` gained a 6th optional param + 2 result keys.
+- `DomainMoraleResolver.resolve_base_morale` gained a 7th optional param.
+- `TribalWarriorRegistry.pool_for_domain` gained 5 keys; `excess_levied_count(domain_id)` is NEW and public.
+- `LevyTribalWarriorsHandler.on_complete` result gained `free_count`, `excess_count`, `excess_cap`; new `blocked_reason` value `excess_levy_cap_reached`.
+- `TroopUnitRepository.create_unit` accepts `is_excess_levy`.
+
+**Database changes:** Migration 213 (additive: one column + one partial index). Default 0 is correct for every pre-existing unit — nothing could previously be levied past the free allotment.
+
+**Tests added/updated:** 10 new in `tests/test_tribal_warriors.gd` (cap arithmetic incl. the sub-10-family and negative cases; both morale bands and the gap between them; revenue reduction incl. the can't-exceed-population floor; the 20%-of-revenue headline number; excess units flagged with the free pool untouched and the invariant intact; standing cap not stacking across levies; free-before-excess ordering; shrink releasing excess over the new cap with the free side untouched; militia now carrying the penalties AND relief on send-home; the penalty reaching base morale). Two rewritten as above.
+
+**Test results:** throwaway worktree `C:/Users/jttau/wtw3`, own APPDATA, `--import` run first. **572 suites passed, 0 failed** on run 2, 0 assertion failures. `TribalWarriors`, `DomainRevenueCalculator`, `ClanholdMechanics`, `GarrisonExpenditureCalculator`, `DepartureLogRecorder` all green. The intermediate 571/1 was the two obsolete tests above, not a product defect.
+
+**Note on what this run covered:** the concurrent chip session (`task_26d92de9`, unpaid-troops calamity) landed `TroopPayShortfallResolver` and its `_tick_tribal_warrior_retention` rewrite into the same working tree BEFORE the worktree copy, so the verified 572/0 covers BOTH arcs together. Confirmed by diffing the working tree against the verified copy: only `docs/coding_conventions.md` and `generation/gdd-tribal-warriors.md` postdate it, both doc-only. The two merged cleanly and compose well — the chip accumulates spoils + unpaid calamities and rolls ONCE, correctly getting RAW's −2-per-extra-calamity stacking rather than two independent rolls, and over-levying now cuts revenue, which makes a wage shortfall more likely, which designates more unpaid units. That spiral is intended.
+
+**Known issues:**
+
+- **Wiring militia is a live BALANCE change, not a bug fix.** Militia levies were free until someone died; they now cost revenue and morale from the moment they are raised. That is RAW-correct and is what closing §100 means, but existing campaigns using militia will feel it immediately. Knobs are the four constants in `LevyPenaltyCalculator`.
+- The excess cap is the one genuinely invented number in this arc (RAW caps militia, not the tribal excess). Flagged for playtest; Jedidiah expects to dial it back if clanholds prove too strong.
+- RAW's partial-supply allocation (`daw_campaigning_armies.xml:365-367` — leader picks who eats, starved units take an extra −1 on loyalty) is still unmodelled; the supply model is all-or-nothing per army.
+
+**Next session should:**
+
+- Play-test clanhold military strength at the 1.2-warriors/family ceiling and report back before the cap is trusted.
+- Surface the levy penalty in the Domain tab — a ruler currently sees revenue drop with no line item explaining it. `revenue_families_lost_to_levy` is already on the revenue dict for exactly this.
+- D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale`.
+
+## Session 2026-08-03 (cont.) — Surfacing the levy cost on the Domain tab
+
+**Task:** The levy penalties landed earlier this session were invisible — a ruler saw revenue fall with no line item explaining it. Put the arithmetic in front of the player.
+**Model used:** Opus 5.
+**Completed:**
+- **NEW "Peasants Under Arms" card on `garrison_sub_tab.gd`**, rendered by `_render_levy_cost()` and placed directly under Garrison Expenditure (it is the other half of "what your troops cost you"). Shows the headline count and density, the revenue loss in FAMILIES plus its share of the earning population, the morale band with which side of the 2-per-10 threshold it fell on, and an explicit note that both penalties lift on stand-down. A domain with nobody levied gets a green "No peasants under arms" rather than an empty card, so the absence of a cost is legible too.
+- **Clanhold-only rows on the same card** separating the two allotments — free (1/family, no penalty, showing dormant vs levied) from excess (used / cap / room remaining, 2 per 10 families), with a line tying the excess to the charge above it. This was the genuinely opaque part: both populations are `source_type='tribal_warrior'` and only one of them costs anything.
+- **One-line annotation on `overview_sub_tab.gd`'s Demographics card**, under the morale figure: `↳ N peasants under arms: -X morale, −Y families of revenue (see Garrison)`. Deliberately minimal — it names the lever and points at the full math rather than duplicating it, and only renders when something is levied.
+- **NEW `tests/test_levy_cost_ui.gd`** (6 tests), registered through the full 4-edit dance (ext_resource + node in `test_runner.tscn`, `@onready` + run-loop entry in `test_runner.gd`).
+**Decisions made:**
+- **Nothing added to the Troops/Armies tab, deliberately.** Jedidiah asked about "Domain/Armies tab? Or both". The levy penalty is a DOMAIN cost, not an army one — `troops_tab_page.gd` / `armies_section.gd` list units and armies campaign-wide, where a per-domain revenue/morale figure has no natural home and would need re-deriving per domain in a list view. The domain that pays the cost is where the cost belongs. Flagged in the response so it can be overridden.
+- **Assertions read concatenated card text, not widget indices.** `_card_text(card)` joins every Label in a card, so adding a line later cannot false-fail the suite on an index shift — the failure mode that makes UI tests get deleted instead of maintained.
+- **Expressed the revenue hit in families + percentage, not cp.** RAW's unit is the family (`daw_armies_recruitment.xml:429`), and a cp figure would mean re-running the revenue calculator inside a render path. The percentage is what makes it land ("20% of your earning population"), and it matches how the ruling was framed.
+**Interfaces defined or changed:** `garrison_sub_tab.gd` gained `_levy_cost_card` + `_render_levy_cost()`; `overview_sub_tab.gd._render_demographics` appends the annotation. No engine-side changes — both read `LevyPenaltyCalculator.penalties_for_domain` and `TribalWarriorRegistry.pool_for_domain`, which already existed.
+**Database changes:** None.
+**Tests added/updated:** `tests/test_levy_cost_ui.gd` — no-penalty clean state; the full militia arithmetic (count, density, −20 families, 20%, the -2 band, the reversibility note); clanhold free-vs-excess split **asserting the 10 free warriors are NOT charged and only the 15 excess are**; relief after stand-down (:431); the Overview annotation appearing with a pointer to Garrison; and the Overview staying quiet when nothing is levied.
+**Test results:** throwaway worktree `C:/Users/jttau/wtw4`, own APPDATA, `--import` first. **573 suites passed, 0 failed** on run 2, 0 assertion failures — 572 baseline plus the new suite. `LevyCostUI`, `TribalWarriors`, `RealmSubTabUI` all green.
+**Known issues:**
+- **Not visually verified.** The godot-ai MCP was not connected this session, so the rendered card was never screenshotted — spacing, colour contrast and overflow behaviour are unchecked. Logic and text are covered by the headless suite; pixels are not. Worth a look next time the editor is open.
+- The `modulate` colours reuse the palette already in `_render_expenditure` (green ok / orange warn / red bad) for consistency, but were not checked against the app theme in dark mode.
+**Next session should:**
+- Visual smoke of the Garrison tab via godot-ai MCP when available.
+- Play-test clanhold strength at the 1.2-warriors/family ceiling (the excess cap is the one invented number in this arc).
+- D-5 (`docs/handoff-domain-rulings-implementation.md`) — the stocker conscript/militia/mercenary mix.
+
+## Session 2026-08-03 (cont.) — Excess warriors were resurrecting dead ones on stand-down
+
+**Task:** Sweep the tribal-warrior arc for open items. The sweep found a live bug introduced by the excess-levy feature earlier the same day.
+**Model used:** Opus 5.
+**Completed:**
+- **Fixed: standing down (or losing) an EXCESS-levy unit refilled `available_tribal_warriors`.** Excess warriors are ADDITIONAL peasants per `ax_domains_of_chaos.xml:399`, not a family's designated 1-per-family warrior — `LevyTribalWarriorsHandler` correctly never decremented the pool for them, but both return paths incremented it unconditionally: `StandDownTribalWarriorsHandler` step 2, and `TribalWarriorLoyaltyResolver._return_warriors_to_clanhold`. Both now no-op the refill when `is_excess_levy = 1`; the warriors go back to being peasants, which `peasant_families` already counts.
+- **Closed two stale flags in the 2026-08-01 entry** (recorded here rather than edited there — the log is append-only):
+  - The `[NEEDS-JEDIDIAH]` on the `:399` vs `:36` militia-overflow tension is **RESOLVED** (Jedidiah, 2026-08-03, sourced from the ACKS Discord). See the "Excess tribal levy" entry above.
+  - The sub-claim that "chaotic tribal domains cannot levy tribal warriors at all today, which `:394` says they should be able to" was **WRONG and is withdrawn.** `ax_domains_of_chaos.xml:58` defines a chaotic domain AS a clanhold ("A chaotic domain is a clanhold ruled by a chaotic human, demi-human, or sapient monster of high intelligence"), and the whole §chaotic_domains block is framed as `exceptions_from_clanholds` with no military exception. `establish_domain_flow.gd` force-locks `domain_style='clanhold'` for both chaotic establishment methods, so `TribalWarriorRegistry.can_levy`'s clanhold gate is CORRECT and no fix is needed. Do not re-open.
+**Decisions made:**
+- **The invariant cap was not sufficient protection, which is why this survived a green suite.** `min(available + count, peasant_families - free_levied)` looks like it bounds the refill, and it does whenever the pool is already at its ceiling. It fails exactly when the clanhold carries SLACK from past casualties — the slack is precisely the room the bad refill fills. Worked case: 100 families, 100 free warriors levied, 50 killed → available 0, free levied 50, slack 50. Levy 20 excess, stand them down → available becomes 20. Twenty dead warriors came back, against `:404` ("Tribal warrior casualties can only be replaced through population growth"). **A cap that is usually tight is not an invariant; test the case where it is loose.**
+**Interfaces defined or changed:** None. Both fixes are internal guards.
+**Database changes:** None.
+**Tests added/updated:**
+- `test_standing_down_excess_warriors_does_not_resurrect_dead_slots` — builds the slack fixture explicitly (asserting slack == 50 before acting, so the test cannot go vacuous if the fixture drifts), stands down the excess unit, asserts `available` stays 0 and slack stays 50. Includes a CONTROL standing down a FREE unit and asserting it DOES refill, so the guard cannot silently over-apply and break ordinary stand-down.
+- `test_excess_warriors_departing_on_loyalty_do_not_refill_the_pool` — same invariant on the loyalty-departure path via a forced Enmity roll.
+**Test results:** throwaway worktree `C:/Users/jttau/wtw5`, own APPDATA, `--import` first. **573 suites passed, 0 failed** on run 2, 0 assertion failures. `TribalWarriors` and `LevyCostUI` green.
+**Known issues:** Unchanged from the two entries above — the excess cap is still the one invented number pending playtest, the militia penalty is still a live balance shift, and the Garrison card is still visually unverified.
+**Next session should:**
+- Visual smoke of the Garrison "Peasants Under Arms" card via godot-ai MCP when connected.
+- Play-test clanhold strength at the 1.2-warriors/family ceiling.
+- Extend Unit Loyalty to the other four source_types — resolver, columns and unpaid designation all exist; what is missing is a departure pipeline per type (`daw_armies_recruitment.xml:353` / `:458` / `:477`).
+- R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`) — still the forced next step, still blocks R-1.
+
+## Session 2026-08-03 — RAW partial-supply allocation (who eats when the stockpile falls short)
+
+**Task:** Implement RAW `daw_campaigning_armies.xml:365-367` partial-supply allocation. The supply model was all-or-nothing per army: any shortfall rolled the out-of-supply calamity for EVERY active unit. RAW lets the leader choose which units are supplied, exempts those from the weekly check (`:366`), and gives the unsupplied an additional -1 on their loyalty roll (`:367`).
+
+**Model used:** Opus 5 for the whole session (RAW reading, the two design rulings, implementation, tests, verification).
+
+**Completed:**
+- **`SupplyCalculator.weekly_supply_cost_breakdown(army_id)` (new).** Itemizes the weekly cost per unit — `{total_cp, units: [troop_units row + weekly_supply_cp + weekly_supply_cost_exact]}`. `compute_weekly_supply_cost_cp` now delegates to it and returns the identical number it always did: `total_cp` stays the banker-rounded SUM, NOT the sum of the rounded parts (they differ by a cp or so once modifiers produce fractions).
+- **`ArmySupplyAllocationResolver` (new, `engine/subsystems/armies/`).** Designates who eats. Pure: never rolls, never touches the stockpile, no DB writes. Best-battle-rating-first greedy, ties on id; unaffordable units are SKIPPED not stop-the-walk; hungerless (cost-0) units force-supplied; residue spent on the best STARVING unit as partial supply, which stays unsupplied per `:360`. Player-override `designator: (stockpile_cp, units) -> Array` seam returning the FED set; over-designation trimmed worst-first (`DESIGNATOR_CUSTOM_TRIMMED`), off-roster ids and duplicates rejected.
+- **`UnitLoyaltyResolver.roll_loyalty(..., situational_modifier: int = 0)`.** RAW `:99`'s "adjustments" term, added last so every pre-existing caller is byte-identical. Reported in the result dict.
+- **`ArmySupplyTracker.run_supply_tick(army_id, calendar_day, designator := Callable())`.** Runs the allocation BEFORE the deduction; only the unsupplied set rolls (`:366`); each rolls at `UNSUPPLIED_LOYALTY_PENALTY = -1` (`:367`). Return dict gains `supplied_unit_ids`, `unsupplied_unit_ids`, `partially_supplied_unit_id`, `supply_designator`.
+- `calamity_triggered` left EXACTLY as found (`>= 2 consecutive weeks`, not the RAW rule) with its explanatory comment and its pinning test intact — flagged as a known discrepancy, not redefined.
+
+**Decisions made:**
+- **Ordering = best battle rating first, NOT cheapest-first [Jedidiah ruling 2026-08-03].** Surfaced as an open choice against "feed the most mouths (cheapest supply cost first)" and "best battle rating per supply cp". The reason cheapest-first could not simply be copied from `TroopPayShortfallResolver`: the two resolvers designate OPPOSITE sets. The pay resolver names the HARMED set, so cheapest-first maximises harm; this one names the SPARED set, so cheapest-first would MINIMISE it. Best-first preserves the harsh reading (cavalry costs 4x infantry to feed, so feeding the best starves the most) and is the decision a commander actually makes. Conventions §134.
+- **The -1 applies to ANY unsupplied unit, regardless of whether others were fed [Jedidiah ruling 2026-08-03].** Surfaced as a genuine RAW-reading question, since `:367`'s justification ("visibly being left to starve") could be read as requiring a genuinely partial allocation. Ruled: the -1 attaches to the unit being out of supply, full stop. **This deliberately harshens the pre-existing all-starve case by one point** — it is the intended reading, not drift, and is documented at the call site and pinned by test.
+- **The -1 is NOT a sixth calamity kind.** RAW says "additional", and it is -1 not -2, so routing it through the -2-per-extra-calamity stack would get both the size and the count wrong. Hence the separate `situational_modifier` parameter.
+- **Residue → partial supply of the best starving unit.** RAW `:360` already contemplates a unit "partially or completely unsupplied" and still counts it a calamity, so the leftover has a RAW home and needs no carry-forward semantics. Side effect: a shortfall week still drains the stockpile to 0, which is what the all-or-nothing model did, so `test_shortfall_increments_consecutive_unsupplied_weeks`'s `stockpile_after == 0` needed no change.
+- **Physical effects `:351-356` NOT implemented — deliberately out of scope, and NOT trivial.** 1 hp/day, cumulative -1 to attack throws and damage rolls, no natural healing, magic healing still works, a day's food restoring 1 hp and reducing the penalty by 1, half rations sustaining indefinitely. Confirmed absent: `SustenanceResolver` is PARTY-scoped ACore rations (`acore_adventures_and_encounters.xml` §rations_and_foraging), not troop units, and `troop_units` has no hp or hunger columns. Implementing them needs a migration for per-unit hunger/hp state, a DAILY cadence (this tick is weekly), and a hook into field-battle attack/damage resolution. The supplied/unsupplied designation built here is exactly the state they will consume.
+
+**Interfaces defined or changed:**
+- `SupplyCalculator.weekly_supply_cost_breakdown(army_id: String) -> Dictionary` — `{total_cp: int, units: Array}`; each unit is the `troop_units` row plus `weekly_supply_cp: int` and `weekly_supply_cost_exact: float`. `compute_weekly_supply_cost_cp` unchanged in behaviour.
+- `ArmySupplyAllocationResolver.resolve_for_army(army_id: String, stockpile_cp: int, designator := Callable()) -> Dictionary` — `{army_id, weekly_cost_cp, stockpile_cp, shortfall_cp, supplied_unit_ids, unsupplied_unit_ids, partially_supplied_unit_id, spent_cp, considered_unit_ids, designator}`. Constants `DESIGNATOR_BEST_FIRST` / `DESIGNATOR_CUSTOM` / `DESIGNATOR_CUSTOM_TRIMMED` / `DESIGNATOR_ALL_SUPPLIED`. Also `designate_best_first(stockpile_cp, units) -> {unit_ids, spent_cp}`.
+- `UnitLoyaltyResolver.roll_loyalty(unit_id, calamities, calendar_day, dice = null, situational_modifier: int = 0)` — new 5th param; result dict gains `situational_modifier`.
+- `ArmySupplyTracker.run_supply_tick(army_id, calendar_day, designator := Callable())` — new 3rd param; result dict gains `supplied_unit_ids`, `unsupplied_unit_ids`, `partially_supplied_unit_id`, `supply_designator`. `ArmySupplyTracker.UNSUPPLIED_LOYALTY_PENALTY = -1`.
+- Private helper renamed by the concurrent all-source-types work: `_roll_tribal_warrior_supply_loyalty` -> `_roll_unit_supply_loyalty(army_id, calendar_day, unsupplied_unit_ids)`.
+
+**Database changes:** None. No migration, no new columns — the designation is derived from the shortfall after the fact, per conventions §132/§134.
+
+**Tests added/updated:**
+- `tests/test_army_supply_tracker.gd` +9 tests with `_make_bare_army` / `_attach_unit` fixtures: full stockpile supplies everyone; partial stockpile feeds best-battle-rating-first (constructed so cheapest-first would give a DIFFERENT answer, so it pins the ruling not merely that allocation happened); unaffordable unit skipped not stop-the-walk; leftover partially supplies the best starving unit and it still counts unsupplied; hungerless always supplied incl. when a designator omits it; custom designator overrides the default; over-designation trimmed worst-first; off-roster/duplicate picks rejected without double-charging; and the integration test that only the unsupplied unit rolls, at -1, with `calamity_penalty == 0` proving the -1 stayed out of the calamity stack. Morale -20 makes every 2d6 land in the 2- Enmity band so "departed" means "rolled" (conventions §132's last bullet).
+- `tests/test_tribal_warriors.gd` +1: `situational_modifier` is additive, reported, outside the calamity stack, and defaults to 0 so existing callers are unchanged.
+
+**Known issues:**
+- `calamity_triggered` remains the non-RAW `>= 2 consecutive weeks` flag. Nothing consumes it mechanically; documented in place and left alone deliberately.
+- Extending Unit Loyalty to every source type landed CONCURRENTLY in the shared tree during this session (sibling session: `TribalWarriorLoyaltyResolver` -> `UnitLoyaltyResolver`, migration 214, `UnitLoyaltyResolver.rolls_loyalty` gate, `mutiny_force_composer.gd`, `test_unit_loyalty.gd`). It composes cleanly with this work — that gate replaced the hardcoded `source_type == 'tribal_warrior'` check inside `_roll_unit_supply_loyalty` while the unsupplied-designation filter and the -1 were preserved. Verified against the COMBINED tree, so the 574 count includes both.
+- One consequence worth watching: now that mercenaries roll loyalty, `_make_army_with_supply`'s mercenary unit in the older supply-tracker tests can depart mid-test. It does not today (those two tests still pass), but a future change to departure/assignment-release ordering could make `test_calamity_triggers_at_two_consecutive_weeks` tick 2 see a zero weekly cost.
+- Physical effects `:351-356` remain unimplemented (see Decisions).
+
+**Next session should:** (1) the `:351-356` physical effects if wanted — migration for per-unit hunger/hp, daily cadence, field-battle attack/damage hook; (2) the player-facing "choose who eats" screen, which now needs only to pass a Callable at the `run_supply_tick` call site; (3) optionally reconcile `calamity_triggered` with RAW `:360` and its pinning test.
+
+**Verification:** throwaway worktree at `C:/Users/jttau/AppData/Local/Temp/ackssup` (short path, `-c core.longpaths=true`), snapshotted from the shared tree via `git stash create` (non-destructive — never touches the sibling session's working tree) + untracked-file copy, `--import` before the first run, `bash tools/run_tests.sh` (2 runs, isolated APPDATA hash `4f334d97`). **Run 2: 574 suites passed, 0 failed, zero ASSERTION FAILED lines.** Baseline was 573/0; the +1 suite is the sibling's new `test_unit_loyalty.gd`. Net-zero new failures.
+
+## Session 2026-08-03 (cont.) — Unit Loyalty extended to every RAW source type
+
+**Task:** Extend RAW Unit Loyalty rolls from tribal warriors to the other `troop_units.source_type` values. The roll, the migration-212 carryover columns and the unpaid designation all existed; what was missing was a departure pipeline per type.
+**Model used:** Opus 5 — RAW verification, design, implementation, tests.
+
+**Jedidiah's four rulings this session (asked rather than guessed):**
+1. **Enmity — and only Enmity — fields a real hostile force.** `:103`'s "may attack or stage a coup … or seek service with a strong enemy" becomes troops on the map. Resignation and the two-Grudging departure just leave.
+2. **Resignation departs immediately** for every source type, matching the tribal v1 precedent. `:104`'s "will not risk another battle" clause stays unmodelled — there is still no in-data "leaving soon" state.
+3. **`:459`'s season = 91 days of continuous `on_campaign`**, evaluated at the monthly tick against a self-maintaining anchor (not 3 monthly ticks / 84 days, which is 7 days harsher than RAW).
+4. **The release path (`:356`/`:462`) is OUT OF SCOPE** — it is a leader's decision, not a loyalty outcome, and needs its own activity handlers.
+
+**Completed:**
+
+- **`TribalWarriorLoyaltyResolver` → `UnitLoyaltyResolver`** (`engine/subsystems/troops/unit_loyalty_resolver.gd`). Generalized rather than forked, per the task brief and §131: `:99-107` is printed in the mercenary chapter and the conscript/militia/follower/slave-soldier chapters all point back at it, so the roll was never tribal-specific. What was source-specific is the DEPARTURE, now `_resolve_departure`.
+- **`rolls_loyalty(unit) -> bool`** — one gate for "may this unit roll at all": the `ROLLING_SOURCE_TYPES` allow-list (each entry carrying the RAW line that grants it) plus the `:483` religious-fanatic exemption. All three fan-out sites call it instead of open-coding a `source_type ==` check.
+- **Departure dispatch.** tribal_warrior → return to clanhold (unchanged); conscript/militia/slave_soldier → `DISPOSITION_DESERTED` (`:355`/`:461`/`:612`); mercenary/follower → `DISPOSITION_LEFT_SERVICE`. **`vassal` does not roll at all** — `§vassal_troops` gives vassal troops no loyalty rule and describes a vassal garrison as "some mix of followers, mercenaries, conscripts, and militia", i.e. they ARE those types once mustered.
+- **NEW `engine/subsystems/troops/mutiny_force_composer.gd` (`MutinyForceComposer`)** — `field_mutineers(unit, calendar_day) -> String` (army id). Creates a one-shot Mutineer Captain NPC (`armies.political_owner_id` is NOT NULL), an `armies` row at the domain's stronghold hex, and a real troop row. Mutineers KEEP their own troop_type/race/tier/morale/veterancy — `:103` describes soldiers turning on an employer, not a company degenerating into rabble — but lose the payroll (all cp columns 0) and are minted with `assigned_domain_id = NULL`.
+- **`:459` militia continuous campaigning wired** — the one calamity that was in RAW and nowhere in the codebase. New `CALAMITY_CONTINUOUS_CAMPAIGN` + `SEASON_DAYS = 91`.
+- **`DomainHandlers._tick_tribal_warrior_retention` → `_tick_unit_loyalty`** — now iterates every active unit on the domain and collects all three monthly calamities (tribal spoils stretch, unpaid month, militia campaigning season) into ONE `roll_loyalty` call per unit, per `:100`.
+- **`_advance_campaigning_anchor`** — sets / clears / re-anchors `campaigning_since_calendar_day` purely from `assignment_kind`, so no muster, call-to-arms or extraction path has to maintain it.
+- **`ArmyCasualtyResolver._resolve_side` and `ArmySupplyTracker._roll_unit_supply_loyalty`** now roll for every eligible source type.
+- **`StrongholdRepository.location_for_domain(domain_id)`** — promoted from `BanditSpawner._stronghold_hex_for_domain` (which now routes to it) so the bandit and mutiny spawn paths share one query.
+- **`FollowerArrivalResolver`** sets `is_religious_fanatic` from the class table; `data/followers/per_class_tables.json` gains `religious_fanatic: true` + citation on cleric and bladedancer.
+- **Docs:** conventions §131 retitled and given a "2026-08-03 generalization — one roll, six departures" subsection. **Fixed a duplicate section number** — the 2026-08-03 levy-penalty section and the 2026-08-02 pay section were both numbered §132; the levy one is now §133, with its four code references repointed.
+
+**A real bug this build exposed, and the fix:**
+
+`String(null)` (conventions §106) had been latent in `_chronicle` and `_return_warriors_to_clanhold` for as long as tribal warriors were the only source type that rolled, because a levied warrior always has a clanhold. `troop_units.assigned_domain_id` is NULLABLE, and `row.get(key, default)` returns the STORED null rather than the default when the key exists — so the first army-supply unit without a home domain to take a loyalty roll threw "Invalid call. Nonexistent 'String' constructor", aborting both functions mid-flight. It did not fail a single assertion (574/0 with the crash present), which is precisely why it needed a test rather than a reading. Every raw-row coercion in both new files now goes through `StringUtils.s`; `test_a_unit_with_no_domain_rolls_and_departs_cleanly` covers both the ordinary and the Enmity branch.
+
+**Decisions made:**
+
+- **Religious fanatics are flagged, not derived.** The obvious test is `monthly_cost_cp == 0`, which `FollowerArrivalResolver` writes exactly when the class table says `wages_required: false` — but the **mage** table is also `wages_required: false`, and mages are not fanatics (`:481` names two classes). That proxy is correct today only because the mage table happens to have no `soldier_attractor` and therefore mints no troop rows: one data-file edit from silently exempting the wrong units. Migration 214 records the RAW fact. The backfill uses the proxy precisely because it is exact for EXISTING data.
+- **Departure ≠ release.** RAW gives militia two exits and only one is a loyalty outcome: `:461` "cannot voluntarily leave service, but may **desert**" vs `:462` "if voluntarily **released**, militia return to their farms." Sending deserters home would have been a plausible-looking bug that quietly handed the ruler back a resource RAW says he lost.
+- **Desertion relieves the standing levy penalty but must NOT cost population.** `ArmyCasualtyResolver._apply_militia_population_loss` is fed only from the battle `crippled` count (`:432` makes the loss permanent when militia are KILLED). Nothing on the loyalty path reaches it, and the §133 levy penalty relieves itself because its basis is a live query over ACTIVE rows. Both halves are pinned by tests, because the failure is silent in each direction.
+- **Tribal warriors keep their Q-TW-8 exemption from the brigand branch.** Extending Enmity-fields-a-force to them would have silently changed shipped, ruled-on behaviour; left for Jedidiah. **[NEEDS-JEDIDIAH]** — a tribal-warrior Enmity currently marches the warriors home to their clanhold, which reads oddly for the enmity band.
+- **ONE new departure-log event type, not two.** A mutiny is the same event as the departure that caused it, so it rides in the same line's summary + `fielded_army_id` metadata rather than emitting a second row.
+- **`is_religious_fanatic` / non-rolling types are skipped at the top of the tick**, not left for `roll_loyalty` to reject: the trigger SIGNALS fire before the roll, and announcing that a fanatic's loyalty is being tested when RAW says it never is is the same false assertion §131 bars from the log.
+
+**Interfaces defined or changed:**
+
+- `UnitLoyaltyResolver.roll_loyalty(unit_id, calamities, calendar_day, dice = null, situational_modifier := 0)` — result gains `source_type`, `disposition`, `fielded_army_id`; `error` gains `religious_fanatic_exempt` / `source_type_does_not_roll`.
+- `UnitLoyaltyResolver.rolls_loyalty(unit: Dictionary) -> bool`; consts `CALAMITY_CONTINUOUS_CAMPAIGN`, `SEASON_DAYS = 91`, `DISPOSITION_*`, `ROLLING_SOURCE_TYPES`, `DESERTING_SOURCE_TYPES`.
+- `MutinyForceComposer.field_mutineers(unit: Dictionary, calendar_day: int) -> String`.
+- `StrongholdRepository.location_for_domain(domain_id: String) -> Dictionary` (`{map_id, hex_q, hex_r}`; any value may be null).
+- `DomainHandlers._tick_unit_loyalty(domain_id, calendar_day, unpaid_unit_ids := [])` (renamed from `_tick_tribal_warrior_retention`).
+- `ArmySupplyTracker.run_supply_tick` result gains `unit_loyalty_rolls`; `tribal_warrior_loyalty_rolls` kept as an alias.
+- NEW `EventBus.troop_unit_loyalty_failed(troop_unit_id, source_type, departure_kind, fielded_army_id)` — every departure. `tribal_warriors_loyalty_failed` stays tribal-only (the narrower migration-129 contract).
+- `DepartureLogRecorder.VALID_EVENT_TYPES` gains `troop_unit_loyalty_failed`.
+- `TroopUnitRepository.create_unit` accepts `is_religious_fanatic`; `_UPDATE_FIELDS` gains `is_excess_levy`, `is_religious_fanatic`, `campaigning_since_calendar_day`.
+
+**Database changes:** Migration 214 — `troop_units.is_religious_fanatic` + `campaigning_since_calendar_day` (both additive ADD COLUMN, plus a partial index and the one-time fanatic backfill), and a `domain_departure_log` rebuild to widen the `event_type` CHECK with `troop_unit_loyalty_failed` (SQLite cannot ALTER a CHECK in place; the legacy_alter_table pattern from migrations 117/119/125-129). Rehearsed against a scratch SQLite DB before the suite run: applies clean, backfill hits only genuine faithful followers, existing log rows survive the rebuild, and the widened CHECK still rejects unknown types.
+
+**Tests added/updated:** NEW `tests/test_unit_loyalty.gd` (18 tests), registered through the full 4-edit dance. Covers: every RAW source type rolling; the vassal exclusion; the `:483` exemption **with a non-fanatic control proving the band was reachable**; per-type disposition incl. the `:461`-vs-`:462` distinction; Enmity fielding real troops (asserting the troop row, not just the army row — a BR-0 phantom is the bug §100 was built to fix) and the three bands that field nothing; mutineers keeping their troop type with prorated BR and no payroll; mutineers detached from the domain they turned on; levy-penalty relief; population NOT lost to desertion; the `:459` season incl. the 90-day boundary, the anchor clear on coming off campaign, and a non-militia control; the non-tribal departure-log event type; and the null-domain regression. `tests/test_tribal_warriors.gd` updated for the rename (77 + 4 references).
+
+**Test results:** throwaway worktree `C:/Users/jttau/wtul`, own APPDATA, `--import` run first. **574 suites passed, 0 failed** on run 2 (573 baseline + the new suite), 0 assertion failures, both runs exit 0. `TribalWarriors`, `ArmySupplyTracker`, `DepartureLogRecorder`, `LevyCostUI`, `ArmyCasualtyResolver` all green.
+
+**Read the log, not just the pass line.** The pre-fix run was ALSO 574/0 while throwing nine `String(null)` runtime aborts out of the new code — the count proves nothing about them. Post-fix, `grep -c "Nonexistent 'String' constructor"` still returns 9, but `grep -cE "unit_loyalty_resolver|mutiny_force_composer"` returns **0**: every remaining one is pre-existing and in files this session never opened — `religion_conversion_resolver.gd:399/:444/:495` (`String(arc.get("driving_character_id", ""))`), `ruler_death_handler.gd:341` (`String(domain.get("liege_domain_id", ""))`) and one dialogue test. Confirmed against HEAD: those files are unmodified and the offending lines are verbatim upstream. Filed as chip `task_e96b4325`; NOT fixed here (different subsystems, out of this task's scope).
+
+**Known issues:**
+
+- **A concurrent session was building in the same working tree throughout.** It landed RAW partial-supply allocation (`ArmySupplyAllocationResolver`, `supply_calculator.gd`, `test_army_supply_tracker.gd`) including a 5th `situational_modifier` parameter on `roll_loyalty` for `:367`'s starvation −1, while this session renamed the class it calls. Their contract was merged in verbatim (parameter, `situational_modifier` result key, kept OUTSIDE `calamity_penalty`) and their call sites updated, but if that session rewrites those files from its own context it will reintroduce `TribalWarriorLoyaltyResolver` and need a manual reconcile.
+- **[NEEDS-JEDIDIAH]** the tribal-warrior Enmity exemption above.
+- The `:459` anchor is only evaluated on a monthly tick, so a stretch can be under-counted by up to a month. Deliberate and conservative — it never over-counts.
+- `:104`'s "will not risk another battle or calamity" is still unmodelled for every source type.
+- Mutineers are fielded as `state='encamped'` with `strategic_stance='offensive'` and no AI driving them — they sit where they mutinied. Wiring them into `ThreatEscalationDriver`-style behaviour is follow-up work.
+
+**Next session should:**
+
+- Reconcile with the concurrent partial-supply session if it rewrote the supply tracker (check for reintroduced `TribalWarriorLoyaltyResolver` references).
+- Decide the tribal-warrior Enmity question above.
+- R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`) — still the forced next step, still blocks R-1.
+- D-5 — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale`.
+
+## Session 2026-08-03 (cont.) — §106 `String(null)` sweep (chip task_e96b4325)
+
+**Task:** Fix the pre-existing conventions §106 `String(null)` violations surfaced by the Unit Loyalty session's log grep — 9 runtime aborts in files that session never opened.
+**Model used:** Opus 5.
+
+**Completed:**
+
+- **`engine/subsystems/domains/religion_conversion_resolver.gd`** — `_driver_bonus_pct` (:399), `_driver_cha_mod` (:444) and `_proselytizing_caster_id` (:495) all read `String(arc.get("driving_character_id", ""))`. `domain_religion_conversion.driving_character_id` is NULLABLE and is null for every missionary-only arc — the *normal* state for one, not an edge case. Routed through `StringUtils.s`.
+- **`engine/subsystems/domains/religion_conversion_resolver.gd:486`** — `_get_domain_owner` reads `domains.owner_character_id`, also NULLABLE. **Not in the chip's list; found by sweeping the file.** It is reached from BOTH crashing functions above, and the column goes null exactly when a ruler dies — the moment a conversion arc is most likely to still be open.
+- **`engine/subsystems/domains/ruler_death_handler.gd:341`** — `String(domain.get("liege_domain_id", ""))`; nullable for every top-level (non-vassal) domain, which is most of them.
+- **`engine/subsystems/domains/ruler_death_handler.gd:348`** — `String(query_result[0].get("owner_character_id", ""))`. **Also not in the chip's list**; same nullable column via a raw query, for a liege domain that is itself between rulers.
+- **`tests/test_dialogue_p4_prompt_and_validation.gd:379`** — same pattern on `PromptAssembler.build()` output.
+- Dropped a redundant `String()` wrapper at `religion_conversion_resolver.gd:411` (`String(_get_domain_owner(...))` — the helper is already typed `-> String`).
+
+**Decisions made:**
+
+- **Fixed 6 sites, not the 4 reported.** A half-swept file re-crashes the first time a *different* nullable column is null — which is exactly the latency that produced this chip in the first place. The two extra sites were latent, not observed.
+- **Deliberately did NOT convert the other ~30 `String(row.get(...))` calls in these two files.** They read NOT NULL columns (`campaign_id`, `alignment`, `lifecycle_state`, `from_religion`, `to_religion`, `status`, `designated_heir_*`, `establishment_method`), verified against `db/schema.sql`, where `String()` cannot throw. §106's rule is to coerce *nullable* columns; converting provably-safe sites is churn that buries the real fix in review.
+- **Not every one of these is testable by value, and the tests say so.** A GDScript runtime error aborts the function and hands the caller the RETURN TYPE'S DEFAULT (`0` / `""`). For the three religion helpers the correct null-case answers (`100`, `+1`, the ruler's id) differ from that default, so the assertions genuinely discriminate. For `_overlord_character_id` BOTH nullable cases correctly return `""` — identical to an abort — so no assertion can catch a regression there. That test exercises the lines so a regression surfaces in the log grep, carries a control that *can* fail, and states the limitation in a comment rather than implying coverage it does not have.
+- **The acceptance criterion is the log grep, not the pass line.** The pre-fix suite was 574/0 *with all nine crashes firing*.
+
+**A pre-existing fixture defect found while writing the control — NOT fixed here:**
+
+`tests/test_religion_conversion.gd` `_setup()` inserts `TEST_DRIVER` with `persistence_tier='henchman'`, but `characters.persistence_tier` is `CHECK(... IN ('full','named','transient'))` — `henchman` is a *character_type* value in the wrong column. **The row has never existed** (`ERROR: CampaignRepository.get_character: not found. id=test_rc_driver` in every run). Consequence: every driver-dependent path in that suite silently takes the missing-driver fallback, so `_driver_bonus_pct`'s `DRIVER_BONUS_PCT_HENCHMAN_DIVINE` branch and the ruler-vs-henchman tier selection below it have never been exercised. Fixing it moves conversion-progress arithmetic in at least two existing tests, so it needs its own pass with the thresholds re-derived from the resolver. Filed as chip `task_2111cce7`. My control sidesteps it with a locally-owned driver row instead.
+
+**Interfaces defined or changed:** None — all six changes are internal coercions with identical behaviour on non-null input (`StringUtils.s` returns `str(v)`, which equals `String(v)` for the string-typed columns involved).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_religion_conversion.gd` — `test_null_driving_character_id_does_not_abort_the_driver_helpers` (asserts the missionary-only bonus is 100 not 0, the Cha fallback is +1 not 0, and the caster resolves to the ruler not "") and `test_null_domain_owner_does_not_abort_the_owner_lookup`. New helpers `_insert_arc_with_null_driver` (raw insert — `start_conversion` always records a driver, so the null case cannot be built through the public API), `_insert_local_driver` / `_delete_local_driver`.
+- `tests/test_ruler_death_handler.gd` — `test_null_liege_and_null_overlord_owner_do_not_abort`: null liege, vassal-with-ownerless-overlord, plus the discriminating CONTROL that a real overlord still resolves.
+- **Control design note:** the first draft's control asserted `TEST_DRIVER`'s Cha and went red — which is how the dead fixture above was found. Rewritten to insert its own driver at Cha 16 so `+2` discriminates three ways: against the ruler fallback (+1), against an aborted function (0), and against the fixture bug.
+
+**Test results:** throwaway worktree `C:/Users/jttau/wt106`, own APPDATA, `--import` run first. **574 suites passed, 0 failed** on both runs, 0 assertion failures. **`grep -c "Nonexistent 'String' constructor"` = 0, down from 9** — the stated acceptance criterion. `ReligionConversion`, `RulerDeathHandler`, `DialogueP4PromptAndValidation` all green.
+
+**Known issues:**
+
+- Chip `task_2111cce7` — the dead `TEST_DRIVER` fixture above. Real coverage loss, not cosmetic.
+- `_overlord_character_id`'s two null cases remain value-untestable by construction (see Decisions). The log grep is the only regression detector for them.
+- No repo-wide §106 sweep was done. Other files may hold the same latent pattern; `grep -rn 'String(.*\.get(' engine/` is the starting point if a sweep is wanted.
+
+**Next session should:**
+
+- Take chip `task_2111cce7` (dead TEST_DRIVER fixture) — it is the highest-value follow-up, since it is silent coverage loss rather than a crash.
+- Consider a repo-wide §106 sweep against nullable columns.
+- R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`) — still the forced next step in the domain-acquisition arc, still blocks R-1.
+
+## Session 2026-08-03 (cont.) — The dead TEST_DRIVER fixture (chip task_2111cce7)
+
+**Task:** Repair the `TEST_DRIVER` fixture in `tests/test_religion_conversion.gd`, which the §106 session found had never reached the database, and bring the driver-dependent paths it was masking under genuine test.
+**Model used:** Opus 5.
+
+**The bug:** `_setup()` inserted the driving caster with `character_type='pc', persistence_tier='henchman'`. `characters.persistence_tier` is `CHECK(... IN ('full','named','transient'))` — `henchman` is a CHARACTER_TYPE value in the wrong column — so the INSERT was silently rejected and the row never existed. Every run logged `ERROR: CampaignRepository.get_character: not found. id=test_rc_driver`, and nothing failed. Fixed to `character_type='henchman', persistence_tier='full'`, with the history recorded in a fixture comment so a future edit cannot quietly undo it.
+
+**Completed:**
+
+- **Fixture repaired** in `_setup()`. Charisma 14 is now marked load-bearing in the comment, because `test_tick_completion_*` documents its arithmetic in terms of it.
+- **NEW `test_driver_bonus_tier_selection`** — the coverage this chip is actually about. `_driver_bonus_pct` selects between three tiers and, until now, only ONE was ever reached: the missing driver meant `get_character` missed and the `if driver.is_empty()` guard returned `MISSIONARY_ONLY` for every arc, including arcs that passed a driver in. The test pins all three (missionary-only / henchman-divine / ruler-divine), asserts `ruler > henchman` so the ordering cannot invert, and pins the unresolvable-driver fallback that was masking the whole branch. It reads the resolver's constants rather than literals, so a rebalance moves the test with the rule.
+- **`test_tick_completion_at_60pct_threshold_flips_effective_religion` gained a gain assertion.** See below — this is the assertion that actually moved.
+- **`_insert_local_driver` / `_delete_local_driver` folded away** (the 2026-08-03 §106 workaround), per the chip's suggestion.
+
+**The assertions did NOT move, and that turned out to be the finding:**
+
+Derived before running rather than tuned after. With the driver present: `cha_mod` 0 → +1 (Cha 14), so `base_gain` 10 → 11; `driver_pct` 100 → 110 (henchman tier); `gain = 11 × 200 morale × 110 × 100 / 1e6` = 20 → **24**. But 299 + 20 = 319 and 299 + 24 = 323 both clear the 300 threshold, so the test's only assertion (`completed`) was true either way and could not tell the difference.
+
+**The test's own comment already said 24.** It read "1 roll × 11 × 200% morale × 110% henchman × 100% no altar = 24" while the code produced 20 — a documented-but-false calculation sitting unchallenged because nothing asserted it. So `check(congregant_gain == 24)` was added: the comment is now enforceable rather than decorative, and its failure message names the cause ("20 means the driver fixture is dead again"). That is the assertion that would have failed before this fix.
+
+**Decisions made:**
+
+- **Did not fold `_insert_local_driver` back by simply swapping in TEST_DRIVER — the control's assertion had to change too.** TEST_DRIVER (Cha 14) and TEST_RULER (Cha 13) both sit in the 13-15 band and both yield +1, so a Cha-based control cannot distinguish "read the driver" from "fell back to the ruler"; that is precisely why the §106 session inserted a Cha-16 row instead. The control now discriminates on the BONUS TIER (110 henchman vs 100 missionary-only), which is sound with the shared fixture AND is directly the branch this repair made reachable. Folding without changing the assertion would have produced a control that passes unconditionally.
+- **Mutation-tested the new guard rather than trusting that it passes.** Reverted the fixture to its broken form in the verification worktree and re-ran: the arithmetic assertion fires and reports 20, confirming both the derivation and that the guard actually bites. Given that this whole arc has been about tests that stay green while broken, a new guard asserted to protect something is worth proving can fail.
+- **Kept the third `_driver_bonus_pct` tier (SPIRITUAL_ADVISOR, 125) untested.** The resolver's own comment says it is unreachable until the §9.6 spiritual-advisor helper ships; asserting a value no code path can produce would be inventing coverage.
+
+**Interfaces defined or changed:** None — test-only, plus no production code touched this session.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- NEW `test_driver_bonus_tier_selection` (4 checks across all three live tiers + the unresolvable-driver fallback + the ruler > henchman ordering).
+- `test_tick_completion_at_60pct_threshold_flips_effective_religion` — new `congregant_gain == 24` assertion; the comment rewritten to record what actually ran before the repair.
+- `test_null_driving_character_id_does_not_abort_the_driver_helpers` — control rewritten onto TEST_DRIVER and the bonus tier; the local-driver helpers it needed are gone.
+- `_setup()` fixture comment records the CHECK-rejection history.
+
+**Test results:** throwaway worktree `C:/Users/jttau/wtfx`, own APPDATA, `--import` run first. **574 suites passed, 0 failed** on both runs, 0 assertion failures. The `get_character: not found. id=test_rc_driver` error that fired on every prior run is **gone from the log**; `String(null)` count stays at 0. **Mutation check (the important one):** reverting the fixture to its broken form in the worktree takes the suite to **573/1** and fires THREE independent assertions — the arithmetic guard reporting exactly `got 20` (confirming the 20 → 24 derivation empirically rather than by argument), the §106 control (`got 100` against the henchman 110), and the new tier-selection test (`got 100`). A new guard asserted to protect something is worth proving can fail; all three do.
+
+**Known issues:**
+
+- `DRIVER_BONUS_PCT_SPIRITUAL_ADVISOR` (125) remains unreachable and untested by design, pending the gdd-religion-conversion.md §9.6 helper.
+- No sweep was done for the same wrong-column-value mistake in other suites' fixtures. `persistence_tier` and `character_type` are easy to transpose and the failure is silent; a grep for `persistence_tier` values outside full/named/transient across `tests/` would be cheap insurance.
+
+**Next session should:**
+
+- Consider the `persistence_tier`/`character_type` transposition sweep above — the same silent-rejection pattern may sit in other fixtures.
+- R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`) — still the forced next step in the domain-acquisition arc, still blocks R-1.
+- D-5 — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale`.

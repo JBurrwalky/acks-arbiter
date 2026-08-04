@@ -173,21 +173,39 @@ Also: `domains.tribute_out_owed` carries **three different unit conventions acro
 
 ---
 
-## 5. Rulings needed from Jedidiah
+## 5. Rulings — RESOLVED by Jedidiah, 2026-07-28
 
-These are design decisions, not implementation choices, and several fixes are blocked on them.
+All seven open questions have been ruled on. These are binding design decisions; the build agent implements them.
 
-1. **Which representation of the realm tree is authoritative — `domains.liege_domain_id` or `vassal_assignments`?** Every fix to the cascade, succession and aggregate findings depends on this answer. (Recommendation: make `liege_domain_id` the structural truth and `vassal_assignments` the *appointment/loyalty record*, then have world-gen write both.)
-2. **What is the intended unit of `domains.tribute_out_owed`?** Nothing can be safely fixed until the column's unit is declared.
-3. **Is the Establish-Domain dialog the player's real acquisition surface, or a development shortcut a map-first flow was meant to replace?** The abandoned "Build Stronghold" wilderness context-menu action suggests the latter. The answer determines whether ~10 confirmed findings are "fix the dialog" or "delete the dialog."
-4. **Is the ownerless lazy-ruler state intentional or an unfinished M2b-2 step?** `docs/handoff_setting_domains_contract.md` may already record this; it should be read before anyone acts on the ownership findings.
-5. **When a domain with sub-vassals changes hands, do the sub-vassals transfer fealty to the conqueror, rebel, or become independent apexes?** RAW is silent. Whatever is chosen, both `vassal_assignments.status` and `domains.liege_domain_id` must be written in the same transaction.
-6. **Do mercenary garrison units transfer with a conquered domain, or disband?** (Militia/conscripts/garrison arguably follow the land; mercenaries arguably do not.)
-7. **Does domain income confer XP on the ruler only, or is it shared like adventure XP?** `calculate_domain_xp` takes an `is_henchman` flag implying a share model, but no distribution function exists.
+**R-1 — `domains.liege_domain_id` is AUTHORITATIVE for realm structure.**
+`vassal_assignments` is the *appointment and loyalty record*, not the structural truth. World-gen must be fixed to write **both** properly. Consumers that need structure (apex walks, hostility classification, tribute chains) read `liege_domain_id`; consumers that need the relationship's state (loyalty, status, favors & duties eligibility) read `vassal_assignments`.
+*Blocked on R-4* — a `vassal_assignments` row needs character ids on both ends, and generated domains are currently ownerless.
+
+**R-2 — COPPER PIECES (cp) is the canonical monetary unit for the entire codebase.**
+Rationale: cp is the lowest base unit, so every monetary value stays an **integer** and never a float. Any gp figure taken from RAW is converted to cp at the point of entry, stored and computed in cp, and converted back to gp **only for display**. This is a standing project-wide convention, not a domain-system-local rule — it is being written into `docs/coding_conventions.md`.
+Immediate consequences for this audit: `tribute_out_owed` is **cp**; the monthly tick that writes it in gp is the bug; `adjust_domain_treasury(domain_id, delta_gp)` is misnamed; `status_header.gd` must convert for display rather than print raw cp; and `domain_handlers.gd:332`'s `* 100` is a straightforward double-conversion to delete.
+
+**R-3 — The Establish-Domain dialog was a development shortcut and is to be replaced with a map-first acquisition approach.**
+This resolves ~10 findings from "fix the dialog" to "delete the dialog." Acquisition becomes an act performed **on the map, against a specific hex**, which supplies the location, the classification, the own-race fact, the cleared-lair state and the target domain that the dialog invented from dropdowns. The abandoned "Build Stronghold" wilderness context-menu action (`wilderness_handlers.gd:799`, currently a "Feature coming soon" stub) is the seed of the correct surface. A GDD should be authored before this is built.
+
+**R-4 — The ownerless generated-NPC-domain state is an UNFINISHED M2b-2 step**, missed while it waited on the NPC personality build-out. It is not an intentional supported state. The named→full ruler promotion must be completed.
+
+**R-5 — Sub-vassals of a domain that changes hands MAKE LOYALTY ROLLS.**
+Modifiers: **−1 per step of alignment difference** between the sub-vassal and the new liege (so Lawful↔Neutral or Neutral↔Chaotic = −1; Lawful↔Chaotic = −2), **plus an additional −2 if the new liege acquired the domain by conquest**. Acquisition by grant or purchase carries no such penalty.
+This replaces today's unconditional cascade-to-`departed`. Note the plumbing problem: a conquered domain's `establishment_method` column still describes how the *defender* got it, so the acquisition mode must be passed to the loyalty check rather than read from the row.
+
+**R-6 — On conquest, MERCENARY troop units do NOT transfer to the new owner. All other troop types do.**
+(Militia, conscripts, tribal warriors, faithful followers and lord-favor troops follow the land; mercenaries do not follow a deposed employer's conqueror.)
+
+Scoping these seven rulings raised nine follow-up questions; four were ruled on the same day (R-5 fires on any change of liege; direct sub-vassals only; faithful followers do not transfer either; NPC rulers **do** level from domain XP, because the per-level gp threshold is itself the throttle). See `docs/handoff-domain-rulings-implementation.md` for those and the five still outstanding.
+
+**R-7 — Domain XP accrues to the RULER ONLY** — no share model — **and the calculation must include tribute received**, not only direct domain income. The `is_henchman` parameter on `calculate_domain_xp` needs re-purposing or removal accordingly, and the XP must actually reach `characters.xp`, which today it never does.
 
 ---
 
 ## 6. Recommended fix sequence
+
+> **Superseded in part, 2026-07-31.** Scoping the rulings (see `docs/handoff-domain-rulings-implementation.md`) established that the real dependency order is **Tier-0 arithmetic → R-2 (cp) → R-4 (ruler promotion) → R-1 (vassal_assignments) → R-5/R-6/R-7**, which cuts across the tiers below. Two hard constraints the tier list did not capture: R-1 can mint **zero** `vassal_assignments` rows until R-4 lands (both FK ends are `NOT NULL REFERENCES characters(id)` and generated domains are ownerless), and **R-1 must not ship without Tier-1 item 6** — turning on `vassal_assignments` makes the liege-wide `_cascade_vassals` live and would destroy every NPC duke's realm on the first conquest. Use the tiers below for *what* to fix; use the handoff for *in what order*.
 
 Ordered by dependency, not effort.
 
