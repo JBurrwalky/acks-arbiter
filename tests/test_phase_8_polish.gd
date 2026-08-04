@@ -208,13 +208,15 @@ func test_construction_expenditure_increments_running_total() -> void:
 	})
 	var results: Array = FavorsDutiesResolver.roll_monthly_construction_expenditure(assn, 100)
 	check(results.size() == 1, "1 construction processed")
-	var monthly: int = int(results[0]["monthly_expenditure"])
-	check(monthly > 0, "monthly expenditure > 0; got %d" % monthly)
+	var monthly_cp: int = int(results[0]["monthly_expenditure_cp"])
+	check(monthly_cp > 0, "monthly expenditure > 0; got %d cp" % monthly_cp)
 	check(not bool(results[0]["completed"]), "not yet completed (only first month)")
-	# Verify running total persisted. Column is cp_value; monthly is gp.
+	# Verify running total persisted. Both the column and the result key are cp
+	# as of the 2026-07-31 cp pass (conventions §127), so they match 1:1 — before
+	# it, the result was gp and the column was cp.
 	var refreshed := VassalObligationsRepository.get_obligation(ob_id)
-	check(int(refreshed.get("cp_value", 0)) == monthly * 100,
-		"running cp_value = monthly_expenditure × 100")
+	check(int(refreshed.get("cp_value", 0)) == monthly_cp,
+		"running cp_value == monthly_expenditure_cp (same unit, no conversion)")
 
 
 func test_construction_expenditure_completes_at_target() -> void:

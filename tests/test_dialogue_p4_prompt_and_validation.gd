@@ -376,7 +376,8 @@ func test_faction_context_public_only_and_grep_proof() -> void:
 	check(not JSON.stringify(reply_ctx).contains("true_stance"),
 		"reply context payload carries no true_stance")
 	var built := PromptAssembler.build(_reply_profile(), reply_ctx, "npc_dialogue_reply")
-	var whole := String(built.get("system", "")) + String(built.get("messages", []))
+	# §106: PromptAssembler.build() may carry a null "system" — String(null) throws.
+	var whole := StringUtils.s(built.get("system")) + StringUtils.s(built.get("messages"), "[]")
 	check(not whole.contains("true_stance") and not whole.contains("The Hidden Hand"),
 		"the assembled prompt contains neither the secret key nor the secret membership")
 

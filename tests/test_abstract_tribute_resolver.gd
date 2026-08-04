@@ -132,8 +132,11 @@ func test_unknown_title_returns_zero() -> void:
 
 
 func test_owned_domain_uses_tribute_calculator() -> void:
-	# Owned 780-family Count: tribute_base_gp = 18 × 780^0.6.
-	# 780^0.6 ≈ 53.83, × 18 ≈ 968.94, banker-rounded ≈ 969 gp → 96900 cp.
+	# Owned 780-family Count: RAW base = 18gp × 780^0.6.
+	# 780^0.6 ≈ 53.83, × 18 ≈ 968.94 gp ≈ 96,894 cp.
+	# TributeCalculator is cp-native (conventions §127) and tribute_out_owed is
+	# a cp column, so the value passes through unscaled — before 2026-07-31 this
+	# resolver multiplied a gp result by 100 here.
 	var domain := {
 		"realm_title": "Count",
 		"peasant_families": 780,
@@ -141,8 +144,10 @@ func test_owned_domain_uses_tribute_calculator() -> void:
 		"owner_character_id": "character_count_lord",
 	}
 	var got: int = AbstractTributeResolver.compute_tribute_owed(domain)
-	var expected_gp: int = TributeCalculator.compute_tribute_base_gp(780)
-	check(got == expected_gp * 100,
-		"owned Count tribute: expected %d cp (TributeCalculator base × 100), got %d" % [
-			expected_gp * 100, got])
+	var expected_cp: int = TributeCalculator.compute_tribute_base_cp(780)
+	check(got == expected_cp,
+		"owned Count tribute: expected %d cp (TributeCalculator base, unscaled), got %d" % [
+			expected_cp, got])
+	check(got > 90_000 and got < 100_000,
+		"owned Count tribute must be ~96,900 cp — a gp-denominated result would be ~969; got %d" % got)
 	print("  owned_domain_uses_tribute_calculator: OK")

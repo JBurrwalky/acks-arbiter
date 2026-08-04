@@ -396,7 +396,9 @@ static func _morale_multiplier_pct(current_morale: int) -> int:
 
 
 static func _driver_bonus_pct(arc: Dictionary, domain_id: String) -> int:
-	var driver_id: String = String(arc.get("driving_character_id", ""))
+	# §106: `driving_character_id` is NULLABLE (missionary-only arcs have no driver); `.get(k, default)`
+	# returns the STORED null rather than the default, so String() threw here.
+	var driver_id: String = StringUtils.s(arc.get("driving_character_id"))
 	if driver_id.is_empty():
 		return DRIVER_BONUS_PCT_MISSIONARY_ONLY
 	var driver: Dictionary = CampaignRepository.get_character(driver_id)
@@ -408,7 +410,7 @@ static func _driver_bonus_pct(arc: Dictionary, domain_id: String) -> int:
 	# v1 returns the ruler tier when driver IS the domain's owner_character_id;
 	# otherwise henchman tier. Spiritual-advisor (1.25×) tier lands when the
 	# helper ships in a polish pass.
-	var owner_id: String = String(_get_domain_owner(domain_id))
+	var owner_id: String = _get_domain_owner(domain_id)
 	if driver_id == owner_id:
 		return DRIVER_BONUS_PCT_RULER_DIVINE_CASTER
 	return DRIVER_BONUS_PCT_HENCHMAN_DIVINE
@@ -441,7 +443,9 @@ static func _altar_bonus_pct(domain_id: String, religion: String) -> int:
 
 
 static func _driver_cha_mod(arc: Dictionary) -> int:
-	var driver_id: String = String(arc.get("driving_character_id", ""))
+	# §106: `driving_character_id` is NULLABLE (see _driver_bonus_pct above); `.get(k, default)`
+	# returns the STORED null rather than the default, so String() threw here.
+	var driver_id: String = StringUtils.s(arc.get("driving_character_id"))
 	if driver_id.is_empty():
 		# Missionary-only: use the ruler's Cha mod (the domain owner).
 		var domain_id: String = String(arc.get("domain_id", ""))
@@ -483,7 +487,10 @@ static func _get_domain_owner(domain_id: String) -> String:
 	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
 	if domain.is_empty():
 		return ""
-	return String(domain.get("owner_character_id", ""))
+	# §106: `domains.owner_character_id` is NULLABLE — a domain whose ruler has
+	# just died carries a null here, and this helper is reached from both
+	# functions above. Latent, not yet observed crashing.
+	return StringUtils.s(domain.get("owner_character_id"))
 
 
 ## Returns the caster who is "the conversion's proselytizer of record" for v1.
@@ -492,7 +499,8 @@ static func _get_domain_owner(domain_id: String) -> String:
 ## per §6.3 — the ruler pays for missionaries; the congregants get credited
 ## to the ruler's row).
 static func _proselytizing_caster_id(arc: Dictionary, domain_id: String) -> String:
-	var driver: String = String(arc.get("driving_character_id", ""))
+	# §106 — nullable on a missionary-only arc.
+	var driver: String = StringUtils.s(arc.get("driving_character_id"))
 	if not driver.is_empty():
 		return driver
 	return _get_domain_owner(domain_id)

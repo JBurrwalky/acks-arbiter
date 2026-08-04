@@ -308,7 +308,7 @@ func _build_confirmation_step() -> void:
 		+ "Class cost reduction: %d%%\n"
 		+ "Speed tier: %d%% (premium %d gp)\n"
 		+ "Magic modifier: %d%%\n"
-		+ "Engineers required: %d at %d gp/month total\n"
+		+ "Engineers required: %d at %s/month total\n"
 		+ "Daily construction rate: %d gp/day\n"
 		+ "Estimated duration: %d days\n"
 		+ "TOTAL gp committed: %d"
@@ -321,7 +321,14 @@ func _build_confirmation_step() -> void:
 		cost.get("speed_premium_gp", 0),
 		_magic_rate_modifier_pct,
 		cost.get("engineers_required", 1),
-		cost.get("engineer_monthly_wage_cp", 250),
+		# `engineer_monthly_wage_cp` is COPPER (ENGINEER_MONTHLY_WAGE_CP = 25,000
+		# cp = RAW 250 gp/month per engineer). Until 2026-07-31 it was printed
+		# under a "%d gp/month" label, so a single engineer read as "25000
+		# gp/month" — a 100× figure on the confirmation step the player uses to
+		# decide whether to commit a stronghold build. Conventions §127: format
+		# cp at the display site via Currency.format_cost, never relabel it.
+		Currency.format_cost(int(cost.get("engineer_monthly_wage_cp",
+			StrongholdCostCalculator.ENGINEER_MONTHLY_WAGE_CP))),
 		cost.get("daily_construction_rate_gp", 500),
 		cost.get("estimated_duration_days", 0),
 		cost.get("gp_committed", 0),

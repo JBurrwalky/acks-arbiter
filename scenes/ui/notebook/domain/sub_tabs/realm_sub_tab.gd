@@ -178,29 +178,30 @@ func _render_tribute() -> void:
 		"%d%% — RAW §tribute_inefficiency" % int(round(efficiency * 100.0)))
 
 	# Show per-vassal tribute breakdown.
-	var per_vassal_total_base: int = 0
-	var per_vassal_total_received: int = 0
+	var per_vassal_total_base_cp: int = 0
+	var per_vassal_total_received_cp: int = 0
 	for assn in aggregate.get("direct_vassals", []):
 		var v_char: String = String(assn.get("vassal_character_id", ""))
 		var v_aggregate: Dictionary = RealmAggregator.aggregate(v_char)
 		var v_realm_families: int = int(v_aggregate.get("all_realm_families", 0))
-		var v_base: int = TributeCalculator.compute_tribute_base_gp(v_realm_families)
-		var v_received: int = int(round(float(v_base) * efficiency))
-		per_vassal_total_base += v_base
-		per_vassal_total_received += v_received
-	# TributeCalculator.compute_tribute_base_gp returns gp; convert × 100 for
-	# Currency.format_cost which expects cp. Same for tribute_out_owed column
-	# (still gp-semantic per Phase 7; conversion applied at display boundary).
+		var v_base_cp: int = TributeCalculator.compute_tribute_base_cp(v_realm_families)
+		var v_received_cp: int = MathUtils.bankers_round(float(v_base_cp) * efficiency)
+		per_vassal_total_base_cp += v_base_cp
+		per_vassal_total_received_cp += v_received_cp
+	# TributeCalculator is cp-native and `tribute_out_owed` is a cp column, so
+	# these go straight to Currency.format_cost. Until 2026-07-31 both were
+	# multiplied by 100 here, overstating every figure on this card 100×
+	# against a gp-returning calculator. Conventions §127.
 	_add_tribute_kv("Tribute base (sum across vassals)",
-		Currency.format_cost(per_vassal_total_base * 100))
+		Currency.format_cost(per_vassal_total_base_cp))
 	_add_tribute_kv("Tribute received this month",
-		Currency.format_cost(per_vassal_total_received * 100))
+		Currency.format_cost(per_vassal_total_received_cp))
 
 	# Tribute owed (this domain's owner is the VASSAL).
-	var tribute_out: int = int(_domain_data.get("tribute_out_owed", 0))
-	if tribute_out > 0:
+	var tribute_out_cp: int = int(_domain_data.get("tribute_out_owed", 0))
+	if tribute_out_cp > 0:
 		_add_tribute_kv("Tribute OWED to liege",
-			"%s/month — RAW §tribute base by realm size" % Currency.format_cost(tribute_out * 100))
+			"%s/month — RAW §tribute base by realm size" % Currency.format_cost(tribute_out_cp))
 
 
 func _add_tribute_kv(key: String, value: String) -> void:
@@ -292,11 +293,11 @@ func _build_vassal_row(assn: Dictionary) -> Control:
 	var direct_count: int = VassalRepository.list_active_for_liege(
 		String(assn.get("liege_character_id", ""))).size()
 	var efficiency: float = TributeCalculator.efficiency_factor(direct_count)
-	var v_base: int = TributeCalculator.compute_tribute_base_gp(realm_families)
-	var v_received: int = int(round(float(v_base) * efficiency))
+	var v_base_cp: int = TributeCalculator.compute_tribute_base_cp(realm_families)
+	var v_received_cp: int = MathUtils.bankers_round(float(v_base_cp) * efficiency)
 	var trib_label := Label.new()
-	# v_received is gp from TributeCalculator; × 100 for Currency.format_cost.
-	trib_label.text = Currency.format_cost(v_received * 100)
+	# TributeCalculator is cp-native (conventions §127) — no conversion here.
+	trib_label.text = Currency.format_cost(v_received_cp)
 	trib_label.custom_minimum_size = Vector2(100, 0)
 	hbox.add_child(trib_label)
 

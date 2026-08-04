@@ -5,7 +5,7 @@ extends "res://tests/test_suite_base.gd"
 ## Coverage:
 ##   * Class distribution over many rolls matches CLASS_WEIGHTS within a
 ##     reasonable tolerance.
-##   * Level matches LEVEL_BY_TITLE for every supported realm title.
+##   * Level matches DomainTierTable (handoff D-9) for every supported realm title.
 ##   * Proficiency picks hit RULER_PREFERRED_KEYS the majority of the time
 ##     when the class list contains preferred options.
 ##   * A rolled ruler has the basic stats expected of a generated NPC.
@@ -52,18 +52,37 @@ func test_class_distribution() -> void:
 # Level by title
 # ---------------------------------------------------------------------------
 
+## Handoff D-9 (Jedidiah, 2026-08-01): DomainTierTable is the single source of
+## truth for NPC ruler level. These expectations are its RAW-cited values, NOT
+## the retired local table's (which read Baron 6 / Duke 10 / Prince 12 and had no
+## Marquis entry at all).
 func test_level_by_title() -> void:
 	var expected := {
-		"Baron":   6,
-		"Count":   8,
-		"Duke":   10,
-		"Prince": 12,
-		"King":   13,
+		"Baron":    4,
+		"Marquis":  6,
+		"Count":    8,
+		"Duke":     9,
+		"Prince":  11,
+		"King":    13,
 		"Emperor": 14,
 	}
+	var derived: Dictionary = NpcRulerGenerator.level_by_title()
 	for title in expected.keys():
-		check(int(NpcRulerGenerator.LEVEL_BY_TITLE.get(title, -1)) == int(expected[title]),
-			"LEVEL_BY_TITLE[%s] should be %d" % [String(title), int(expected[title])])
+		check(int(derived.get(title, -1)) == int(expected[title]),
+			"level_by_title()[%s] should be %d, got %d" % [
+				String(title), int(expected[title]), int(derived.get(title, -1))])
+		check(DomainTierTable.ruler_level_for_title(String(title)) == int(expected[title]),
+			"DomainTierTable.ruler_level_for_title(%s) should be %d" % [
+				String(title), int(expected[title])])
+	# The domain-title vocabulary resolves to the same tier as the ruler title.
+	check(DomainTierTable.ruler_level_for_title("Barony")
+			== DomainTierTable.ruler_level_for_title("Baron"),
+		"'Barony' and 'Baron' must resolve to the same tier")
+	# Marquis was the gap in the retired table — assert it is now covered.
+	check(derived.has("Marquis"), "Marquis must be present (the retired table omitted it)")
+	# Unknown titles fall back to the Barony floor rather than erroring.
+	check(DomainTierTable.ruler_level_for_title("Grand Poobah") == 4,
+		"unknown title falls back to the Barony floor")
 	print("  level_by_title: OK")
 
 

@@ -308,9 +308,33 @@ static func _apply_obligation(
 			var favor_cost: int = 2 if scope == "all" else 1
 			var vassal_domain: Dictionary = _primary_domain_for_character(
 				String(assignment.get("vassal_character_id", "")))
+			var vassal_domain_id: String = String(vassal_domain.get("id", ""))
 			if EventBus.has_signal("tribal_warriors_called_to_arms"):
 				EventBus.emit_signal("tribal_warriors_called_to_arms",
-					String(vassal_domain.get("id", "")), scope, favor_cost)
+					vassal_domain_id, scope, favor_cost)
+			# RAW: rules/ax_domains_of_chaos.xml:52 — "a chieftain may call half
+			# of available tribal warriors as 1 favor, or all available tribal
+			# warriors as 2 favors." Chronicle the muster; the signal alone left
+			# no audit trail even though migration 129 reserved the event type.
+			if not vassal_domain_id.is_empty():
+				DepartureLogRecorder.record(
+					String(vassal_domain.get("campaign_id", "")),
+					vassal_domain_id,
+					calendar_day,
+					"tribal_warriors_called_to_arms",
+					"Liege called the clanhold to arms: %s of available tribal warriors (%d favor%s)." % [
+						scope, favor_cost, "" if favor_cost == 1 else "s"],
+					{
+						"scope": scope,
+						"favor_cost": favor_cost,
+						"magnitude_pct": call_to_arms_magnitude_pct,
+						"available_tribal_warriors": int(
+							vassal_domain.get("available_tribal_warriors", 0)),
+						"liege_character_id": String(
+							assignment.get("liege_character_id", "")),
+						"vassal_character_id": String(
+							assignment.get("vassal_character_id", "")),
+					})
 		else:
 			call_to_arms_state_id = CallToArmsMuster.issue_call(
 				obligation_id,
@@ -679,7 +703,7 @@ static func roll_monthly_loan_repayments(
 ##      status='completed'.
 ##
 ## Returns Array of per-construction-obligation results:
-##   {obligation_id, monthly_expenditure, total_expended, target, completed}
+##   {obligation_id, monthly_expenditure_cp, total_expended_cp, target, completed}
 static func roll_monthly_construction_expenditure(
 	vassal_assignment_id: String,
 	calendar_day: int
@@ -702,14 +726,14 @@ static func roll_monthly_construction_expenditure(
 	# construction expenditure equals "monthly tribute").
 	var vassal_id: String = String(assignment.get("vassal_character_id", ""))
 	var aggregate: Dictionary = RealmAggregator.aggregate(vassal_id)
-	var monthly_tribute: int = TributeCalculator.compute_tribute_base_gp(
+	var monthly_tribute_cp: int = TributeCalculator.compute_tribute_base_cp(
 		int(aggregate.get("all_realm_families", 0)))
-	if monthly_tribute <= 0:
+	if monthly_tribute_cp <= 0:
 		return results
 	# Vassal's primary domain — to deduct treasury.
 	# Migration 116: vassal_obligations column is cp_value; the running total
-	# tracked here is in cp. monthly_tribute is gp from TributeCalculator.
-	var monthly_tribute_cp: int = monthly_tribute * 100
+	# tracked here is in cp, and TributeCalculator is cp-native as of
+	# 2026-07-31 (conventions §127), so no conversion is needed.
 	var vassal_dom: Dictionary = _primary_domain_for_character(vassal_id)
 	for obligation in construction_obligations:
 		var obligation_id: String = String(obligation.get("id", ""))
@@ -738,8 +762,11 @@ static func roll_monthly_construction_expenditure(
 					obligation_id, "duty", "construction")
 		results.append({
 			"obligation_id": obligation_id,
-			"monthly_expenditure": monthly_tribute,
-			"total_expended": new_total_cp / 100,  # gp for caller display
+			# cp throughout (conventions §127). The pre-2026-07-31 shape carried
+			# `monthly_expenditure` in gp and a pre-divided `total_expended` in gp
+			# for display; callers now format via Currency.format_cost at the
+			# display site instead.
+			"monthly_expenditure_cp": monthly_tribute_cp,
 			"total_expended_cp": new_total_cp,
 			"target": target,
 			"completed": completed,

@@ -437,11 +437,14 @@ func test_model_e_up_tribute() -> void:
 	# at the create_domain default of 0, so any non-zero on the interior would be a Pass-5 leak).
 	m._set_war_vassal_tribute(cid, ordered, by_id, crown_by_pid)
 
-	# Expected up-tribute = bankers_round(18 × realm_families^0.6 × 100) cp, realm-scaled.
+	# Expected up-tribute = bankers_round(1800 × realm_families^0.6) cp, realm-scaled.
+	# TributeCalculator is cp-native as of 2026-07-31 (conventions §127) — the
+	# rounding now happens once, at cp precision, instead of at gp precision
+	# followed by a ×100.
 	var realm_conq := CONQ_FAM + SUB_FAM   # own + transitive war-vassal families
-	var expected_conq := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(realm_conq)) * 100.0)
-	var own_only_conq := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(CONQ_FAM)) * 100.0)
-	var expected_sub := XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(SUB_FAM)) * 100.0)
+	var expected_conq := TributeCalculator.compute_tribute_base_cp(realm_conq)
+	var own_only_conq := TributeCalculator.compute_tribute_base_cp(CONQ_FAM)
+	var expected_sub := TributeCalculator.compute_tribute_base_cp(SUB_FAM)
 
 	# The conquered crown owes the positive, realm-scaled up-tribute.
 	check(_scalar("SELECT tribute_out_owed AS n FROM domains WHERE id = ?", [crown_conq]) == expected_conq,

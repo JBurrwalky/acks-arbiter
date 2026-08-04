@@ -56,7 +56,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		mode = "repair" if lifecycle == "ruined_stronghold" else "build"
 
 	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_gp(
+	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")), hex_count)
 
 	if mode == "repair":

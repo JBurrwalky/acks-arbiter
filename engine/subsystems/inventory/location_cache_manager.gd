@@ -12,7 +12,7 @@
 # Signals emitted (via EventBus):
 #   - cache_created(cache_id, location_key, variant)
 #   - cache_decayed(cache_id, items_lost)
-#   - cache_raided(cache_id, items_lost, value_lost_gp)
+#   - cache_raided(cache_id, items_lost, value_lost_cp)
 #   - cache_picked_up(cache_id, item_id, carrier_id)
 #   - cache_dropped(cache_id, item_id, source_carrier_id)
 #
@@ -381,8 +381,10 @@ func resolve_monthly_raids() -> void:
 		# Raid resets obscurity
 		CampaignRepository.update_cache_raid_modifier(cache_id, 0)
 
-		var value_lost_gp: float = removed_value_cp / 100.0
-		EventBus.cache_raided.emit(cache_id, items_lost, value_lost_gp)
+		# Emit the exact integer we already have. Conventions §127: money never
+		# crosses a contract as a float, and the display boundary (not the
+		# emitter) is where cp becomes gp.
+		EventBus.cache_raided.emit(cache_id, items_lost, removed_value_cp)
 
 
 # ---------------------------------------------------------------------------

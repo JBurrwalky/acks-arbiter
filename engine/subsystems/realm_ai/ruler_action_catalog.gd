@@ -246,7 +246,7 @@ static func _stronghold_below_minimum(domain: Dictionary) -> bool:
 	if domain_id.is_empty():
 		return false
 	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_gp(
+	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")), hex_count)
 	return minimum_cp - StrongholdRepository.get_stronghold_value_for_domain(domain_id) >= 100
 

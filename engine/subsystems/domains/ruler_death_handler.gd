@@ -338,14 +338,18 @@ static func _get_domain(domain_id: String) -> Dictionary:
 ## else, "" otherwise. The realm graph uses `domains.liege_domain_id` →
 ## overlord domain → overlord's owner_character_id.
 static func _overlord_character_id(domain: Dictionary) -> String:
-	var liege_domain_id: String = String(domain.get("liege_domain_id", ""))
+	# §106: `domains.liege_domain_id` is NULLABLE — an unlanded/top-level domain
+	# has no liege, and `.get(k, default)` returns the STORED null, so the ""
+	# default never protected this. Threw at runtime.
+	var liege_domain_id: String = StringUtils.s(domain.get("liege_domain_id"))
 	if liege_domain_id.is_empty():
 		return ""
 	if not CampaignRepository.db.query_with_bindings(
 		"SELECT owner_character_id FROM domains WHERE id = ?", [liege_domain_id]
 	) or CampaignRepository.db.query_result.is_empty():
 		return ""
-	return String(CampaignRepository.db.query_result[0].get("owner_character_id", ""))
+	# §106: nullable — the liege domain may itself be between rulers.
+	return StringUtils.s(CampaignRepository.db.query_result[0].get("owner_character_id"))
 
 
 ## Apply heir designation: transfer ownership, clear succession columns,

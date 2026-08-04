@@ -142,6 +142,43 @@ static func conquer_domain(
 	var campaign_id: String = String(domain.get("campaign_id", ""))
 	var prior_owner: String = String(domain.get("owner_character_id", ""))
 
+	# --- VALIDATION GATE ---------------------------------------------------
+	# EVERY reason this call can be refused is checked HERE, before the first
+	# side effect. Until 2026-07-31 `apply_pillage` and `_cascade_vassals` ran
+	# first and the outcome-specific checks below could then return false — so a
+	# REFUSED conquest still pillaged the domain and still marked every one of
+	# the prior owner's vassals 'departed'. The domain survived with its realm
+	# destroyed. See docs/domain-acquisition-audit-2026-07-28.md
+	# (`refused-conquest-corrupts-vassal-state`).
+	#
+	# Invariant to preserve: conquer_domain either returns false having changed
+	# NOTHING, or returns true having applied every effect.
+	if outcome == OUTCOME_OCCUPIED or outcome == OUTCOME_LOOTED_LOCAL_SUCCESSION:
+		if new_owner_id.is_empty():
+			push_error(
+				"LifecycleHandler.conquer_domain: %s requires new_owner_id%s" % [
+					outcome,
+					" (caller must spawn_local_succession_npc first)" \
+						if outcome == OUTCOME_LOOTED_LOCAL_SUCCESSION else ""])
+			return false
+	# Phase 11D.4 defense-in-depth per gdd-domain-style-and-alignment.md §9.1:
+	# the eligibility matrix (§7) blocks lawful/neutral conquerors from
+	# beastman-populated targets. The siege bridge in
+	# DomainHandlers._on_siege_concluded SHOULD consult the matrix before
+	# reaching here, but tests + direct programmatic calls don't always go
+	# through the canonical pipeline. We re-check at this boundary and refuse.
+	#
+	# OUTCOME_LOOTED_LOCAL_SUCCESSION is exempt: the local NPC was just spawned
+	# by RealmRepository.spawn_local_succession_npc to match the domain, so it
+	# inherently inherits the domain's population kind.
+	if outcome == OUTCOME_OCCUPIED and not _conquest_eligible(domain, new_owner_id):
+		push_error(
+			"LifecycleHandler.conquer_domain: OUTCOME_OCCUPIED blocked — "
+			+ "lawful/neutral conqueror cannot rule beastman-populated "
+			+ "domain (gdd-domain-style-and-alignment.md §7.4 + §9.1)")
+		return false
+	# --- END VALIDATION GATE; every path below commits ---------------------
+
 	# Apply pillage damage (no-op for severity 0).
 	var pillage_result: Dictionary = RealmRepository.apply_pillage(
 		domain_id, pillage_severity)
@@ -151,36 +188,9 @@ static func conquer_domain(
 
 	match outcome:
 		OUTCOME_OCCUPIED:
-			if new_owner_id.is_empty():
-				push_error("LifecycleHandler.conquer_domain: OUTCOME_OCCUPIED requires new_owner_id")
-				return false
-			# Phase 11D.4 defense-in-depth per gdd-domain-style-and-alignment.md §9.1:
-			# the eligibility matrix (§7) blocks lawful/neutral conquerors from
-			# beastman-populated targets. The siege bridge in
-			# DomainHandlers._on_siege_concluded SHOULD consult the matrix
-			# before reaching here, but tests + direct programmatic calls
-			# don't always go through the canonical pipeline. We re-check
-			# at this boundary and refuse the conquest. The defender domain
-			# stays under its prior owner (no ownership reassignment, no
-			# pillage applied beyond what apply_pillage already did) and
-			# the caller is responsible for downstream handling.
-			if not _conquest_eligible(domain, new_owner_id):
-				push_error(
-					"LifecycleHandler.conquer_domain: OUTCOME_OCCUPIED blocked — "
-					+ "lawful/neutral conqueror cannot rule beastman-populated "
-					+ "domain (gdd-domain-style-and-alignment.md §7.4 + §9.1)")
-				return false
 			CampaignRepository.reassign_domain_owner(domain_id, new_owner_id)
 			# Lifecycle stays 'active' — the row continues to tick.
 		OUTCOME_LOOTED_LOCAL_SUCCESSION:
-			if new_owner_id.is_empty():
-				push_error("LifecycleHandler.conquer_domain: OUTCOME_LOOTED_LOCAL_SUCCESSION requires new_owner_id (caller must spawn_local_succession_npc first)")
-				return false
-			# OUTCOME_LOOTED_LOCAL_SUCCESSION installs a local NPC matching the
-			# domain's existing population. No alignment-conflict check is needed
-			# at this layer because the local NPC was just spawned to match the
-			# domain (by RealmRepository.spawn_local_succession_npc); they
-			# inherently inherit the domain's population kind.
 			CampaignRepository.reassign_domain_owner(domain_id, new_owner_id)
 		OUTCOME_SALTED_TO_RUIN:
 			# Terminal: release hexes + set state. Treasury already zeroed by

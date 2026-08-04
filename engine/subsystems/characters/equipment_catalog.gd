@@ -91,28 +91,14 @@ func get_load_errors() -> Array[String]:
 # ---------------------------------------------------------------------------
 # Static cost formatting
 # ---------------------------------------------------------------------------
-
-static func format_cost(cost_cp: int) -> String:
-	## Converts copper piece integer to human-readable denomination string.
-	## Rules: >= 100cp → show gp portion; >= 10cp remainder → show sp; remainder → show cp.
-	## Examples: 1000 → "10gp", 50 → "5sp", 3 → "3cp", 1550 → "15gp 5sp", 103 → "1gp 3cp"
-	if cost_cp <= 0:
-		return "0cp"
-
-	var gp := cost_cp / 100
-	var remainder := cost_cp % 100
-	var sp := remainder / 10
-	var cp := remainder % 10
-
-	var parts: Array[String] = []
-	if gp > 0:
-		parts.append("%dgp" % gp)
-	if sp > 0:
-		parts.append("%dsp" % sp)
-	if cp > 0:
-		parts.append("%dcp" % cp)
-
-	return " ".join(parts)
+#
+# `EquipmentCatalog.format_cost` was DELETED on 2026-07-31. It was a second,
+# divergent money formatter — identical to `Currency.format_cost` except that it
+# joined denominations with a space ("15gp 5sp") where Currency uses a comma
+# ("15gp, 5sp"). Two formatters means two display conventions, two places to
+# change, and an ambiguous `git grep format_cost` for anyone auditing the display
+# boundary. Conventions §127: `Currency.format_cost(value_cp)` is the ONLY money
+# formatter. Call it directly at the display site.
 
 
 # ---------------------------------------------------------------------------

@@ -319,7 +319,7 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 
 	var detail_lbl := Label.new()
 	var enc_str := "%.1f stone" % (enc / 1000.0) if enc > 0 else "negligible"
-	detail_lbl.text = "%s  |  %s" % [EquipmentCatalog.format_cost(cost_cp), enc_str]
+	detail_lbl.text = "%s  |  %s" % [Currency.format_cost(cost_cp), enc_str]
 	detail_lbl.add_theme_font_size_override("font_size", 11)
 	detail_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	info_vbox.add_child(detail_lbl)
@@ -561,8 +561,8 @@ func _refresh_gold_display() -> void:
 		_enc_label.text = "Enc: — stone"
 		return
 	_gold_label.text = "Gold: %s remaining of %s" % [
-		EquipmentCatalog.format_cost(_gold_remaining_cp),
-		EquipmentCatalog.format_cost(_starting_gold_cp)]
+		Currency.format_cost(_gold_remaining_cp),
+		Currency.format_cost(_starting_gold_cp)]
 
 	var inventory: Array = _state.get("inventory", [])
 	var enc := EncumbranceCalculator.calculate_encumbrance(inventory)
@@ -616,6 +616,6 @@ func _refresh_cart() -> void:
 		var sell_btn := Button.new()
 		sell_btn.text = "Sell"
 		sell_btn.custom_minimum_size = Vector2(40, 0)
-		sell_btn.tooltip_text = "Refund: %s" % EquipmentCatalog.format_cost(cost_cp)
+		sell_btn.tooltip_text = "Refund: %s" % Currency.format_cost(cost_cp)
 		sell_btn.pressed.connect(_on_sell_item.bind(item_key))
 		row.add_child(sell_btn)

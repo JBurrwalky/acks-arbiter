@@ -124,7 +124,7 @@ func _render_sufficiency() -> void:
 	# domains) per RAW §noncontiguous_domains; equals owned count when contiguous.
 	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
 	var stronghold_value: int = StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum: int = StrongholdRepository.classification_minimum_gp(territory, hex_count)
+	var minimum: int = StrongholdRepository.classification_minimum_cp(territory, hex_count)
 
 	var pct_text: String = "—"
 	var pct: float = 0.0

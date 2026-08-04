@@ -34,14 +34,19 @@ const CLASS_WEIGHTS := {
 	"thief":    5,
 }
 
-const LEVEL_BY_TITLE := {
-	"Baron":   6,
-	"Count":   8,
-	"Duke":   10,
-	"Prince": 12,
-	"King":   13,
-	"Emperor": 14,
-}
+## RETIRED 2026-08-01 (handoff D-9). This table used to carry its own levels —
+## Baron 6 / Count 8 / Duke 10 / Prince 12 / King 13 / Emperor 14, with NO
+## Marquis entry — which contradicted `DomainTierTable.TIERS` (Barony 4 / March 6
+## / County 8 / Duchy 9 / Principality 11 / Kingdom 13 / Empire 14), the
+## RAW-cited table the world generator already uses. Jedidiah ruled
+## DomainTierTable governs, so this is now a derived view kept only so existing
+## callers and tests can still read a title→level map. Prefer
+## `DomainTierTable.ruler_level_for_title(title)` in new code.
+static func level_by_title() -> Dictionary:
+	var out: Dictionary = {}
+	for i in range(DomainTierTable.TIERS.size()):
+		out[DomainTierTable.ruler_title_for_tier(i)] = DomainTierTable.ruler_level_for_tier(i)
+	return out
 
 ## Realm titles whose holder is politically important enough to warrant a
 ## generated NPC even when the domain is off-map. On-map domains always get
@@ -112,7 +117,7 @@ func generate_for_domain(domain_id: String, campaign_id: String) -> String:
 		return ""
 
 	var title: String = String(domain_data.get("realm_title", "Baron"))
-	var level: int = int(LEVEL_BY_TITLE.get(title, 6))
+	var level: int = DomainTierTable.ruler_level_for_title(title)
 	var class_id: String = roll_class()
 
 	var character: CharacterData = _character_generator.generate_npc(

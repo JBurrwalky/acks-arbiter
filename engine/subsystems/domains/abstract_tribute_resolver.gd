@@ -55,12 +55,12 @@ static func compute_tribute_owed(domain_data: Dictionary) -> int:
 	if families <= 0:
 		return 0
 
-	# Owned-domain branch: defer to the precise families^0.6 formula. The
-	# value is `gp` per RAW; tribute_out_owed stores cp, so scale by 100.
+	# Owned-domain branch: defer to the precise families^0.6 formula.
+	# TributeCalculator is cp-native as of 2026-07-31 (conventions §127) and
+	# tribute_out_owed stores cp, so the value passes through unscaled.
 	var owner_v: Variant = domain_data.get("owner_character_id")
 	if owner_v != null and not String(owner_v).is_empty():
-		var base_gp: int = TributeCalculator.compute_tribute_base_gp(families)
-		return XPAwardCalculator.bankers_round(float(base_gp) * 100.0)
+		return TributeCalculator.compute_tribute_base_cp(families)
 
 	# Abstract-domain branch: flat per-family rate by title.
 	var title: String = String(domain_data.get("realm_title", "Baron"))

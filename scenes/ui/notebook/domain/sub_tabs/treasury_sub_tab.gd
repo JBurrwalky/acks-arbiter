@@ -111,7 +111,7 @@ func _render_headline() -> void:
 	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
 	# StrongholdRepository returns cp post-Migration 116.
 	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum_cp := StrongholdRepository.classification_minimum_gp(territory, sufficiency_hex_count)
+	var minimum_cp := StrongholdRepository.classification_minimum_cp(territory, sufficiency_hex_count)
 	if stronghold_value_cp < minimum_cp:
 		var noncontig_note: String = ""
 		if sufficiency_hex_count > hex_count:

@@ -12,11 +12,6 @@ func run_all_tests() -> void:
 	test_all_categories()
 	test_foodstuffs_loaded()
 	test_transport_loaded()
-	test_format_cost_gp_only()
-	test_format_cost_sp_only()
-	test_format_cost_cp_only()
-	test_format_cost_mixed()
-	test_format_cost_zero()
 	test_search_items()
 	test_load_errors_empty()
 	test_container_identification()
@@ -185,78 +180,14 @@ func test_transport_loaded() -> void:
 	print("  transport_loaded: OK")
 
 
-# ---------------------------------------------------------------------------
-# format_cost — gp only
-# ---------------------------------------------------------------------------
-
-func test_format_cost_gp_only() -> void:
-	check(EquipmentCatalog.format_cost(1000) == "10gp",
-		"1000cp should format as '10gp'")
-	check(EquipmentCatalog.format_cost(100) == "1gp",
-		"100cp should format as '1gp'")
-	check(EquipmentCatalog.format_cost(500) == "5gp",
-		"500cp should format as '5gp'")
-	print("  format_cost_gp_only: OK")
 
 
-# ---------------------------------------------------------------------------
-# format_cost — sp only
-# ---------------------------------------------------------------------------
-
-func test_format_cost_sp_only() -> void:
-	check(EquipmentCatalog.format_cost(50) == "5sp",
-		"50cp should format as '5sp'")
-	check(EquipmentCatalog.format_cost(10) == "1sp",
-		"10cp should format as '1sp'")
-	check(EquipmentCatalog.format_cost(90) == "9sp",
-		"90cp should format as '9sp'")
-	print("  format_cost_sp_only: OK")
 
 
-# ---------------------------------------------------------------------------
-# format_cost — cp only
-# ---------------------------------------------------------------------------
-
-func test_format_cost_cp_only() -> void:
-	check(EquipmentCatalog.format_cost(1) == "1cp",
-		"1cp should format as '1cp'")
-	check(EquipmentCatalog.format_cost(3) == "3cp",
-		"3cp should format as '3cp'")
-	check(EquipmentCatalog.format_cost(9) == "9cp",
-		"9cp should format as '9cp'")
-	print("  format_cost_cp_only: OK")
 
 
-# ---------------------------------------------------------------------------
-# format_cost — mixed denominations
-# ---------------------------------------------------------------------------
-
-func test_format_cost_mixed() -> void:
-	# 1550cp = 15gp 5sp 0cp
-	check(EquipmentCatalog.format_cost(1550) == "15gp 5sp",
-		"1550cp should format as '15gp 5sp', got '%s'" % EquipmentCatalog.format_cost(1550))
-	# 103cp = 1gp 0sp 3cp
-	check(EquipmentCatalog.format_cost(103) == "1gp 3cp",
-		"103cp should format as '1gp 3cp', got '%s'" % EquipmentCatalog.format_cost(103))
-	# 113cp = 1gp 1sp 3cp
-	check(EquipmentCatalog.format_cost(113) == "1gp 1sp 3cp",
-		"113cp should format as '1gp 1sp 3cp', got '%s'" % EquipmentCatalog.format_cost(113))
-	# 1003cp = 10gp 0sp 3cp
-	check(EquipmentCatalog.format_cost(1003) == "10gp 3cp",
-		"1003cp should format as '10gp 3cp', got '%s'" % EquipmentCatalog.format_cost(1003))
-	print("  format_cost_mixed: OK")
 
 
-# ---------------------------------------------------------------------------
-# format_cost — zero and negative
-# ---------------------------------------------------------------------------
-
-func test_format_cost_zero() -> void:
-	check(EquipmentCatalog.format_cost(0) == "0cp",
-		"0cp should format as '0cp'")
-	check(EquipmentCatalog.format_cost(-5) == "0cp",
-		"negative values should format as '0cp'")
-	print("  format_cost_zero: OK")
 
 
 # ---------------------------------------------------------------------------

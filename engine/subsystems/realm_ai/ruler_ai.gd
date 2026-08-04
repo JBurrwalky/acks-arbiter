@@ -457,7 +457,7 @@ static func _scoring_context(domain: Dictionary, world_state: Dictionary) -> Dic
 	var domain_id: String = String(domain.get("id", ""))
 	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain)
 	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_gp(
+	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")), hex_count)
 	var value_cp: int = StrongholdRepository.get_stronghold_value_for_domain(domain_id)
 	return {

@@ -542,7 +542,9 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 		var rf := int(realm_fam.get(pid, 0))
 		if rf <= 0:
 			continue
-		var owed := int(XPAwardCalculator.bankers_round(float(TributeCalculator.compute_tribute_base_gp(rf)) * 100.0))
+		# TributeCalculator is cp-native as of 2026-07-31 (conventions §127);
+		# tribute_out_owed stores cp, so no scaling at this boundary.
+		var owed := TributeCalculator.compute_tribute_base_cp(rf)
 		db.query_with_bindings(
 			"UPDATE domains SET tribute_out_owed = ?, updated_at = datetime('now') WHERE id = ?",
 			[owed, crown_by_pid[pid]])

@@ -381,10 +381,27 @@ def validate_random_monsters_by_level(out_dir: Path) -> list[str]:
 # --check mode (CI diff)
 # -----------------------------------------------------------------------------
 
-def _files_byte_identical(a: Path, b: Path) -> bool:
+def _files_match(a: Path, b: Path) -> bool:
+    """True when two JSON files have identical content, ignoring line endings.
+
+    [2026-08-01] This used to be a raw byte compare, which made --check fail on
+    any checkout where git had converted LF to CRLF — i.e. every fresh clone or
+    `git worktree add` on Windows with the default core.autocrlf=true. The
+    content was byte-identical modulo EOL and `git diff` was empty, but the
+    data-integrity test reported all 12 files as DRIFT and told the reader to
+    regenerate files that were already correct.
+
+    Line endings are the ONLY normalization applied. Whitespace, key order and
+    indentation are still compared exactly, so genuine formatting drift between
+    the committed JSON and the extractor's output is still caught.
+    """
     if not a.exists() or not b.exists():
         return False
-    return a.read_bytes() == b.read_bytes()
+    return _normalized(a) == _normalized(b)
+
+
+def _normalized(p: Path) -> bytes:
+    return p.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
 
 def check_mode() -> int:
@@ -403,7 +420,7 @@ def check_mode() -> int:
             if not committed.exists():
                 diffs.append(f"  MISSING: data/dungeon_generator/{job.out_filename}")
                 continue
-            if not _files_byte_identical(committed, fresh):
+            if not _files_match(committed, fresh):
                 diffs.append(f"  DRIFT:   data/dungeon_generator/{job.out_filename}")
 
         validation_errors = validate_random_monsters_by_level(tmp_dir)

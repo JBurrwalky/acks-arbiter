@@ -106,7 +106,7 @@ func _spawn_unit(ruler_id: String, domain_id: String, source_type: String,
 
 func _minimum_cp_for(domain_id: String) -> int:
 	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
-	return StrongholdRepository.classification_minimum_gp(
+	return StrongholdRepository.classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")),
 		StrongholdRepository.get_effective_hex_count_for_domain(domain_id))
 

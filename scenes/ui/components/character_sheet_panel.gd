@@ -240,7 +240,7 @@ func _render_equipment(state: Dictionary) -> void:
 
 	var gold_cp: int = state.get("gold_remaining_cp", 0)
 	if gold_cp > 0:
-		_add_row("Gold Remaining:", EquipmentCatalog.format_cost(gold_cp))
+		_add_row("Gold Remaining:", Currency.format_cost(gold_cp))
 
 
 # ---------------------------------------------------------------------------

@@ -4,11 +4,19 @@ extends RefCounted
 ## Per acore_axioms_strongholds_and_domains.xml §tribute L286-351 +
 ## §tribute_inefficiency L398-409.
 ##
-## Computes the gold-piece tribute that flows monthly from a vassal to its
-## liege based on realm size. The base value comes from the precise optional
-## formula `tribute_base_gp = round(18 × realm_families^0.6)` per
+## Computes the tribute that flows monthly from a vassal to its liege based on
+## realm size. The base value comes from the precise optional formula
+## `tribute_base_gp = round(18 × realm_families^0.6)` per
 ## §precise_optional_formula L299, which is consistent with the lookup table
 ## §tribute_by_realm_families L300-350 within rounding.
+##
+## **UNITS (conventions §127, 2026-07-31):** every value this class returns is
+## **copper pieces**. The RAW gp coefficient 18 is converted at the point of
+## entry (18 gp → 1800 cp) and the result is banker's-rounded once, at cp
+## precision. Callers must NOT multiply by 100 — that double conversion was the
+## bug this API replaces. The pre-2026-07-31 `*_gp` entry points are gone; a
+## caller still doing `compute_tribute_base_gp(...) * 100` will fail to parse
+## rather than silently inflate by 100×.
 ##
 ## The amount the liege actually RECEIVES is reduced by a tribute-efficiency
 ## factor based on the liege's number of direct vassals per
@@ -21,16 +29,16 @@ extends RefCounted
 ## sacred-rules constraint.
 ##
 ## Public API:
-##   compute_tribute_base_gp(realm_families) -> int
-##     Returns 18 × realm_families^0.6 with banker's rounding.
+##   compute_tribute_base_cp(realm_families) -> int
+##     Returns 1800 × realm_families^0.6 cp with banker's rounding.
 ##   efficiency_factor(direct_vassal_count) -> float
 ##     Returns the RAW table fraction (1.0, 0.66, 0.50, 0.33, 0.20, 0.10,
 ##     0.05, 0.01).
-##   compute_tribute_received_gp(realm_families, direct_vassal_count) -> int
+##   compute_tribute_received_cp(realm_families, direct_vassal_count) -> int
 ##     base × efficiency, banker's rounded.
 ##   describe(realm_families, direct_vassal_count) -> Dictionary
-##     {base_gp, efficiency_factor, efficiency_pct, efficiency_band_label,
-##      received_gp}
+##     {base_cp, efficiency_factor, efficiency_pct, efficiency_band_label,
+##      received_cp}
 ##
 ## All rounding uses banker's rounding (round half to even) per the project's
 ## CLAUDE.md core principle.
@@ -53,12 +61,19 @@ const _EFFICIENCY_TABLE := [
 # Public API
 # ---------------------------------------------------------------------------
 
-static func compute_tribute_base_gp(realm_families: int) -> int:
+## RAW §precise_optional_formula L299: `18gp × realm_families^0.6`. The gp
+## coefficient is converted to cp here, at the point of entry (conventions
+## §127), so the whole computation lands as an integer number of copper pieces
+## with a single banker's rounding at cp precision.
+const _TRIBUTE_COEFFICIENT_CP := 1800.0  # RAW 18 gp × 100
+const _TRIBUTE_EXPONENT := 0.6
+
+
+static func compute_tribute_base_cp(realm_families: int) -> int:
 	if realm_families <= 0:
 		return 0
-	# Precise optional formula: 18 × families^0.6, banker's rounded.
-	var raw: float = 18.0 * pow(float(realm_families), 0.6)
-	return XPAwardCalculator.bankers_round(raw)
+	var raw: float = _TRIBUTE_COEFFICIENT_CP * pow(float(realm_families), _TRIBUTE_EXPONENT)
+	return MathUtils.bankers_round(raw)
 
 
 static func efficiency_factor(direct_vassal_count: int) -> float:
@@ -90,30 +105,31 @@ static func efficiency_band_label(direct_vassal_count: int) -> String:
 	return "≤8 vassals"
 
 
-static func compute_tribute_received_gp(realm_families: int, direct_vassal_count: int) -> int:
-	var base: int = compute_tribute_base_gp(realm_families)
-	if base <= 0:
+static func compute_tribute_received_cp(realm_families: int, direct_vassal_count: int) -> int:
+	var base_cp: int = compute_tribute_base_cp(realm_families)
+	if base_cp <= 0:
 		return 0
 	var factor: float = efficiency_factor(direct_vassal_count)
-	return XPAwardCalculator.bankers_round(float(base) * factor)
+	return MathUtils.bankers_round(float(base_cp) * factor)
 
 
 static func describe(realm_families: int, direct_vassal_count: int) -> Dictionary:
-	var base: int = compute_tribute_base_gp(realm_families)
+	var base_cp: int = compute_tribute_base_cp(realm_families)
 	var factor: float = efficiency_factor(direct_vassal_count)
-	var received: int = XPAwardCalculator.bankers_round(float(base) * factor)
+	var received_cp: int = MathUtils.bankers_round(float(base_cp) * factor)
 	return {
-		"base_gp": base,
+		"base_cp": base_cp,
 		"efficiency_factor": factor,
 		"efficiency_pct": int(round(factor * 100.0)),
 		"efficiency_band_label": efficiency_band_label(direct_vassal_count),
-		"received_gp": received,
+		"received_cp": received_cp,
 		"realm_families": realm_families,
 		"direct_vassal_count": direct_vassal_count,
 	}
 
 
-# Banker's rounding consolidated to XPAwardCalculator.bankers_round per the
-# 2026-05-19 bucket-A sweep. The local copy had a defensive `is_finite` guard
-# but every caller pre-guards its inputs (`if realm_families <= 0: return 0`),
-# so the consolidated helper is functionally equivalent.
+# Banker's rounding routes through MathUtils.bankers_round — the ONE canonical
+# round-half-to-even per conventions §116 (this file used the legacy
+# XPAwardCalculator delegate until the 2026-07-31 cp pass). Every caller
+# pre-guards its inputs (`if realm_families <= 0: return 0`), so the missing
+# `is_finite` guard on the shared helper is not reachable from here.

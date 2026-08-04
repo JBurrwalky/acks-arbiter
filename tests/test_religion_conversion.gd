@@ -40,6 +40,12 @@ func run_all_tests() -> void:
 	test_tick_no_active_arc_is_noop()
 	test_tick_completion_at_60pct_threshold_flips_effective_religion()
 	test_tick_failed_morale_after_3_rebellious_months()
+	# §106 null-safety regression (2026-08-03)
+	test_null_driving_character_id_does_not_abort_the_driver_helpers()
+	test_null_domain_owner_does_not_abort_the_owner_lookup()
+	# Driver-tier selection — reachable for the first time once the TEST_DRIVER
+	# fixture actually reaches the database (2026-08-03).
+	test_driver_bonus_tier_selection()
 	_cleanup()
 	if not has_failures():
 		print("ReligionConversion: all tests passed.")
@@ -69,14 +75,28 @@ func _setup() -> void:
 		        'human', 'cleric', 9, 0, 'cleric',
 		        10, 10, 10, 10, 10, 13, 'chaotic', 1)
 	""", [TEST_RULER, TEST_CAMPAIGN])
-	# Driving caster (henchman).
+	# Driving caster (henchman divine caster of the target religion).
+	#
+	# [2026-08-03] This row previously carried `character_type='pc',
+	# persistence_tier='henchman'` — but 'henchman' is a CHARACTER_TYPE value and
+	# `characters.persistence_tier` is CHECK(... IN ('full','named','transient')),
+	# so the INSERT was silently rejected and THE ROW NEVER EXISTED. Every
+	# driver-dependent path in this suite therefore took the missing-driver
+	# fallback (`ReligionConversionResolver._driver_bonus_pct` returning
+	# MISSIONARY_ONLY through its `if driver.is_empty()` guard), and the
+	# henchman-divine tier plus the ruler-vs-henchman selection below it were
+	# never exercised. The two columns are now in their intended places.
+	#
+	# Charisma 14 (→ +1) is load-bearing: `test_tick_completion_*` documents its
+	# arithmetic as "1d10 + Cha mod (14 → +1)". Do not change it without
+	# re-deriving that test.
 	CampaignRepository.db.query_with_bindings("""
 		INSERT OR IGNORE INTO characters
 			(id, campaign_id, name, character_type, persistence_tier,
 			 race, character_class, level, xp, combat_progression,
 			 strength, intelligence, wisdom, dexterity, constitution, charisma,
 			 alignment, is_active)
-		VALUES (?, ?, 'Test Driver', 'pc', 'henchman',
+		VALUES (?, ?, 'Test Driver', 'henchman', 'full',
 		        'human', 'cleric', 5, 0, 'cleric',
 		        10, 10, 10, 10, 10, 14, 'chaotic', 1)
 	""", [TEST_DRIVER, TEST_CAMPAIGN])
@@ -376,10 +396,21 @@ func test_tick_completion_at_60pct_threshold_flips_effective_religion() -> void:
 	var d := CampaignRepository.get_domain(TEST_DOMAIN)
 	d["morale"] = 4  # Stalwart × 2.0 multiplier to make completion likely
 	# Force-roll deterministic 10 on 1d10 + Cha mod (14 → +1) = 11 per roll.
-	# 1 roll × 11 × 200% morale × 110% henchman × 100% no altar = 24 → caps at room=201
+	# 1 roll × 11 × 200% morale × 110% henchman × 100% no altar = 24, under room=201.
+	#
+	# [2026-08-03] That arithmetic is what this comment always CLAIMED, but until
+	# the TEST_DRIVER fixture was repaired it was not what ran: the driver row
+	# never existed, so Cha mod was 0 (base 10, not 11) and the driver tier was
+	# the missionary-only 100% (not 110%), giving 20. The completion assertion
+	# below could not tell the difference — 299+20 and 299+24 both clear the 300
+	# threshold — so a documented-but-false calculation sat here unchallenged.
+	# The gain is now asserted, not just described, so the comment is enforceable.
 	var deterministic_roller := func(_faces: int, count: int, _exp: bool) -> int:
 		return 10 * count
 	var result := ReligionConversionResolver.tick_conversion(d, 2, deterministic_roller)
+	check(int(result.get("congregant_gain", -1)) == 24,
+		"gain = (10 + 1) x 2.0 morale x 1.1 henchman = 24, got %d (20 means the driver fixture is dead again)"
+			% int(result.get("congregant_gain", -1)))
 	check(bool(result.get("completed", false)),
 		"tick should complete: gain=%d completed=%s" % [
 			int(result.get("congregant_gain", 0)),
@@ -411,3 +442,155 @@ func test_tick_failed_morale_after_3_rebellious_months() -> void:
 		"month 3 at Rebellious: failed_morale fires; got %s" % str(t3))
 	check(ReligionConversionResolver.get_active_for_domain(TEST_DOMAIN) == "",
 		"arc no longer active after failed_morale")
+
+
+# ---------------------------------------------------------------------------
+# §106 null-safety regressions (2026-08-03)
+#
+# `domain_religion_conversion.driving_character_id` and
+# `domains.owner_character_id` are both NULLABLE, and `row.get(key, default)`
+# returns the STORED null rather than the default when the key exists — so the
+# `""` defaults these helpers passed never protected them and `String(null)`
+# threw "Invalid call. Nonexistent 'String' constructor" at runtime.
+#
+# HOW THESE TESTS DETECT IT: a GDScript runtime error aborts the function and
+# hands the caller the RETURN TYPE'S DEFAULT (0 / ""). So each assertion below
+# pins the correct NON-default answer for the null case — 100 rather than 0,
+# the ruler's id rather than "". A test that merely called the helper and
+# checked it "didn't crash" would pass either way, because the abort is silent
+# to the assertion layer: the pre-fix suite was 574/0 with nine of these firing.
+# ---------------------------------------------------------------------------
+
+func test_null_driving_character_id_does_not_abort_the_driver_helpers() -> void:
+	_setup()
+	_insert_domain_row("chaotic", "civilized", "grant", "sun-cult")
+	var arc: Dictionary = _insert_arc_with_null_driver()
+
+	# Missionary-only arcs legitimately have no driver — this is the NORMAL
+	# state for one, not an edge case.
+	var bonus: int = ReligionConversionResolver._driver_bonus_pct(arc, TEST_DOMAIN)
+	check(bonus == ReligionConversionResolver.DRIVER_BONUS_PCT_MISSIONARY_ONLY,
+		"missionary-only bonus is %d, got %d (0 means the function aborted on String(null))"
+			% [ReligionConversionResolver.DRIVER_BONUS_PCT_MISSIONARY_ONLY, bonus])
+
+	# Falls through to the ruler's Cha mod. TEST_RULER has Cha 13 → +1, chosen
+	# so the correct answer differs from the aborted function's 0.
+	var cha: int = ReligionConversionResolver._driver_cha_mod(arc)
+	check(cha == 1,
+		"falls back to the ruler's Cha 13 → +1, got %d (0 means it aborted)" % cha)
+
+	# Resolves to the domain's ruler, not "".
+	var caster: String = ReligionConversionResolver._proselytizing_caster_id(arc, TEST_DOMAIN)
+	check(caster == TEST_RULER,
+		"proselytizer of record falls back to the ruler, got '%s'" % caster)
+
+	# CONTROL: with a real driver the same helpers must still USE it, so the
+	# null-safe coercion cannot have collapsed every arc to the fallback.
+	#
+	# Discriminates on the BONUS, not on Cha: TEST_DRIVER (14) and TEST_RULER
+	# (13) both sit in the 13-15 band and both yield +1, so a Cha assertion
+	# could not tell "read the driver" from "fell back to the ruler". The
+	# henchman tier (110) vs missionary-only (100) separates them cleanly — and
+	# is the branch the dead-fixture fix made reachable for the first time.
+	var driven: Dictionary = _insert_arc_with_null_driver(TEST_DRIVER)
+	check(ReligionConversionResolver._proselytizing_caster_id(driven, TEST_DOMAIN) == TEST_DRIVER,
+		"CONTROL: a driven arc still reports its driver")
+	check(ReligionConversionResolver._driver_bonus_pct(driven, TEST_DOMAIN)
+			== ReligionConversionResolver.DRIVER_BONUS_PCT_HENCHMAN_DIVINE,
+		"CONTROL: and prices it at the henchman tier (%d), not missionary-only, got %d"
+			% [ReligionConversionResolver.DRIVER_BONUS_PCT_HENCHMAN_DIVINE,
+			   ReligionConversionResolver._driver_bonus_pct(driven, TEST_DOMAIN)])
+	_cleanup()
+
+
+func test_null_domain_owner_does_not_abort_the_owner_lookup() -> void:
+	# `domains.owner_character_id` is nullable and goes null exactly when a ruler
+	# dies — the same moment a conversion arc is most likely to still be open.
+	# Latent rather than observed: unlike the driver columns above, the correct
+	# answer here ("") equals the aborted function's default, so the VALUE cannot
+	# discriminate. What this test buys is that the line is exercised at all, so a
+	# regression shows up as a "Nonexistent 'String' constructor" in the run log.
+	_setup()
+	_insert_domain_row("chaotic", "civilized", "grant", "sun-cult")
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET owner_character_id = NULL WHERE id = ?", [TEST_DOMAIN])
+	var arc: Dictionary = _insert_arc_with_null_driver()
+
+	check(ReligionConversionResolver._proselytizing_caster_id(arc, TEST_DOMAIN) == "",
+		"an ownerless domain yields no proselytizer of record")
+	check(ReligionConversionResolver._driver_cha_mod(arc) == 0,
+		"and contributes no Cha modifier")
+	# The discriminating half: the bonus helper does NOT depend on the owner, so
+	# it must still return the missionary-only figure rather than an aborted 0.
+	check(ReligionConversionResolver._driver_bonus_pct(arc, TEST_DOMAIN)
+			== ReligionConversionResolver.DRIVER_BONUS_PCT_MISSIONARY_ONLY,
+		"the driver-bonus path is unaffected by the missing owner")
+	_cleanup()
+
+
+## Insert a conversion arc whose `driving_character_id` is SQL NULL (or
+## [param driver] when given). Deliberately a raw insert: `start_conversion`
+## always records a driver, so the null case cannot be built through it.
+func _insert_arc_with_null_driver(driver = null) -> Dictionary:
+	var arc_id: String = CampaignRepository.generate_id()
+	CampaignRepository.db.query_with_bindings("""
+		INSERT INTO domain_religion_conversion
+			(id, campaign_id, domain_id, from_religion, to_religion,
+			 from_alignment, to_alignment, progress_pct, driving_character_id,
+			 started_calendar_day, status)
+		VALUES (?, ?, ?, 'sun-cult', 'chaos-cult', 'chaotic', 'chaotic', 10, ?, 1, 'active')
+	""", [arc_id, TEST_CAMPAIGN, TEST_DOMAIN, driver])
+	CampaignRepository.db.query_with_bindings(
+		"SELECT * FROM domain_religion_conversion WHERE id = ?", [arc_id])
+	return CampaignRepository.db.query_result[0].duplicate()
+
+# ---------------------------------------------------------------------------
+# Driver-tier selection (gdd-religion-conversion.md §5.4 / §9.6)
+# ---------------------------------------------------------------------------
+
+func test_driver_bonus_tier_selection() -> void:
+	# `_driver_bonus_pct` picks between three tiers, and until 2026-08-03 only
+	# ONE of them was ever reached: the TEST_DRIVER fixture never landed in the
+	# database (persistence_tier held a character_type value, which the CHECK
+	# rejected), so `get_character` missed and the `if driver.is_empty()` guard
+	# returned MISSIONARY_ONLY for every arc — including the ones that passed a
+	# driver in. The suite was green on a branch it was not running.
+	#
+	# All three tiers are asserted here so the selection cannot silently collapse
+	# to one value again. The numbers come from the resolver constants rather
+	# than being written out, so a rebalance moves the test with the rule.
+	_setup()
+	_insert_domain_row("chaotic", "civilized", "grant", "sun-cult")
+
+	# (a) No driver at all → missionary-only.
+	check(ReligionConversionResolver._driver_bonus_pct(
+			_insert_arc_with_null_driver(), TEST_DOMAIN)
+			== ReligionConversionResolver.DRIVER_BONUS_PCT_MISSIONARY_ONLY,
+		"no driver → missionary-only tier")
+
+	# (b) A driver who is NOT the domain owner → henchman-divine. This is the
+	# branch that had never executed.
+	var henchman_pct: int = ReligionConversionResolver._driver_bonus_pct(
+		_insert_arc_with_null_driver(TEST_DRIVER), TEST_DOMAIN)
+	check(henchman_pct == ReligionConversionResolver.DRIVER_BONUS_PCT_HENCHMAN_DIVINE,
+		"a henchman divine caster is priced at %d, got %d"
+			% [ReligionConversionResolver.DRIVER_BONUS_PCT_HENCHMAN_DIVINE, henchman_pct])
+
+	# (c) A driver who IS the domain owner → ruler tier. The ruler-vs-henchman
+	# comparison is the whole point of the branch, so both sides are pinned.
+	var ruler_pct: int = ReligionConversionResolver._driver_bonus_pct(
+		_insert_arc_with_null_driver(TEST_RULER), TEST_DOMAIN)
+	check(ruler_pct == ReligionConversionResolver.DRIVER_BONUS_PCT_RULER_DIVINE_CASTER,
+		"a divine-caster ruler is priced at %d, got %d"
+			% [ReligionConversionResolver.DRIVER_BONUS_PCT_RULER_DIVINE_CASTER, ruler_pct])
+	check(ruler_pct > henchman_pct,
+		"and outranks the henchman tier (%d > %d)" % [ruler_pct, henchman_pct])
+
+	# A driver id that does not resolve to a character falls back rather than
+	# crediting a tier it cannot verify — the guard that was masking all of the
+	# above. Pinned so the fixture repair cannot be silently undone.
+	check(ReligionConversionResolver._driver_bonus_pct(
+			_insert_arc_with_null_driver("no_such_character"), TEST_DOMAIN)
+			== ReligionConversionResolver.DRIVER_BONUS_PCT_MISSIONARY_ONLY,
+		"an unresolvable driver falls back to missionary-only")
+	_cleanup()

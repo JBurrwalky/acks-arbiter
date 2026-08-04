@@ -30,6 +30,8 @@ func run_all_tests() -> void:
 	test_eligible_heirs_for_returns_pcs_and_henchmen()
 	test_eligible_heirs_for_kind_chips_correct()
 	test_invalid_inputs_rejected()
+	# §106 null-safety regression (2026-08-03)
+	test_null_liege_and_null_overlord_owner_do_not_abort()
 	_cleanup()
 	if not has_failures():
 		print("RulerDeathHandler: all tests passed.")
@@ -330,3 +332,54 @@ func test_invalid_inputs_rejected() -> void:
 	# Empty domain id.
 	check(not RulerDeathHandler.designate_heir("", HEIR_PC_ID, "pc"),
 		"empty domain_id rejected")
+
+
+# ---------------------------------------------------------------------------
+# §106 null-safety regression (2026-08-03)
+#
+# `_overlord_character_id` read `String(domain.get("liege_domain_id", ""))` and
+# `String(query_result[0].get("owner_character_id", ""))`. Both columns are
+# NULLABLE, and `row.get(key, default)` returns the STORED null rather than the
+# default when the key exists — so `String(null)` threw at runtime for every
+# top-level (non-vassal) domain, which is most of them.
+#
+# HONEST LIMIT OF THIS TEST: unlike the religion-resolver helpers, the correct
+# answer for both null cases is "" — exactly what an aborted function returns —
+# so no assertion here can discriminate a regression by VALUE. What the two null
+# cases buy is that the lines are EXERCISED, so a reintroduced `String(null)`
+# surfaces as "Nonexistent 'String' constructor" in headless_test_run.log. The
+# CONTROL below is the part that can actually fail: it proves the null-safe
+# coercion still resolves a real overlord rather than swallowing every lookup.
+# ---------------------------------------------------------------------------
+
+func test_null_liege_and_null_overlord_owner_do_not_abort() -> void:
+	_cleanup()
+	_setup_campaign_and_characters()
+
+	# (a) Top-level domain — liege_domain_id IS NULL. This is the common case and
+	# the one that was crashing.
+	_create_domain(DOMAIN_ID, RULER_ID)
+	var top: Dictionary = CampaignRepository.get_domain(DOMAIN_ID)
+	check(top.get("liege_domain_id") == null, "fixture really has a NULL liege")
+	check(RulerDeathHandler._overlord_character_id(top) == "",
+		"a domain with no liege has no overlord")
+
+	# (b) Vassal whose overlord domain has a NULL owner — the second nullable read.
+	_create_domain(OVERLORD_DOMAIN_ID, OVERLORD_ID)
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET owner_character_id = NULL WHERE id = ?", [OVERLORD_DOMAIN_ID])
+	_create_domain(DOMAIN_ID, RULER_ID, OVERLORD_DOMAIN_ID)
+	var orphaned: Dictionary = CampaignRepository.get_domain(DOMAIN_ID)
+	check(RulerDeathHandler._overlord_character_id(orphaned) == "",
+		"an overlord domain between rulers yields no overlord character")
+
+	# (c) CONTROL — the discriminating case. A real liege with a real owner must
+	# still resolve, so the fix cannot have collapsed the lookup to "".
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET owner_character_id = ? WHERE id = ?",
+		[OVERLORD_ID, OVERLORD_DOMAIN_ID])
+	var vassal: Dictionary = CampaignRepository.get_domain(DOMAIN_ID)
+	check(RulerDeathHandler._overlord_character_id(vassal) == OVERLORD_ID,
+		"CONTROL: a real overlord still resolves, got '%s'"
+			% RulerDeathHandler._overlord_character_id(vassal))
+	_cleanup()

@@ -32,14 +32,24 @@ const EMPIRE := 6
 # agree with `titles_of_nobility` (7,500 / 1,500 / 780), so the old "extraction
 # variance" caveat is gone. families_lower / ruler_level come from
 # titles_of_nobility (acore_axioms_strongholds_and_domains.xml:276-284).
+## `title` is the DOMAIN title (the land); `ruler_title` is the title its HOLDER
+## bears, per RAW `acore_axioms_strongholds_and_domains.xml` §titles_of_nobility.
+## Both vocabularies are in use across the codebase — `domains.realm_title` stores
+## the RULER form ("Baron"), while the generator's tier ladder speaks the DOMAIN
+## form ("Barony") — so the mapping lives here rather than in a second table.
+##
+## Jedidiah ruling 2026-08-01 (handoff D-9): THIS is the single source of truth
+## for NPC ruler level. `NpcRulerGenerator.LEVEL_BY_TITLE` previously carried a
+## conflicting set (Baron 6 / Duke 10 / Prince 12, and NO Marquis entry at all)
+## and now derives from here.
 const TIERS := [
-	{"title": "Barony", "families_lower": 160, "ruler_level": 4, "stronghold_value_gp": 22500},
-	{"title": "March", "families_lower": 960, "ruler_level": 6, "stronghold_value_gp": 45000},
-	{"title": "County", "families_lower": 4600, "ruler_level": 8, "stronghold_value_gp": 70000},
-	{"title": "Duchy", "families_lower": 20000, "ruler_level": 9, "stronghold_value_gp": 115000},
-	{"title": "Principality", "families_lower": 87000, "ruler_level": 11, "stronghold_value_gp": 360000},
-	{"title": "Kingdom", "families_lower": 364000, "ruler_level": 13, "stronghold_value_gp": 480000},
-	{"title": "Empire", "families_lower": 2000000, "ruler_level": 14, "stronghold_value_gp": 720000},
+	{"title": "Barony", "ruler_title": "Baron", "families_lower": 160, "ruler_level": 4, "stronghold_value_gp": 22500},
+	{"title": "March", "ruler_title": "Marquis", "families_lower": 960, "ruler_level": 6, "stronghold_value_gp": 45000},
+	{"title": "County", "ruler_title": "Count", "families_lower": 4600, "ruler_level": 8, "stronghold_value_gp": 70000},
+	{"title": "Duchy", "ruler_title": "Duke", "families_lower": 20000, "ruler_level": 9, "stronghold_value_gp": 115000},
+	{"title": "Principality", "ruler_title": "Prince", "families_lower": 87000, "ruler_level": 11, "stronghold_value_gp": 360000},
+	{"title": "Kingdom", "ruler_title": "King", "families_lower": 364000, "ruler_level": 13, "stronghold_value_gp": 480000},
+	{"title": "Empire", "ruler_title": "Emperor", "families_lower": 2000000, "ruler_level": 14, "stronghold_value_gp": 720000},
 ]
 
 
@@ -61,6 +71,30 @@ static func title_for_tier(tier_index: int) -> String:
 
 static func ruler_level_for_tier(tier_index: int) -> int:
 	return int(TIERS[clampi(tier_index, 0, TIERS.size() - 1)]["ruler_level"])
+
+
+## The RULER title borne by the holder of a tier's domain ("Barony" → "Baron").
+static func ruler_title_for_tier(tier_index: int) -> String:
+	return str(TIERS[clampi(tier_index, 0, TIERS.size() - 1)]["ruler_title"])
+
+
+## Inverse of [method ruler_title_for_tier]. Accepts either vocabulary — the
+## RULER title ("Baron", "Marquis") or the DOMAIN title ("Barony", "March") —
+## because `domains.realm_title` stores the former while the tier ladder speaks
+## the latter. Returns BARONY for anything unrecognised, matching
+## [method tier_for_families]' below-the-floor behaviour.
+static func tier_for_ruler_title(title: String) -> int:
+	var wanted := title.strip_edges()
+	for i in range(TIERS.size()):
+		if str(TIERS[i]["ruler_title"]) == wanted or str(TIERS[i]["title"]) == wanted:
+			return i
+	return BARONY
+
+
+## Canonical NPC ruler level for a realm title (handoff D-9). Prefer this over
+## any local level table.
+static func ruler_level_for_title(title: String) -> int:
+	return ruler_level_for_tier(tier_for_ruler_title(title))
 
 
 static func stronghold_value_for_tier(tier_index: int) -> int:
