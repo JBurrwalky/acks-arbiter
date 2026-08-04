@@ -25,6 +25,12 @@ const _UPDATE_FIELDS := [
 	"status", "departure_kind", "departure_calendar_day",
 	# Migration 129 (Phase 11D.5): tribal-warrior 3-month-spoils counter.
 	"months_without_qualifying_spoils",
+	# Migration 212: RAW Unit Loyalty carryover, written by
+	# UnitLoyaltyResolver.roll_loyalty.
+	"loyalty_is_fanatic", "loyalty_consecutive_grudging",
+	# Migration 213 / 214: excess-levy flag, the :483 religious-fanatic
+	# exemption, and the :459 continuous-campaigning anchor.
+	"is_excess_levy", "is_religious_fanatic", "campaigning_since_calendar_day",
 ]
 
 
@@ -81,8 +87,9 @@ static func create_unit(data: Dictionary) -> String:
 			 monthly_wage_cp, monthly_supply_cp, monthly_specialist_cp,
 			 monthly_cost_cp, morale, is_veteran, is_trained,
 			 unit_xp, assignment_kind, hire_calendar_day, equipment_kit,
-			 status, departure_kind, departure_calendar_day, save_vs_death)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 status, departure_kind, departure_calendar_day, save_vs_death,
+			 is_excess_levy, is_religious_fanatic, campaigning_since_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		str(data.get("campaign_id", "")),
@@ -111,6 +118,18 @@ static func create_unit(data: Dictionary) -> String:
 		str(data.get("departure_kind", "")),
 		int(data.get("departure_calendar_day", 0)),
 		save_vs_death,
+		# Migration 213: tribal warriors levied past the free 1-per-family
+		# allotment. Defaults 0 — every other source_type and the free levy.
+		1 if bool(data.get("is_excess_levy", false)) else 0,
+		# Migration 214: RAW daw_armies_recruitment.xml:481-483 — cleric and
+		# bladedancer followers make no loyalty rolls for calamities. Set by
+		# FollowerArrivalResolver from the class table; 0 for everything else.
+		1 if bool(data.get("is_religious_fanatic", false)) else 0,
+		# Migration 214: :459 continuous-campaigning anchor. Always minted at 0
+		# ("not currently campaigning") even for units created straight into
+		# assignment_kind='on_campaign' — the monthly tick sets the anchor on
+		# its next pass, which is what keeps the rule to one owner.
+		0,
 	]):
 		push_error("TroopUnitRepository.create_unit failed: source=%s type=%s" % [
 			data.get("source_type", "?"), data.get("troop_type", "?"),

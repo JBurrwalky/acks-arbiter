@@ -316,6 +316,7 @@
 [ext_resource type="Script" path="res://tests/test_in_enemy_territory_predicate.gd" id="262_in_enemy_territory_predicate_tests"]
 [ext_resource type="Script" path="res://tests/test_extraction_resistance_realm_ai.gd" id="263_extraction_resistance_realm_ai_tests"]
 [ext_resource type="Script" path="res://tests/test_realm_sub_tab_ui.gd" id="264_realm_sub_tab_ui_tests"]
+[ext_resource type="Script" path="res://tests/test_levy_cost_ui.gd" id="605_levy_cost_ui_tests"]
 [ext_resource type="Script" path="res://tests/test_vassal_obligations_repository.gd" id="265_vassal_obligations_repository_tests"]
 [ext_resource type="Script" path="res://tests/test_favors_duties_resolver.gd" id="266_favors_duties_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_trade_range_resolver.gd" id="267_trade_range_resolver_tests"]
@@ -573,6 +574,7 @@
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dungeon_cutover_identity.gd" id="577_dungeon_cutover_identity_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dg_c3d_g_ui.gd" id="603_dg_c3d_g_ui_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/battlemap/test_battle_map_generator.gd" id="604_battle_map_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_unit_loyalty.gd" id="608_unit_loyalty_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -1407,6 +1409,9 @@ script = ExtResource("263_extraction_resistance_realm_ai_tests")
 
 [node name="RealmSubTabUiTests" type="Node" parent="."]
 script = ExtResource("264_realm_sub_tab_ui_tests")
+
+[node name="LevyCostUiTests" type="Node" parent="."]
+script = ExtResource("605_levy_cost_ui_tests")
 
 [node name="VassalObligationsRepositoryTests" type="Node" parent="."]
 script = ExtResource("265_vassal_obligations_repository_tests")
@@ -2292,3 +2297,6 @@ script = ExtResource("606_monster_footprint_data_tests")
 
 [node name="SwarmMonstersTests" type="Node" parent="."]
 script = ExtResource("607_swarm_monsters_tests")
+
+[node name="UnitLoyaltyTests" type="Node" parent="."]
+script = ExtResource("608_unit_loyalty_tests")

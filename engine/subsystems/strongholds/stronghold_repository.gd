@@ -25,7 +25,7 @@ extends RefCounted
 ## set of hexes needed to connect components (greedy Prim-style MST over
 ## connected components, BFS for shortest hex-paths). Callers (resolvers + UI)
 ## pass the result of that function — not the raw owned-hex count — into
-## `classification_minimum_gp` whenever computing stronghold sufficiency.
+## `classification_minimum_cp` whenever computing stronghold sufficiency.
 
 ## RAW per-hex minimums in cp (gp × 100 per Migration 116). Math constants
 ## live in cp so all comparisons happen in the column's native units.
@@ -88,6 +88,32 @@ static func get_stronghold_value_for_domain(domain_id: String) -> int:
 	return int(CampaignRepository.db.query_result[0].get("total", 0))
 
 
+## Map location of a domain's seat: `{map_id, hex_q, hex_r}`, or {} when the
+## domain has no surviving stronghold. Any of the three values may be null —
+## strongholds carry nullable location columns — so callers must treat this as
+## "where to put something belonging to this domain", not as a guaranteed hex.
+##
+## Consolidated here 2026-08-03 (conventions §116): `BanditSpawner` and
+## `MutinyForceComposer` both need a spawn point for a hostile army and were
+## about to hold two copies of the same query.
+static func location_for_domain(domain_id: String) -> Dictionary:
+	if domain_id.is_empty():
+		return {}
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT location_map_id, location_hex_q, location_hex_r
+		FROM strongholds WHERE domain_id = ? AND status != 'destroyed' LIMIT 1
+	""", [domain_id]):
+		return {}
+	if CampaignRepository.db.query_result.is_empty():
+		return {}
+	var row: Dictionary = CampaignRepository.db.query_result[0]
+	return {
+		"map_id": row.get("location_map_id"),
+		"hex_q": row.get("location_hex_q"),
+		"hex_r": row.get("location_hex_r"),
+	}
+
+
 ## Returns the per-hex minimum stronghold value (in cp) for a classification,
 ## or wilderness for unknown classifications (caller-safe default).
 static func per_hex_minimum_for(territory_type: String) -> int:
@@ -95,9 +121,13 @@ static func per_hex_minimum_for(territory_type: String) -> int:
 
 
 ## Compute the classification minimum (in cp) required to secure a domain.
-## minimum = per_hex × max(1, hex_count). Name retained for backwards-compat;
-## the value returned is cp since Migration 116.
-static func classification_minimum_gp(territory_type: String, hex_count: int) -> int:
+## minimum = per_hex × max(1, hex_count).
+##
+## Renamed from `classification_minimum_gp` on 2026-07-31: the value has been cp
+## since Migration 116 and the stale `_gp` name was actively misleading — it is
+## how `status_header.gd` came to render the minimum as though it were gold
+## (conventions §127; the suffix IS the contract).
+static func classification_minimum_cp(territory_type: String, hex_count: int) -> int:
 	return per_hex_minimum_for(territory_type) * maxi(1, hex_count)
 
 
@@ -268,7 +298,7 @@ static func is_sufficient_for_domain(domain_id: String) -> bool:
 	if domain.is_empty():
 		return false
 	var hex_count: int = get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = classification_minimum_gp(
+	var minimum_cp: int = classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")), hex_count)
 	var value_cp: int = get_stronghold_value_for_domain(domain_id)
 	return value_cp >= minimum_cp
@@ -292,7 +322,7 @@ static func recompute_sufficiency_after_change(domain_id: String) -> void:
 	if domain.is_empty():
 		return
 	var hex_count: int = get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = classification_minimum_gp(
+	var minimum_cp: int = classification_minimum_cp(
 		String(domain.get("territory_type", "wilderness")), hex_count)
 	var value_cp: int = get_stronghold_value_for_domain(domain_id)
 	var is_sufficient: bool = value_cp >= minimum_cp

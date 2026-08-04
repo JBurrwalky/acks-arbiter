@@ -31,6 +31,7 @@ func run_all_tests() -> void:
 	test_outcome_occupied_logs_payload_with_outcome_and_new_owner()
 	test_outcome_looted_local_succession_applies_pillage_and_reassigns()
 	test_outcome_looted_requires_new_owner_id()
+	test_refused_conquest_changes_nothing()
 	test_outcome_salted_to_ruin_releases_hexes_and_sets_state()
 	test_outcome_salted_to_ruin_loots_treasury_via_pillage()
 	test_outcome_salted_domains_skipped_by_monthly_tick_filter()
@@ -226,6 +227,45 @@ func test_outcome_looted_requires_new_owner_id() -> void:
 		1,
 		{})
 	check(not ok, "LOOTED_LOCAL_SUCCESSION without new_owner_id rejected")
+
+
+## 2026-07-31 regression lock: `conquer_domain` is ALL-OR-NOTHING. Until the
+## Tier-0 validation reorder, `apply_pillage` and `_cascade_vassals` ran BEFORE
+## the outcome-specific checks, so a refused conquest left the domain in place
+## but pillaged and with every vassal edge marked 'departed' — the realm was
+## destroyed by a conquest that never happened. See
+## docs/domain-acquisition-audit-2026-07-28.md `refused-conquest-corrupts-vassal-state`.
+func test_refused_conquest_changes_nothing() -> void:
+	_cleanup(); _setup()
+	_create_domain(DOMAIN_ID, OWNER_ID, 50_000, 200)
+	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID)
+	_add_hex(DOMAIN_ID, 0, 0)
+	var assignment_id := _create_vassal_assignment(
+		OWNER_ID, HENCHMAN_VASSAL_ID, VASSAL_DOMAIN_ID)
+
+	# Refuse via the missing-new_owner_id gate, with a pillage severity that
+	# WOULD loot the treasury and cull the population if it were applied.
+	var ok := LifecycleHandler.conquer_domain(
+		DOMAIN_ID, 200,
+		LifecycleHandler.OUTCOME_LOOTED_LOCAL_SUCCESSION, "", 2, {})
+	check(not ok, "refused conquest returns false")
+
+	# Nothing may have moved.
+	var post: Dictionary = VassalRepository.get_assignment(assignment_id)
+	check(String(post.get("status", "")) == "active",
+		"refused conquest leaves the vassal edge ACTIVE, got '%s'" % String(post.get("status", "")))
+	CampaignRepository.db.query_with_bindings(
+		"SELECT owner_character_id, treasury_cp, peasant_families FROM domains WHERE id = ?",
+		[DOMAIN_ID])
+	var row: Dictionary = CampaignRepository.db.query_result[0]
+	check(String(row.get("owner_character_id", "")) == OWNER_ID,
+		"refused conquest leaves the prior owner in place")
+	check(int(row.get("treasury_cp", -1)) == 50_000,
+		"refused conquest does not loot the treasury, got %d" % int(row.get("treasury_cp", -1)))
+	check(int(row.get("peasant_families", -1)) == 200,
+		"refused conquest does not cull the population, got %d" % int(row.get("peasant_families", -1)))
+	check(CampaignRepository.get_domain_hexes(DOMAIN_ID).size() == 1,
+		"refused conquest does not release hexes")
 
 
 # ---------------------------------------------------------------------------

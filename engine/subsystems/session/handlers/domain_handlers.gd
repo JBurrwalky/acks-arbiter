@@ -190,7 +190,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 			resolve_opts = RulerBackdropStabilizer.resolution_options()
 		var result := _resolve_domain_month(domain_data, calendar_day, resolve_opts)
 		domain_results.append(result)
-		_save_domain(domain_data, result)
+		_save_domain(domain_data, result, calendar_day)
 		_emit_signals(domain_data, result)
 		# Phase 11A: chronicle classification + morale-tier transitions to the
 		# departure log. Conquest / abandonment / ruler death are written by the
@@ -327,9 +327,12 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	# --- Context: hexes, stronghold, ruler, additional garrison ---
 	var hexes: Array = CampaignRepository.get_domain_hexes(domain_id)
 	var hex_count: int = hexes.size()
-	# Strongholds remain gp-denominated (their own subsystem); convert at the
-	# boundary to cp for the domain treasury layer.
-	var stronghold_value_cp: int = _stub_stronghold_value(domain_id) * 100
+	# StrongholdRepository.get_stronghold_value_for_domain SUMs `strongholds.cp_value`
+	# — it is ALREADY copper. Until 2026-07-31 this line multiplied by 100 a second
+	# time under a comment claiming strongholds were gp-denominated, inflating every
+	# domain's stronghold value 100× and so holding the RAW income gate permanently
+	# open and suppressing the insufficient-stronghold morale penalty. Conventions §127.
+	var stronghold_value_cp: int = _stub_stronghold_value(domain_id)
 	# Stronghold sufficiency uses the effective hex count (owned + intervening)
 	# per RAW §noncontiguous_domains L95-98. For contiguous domains this equals
 	# `hex_count`; for noncontiguous ones it adds the connecting hexes between
@@ -357,7 +360,10 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	# efficiency factor.
 	var tribute_aggregate: Dictionary = _compute_tribute_in_for_ruler(
 		_str_field(domain_data, "owner_character_id"))
-	var tribute_in: int = int(tribute_aggregate.get("total_received_gp", 0))
+	# cp. Until 2026-07-31 this read the gp-named key and fed it straight into
+	# DomainRevenueCalculator's `tribute_in_cp` parameter, crediting every liege
+	# 1/100th of the tribute actually owed. Conventions §127.
+	var tribute_in_cp: int = int(tribute_aggregate.get("total_received_cp", 0))
 
 	# Phase 7: tribute_out_owed is recomputed each month based on the vassal
 	# domain's realm aggregate, so that domain growth/shrinkage flows naturally
@@ -381,9 +387,18 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	var faith_ruler_morale_bonus: int = int(
 		faith_modifiers.get("consecrate_ruler_base_morale_bonus", 0))
 
+	# Standing levy penalties for peasants under arms — militia (RAW
+	# daw_armies_recruitment.xml:428-432) and excess-levy tribal warriors
+	# (ax_domains_of_chaos.xml:399). Read ONCE and fed to both revenue and
+	# morale so the two cannot disagree about how many peasants are levied.
+	var levy: Dictionary = LevyPenaltyCalculator.penalties_for_domain(
+		domain_id, int(domain_data.get("peasant_families", 0)))
+	var levied_peasants: int = int(levy.get("levied", 0))
+
 	# --- Resolvers: revenue → expenses → morale → growth → classification ---
 	var revenue := DomainRevenueCalculator.calculate_monthly_revenue(
-		domain_data, hexes, stronghold_value_cp, stronghold_minimum_cp, tribute_in)
+		domain_data, hexes, stronghold_value_cp, stronghold_minimum_cp, tribute_in_cp,
+		levied_peasants)
 
 	# Phase 10A.2: apply consecrate_fields bonus to revenue total + subcategory.
 	if faith_land_value_bonus != 0 and not revenue.get("income_gate_active", false):
@@ -411,7 +426,8 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	var base_morale := DomainMoraleResolver.resolve_base_morale(
 		domain_data, ruler, revenue["total"],
 		stronghold_value_cp, stronghold_minimum_cp,
-		additional_garrison_cp_per_family)
+		additional_garrison_cp_per_family,
+		int(levy.get("morale_penalty", 0)))
 	# Phase 10A.2: consecrate_ruler 12-month buff applies +1 / -1 to base morale
 	# while the window is active.
 	if faith_ruler_morale_bonus != 0:
@@ -495,19 +511,34 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	var conversion_tick: Dictionary = ReligionConversionResolver.tick_conversion(
 		domain_data_with_morale, calendar_day)
 
+	# RAW: rules/ax_domains_of_chaos.xml:455 + rules/daw_armies_recruitment.xml:98
+	# — "going without pay for a month" is a calamity. Pay is aggregate in this
+	# project (no per-unit payment, no arrears columns), so the unpaid units are
+	# designated ex post facto from the shortfall; see
+	# TroopPayShortfallResolver's docstring for the rule and the player-override
+	# seam. Troop pay takes first claim on treasury + this month's revenue —
+	# `treasury_cp` here is still the PRE-settlement figure, since _save_domain
+	# applies net_income at the end of the tick.
+	var pay_shortfall: Dictionary = TroopPayShortfallResolver.resolve_for_domain(
+		domain_id,
+		int(domain_data.get("treasury_cp", 0)) + int(revenue.get("total", 0)))
+
 	# Phase 11D.5 polish: tribal-warrior retention tick per
 	# gdd-tribal-warriors.md §7. For each active tribal-warrior troop_unit
 	# in this domain, increment `months_without_qualifying_spoils`. When the
-	# counter hits 3, fire `tribal_warriors_morale_check_triggered` so the
-	# downstream morale-roll handler can resolve loyalty (signal-only stub
-	# in v1; the full roll mechanic lands when the morale-roll handler is
-	# wired in a future polish). Units that received qualifying spoils
-	# in-month have already had their counter reset to 0 via
+	# counter hits 3, fire `tribal_warriors_morale_check_triggered` and roll
+	# loyalty. Units that received qualifying spoils in-month have already had
+	# their counter reset to 0 via
 	# SiegeSpoilsResolver.apply_spoils_to_tribal_warriors; the increment
 	# here brings them back to 1 on the following month, which represents
 	# "one month has now passed since last qualifying credit" — the
 	# semantically correct "consecutive months without" reading.
-	_tick_tribal_warrior_retention(domain_id, calendar_day)
+	#
+	# The unpaid designation is fed IN rather than rolled separately so a unit
+	# suffering both monthly calamities makes ONE roll at -2 per RAW
+	# daw_armies_recruitment.xml:100, not two independent rolls.
+	_tick_unit_loyalty(domain_id, calendar_day,
+		pay_shortfall.get("unpaid_unit_ids", []))
 
 	# Aspirant promotion rolls (10B.1d, per Q20 [RESOLVED 2026-05-11]:
 	# universal d20+ability_mod 14+ throw at joined_calendar_day + 112 —
@@ -596,6 +627,9 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 		# Urban Growth Stocking — Stage B per `gdd-urban-growth-stocking.md`
 		# §6.2. One result dict per settlement under this domain.
 		"settlement_growth": settlement_growth_results,
+		# RAW "without pay for a month" designation for this month, whether or
+		# not anything went unpaid (shortfall_cp == 0 in the common case).
+		"pay_shortfall": pay_shortfall,
 	}
 
 
@@ -641,7 +675,10 @@ func _resolve_magic_research_month(
 
 
 ## Persist domain updates after monthly resolution.
-func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
+## [param calendar_day] is needed by the clanhold population-shrink release
+## hook, which chronicles to the departure log.
+func _save_domain(domain_data: Dictionary, result: Dictionary,
+		calendar_day: int = 0) -> void:
 	var domain_id: String = domain_data.get("id", "")
 	if domain_id.is_empty():
 		return
@@ -694,18 +731,28 @@ func _save_domain(domain_data: Dictionary, result: Dictionary) -> void:
 	# count; population growth fills the slack first.
 	if String(domain_data.get("domain_style", "civilized")) == "clanhold":
 		var population_growth_count: int = new_peasants - prior_peasants
+		var prior_available: int = int(domain_data.get("available_tribal_warriors", 0))
+		# Sum currently-levied tribal_warrior unit counts to enforce the
+		# invariant cap. We could call TribalWarriorRegistry.pool_for_domain
+		# but that re-reads the domain row; the count we need is just the
+		# active tribal_warrior troop_units sum.
+		var levied: int = _sum_active_tribal_warrior_count(domain_id)
 		if population_growth_count > 0:
-			var prior_available: int = int(domain_data.get("available_tribal_warriors", 0))
-			# Sum currently-levied tribal_warrior unit counts to enforce the
-			# invariant cap. We could call TribalWarriorRegistry.pool_for_domain
-			# but that re-reads the domain row; the count we need is just the
-			# active tribal_warrior troop_units sum.
-			var levied: int = _sum_active_tribal_warrior_count(domain_id)
 			var cap: int = new_peasants - levied
 			var proposed: int = prior_available + population_growth_count
 			var new_available: int = clampi(proposed, 0, maxi(0, cap))
 			if new_available != prior_available:
 				fields["available_tribal_warriors"] = new_available
+		elif population_growth_count < 0:
+			# RAW: rules/ax_domains_of_chaos.xml:402 — "If population is
+			# reduced, some tribal warriors must be released to return to their
+			# villages." Without this branch a shrinking clanhold kept every
+			# warrior and `available + levied` could exceed peasant_families,
+			# breaking the §3 pool invariant that pool_for_domain reports.
+			var released: Dictionary = _release_tribal_warriors_for_population_loss(
+				domain_id, new_peasants, prior_available, levied, calendar_day)
+			if released.has("new_available"):
+				fields["available_tribal_warriors"] = int(released["new_available"])
 	# Phase 7: realm_title persistence.
 	var title_update: Dictionary = result.get("realm_title", {})
 	if not title_update.is_empty():
@@ -822,14 +869,14 @@ func _stub_stronghold_value(domain_id: String) -> int:
 ## Per-hex classification minimums per `acore_axioms` §minimum_stronghold_value
 ## L88-94. RAW gp values × 100 to express as cp.
 ## Total = per_hex_minimum_cp × hex_count.
+## Thin delegate to the single source of truth. This function used to carry its
+## OWN copy of the RAW §minimum_stronghold_value table (1,500,000 / 2,250,000 /
+## 3,200,000 cp per hex), duplicating `StrongholdRepository._CLASSIFICATION_MIN_CP_PER_HEX`.
+## Two copies of a RAW table can silently diverge, and the monthly tick and the
+## Stronghold sub-tab reading different minimums is exactly the class of bug the
+## 2026-07-31 audit found elsewhere. Delegating keeps one table.
 func _classification_minimum_cp(territory_type: String, hex_count: int) -> int:
-	var per_hex_cp: int = 0
-	match territory_type:
-		"civilized":   per_hex_cp = 1500000   # RAW 15,000 gp
-		"borderlands": per_hex_cp = 2250000   # RAW 22,500 gp
-		"wilderness":  per_hex_cp = 3200000   # RAW 32,000 gp
-		_:             per_hex_cp = 3200000
-	return per_hex_cp * maxi(1, hex_count)
+	return StrongholdRepository.classification_minimum_cp(territory_type, hex_count)
 
 
 ## Coerces a Dictionary field to String, treating `null` as empty. SQLite
@@ -1065,12 +1112,13 @@ func _contiguous_expansion_blocked(_domain_data: Dictionary) -> bool:
 # Phase 7: Realm aggregation, tribute, title resolution
 # ---------------------------------------------------------------------------
 
-## Compute the gp THIS ruler will receive from active vassals this month.
-## Sum each vassal's tribute_base_gp (from the vassal's own realm size), then
+## Compute the cp THIS ruler will receive from active vassals this month.
+## Sum each vassal's tribute base (from the vassal's own realm size), then
 ## apply the liege's efficiency factor (based on liege's direct_vassal_count).
+## Returns `total_received_cp` — copper, per conventions §127.
 func _compute_tribute_in_for_ruler(ruler_character_id: String) -> Dictionary:
 	var summary: Dictionary = {
-		"total_received_gp": 0,
+		"total_received_cp": 0,
 		"per_vassal": [],
 		"direct_vassal_count": 0,
 		"efficiency_factor": 1.0,
@@ -1084,23 +1132,23 @@ func _compute_tribute_in_for_ruler(ruler_character_id: String) -> Dictionary:
 	summary["efficiency_factor"] = efficiency
 	if direct_count <= 0 or efficiency <= 0.0:
 		return summary
-	var total: int = 0
+	var total_cp: int = 0
 	for assn in assignments:
 		var vassal_char: String = String(assn.get("vassal_character_id", ""))
 		var v_aggregate: Dictionary = RealmAggregator.aggregate(vassal_char)
 		var v_realm_families: int = int(v_aggregate.get("all_realm_families", 0))
-		var v_base_gp: int = TributeCalculator.compute_tribute_base_gp(v_realm_families)
+		var v_base_cp: int = TributeCalculator.compute_tribute_base_cp(v_realm_families)
 		# Apply liege's efficiency factor to what arrives in liege's coffers.
-		var received: int = int(round(float(v_base_gp) * efficiency))
-		total += received
+		var received_cp: int = MathUtils.bankers_round(float(v_base_cp) * efficiency)
+		total_cp += received_cp
 		summary["per_vassal"].append({
 			"vassal_assignment_id": String(assn.get("id", "")),
 			"vassal_character_id": vassal_char,
 			"vassal_realm_families": v_realm_families,
-			"base_gp": v_base_gp,
-			"received_gp": received,
+			"base_cp": v_base_cp,
+			"received_cp": received_cp,
 		})
-	summary["total_received_gp"] = total
+	summary["total_received_cp"] = total_cp
 	return summary
 
 
@@ -1117,7 +1165,11 @@ func _compute_tribute_out_for_vassal_domain(domain_data: Dictionary) -> int:
 		return 0
 	var aggregate: Dictionary = RealmAggregator.aggregate(owner_id)
 	var realm_families: int = int(aggregate.get("all_realm_families", 0))
-	return TributeCalculator.compute_tribute_base_gp(realm_families)
+	# cp — matches the `domains.tribute_out_owed` column, which the materializer,
+	# AbstractTributeResolver and DomainExpenseCalculator all treat as cp.
+	# Before 2026-07-31 this returned gp and silently redenominated the column
+	# on the first monthly tick (conventions §127).
+	return TributeCalculator.compute_tribute_base_cp(realm_families)
 
 
 ## Update the domain's realm_title based on the current aggregate. Returns
@@ -1406,8 +1458,13 @@ func _on_siege_concluded(siege_id: String, outcome: String) -> void:
 	elif String(resolution.get("outcome", "")) == RealmRepository.OUTCOME_LOOTED_LOCAL_SUCCESSION:
 		resolution["new_owner_id"] = RealmRepository.spawn_local_succession_npc(
 			domain_id, calendar_day)
-	# Forward to LifecycleHandler.
-	LifecycleHandler.conquer_domain(
+	# Forward to LifecycleHandler. The return value MUST be checked: conquest can
+	# be refused (missing new_owner_id, or the §7.4 beastman eligibility gate),
+	# and until 2026-07-31 this call discarded the bool so a refusal failed
+	# silently — the siege reported a capture while the domain never changed
+	# hands. conquer_domain is now all-or-nothing, so `false` means no state
+	# changed and the caller is responsible for the fallback.
+	var conquered: bool = LifecycleHandler.conquer_domain(
 		domain_id, calendar_day,
 		String(resolution.get("outcome", "")),
 		String(resolution.get("new_owner_id", "")),
@@ -1415,6 +1472,18 @@ func _on_siege_concluded(siege_id: String, outcome: String) -> void:
 		{"siege_id": siege_id, "siege_outcome": outcome,
 		 "attacker_owner_id": attacker_owner_id,
 		 "attacker_realm_id": String(resolution.get("attacker_realm_id", ""))})
+	if not conquered:
+		push_error(
+			("DomainHandlers._on_siege_concluded: conquest REFUSED for domain %s "
+			+ "(siege %s, outcome %s, resolved %s, new_owner '%s'). The siege was "
+			+ "won but ownership did not transfer and no state changed. The siege "
+			+ "bridge does not yet pre-check EstablishDomainFlow's eligibility "
+			+ "matrix and re-route to LOOTED_LOCAL_SUCCESSION / SALTED_TO_RUIN — "
+			+ "see docs/domain-acquisition-audit-2026-07-28.md "
+			+ "(siege-bridge-still-bypasses-eligibility-validator).") % [
+				domain_id, siege_id, outcome,
+				String(resolution.get("outcome", "")),
+				String(resolution.get("new_owner_id", ""))])
 
 
 ## Phase 11D-prereq.0b: pick the attacker's intent (`occupy` / `loot_and_scoot`
@@ -1505,6 +1574,11 @@ func _rounds_until_next_month() -> int:
 ## Phase 11D.5 polish helper — sum of active tribal_warrior troop_unit counts
 ## for this domain. Used by the population-growth refill hook to enforce the
 ## pool invariant `available + levied <= peasant_families`.
+##
+## Migration 213: counts the FREE allotment only. Excess-levy warriors
+## (`ax_domains_of_chaos.xml:399`) are peasants pulled off the land rather than
+## draws on the 1-per-family allotment, so including them would shrink the
+## refill cap by warriors that were never charged against it.
 func _sum_active_tribal_warrior_count(domain_id: String) -> int:
 	if domain_id.is_empty():
 		return 0
@@ -1514,6 +1588,7 @@ func _sum_active_tribal_warrior_count(domain_id: String) -> int:
 		WHERE assigned_domain_id = ?
 		  AND source_type = 'tribal_warrior'
 		  AND status = 'active'
+		  AND is_excess_levy = 0
 	""", [domain_id]):
 		return 0
 	if CampaignRepository.db.query_result.is_empty():
@@ -1521,33 +1596,325 @@ func _sum_active_tribal_warrior_count(domain_id: String) -> int:
 	return int(CampaignRepository.db.query_result[0].get("total", 0))
 
 
-## Phase 11D.5 polish — tribal-warrior retention monthly tick per
-## gdd-tribal-warriors.md §7. Increments months_without_qualifying_spoils on
-## each active tribal_warrior troop_unit assigned to this domain. When the
-## counter reaches 3, fires `tribal_warriors_morale_check_triggered` for the
-## downstream morale-roll handler (signal-only stub in v1). Counter resets
-## to 0 elsewhere when qualifying spoils land (see
-## SiegeSpoilsResolver.apply_spoils_to_tribal_warriors).
-func _tick_tribal_warrior_retention(domain_id: String, _calendar_day: int) -> void:
-	if domain_id.is_empty():
-		return
+## RAW: rules/ax_domains_of_chaos.xml:402 — "If population is reduced, some
+## tribal warriors must be released to return to their villages."
+##
+## Implements gdd-tribal-warriors.md §3.2's release order:
+##   1. excess = available + levied − new peasant_families ceiling.
+##   2. Release dormant warriors first (decrement available_tribal_warriors).
+##   3. If excess remains, force stand-down of LEVIED warriors, lowest tier
+##      first (untrained → average → veteran), decrementing troop_units.count
+##      until the excess is absorbed. A row driven to 0 is marked departed.
+##
+## Step 3 is the part that surprises: RAW says warriors "must be released",
+## and the GDD reads that as reaching into units already in service when the
+## dormant pool cannot cover the shortfall. A clanhold that loses half its
+## families genuinely cannot keep a full levy in the field.
+##
+## Returns {new_available, released_dormant, released_levied,
+## released_excess_over_cap, total} — or an empty dict when nothing needed
+## releasing (so the caller can skip the write).
+func _release_tribal_warriors_for_population_loss(domain_id: String,
+		new_peasants: int, prior_available: int, levied: int,
+		calendar_day: int) -> Dictionary:
+	# The free-allotment overage and the excess-levy overage are INDEPENDENT:
+	# a shrink can breach one, the other, or both. Compute the free side first
+	# but do not early-return on it, or a domain whose free pool still fits
+	# would silently keep excess warriors above its shrunken ceiling.
+	var overage: int = (prior_available + levied) - new_peasants
+	var from_dormant: int = 0
+	var from_levied: int = 0
+	var new_available: int = prior_available
+
+	if overage > 0:
+		# Step 2 — dormant warriors first.
+		from_dormant = mini(overage, prior_available)
+		new_available = prior_available - from_dormant
+		var remaining: int = overage - from_dormant
+		# Step 3 — force stand-down of levied units, lowest tier first.
+		if remaining > 0:
+			from_levied = _force_stand_down_tribal_warriors(domain_id, remaining, calendar_day)
+
+	# The excess-levy ceiling is derived from peasant_families too
+	# (daw_armies_recruitment.xml:428, 2 per 10), so a shrinking population
+	# lowers it. Warriors above the NEW ceiling are released as well — this is
+	# enforcement of the standing cap, separate from the §3.2 free-allotment
+	# release above, and it fires even when the free side needed no release.
+	var from_excess: int = _trim_excess_levy_to_cap(domain_id, new_peasants, calendar_day)
+
+	var total: int = from_dormant + from_levied + from_excess
+	if total <= 0:
+		return {}
+
+	if EventBus.has_signal("tribal_warriors_released_for_population_loss"):
+		EventBus.emit_signal("tribal_warriors_released_for_population_loss",
+			domain_id, total)
+
+	var detail: String = "Population fell to %d families; %d tribal warriors released to their villages (%d dormant, %d from units in service" % [
+		new_peasants, total, from_dormant, from_levied]
+	detail += ", %d over the levy cap)." % from_excess if from_excess > 0 else ")."
+	DepartureLogRecorder.record(
+		_campaign_id, domain_id, calendar_day,
+		"tribal_warriors_released_for_population_loss",
+		detail,
+		{
+			"peasant_families": new_peasants,
+			"released_total": total,
+			"released_dormant": from_dormant,
+			"released_levied": from_levied,
+			"released_excess_over_cap": from_excess,
+			"available_before": prior_available,
+			"available_after": new_available,
+			"levied_before": levied,
+		})
+
+	return {
+		"new_available": new_available,
+		"released_dormant": from_dormant,
+		"released_levied": from_levied,
+		"released_excess_over_cap": from_excess,
+		"total": total,
+	}
+
+
+## Release excess-levy warriors above the ceiling a domain of
+## [param new_peasants] families can sustain (RAW
+## daw_armies_recruitment.xml:428 — 2 per 10 families, borrowed for the tribal
+## excess per ax_domains_of_chaos.xml:399). Returns the number released.
+func _trim_excess_levy_to_cap(domain_id: String, new_peasants: int,
+		calendar_day: int) -> int:
+	var cap: int = LevyPenaltyCalculator.levy_cap_for_families(new_peasants)
+	var current: int = TribalWarriorRegistry.excess_levied_count(domain_id)
+	var over: int = current - cap
+	if over <= 0:
+		return 0
+	return _stand_down_tribal_rows(domain_id, over, calendar_day, 1)
+
+
+## Decrement FREE-allotment tribal-warrior counts by up to [param needed]
+## warriors, lowest tier first per gdd-tribal-warriors.md §3.2.
+func _force_stand_down_tribal_warriors(domain_id: String, needed: int,
+		calendar_day: int) -> int:
+	return _stand_down_tribal_rows(domain_id, needed, calendar_day, 0)
+
+
+## Shared row-walker for both release paths. [param excess_flag] selects which
+## population to draw from: 0 = the free 1-per-family allotment (§3.2 release),
+## 1 = excess-levy warriors (standing-cap enforcement). Rows driven to 0 are
+## marked departed with departure_kind='released_for_population_loss'.
+## Returns the number of warriors actually released.
+func _stand_down_tribal_rows(domain_id: String, needed: int,
+		calendar_day: int, excess_flag: int) -> int:
+	if needed <= 0 or domain_id.is_empty():
+		return 0
+	# ORDER BY tier rank: untrained (0) → average (1) → veteran (2). Veterans
+	# are the last warriors a chieftain sends home. `id` breaks ties so the
+	# selection is deterministic across runs.
 	if not CampaignRepository.db.query_with_bindings("""
-		SELECT id, months_without_qualifying_spoils
+		SELECT id, count, tier
 		FROM troop_units
 		WHERE assigned_domain_id = ?
 		  AND source_type = 'tribal_warrior'
+		  AND status = 'active'
+		  AND count > 0
+		  AND is_excess_levy = ?
+		ORDER BY CASE tier
+			WHEN 'untrained' THEN 0
+			WHEN 'average' THEN 1
+			WHEN 'veteran' THEN 2
+			ELSE 3 END, id
+	""", [domain_id, excess_flag]):
+		return 0
+	var rows: Array = CampaignRepository.db.query_result.duplicate()
+	var released: int = 0
+	for row: Dictionary in rows:
+		if released >= needed:
+			break
+		var unit_id: String = str(row.get("id", ""))
+		var count: int = int(row.get("count", 0))
+		if unit_id.is_empty() or count <= 0:
+			continue
+		var take: int = mini(count, needed - released)
+		var new_count: int = count - take
+		var updates: Dictionary = {"count": new_count}
+		if new_count <= 0:
+			updates["status"] = "departed"
+			updates["departure_kind"] = "released_for_population_loss"
+			updates["departure_calendar_day"] = calendar_day
+		TroopUnitRepository.update_unit(unit_id, updates)
+		released += take
+	return released
+
+
+## The domain tick's SINGLE monthly Unit Loyalty pass, for every troop unit
+## assigned to this domain. Collects each calamity that is decided on a monthly
+## boundary and makes ONE roll per unit.
+##
+## ── The three monthly calamities ────────────────────────────────────────────
+##
+## **Three months without spoils** (TRIBAL WARRIORS ONLY) — Phase 11D.5 per
+## gdd-tribal-warriors.md §7. Increments `months_without_qualifying_spoils` on
+## each active tribal_warrior unit. The counter resets to 0 when qualifying
+## spoils land (`SiegeSpoilsResolver.apply_spoils_to_tribal_warriors`) or when
+## the roll fires. RAW `ax_domains_of_chaos.xml:456` prints this as a MORALE
+## roll; per Jedidiah (2026-08-01) that is a known RAW error and later errata
+## make it a straight LOYALTY roll. No morale-roll step, no cascade — it is one
+## more calamity kind (`UnitLoyaltyResolver.CALAMITY_NO_SPOILS`). No other
+## source type accrues it; the schema comment on the column says as much.
+##
+## **A month without pay** (EVERY source type) — `ax_domains_of_chaos.xml:455`,
+## `daw_armies_recruitment.xml:98`. [param unpaid_unit_ids] is
+## `TroopPayShortfallResolver`'s ex-post-facto designation (conventions §132).
+##
+## **A season of continuous campaigning** (MILITIA ONLY) —
+## `daw_armies_recruitment.xml:459`, "Militia also treat each season of
+## continuous campaigning as a calamity." The only calamity in the game that
+## depends on elapsed time rather than an event, so it needs an anchor:
+## `troop_units.campaigning_since_calendar_day` (migration 214), maintained
+## entirely here. A militia unit found `on_campaign` with no anchor gets one; a
+## unit no longer campaigning has its anchor cleared, which is what makes the
+## stretch "continuous"; a unit that has held the anchor for
+## `UnitLoyaltyResolver.SEASON_DAYS` takes the calamity and re-anchors so the
+## next season is counted from here. Keeping the anchor in one place means no
+## muster / call-to-arms / extraction path has to remember to maintain it — the
+## same live-derivation reasoning as §133's levy penalty. The cost is that a
+## stretch is only ever noticed on a tick boundary, which under-counts by at
+## most a month and never over-counts.
+##
+## ── Why one roll and not three ──────────────────────────────────────────────
+##
+## RAW `daw_armies_recruitment.xml:100` — "If troops are suffering more than one
+## calamity at once, apply -2 to the loyalty roll per calamity after the first"
+## — so a militia company three months into a campaign that also went unpaid is
+## suffering two calamities at once, not two separate tests. Separate
+## `roll_loyalty` calls would give it independent chances to depart at full
+## strength: harsher in aggregate than the printed rule, and simply not it.
+## Per conventions §132, when adding a trigger point check whether an existing
+## one shares its tick.
+##
+## Who rolls is `UnitLoyaltyResolver.rolls_loyalty` — the RAW source-type gate
+## (:99 / :353 / :458 / :477 / :611 / ax:454; vassal troops have no rule of
+## their own) plus the :483 religious-fanatic exemption. This function decides
+## only WHICH CALAMITIES apply, per conventions §70/§131.
+func _tick_unit_loyalty(domain_id: String, calendar_day: int,
+		unpaid_unit_ids: Array = []) -> void:
+	if domain_id.is_empty():
+		return
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT id, source_type, assignment_kind, is_religious_fanatic,
+		       months_without_qualifying_spoils, campaigning_since_calendar_day
+		FROM troop_units
+		WHERE assigned_domain_id = ?
 		  AND status = 'active'
 	""", [domain_id]):
 		return
 	if CampaignRepository.db.query_result.is_empty():
 		return
 	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
+		# Skip units RAW never asks to roll — vassal troops and religious
+		# fanatics (:483). `roll_loyalty` would reject them anyway, but the
+		# trigger SIGNALS below fire before it is called, and announcing that a
+		# fanatic's loyalty is being tested when RAW says it never is would be
+		# the same false assertion §131 bars from the departure log. The two
+		# counters are skipped with them: neither means anything for a unit that
+		# cannot roll.
+		if not UnitLoyaltyResolver.rolls_loyalty(row):
+			continue
 		var unit_id: String = str(row.get("id", ""))
-		var prior: int = int(row.get("months_without_qualifying_spoils", 0))
-		var next: int = prior + 1
+		var source_type: String = str(row.get("source_type", ""))
+		var calamities: Array[String] = []
+
+		# --- Tribal warriors: the 3-month spoils stretch. --------------------
+		if source_type == "tribal_warrior":
+			var prior: int = int(row.get("months_without_qualifying_spoils", 0))
+			var next: int = prior + 1
+			TroopUnitRepository.update_unit(unit_id, {
+				"months_without_qualifying_spoils": next,
+			})
+			if next >= 3:
+				calamities.append(UnitLoyaltyResolver.CALAMITY_NO_SPOILS)
+				# The `tribal_warriors_morale_check_triggered` signal and
+				# departure-log event type keep their migration-129 names — they
+				# mark "the 3-month spoils trigger fired", and renaming them
+				# would cost a migration + a schema CHECK rebuild + a UI
+				# filter-dropdown change for a cosmetic gain. The name is a
+				# wart; the behaviour is the errata'd RAW.
+				if EventBus.has_signal("tribal_warriors_morale_check_triggered"):
+					EventBus.emit_signal("tribal_warriors_morale_check_triggered",
+						unit_id, "three_months_without_qualifying_spoils")
+				DepartureLogRecorder.record(
+					_campaign_id, domain_id, calendar_day,
+					"tribal_warriors_morale_check_triggered",
+					"%d months without spoils worth their wages; the warriors' loyalty is tested." % next,
+					{
+						"troop_unit_id": unit_id,
+						"months_without_qualifying_spoils": next,
+						"reason": "three_months_without_qualifying_spoils",
+					})
+
+		# --- Militia: a season of continuous campaigning (RAW :459). ---------
+		if source_type == "militia":
+			if _advance_campaigning_anchor(row, calendar_day):
+				calamities.append(UnitLoyaltyResolver.CALAMITY_CONTINUOUS_CAMPAIGN)
+				if EventBus.has_signal("tribal_warriors_morale_check_triggered"):
+					EventBus.emit_signal("tribal_warriors_morale_check_triggered",
+						unit_id, UnitLoyaltyResolver.CALAMITY_CONTINUOUS_CAMPAIGN)
+
+		# --- Everyone: a month without pay (conventions §132). ---------------
+		if unpaid_unit_ids.has(unit_id):
+			calamities.append(UnitLoyaltyResolver.CALAMITY_UNPAID)
+			# Reuse the migration-129 trigger signal rather than mint a new one:
+			# its `reason` parameter exists precisely to distinguish which
+			# calamity fired, and it has no consumers to confuse. No matching
+			# departure-log line — per conventions §131 only DEPARTURES are
+			# chronicled, and roll_loyalty writes that line itself with the
+			# calamity list in its metadata. Adding a survived-calamity event
+			# type would also cost a migration to widen the CHECK.
+			if EventBus.has_signal("tribal_warriors_morale_check_triggered"):
+				EventBus.emit_signal("tribal_warriors_morale_check_triggered",
+					unit_id, UnitLoyaltyResolver.CALAMITY_UNPAID)
+
+		if calamities.is_empty():
+			continue
+		# roll_loyalty applies its own source-type and religious-fanatic gates
+		# and resets the spoils counter itself, so a unit that survives starts
+		# its clock over instead of re-rolling every subsequent month on the
+		# same stretch.
+		UnitLoyaltyResolver.roll_loyalty(
+			unit_id,
+			calamities,
+			calendar_day)
+
+
+## Maintain the RAW :459 continuous-campaigning anchor for one militia [param row]
+## and report whether a full season has now elapsed under arms.
+##
+## Three states, and the "not campaigning" one is what makes the stretch
+## CONTINUOUS rather than cumulative: a militia unit that comes off campaign for
+## a single month loses its accrued time entirely, which is the plain reading of
+## ":459 continuous". Re-anchoring (rather than clearing) after a calamity fires
+## is what makes it "EACH season" — a unit kept in the field for a year takes
+## the calamity roughly four times, not once.
+func _advance_campaigning_anchor(row: Dictionary, calendar_day: int) -> bool:
+	var unit_id: String = str(row.get("id", ""))
+	var anchor: int = int(row.get("campaigning_since_calendar_day", 0))
+	if str(row.get("assignment_kind", "")) != "on_campaign":
+		if anchor != 0:
+			TroopUnitRepository.update_unit(unit_id, {
+				"campaigning_since_calendar_day": 0,
+			})
+		return false
+	if anchor <= 0:
+		# First tick under arms. Anchor from TODAY rather than back-dating to
+		# the muster: the muster day is not recorded anywhere the tick can see,
+		# and erring late keeps the rule from firing on time a unit never served.
 		TroopUnitRepository.update_unit(unit_id, {
-			"months_without_qualifying_spoils": next,
+			"campaigning_since_calendar_day": maxi(1, calendar_day),
 		})
-		if next == 3 and EventBus.has_signal("tribal_warriors_morale_check_triggered"):
-			EventBus.emit_signal("tribal_warriors_morale_check_triggered",
-				unit_id, "three_months_without_qualifying_spoils")
+		return false
+	if calendar_day - anchor < UnitLoyaltyResolver.SEASON_DAYS:
+		return false
+	TroopUnitRepository.update_unit(unit_id, {
+		"campaigning_since_calendar_day": maxi(1, calendar_day),
+	})
+	return true

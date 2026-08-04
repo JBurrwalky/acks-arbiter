@@ -1899,6 +1899,36 @@ CREATE TABLE IF NOT EXISTS troop_units (
     -- source_types leave it at 0 forever.
     months_without_qualifying_spoils INTEGER NOT NULL DEFAULT 0
         CHECK(months_without_qualifying_spoils >= 0),
+    -- Migration 212: RAW Unit Loyalty carryover
+    -- (daw_armies_recruitment.xml:105-107). Fanatic loyalty is sticky and
+    -- worth +1 on every future roll; two CONSECUTIVE grudging results are a
+    -- departure, so the run length is counted rather than flagged. Distinct
+    -- from the henchman / vassal loyalty flags — see the migration header.
+    loyalty_is_fanatic       INTEGER NOT NULL DEFAULT 0
+        CHECK(loyalty_is_fanatic IN (0, 1)),
+    loyalty_consecutive_grudging INTEGER NOT NULL DEFAULT 0
+        CHECK(loyalty_consecutive_grudging >= 0),
+    -- Migration 213: tribal warriors levied BEYOND the free 1-per-family
+    -- allotment (ax_domains_of_chaos.xml:398-399). These carry the standing
+    -- militia penalties (revenue -1 family each, morale -1/-2) per
+    -- LevyPenaltyCalculator, while remaining tribal-warrior troops.
+    is_excess_levy           INTEGER NOT NULL DEFAULT 0
+        CHECK(is_excess_levy IN (0, 1)),
+    -- Migration 214: RAW daw_armies_recruitment.xml:481-483 — cleric and
+    -- bladedancer followers are religious fanatics, and religious fanatics
+    -- "do not make loyalty rolls for calamities, but still make morale rolls
+    -- in battle". An exemption from the roll, recorded explicitly rather than
+    -- inferred from monthly_cost_cp = 0 (the MAGE follower table is also
+    -- wages_required=false and is not a fanatic — see the migration header).
+    is_religious_fanatic     INTEGER NOT NULL DEFAULT 0
+        CHECK(is_religious_fanatic IN (0, 1)),
+    -- Migration 214: anchor day for RAW daw_armies_recruitment.xml:459 —
+    -- "Militia also treat each season of continuous campaigning as a
+    -- calamity." 0 = not currently campaigning. Set, cleared and advanced
+    -- entirely inside DomainHandlers._tick_unit_loyalty from assignment_kind,
+    -- so no muster path has to maintain it. Militia-only in practice.
+    campaigning_since_calendar_day INTEGER NOT NULL DEFAULT 0
+        CHECK(campaigning_since_calendar_day >= 0),
     created_at               TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_troop_units_campaign
@@ -1911,6 +1941,12 @@ CREATE INDEX IF NOT EXISTS idx_troop_units_stronghold
     ON troop_units (assigned_stronghold_id);
 CREATE INDEX IF NOT EXISTS idx_troop_units_diseased
     ON troop_units(is_diseased) WHERE is_diseased = 1;
+-- Migration 213: excess-levy lookups for the standing domain levy penalties.
+CREATE INDEX IF NOT EXISTS idx_troop_units_excess_levy
+    ON troop_units(assigned_domain_id) WHERE is_excess_levy = 1;
+-- Migration 214: religious-fanatic exemption lookups on the loyalty path.
+CREATE INDEX IF NOT EXISTS idx_troop_units_religious_fanatic
+    ON troop_units(assigned_domain_id) WHERE is_religious_fanatic = 1;
 CREATE INDEX IF NOT EXISTS idx_troop_units_disease_recovery
     ON troop_units(disease_recovery_calendar_day) WHERE is_diseased = 1;
 
@@ -3340,7 +3376,12 @@ CREATE TABLE IF NOT EXISTS domain_departure_log (
             'tribal_warriors_released_for_population_loss',
             'tribal_warriors_morale_check_triggered',
             'tribal_warriors_loyalty_failed',
-            'tribal_warriors_called_to_arms'
+            'tribal_warriors_called_to_arms',
+            -- Migration 214: Unit Loyalty departures for the non-tribal source
+            -- types (mercenary / conscript / militia / follower / slave_soldier
+            -- / vassal) per daw_armies_recruitment.xml:353 / :458 / :477.
+            -- Tribal warriors keep their own type above.
+            'troop_unit_loyalty_failed'
         )),
     summary                  TEXT    NOT NULL DEFAULT '',
     full_details_json        TEXT    NOT NULL DEFAULT '{}',

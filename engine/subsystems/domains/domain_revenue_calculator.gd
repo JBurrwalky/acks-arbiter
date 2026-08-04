@@ -42,14 +42,29 @@ const CLANHOLD_LAND_HALVING_THRESHOLD_PER_HEX := 125  # RAW L79: families/hex ov
 ##   land: int                 — sum across hexes in cp
 ##   tribute_in: int           — passed through from caller in cp
 ##   income_gate_active: bool  — true when stronghold value < classification minimum
+## [param levied_peasants] is the number of peasants currently under arms —
+## militia plus excess-levy tribal warriors, from
+## `LevyPenaltyCalculator.levied_peasants_for_domain`. RAW
+## `daw_armies_recruitment.xml:429`: "For each peasant levied, domain revenue is
+## reduced by one family." They still exist (`peasant_families` is unchanged);
+## they are just carrying spears instead of working the land, so they drop out
+## of the revenue-bearing count for service, tax AND land alike — ":429" says
+## "domain revenue", not one stream of it.
+##
+## Defaults to 0 so callers that predate the levy-penalty model (tests, the
+## scenario runners) are unaffected.
 static func calculate_monthly_revenue(
 	domain: Dictionary,
 	hexes: Array,
 	stronghold_value_cp: int,
 	stronghold_minimum_cp: int,
-	tribute_in_cp: int = 0
+	tribute_in_cp: int = 0,
+	levied_peasants: int = 0
 ) -> Dictionary:
-	var peasants: int = int(domain.get("peasant_families", 0))
+	var all_families: int = int(domain.get("peasant_families", 0))
+	var revenue_family_loss: int = LevyPenaltyCalculator.revenue_family_reduction(
+		levied_peasants, all_families)
+	var peasants: int = all_families - revenue_family_loss
 
 	# RAW income gate (§peasants_and_followers L108-109): no revenue, no growth
 	# until the stronghold is sufficient. Garrison still owed (handled in
@@ -62,6 +77,11 @@ static func calculate_monthly_revenue(
 			"land": 0,
 			"tribute_in": 0,
 			"income_gate_active": true,
+			# Same keys as the normal path so consumers need not branch. The
+			# levy penalty is moot here — there is no revenue to reduce — but
+			# the count is still true and the morale penalty still applies.
+			"levied_peasants": levied_peasants,
+			"revenue_families_lost_to_levy": revenue_family_loss,
 		}
 
 	var tax_rate_cp: int = int(domain.get("tax_rate_cp_per_family", 200))
@@ -109,4 +129,9 @@ static func calculate_monthly_revenue(
 		"land": land_revenue,
 		"tribute_in": tribute_in_cp,
 		"income_gate_active": false,
+		# Surfaced so the Treasury sub-tab and the ledger can explain a shortfall
+		# that has no expense line behind it — the families simply stopped
+		# earning. 0 whenever nothing is levied.
+		"levied_peasants": levied_peasants,
+		"revenue_families_lost_to_levy": revenue_family_loss,
 	}

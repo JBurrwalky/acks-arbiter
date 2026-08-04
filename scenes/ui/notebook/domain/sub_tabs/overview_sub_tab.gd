@@ -148,6 +148,20 @@ func _render_demographics() -> void:
 		peasants, hex_count, "" if hex_count == 1 else "es",
 		urban, morale_tier, morale,
 	]
+	# 2026-08-03: name the levy as a morale/revenue cause here too. The full
+	# arithmetic lives on the Garrison tab (RAW daw_armies_recruitment.xml:
+	# 429-431); this is just so a ruler reading a morale drop on the Overview
+	# is not left guessing which lever caused it.
+	if not _domain_id.is_empty():
+		var levy: Dictionary = LevyPenaltyCalculator.penalties_for_domain(_domain_id, peasants)
+		var levied: int = int(levy.get("levied", 0))
+		if levied > 0:
+			info.text += "\n  ↳ %d peasant%s under arms: %+d morale, −%d famil%s of revenue (see Garrison)." % [
+				levied, "" if levied == 1 else "s",
+				int(levy.get("morale_penalty", 0)),
+				int(levy.get("revenue_family_reduction", 0)),
+				"y" if int(levy.get("revenue_family_reduction", 0)) == 1 else "ies",
+			]
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +230,7 @@ func _render_classification() -> void:
 	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
 	# Both values are cp post-Migration 116.
 	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum_cp := StrongholdRepository.classification_minimum_gp(territory, sufficiency_hex_count)
+	var minimum_cp := StrongholdRepository.classification_minimum_cp(territory, sufficiency_hex_count)
 	var sufficiency_text: String
 	if minimum_cp <= 0:
 		sufficiency_text = "—"

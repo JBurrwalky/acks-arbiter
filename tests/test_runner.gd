@@ -402,6 +402,7 @@ extends Node
 @onready var _in_enemy_territory_predicate_tests = $InEnemyTerritoryPredicateTests
 @onready var _extraction_resistance_realm_ai_tests = $ExtractionResistanceRealmAiTests
 @onready var _realm_sub_tab_ui_tests = $RealmSubTabUiTests
+@onready var _levy_cost_ui_tests = $LevyCostUiTests
 # Phase 8 — Favors & Duties + Vassalage UI
 @onready var _vassal_obligations_repository_tests = $VassalObligationsRepositoryTests
 @onready var _favors_duties_resolver_tests = $FavorsDutiesResolverTests
@@ -531,6 +532,7 @@ extends Node
 @onready var _establish_domain_eligibility_matrix_tests = $EstablishDomainEligibilityMatrixTests
 # Phase 11D.5 — Tribal Warriors subsystem
 @onready var _tribal_warriors_tests = $TribalWarriorsTests
+@onready var _unit_loyalty_tests = $UnitLoyaltyTests
 # Phase 11E — Scenario harness integration tests
 @onready var _scenario_chaotic_clanhold = $ScenarioChaoticClanhold
 @onready var _scenario_succession = $ScenarioSuccession
@@ -991,6 +993,7 @@ func run() -> void:
 			_in_enemy_territory_predicate_tests,
 			_extraction_resistance_realm_ai_tests,
 			_realm_sub_tab_ui_tests,
+			_levy_cost_ui_tests,
 			# Phase 8 — Favors & Duties Monthly System
 			_vassal_obligations_repository_tests,
 			_favors_duties_resolver_tests,
@@ -1138,6 +1141,8 @@ func run() -> void:
 			_establish_domain_eligibility_matrix_tests,
 			# Phase 11D.5 — Tribal Warriors subsystem
 			_tribal_warriors_tests,
+			# RAW Unit Loyalty for the non-tribal source types (2026-08-03)
+			_unit_loyalty_tests,
 			# Phase 11E — Scenario integration tests
 			_scenario_chaotic_clanhold,
 			_scenario_succession,

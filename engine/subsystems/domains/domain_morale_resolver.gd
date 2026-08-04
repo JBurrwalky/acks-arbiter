@@ -67,15 +67,26 @@ const CURRENT_MORALE_MAX := 4
 ## already resolved against the additional-troops table per
 ## `acore_axioms` §additional_troops L461-464. Caller computes via
 ## GarrisonExpenditureCalculator.morale_incentive_bonus.
+## [param levy_morale_penalty] is the standing penalty for peasants under arms,
+## from `LevyPenaltyCalculator.morale_penalty` (already signed: 0, -1 or -2).
+## RAW `daw_armies_recruitment.xml:430-431` — "Levying 1 or fewer militia per 10
+## families reduces domain morale by 1; levying 2 per 10 families reduces domain
+## morale by 2… These penalties remain until the militia is sent home."
+##
+## It belongs in BASE morale rather than the monthly event-modifier sum because
+## :431 makes it a standing condition of the domain, the same shape as the
+## classification and insufficient-stronghold penalties above — not a
+## this-month event. Defaults to 0 so pre-existing callers are unaffected.
 static func resolve_base_morale(
 	domain: Dictionary,
 	ruler: Dictionary,
 	monthly_revenue_cp: int,
 	stronghold_value_cp: int,
 	stronghold_minimum_cp: int,
-	additional_troops_morale_bonus: int
+	additional_troops_morale_bonus: int,
+	levy_morale_penalty: int = 0
 ) -> int:
-	var base: int = 0
+	var base: int = levy_morale_penalty
 	base += int(ruler.get("cha_modifier", 0))
 	if bool(ruler.get("has_leadership_proficiency", false)):
 		base += 1

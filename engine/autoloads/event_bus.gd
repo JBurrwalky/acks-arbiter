@@ -429,7 +429,11 @@ signal cache_decayed(cache_id: String, items_lost: Array)
 
 ## A hidden wilderness cache was raided — partial item loss.
 ## items_lost: Array of Dictionaries [{item_id, name, value_cp}, ...]
-signal cache_raided(cache_id: String, items_lost: Array, value_lost_gp: float)
+## 2026-07-31 (conventions §127): was `value_lost_gp: float` — the ONLY float
+## money on a public contract in the codebase. The emitter already had the exact
+## integer (`removed_value_cp`) and pre-divided it by 100.0 purely to satisfy
+## this signature.
+signal cache_raided(cache_id: String, items_lost: Array, value_lost_cp: int)
 
 ## An item was dropped into a location cache.
 signal cache_dropped(cache_id: String, item_id: String, source_carrier_id: String)
@@ -494,8 +498,8 @@ signal wages_processed(party_id: String, summary: Dictionary)
 ## A henchman's treasure share or one-time bonus was adjusted via the
 ## "Adjust Treatment…" Notebook tab affordance. Emitted by
 ## HenchmanLifecycleManager.adjust_treatment.
-## [param bonus_gp] one-time gp paid alongside the share change (0 if no bonus)
-signal treatment_adjusted(character_id: String, treasure_share_percent: int, bonus_gp: int)
+## [param bonus_cp] one-time cp paid alongside the share change (0 if no bonus)
+signal treatment_adjusted(character_id: String, treasure_share_percent: int, bonus_cp: int)
 
 ## A character's proficiencies changed (added, removed, or rank changed).
 ## [param change] keys:
@@ -575,7 +579,7 @@ signal classification_regressed(domain_id: String, old_classification: String, n
 signal departure_log_entry_recorded(domain_id: String, entry_id: String, event_type: String)
 
 ## A domain's treasury balance changed.
-signal domain_treasury_changed(domain_id: String, old_gp: int, new_gp: int)
+signal domain_treasury_changed(domain_id: String, old_cp: int, new_cp: int)
 
 ## Bandits spawned in a domain due to morale collapse.
 ## Per `acore_axioms` §bandits L611-630 and §effects_of_morale L538-609.
@@ -1228,7 +1232,7 @@ signal armies_collided(army_a_id: String, army_b_id: String, hex_q: int, hex_r: 
 
 ## Per-army weekly supply tick. Phase 6A part 2 (army_supply_tracker) wires
 ## the actual deduction; this signal is the public observation surface.
-signal army_supply_consumed(army_id: String, gp_consumed: int, remaining_gp: int)
+signal army_supply_consumed(army_id: String, consumed_cp: int, remaining_cp: int)
 
 ## Supply line moved into a threatened state (within 1 hex of a hostile path
 ## hex per gdd-army-warfare.md §4.4 PROJECT-DESIGNED affordance — RAW does
@@ -1240,13 +1244,13 @@ signal army_supply_threatened(army_id: String, cause: String)
 ## status string for downstream display.
 signal army_supply_cut(army_id: String, cause: String)
 
-## An army finished a requisition (gdd-army-warfare.md §4.3; RAW L328). gp_yield is
+## An army finished a requisition (gdd-army-warfare.md §4.3; RAW L328). yield_cp is
 ## the cp credited to the army stockpile; domain_id is the (first) domain requisitioned.
-signal army_requisition_completed(army_id: String, domain_id: String, gp_yield: int)
+signal army_requisition_completed(army_id: String, domain_id: String, yield_cp: int)
 
-## An army finished looting (§4.3; RAW L335-336). gp_yield is the cp credited; families_lost
+## An army finished looting (§4.3; RAW L335-336). yield_cp is the cp credited; families_lost
 ## is the peasant families destroyed (1 per 20 gp looted).
-signal army_loot_completed(army_id: String, domain_id: String, gp_yield: int, families_lost: int)
+signal army_loot_completed(army_id: String, domain_id: String, yield_cp: int, families_lost: int)
 
 ## Emitted by RecruitmentVagariesResolver.resolve() for the monthly recruitment
 ## roll per daw_vagaries.xml §vagaries_of_recruitment L24-185. Consumers:
@@ -1308,7 +1312,7 @@ signal vassal_revolted(vassal_assignment_id: String, vassal_character_id: String
 
 ## Emitted by domain monthly tick after tribute-out succeeds (vassal pays
 ## liege). Consumers: realm sub-tab loyalty/status display.
-signal vassal_tribute_paid(vassal_assignment_id: String, gp_paid: int, calendar_day: int)
+signal vassal_tribute_paid(vassal_assignment_id: String, paid_cp: int, calendar_day: int)
 
 ## Emitted by RealmTitleResolver when a domain's title changes due to realm
 ## growth/shrinkage. Consumers: realm sub-tab title card, unified log.
@@ -1600,7 +1604,24 @@ signal tribal_warriors_morale_check_triggered(troop_unit_id: String, reason: Str
 ## is `'returned_to_villages'` (within range → refills available pool) or
 ## `'turned_brigand_or_mercenary'` (out of range → permanently lost; may
 ## become a future bandit threat).
+##
+## TRIBAL WARRIORS ONLY, deliberately: this is the narrower migration-129
+## contract, and `troop_unit_loyalty_failed` below is its superset. A departing
+## mercenary company emits only the generic one — firing this for it would make
+## the signal's name lie.
 signal tribal_warriors_loyalty_failed(troop_unit_id: String, departure_kind: String)
+
+## Emitted whenever ANY troop unit departs on a failed RAW Unit Loyalty roll,
+## whatever its source type (conventions §131). Tribal-warrior departures emit
+## this AND the narrower signal above.
+##
+## `departure_kind` is one of `UnitLoyaltyResolver.DEPARTURE_ENMITY` /
+## `DEPARTURE_RESIGNATION` / `DEPARTURE_GRUDGING`. `fielded_army_id` is the
+## `armies.id` of the hostile force the mutineers formed, or "" — non-empty only
+## on an Enmity result for a non-tribal unit, per RAW
+## daw_armies_recruitment.xml:103 and Jedidiah's 2026-08-03 ruling.
+signal troop_unit_loyalty_failed(troop_unit_id: String, source_type: String,
+	departure_kind: String, fielded_army_id: String)
 
 ## Emitted when the Phase 8 Call to Arms duty fires on a clanhold-style vassal
 ## per the §8 clanhold-vassal modification. `scope` is `'half'` or `'all'`;
@@ -1767,7 +1788,7 @@ signal ship_operating_cost_paid(ship_id: String, cp_amount: int)
 ## Emitted when process_monthly_operating_costs_for_campaign cannot fully
 ## debit a ship's monthly cost (party wallet shortfall). v1: log only; ship
 ## is NOT destroyed for non-payment per §9.6.1. [NEEDS-CREW-MORALE-PASS] flag.
-signal ship_operating_cost_unpaid(ship_id: String, owed_gp: int)
+signal ship_operating_cost_unpaid(ship_id: String, owed_cp: int)
 
 # ---------------------------------------------------------------------------
 # Phase 10B-prereq cargo holds signals (Prereq.5b)

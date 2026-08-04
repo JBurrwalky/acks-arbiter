@@ -43,6 +43,7 @@ func run_all_tests() -> void:
 	test_solicit_followers_l1_bard_rejected()
 	test_solicit_followers_l9_bard_creates_troop_unit_and_henchmen()
 	test_solicit_followers_non_bard_rejected()
+	test_solicit_followers_troop_row_matches_raw_untrained()
 
 	# ChroniclesOfBattle aura
 	test_aura_inactive_when_no_bard_in_party()
@@ -298,6 +299,92 @@ func test_solicit_followers_l9_bard_creates_troop_unit_and_henchmen() -> void:
 	var new_henchmen: int = _count_bard_candidate_henchmen()
 	check(new_henchmen >= prior_henchmen + 1 and new_henchmen <= prior_henchmen + 6,
 		"should add 1-6 bard applicants (prior=%d new=%d)" % [prior_henchmen, new_henchmen])
+
+
+## RAW-fidelity regression on the minted mercenary row. The load-bearing
+## assertion is battle_rating: the handler used to write `0.5 * merc_count`,
+## which is the per-UNIT rating of a 120-man untrained company
+## (`daw_campaigns_troop_tables_summary.xml:297`) applied once PER SOLDIER —
+## roughly 167× the RAW per-creature figure of 0.003 (L102; L9 states the
+## §troop_tables ratings are "per creature"). The wage / supply / specialist /
+## cost fields come from the same RAW row and are pinned here alongside it so
+## the whole row is checked against one citation.
+func test_solicit_followers_troop_row_matches_raw_untrained() -> void:
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET owner_character_id = ? WHERE id = ?",
+		[_bard_l9_id, _domain_id])
+	var prior_ids := {}
+	for u in TroopUnitRepository.list_active_for_domain(_domain_id):
+		prior_ids[String(u.get("id", ""))] = true
+
+	var state := {
+		"id": "test_state_solicit_raw_br",
+		"character_id": _bard_l9_id,
+		"activity_def_id": "solicit_followers",
+		"params_json": "{}",
+	}
+	var result := SolicitFollowersHandler.on_complete(state, null)
+	check(not String(result.get("summary", "")).contains("failed"),
+		"L9 bard should succeed; got '%s'" % result.get("summary", ""))
+
+	var minted := {}
+	for u in TroopUnitRepository.list_active_for_domain(_domain_id):
+		if not prior_ids.has(String(u.get("id", ""))):
+			minted = u
+			break
+	check(not minted.is_empty(), "handler should have minted a new troop_unit row")
+	if minted.is_empty():
+		return
+
+	var troop_type := String(minted.get("troop_type", ""))
+	var tier := String(minted.get("tier", ""))
+	var unit_count := int(minted.get("count", 0))
+	var actual := float(minted.get("battle_rating", 0.0))
+	check(unit_count >= 20 and unit_count <= 50,
+		"(1d4+1)×10 should be 20..50 mercenaries; got %d" % unit_count)
+	check(tier == "untrained", "bardic applicants are untrained; got '%s'" % tier)
+
+	# The row must agree with the shared lookup for its OWN troop_type + tier.
+	var expected := TroopBattleRatingTable.per_soldier(troop_type, tier) * float(unit_count)
+	check(is_equal_approx(actual, expected),
+		"battle_rating %f != %f for %d × %s/%s" % [
+			actual, expected, unit_count, troop_type, tier])
+	# Independent RAW cross-check, so the test still fails if the lookup itself
+	# ever drifts: L102 gives untrained conscripts/militia 0.003 per creature.
+	check(is_equal_approx(actual, 0.003 * float(unit_count)),
+		"battle_rating %f should be %d × RAW L102 0.003; got %f per soldier" % [
+			actual, unit_count, actual / maxf(1.0, float(unit_count))])
+	# Explicit guard against the per-unit regression this test exists for.
+	check(not is_equal_approx(actual, 0.5 * float(unit_count)),
+		"battle_rating %f is the per-UNIT rating (RAW L297) applied per soldier" % actual)
+
+	# Same RAW row: wage 3gp/month (L102), supply 1gp/week (L297: 120gp/week ÷
+	# 120 troops), no specialists (L275 excepts conscripts and militia).
+	check(int(minted.get("monthly_wage_cp", 0)) == 300 * unit_count,
+		"monthly_wage_cp should be %d (3gp × %d); got %d" % [
+			300 * unit_count, unit_count, int(minted.get("monthly_wage_cp", 0))])
+	check(int(minted.get("monthly_supply_cp", 0)) == 400 * unit_count,
+		"monthly_supply_cp should be %d (1gp/week × 4); got %d" % [
+			400 * unit_count, int(minted.get("monthly_supply_cp", 0))])
+	check(int(minted.get("monthly_specialist_cp", 0)) == 0,
+		"untrained conscripts/militia carry no assumed specialists per RAW L275")
+
+	# Morale is the troop's OWN base (-2, RAW L102). The bard does NOT change
+	# it — his Chronicles of Battle +1 is presence-gated and applied at roll
+	# time by ChroniclesOfBattleAura, and his officer modifier applies to units
+	# under his command. [Jedidiah ruling 2026-08-01.] The handler used to
+	# store a hardcoded 0, i.e. those bonuses baked in permanently.
+	check(int(minted.get("morale", 99)) == -2,
+		"morale should be the RAW L102 base -2, not a bard bonus baked in; got %d" % [
+			int(minted.get("morale", 99))])
+	check(int(minted.get("morale", 99))
+			== TroopBattleRatingTable.base_morale(troop_type, tier),
+		"morale must come from the troop type's own RAW base morale")
+	check(int(minted.get("monthly_cost_cp", 0))
+			== int(minted.get("monthly_wage_cp", 0))
+				+ int(minted.get("monthly_supply_cp", 0))
+				+ int(minted.get("monthly_specialist_cp", 0)),
+		"monthly_cost_cp must equal wage + supply + specialist")
 
 
 # ---------------------------------------------------------------------------

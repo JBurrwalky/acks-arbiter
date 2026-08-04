@@ -226,6 +226,32 @@ static func _resolve_side(unit_states: Array, side_won: bool, is_mutual_draw: bo
 
 		TroopUnitRepository.update_unit(unit_id, unit_updates)
 
+		# RAW: rules/daw_armies_recruitment.xml:98 — a calamity is "routing from
+		# battle, suffering 25% or greater casualties, being out of supply, or
+		# going without pay for a month", and two of the four are decided right
+		# here. A destroyed unit has nobody left to test, so only survivors roll.
+		#
+		# Every source type RAW grants the roll to takes it (:99 mercenaries,
+		# :353 conscripts, :458 militia, :477 followers, :611 slave soldiers,
+		# ax_domains_of_chaos.xml:454 tribal warriors); `rolls_loyalty` owns that
+		# gate plus the :483 religious-fanatic exemption, so this call site does
+		# not repeat either. Per conventions §131 the fan-out supplies only the
+		# calamity KINDS it can see.
+		if UnitLoyaltyResolver.rolls_loyalty(unit) and not unit_destroyed and new_count > 0:
+			var calamities: Array[String] = []
+			# "fleeing" is folded in with "routed" because RAW itself does:
+			# §unit_morale_results L546 — a unit that cannot attack again before
+			# the battle ends "counts as routed" (the same reasoning that gives
+			# both statuses the routed casualty profile above).
+			if status == "routed" or status == "fleeing":
+				calamities.append(UnitLoyaltyResolver.CALAMITY_ROUT)
+			if current_count > 0 \
+					and float(crippled + wounded) / float(current_count) >= 0.25:
+				calamities.append(UnitLoyaltyResolver.CALAMITY_CASUALTIES)
+			if not calamities.is_empty():
+				UnitLoyaltyResolver.roll_loyalty(
+					unit_id, calamities, calendar_day)
+
 	return {
 		"crippled_or_dead": crippled_total,
 		"wounded": wounded_total,

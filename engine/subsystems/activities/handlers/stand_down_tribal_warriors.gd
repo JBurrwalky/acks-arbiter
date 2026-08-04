@@ -71,7 +71,19 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 		TroopUnitRepository.update_unit(unit_id, {"count": current_count - count})
 
 	# 2. Increment available_tribal_warriors (capped at peasant_families - levied).
-	if not domain_id.is_empty() and not domain.is_empty():
+	#
+	# EXCESS-LEVY units are exempt (migration 213). Those warriors are
+	# ADDITIONAL peasants pulled off the land per
+	# `ax_domains_of_chaos.xml:399`, not the family's designated 1-per-family
+	# warrior — the levy handler never decremented `available_tribal_warriors`
+	# for them, so returning them must not increment it either. Without this
+	# guard, standing down an excess unit on a clanhold carrying slack from past
+	# casualties would fill that slack, resurrecting dead warriors' slots and
+	# contradicting `:404` ("Tribal warrior casualties can only be replaced
+	# through population growth"). They simply go back to being peasants, which
+	# `peasant_families` already counts.
+	var is_excess: bool = int(unit.get("is_excess_levy", 0)) == 1
+	if not is_excess and not domain_id.is_empty() and not domain.is_empty():
 		var peasant_families: int = int(domain.get("peasant_families", 0))
 		var pool_after: Dictionary = TribalWarriorRegistry.pool_for_domain(domain_id)
 		var new_available_proposed: int = int(pool_after.get("available", 0)) + count

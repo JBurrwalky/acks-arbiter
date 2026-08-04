@@ -74,13 +74,38 @@ static func compute_weekly_supply_cost_cp(army_id: String) -> int:
 	##
 	## Cp-native end-to-end (2026-05-16 army wage pass): troop_units.monthly_supply_cp
 	## ÷ 4 yields cp/week, modifiers compound on cp, return is cp.
+	return int(weekly_supply_cost_breakdown(army_id).get("total_cp", 0))
+
+
+## The same weekly figure `compute_weekly_supply_cost_cp` returns, itemized by
+## unit — what RAW's partial-supply allocation (`daw_campaigning_armies.xml:365`,
+## "if an army can feed only some units, its leader chooses which units are
+## supplied") needs in order to decide who eats.
+##
+## Returns `{total_cp: int, units: Array[Dictionary]}`. Each entry is the full
+## `troop_units` row plus:
+##   * `weekly_supply_cp` — that unit's own cost, banker-rounded to an int so it
+##     can be compared against an integer stockpile.
+##   * `weekly_supply_cost_exact` — the unrounded float, kept so callers that
+##     want to re-derive a subtotal do not compound rounding error.
+##
+## **`total_cp` is the rounded SUM, not the sum of the rounded parts**, which is
+## how the pre-existing single-number API behaved and must keep behaving. The
+## two can differ by a cp or so once modifiers produce fractions, so an
+## allocator working from the per-unit ints must never infer "there is a
+## shortfall" by comparing their sum to the stockpile — `total_cp` is the
+## authority on that. `ArmySupplyAllocationResolver` gates on `total_cp` for
+## exactly this reason.
+static func weekly_supply_cost_breakdown(army_id: String) -> Dictionary:
+	var empty: Dictionary = {"total_cp": 0, "units": []}
 	if army_id.is_empty():
-		return 0
+		return empty
 	var assignments: Array = ArmyRepository.list_active_assignments_for_army(army_id)
 	if assignments.is_empty():
-		return 0
+		return empty
 
 	var total_weekly_cp: float = 0.0
+	var units: Array = []
 	for assn in assignments:
 		var troop_unit: Dictionary = _get_troop_unit(String(assn.get("troop_unit_id", "")))
 		if troop_unit.is_empty():
@@ -97,8 +122,16 @@ static func compute_weekly_supply_cost_cp(army_id: String) -> int:
 			unit_weekly_cp *= 2.0
 		total_weekly_cp += unit_weekly_cp
 
+		var row: Dictionary = troop_unit.duplicate()
+		row["weekly_supply_cp"] = XPAwardCalculator.bankers_round(unit_weekly_cp)
+		row["weekly_supply_cost_exact"] = unit_weekly_cp
+		units.append(row)
+
 	# Banker-round the cp residue (rare; modifiers can produce fractional cp).
-	return XPAwardCalculator.bankers_round(total_weekly_cp)
+	return {
+		"total_cp": XPAwardCalculator.bankers_round(total_weekly_cp),
+		"units": units,
+	}
 
 
 # ---------------------------------------------------------------------------

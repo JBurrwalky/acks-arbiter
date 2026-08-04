@@ -90,22 +90,28 @@ func display(domain: Dictionary) -> void:
 	]
 	# Stronghold / garrison / treasury status.
 	var territory_type := String(domain.get("territory_type", "wilderness"))
-	var stronghold_value := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
+	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
 	# Sufficiency uses the effective hex count (owned + intervening for
 	# noncontiguous domains) per RAW §noncontiguous_domains L95-98; equals
 	# `hex_count` when the domain is contiguous.
 	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var stronghold_minimum := StrongholdRepository.classification_minimum_gp(territory_type, sufficiency_hex_count)
-	var stronghold_glyph := _sufficiency_glyph(stronghold_value, stronghold_minimum)
-	var garrison_per_fam: int = _garrison_per_family(domain)
-	var garrison_min: int = _garrison_min_per_family(territory_type)
-	var garrison_glyph := "✓" if garrison_per_fam >= garrison_min else "!"
-	var treasury: int = int(domain.get("treasury_cp", 0))
+	var stronghold_minimum_cp := StrongholdRepository.classification_minimum_cp(
+		territory_type, sufficiency_hex_count)
+	var stronghold_glyph := _sufficiency_glyph(stronghold_value_cp, stronghold_minimum_cp)
+	var garrison_per_fam_gp: int = _garrison_per_family(domain)
+	var garrison_min_gp: int = _garrison_min_per_family(territory_type)
+	var garrison_glyph := "✓" if garrison_per_fam_gp >= garrison_min_gp else "!"
+	var treasury_cp: int = int(domain.get("treasury_cp", 0))
+	# All three money values are cp and render through Currency.format_cost —
+	# the ONE canonical formatter (conventions §127). Until 2026-07-31 they went
+	# through `_format_count`, which printed raw copper as though it were gold on
+	# the banner pinned above all nine domain sub-tabs: a 5,000 gp treasury read
+	# "500,000" while the Treasury sub-tab one click away correctly read "5,000 gp".
 	_row_operational.text = "Stronghold: %s/%s %s   Garrison: %dgp/fam %s   Treasury: %s" % [
-		_format_count(stronghold_value), _format_count(stronghold_minimum),
+		Currency.format_cost(stronghold_value_cp), Currency.format_cost(stronghold_minimum_cp),
 		stronghold_glyph,
-		garrison_per_fam, garrison_glyph,
-		_format_count(treasury),
+		garrison_per_fam_gp, garrison_glyph,
+		Currency.format_cost(treasury_cp),
 	]
 	# Phase 11C: succession-pending banner. Shown only when the row's
 	# lifecycle_state is in the succession-pending state; the actual heir
@@ -133,20 +139,35 @@ func display(domain: Dictionary) -> void:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+## Thousands separator for NON-MONEY counts only (peasant families). Money goes
+## through Currency.format_cost. Handles arbitrarily large values — the previous
+## single-group form `"%d,%03d" % [n / 1000, n % 1000]` rendered 3,200,000 as
+## "3200,000".
 static func _format_count(n: int) -> String:
-	if n >= 1000:
-		return "%d,%03d" % [n / 1000, n % 1000]
-	return str(n)
+	var negative := n < 0
+	var digits := str(absi(n))
+	var out := ""
+	var count := 0
+	for i in range(digits.length() - 1, -1, -1):
+		out = digits[i] + out
+		count += 1
+		if count % 3 == 0 and i > 0:
+			out = "," + out
+	return ("-" + out) if negative else out
 
 
-static func _sufficiency_glyph(value_gp: int, minimum_gp: int) -> String:
-	if minimum_gp <= 0:
+## RAW §insufficient_stronghold: ✓ at or above minimum, ½ at >= 1/2, ¼ at >= 1/4,
+## ! below that (base morale -1 / -2 / -3 respectively). Both arguments are cp;
+## the comparison is unit-agnostic so long as they agree, but the parameters were
+## named `_gp` until 2026-07-31 while every caller passed cp (conventions §127).
+static func _sufficiency_glyph(value_cp: int, minimum_cp: int) -> String:
+	if minimum_cp <= 0:
 		return "—"
-	if value_gp >= minimum_gp:
+	if value_cp >= minimum_cp:
 		return "✓"
-	if value_gp * 2 >= minimum_gp:
+	if value_cp * 2 >= minimum_cp:
 		return "½"
-	if value_gp * 4 >= minimum_gp:
+	if value_cp * 4 >= minimum_cp:
 		return "¼"
 	return "!"
 

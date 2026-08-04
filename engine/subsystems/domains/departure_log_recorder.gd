@@ -26,10 +26,20 @@ extends RefCounted
 ##   export_as_json(domain_id) -> String
 ##   export_as_txt(domain_id) -> String
 
-## Mirror of the CHECK constraint in migration 121. Kept here as the
-## source-of-truth list callers can use to validate event_type before insert.
-## Adding a new event type requires BOTH this list and the migration's CHECK
-## to be updated in lockstep — there's a test asserting they match.
+## Mirror of the CHECK constraint on `domain_departure_log.event_type`
+## (migration 121, extended by migration 129). Callers use it to validate an
+## event_type before insert, and `record` rejects anything absent from it.
+##
+## The SCHEMA is ground truth (CLAUDE.md); this list must equal it exactly.
+## Adding a new event type means updating BOTH, in lockstep.
+##
+## [2026-08-01] The six `tribal_warriors_*` types below were added to the CHECK
+## by migration 129 (Phase 11D.5) but never added here, so `record` rejected
+## every tribal-warrior entry before it reached a column that would have taken
+## it — silent data loss on every levy and stand-down. The guard test that was
+## supposed to prevent exactly this only asserted this list ⊆ the CHECK, which
+## a lagging list can never fail; it now asserts set EQUALITY against the live
+## constraint read from `sqlite_master`.
 const VALID_EVENT_TYPES := [
 	"established",
 	"classification_advanced",
@@ -52,6 +62,22 @@ const VALID_EVENT_TYPES := [
 	"conquered",
 	"abandoned",
 	"restored",
+	# Migration 129 (Phase 11D.5) tribal-warrior event types per
+	# gdd-tribal-warriors.md §4.1. Only the first two have callers today
+	# (LevyTribalWarriorsHandler, StandDownTribalWarriorsHandler); the other
+	# four are reserved by the CHECK for the pool-maintenance hooks.
+	"tribal_warriors_levied",
+	"tribal_warriors_stood_down",
+	"tribal_warriors_released_for_population_loss",
+	"tribal_warriors_morale_check_triggered",
+	"tribal_warriors_loyalty_failed",
+	"tribal_warriors_called_to_arms",
+	# Migration 214: Unit Loyalty departures for every OTHER source type
+	# (mercenary / conscript / militia / follower / slave_soldier) per
+	# daw_armies_recruitment.xml:353 / :458 / :477 / :611. Tribal warriors keep
+	# their own type above — logging a mercenary company under a name that says
+	# "tribal_warriors" would make the chronicle assert something false.
+	"troop_unit_loyalty_failed",
 ]
 
 

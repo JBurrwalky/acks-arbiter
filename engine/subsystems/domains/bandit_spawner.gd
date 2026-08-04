@@ -302,22 +302,10 @@ static func _create_bandit_captain(campaign_id: String, domain_id: String, bandi
 	return id
 
 
+## Consolidated into StrongholdRepository 2026-08-03 — MutinyForceComposer needs
+## the same "where does a hostile army belonging to this domain appear" query.
 static func _stronghold_hex_for_domain(domain_id: String) -> Dictionary:
-	if domain_id.is_empty():
-		return {}
-	if not CampaignRepository.db.query_with_bindings("""
-		SELECT location_map_id, location_hex_q, location_hex_r
-		FROM strongholds WHERE domain_id = ? AND status != 'destroyed' LIMIT 1
-	""", [domain_id]):
-		return {}
-	if CampaignRepository.db.query_result.is_empty():
-		return {}
-	var row: Dictionary = CampaignRepository.db.query_result[0]
-	return {
-		"map_id": row.get("location_map_id"),
-		"hex_q": row.get("location_hex_q"),
-		"hex_r": row.get("location_hex_r"),
-	}
+	return StrongholdRepository.location_for_domain(domain_id)
 
 
 static func _parse_payload(json_str: String) -> Dictionary:

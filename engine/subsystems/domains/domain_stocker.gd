@@ -69,6 +69,14 @@ const _GARRISON_GP_PER_FAMILY := {
 ## matches the daw_armies_recruitment.xml Light Infantry baseline.
 const _MERC_WAGE_GP_PER_SOLDIER := 6
 
+## Troop type + tier the garrison is stocked as. Both feed
+## `TroopBattleRatingTable.for_unit`, which is the single RAW source for the
+## row's battle_rating — do not hardcode a per-soldier figure here. When the
+## stocker grows a conscript / militia / mercenary mix, each slice looks its
+## own rating up by its own troop type and tier.
+const _GARRISON_TROOP_TYPE := "Light Infantry"
+const _GARRISON_TIER := "average"
+
 ## Stronghold band defaults — written into `strongholds.structure_type`. The
 ## column is free-form text (no CHECK constraint); using the icon-band keys
 ## keeps downstream UI grep'able. The archetype column still uses one of the
@@ -231,17 +239,28 @@ static func stock_garrison(domain_data: Dictionary) -> Array:
 		"owner_character_id": owner_id,
 		"assigned_domain_id": domain_id,
 		"source_type": "mercenary",
-		"troop_type": "Light Infantry",
+		"troop_type": _GARRISON_TROOP_TYPE,
 		"race": "human",
-		"tier": "average",
+		"tier": _GARRISON_TIER,
 		"starting_count": count,
 		"count": count,
-		"battle_rating": 0.025 * float(count),
+		# RAW: daw_campaigns_troop_tables_summary.xml:105 — Light Infantry A is
+		# battle_rating 0.008 per creature (L9: "Battle Rating is listed per
+		# creature"). The 0.025 this line used to carry is the crossbowman /
+		# longbowman rating, equivalently VETERAN Light Infantry (L299, BR 3
+		# per 120), and overstated every stocked garrison threefold.
+		"battle_rating": TroopBattleRatingTable.for_unit(
+			_GARRISON_TROOP_TYPE, _GARRISON_TIER, count),
 		"monthly_wage_cp": monthly_wage_cp,
 		"monthly_supply_cp": 0,
 		"monthly_specialist_cp": 0,
 		"monthly_cost_cp": monthly_cost_cp,
-		"morale": 0,
+		# The troop's OWN base morale — RAW L105 gives Light Infantry A -1.
+		# Leader effects (Charisma, Command proficiency, a bard's Chronicles of
+		# Battle) are roll-time modifiers and are never baked in here; see
+		# docs/coding_conventions.md §129.
+		"morale": TroopBattleRatingTable.base_morale(
+			_GARRISON_TROOP_TYPE, _GARRISON_TIER),
 		"is_veteran": false,
 		"is_trained": true,
 		"unit_xp": 0,

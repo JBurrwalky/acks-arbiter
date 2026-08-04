@@ -31,6 +31,7 @@ var _domain_id: String = ""
 var _domain_data: Dictionary = {}
 
 var _expenditure_card: VBoxContainer = null
+var _levy_cost_card: VBoxContainer = null
 var _roster_card: VBoxContainer = null
 var _action_card: VBoxContainer = null
 var _training_card: VBoxContainer = null
@@ -52,6 +53,13 @@ func _ready() -> void:
 
 	_expenditure_card = _make_card("Garrison Expenditure")
 	add_child(_expenditure_card)
+	# 2026-08-03: peasants under arms cost the domain revenue and morale from
+	# the moment they are raised (RAW daw_armies_recruitment.xml:429-431). That
+	# cost previously appeared nowhere — a ruler saw revenue fall with no line
+	# item explaining it. Sits directly under Expenditure because it is the
+	# other half of "what your troops cost you".
+	_levy_cost_card = _make_card("Peasants Under Arms")
+	add_child(_levy_cost_card)
 	_roster_card = _make_card("Assigned Units")
 	add_child(_roster_card)
 	_action_card = _make_card("Recruitment")
@@ -88,6 +96,7 @@ func display(domain_data: Dictionary) -> void:
 
 func _render_all() -> void:
 	_render_expenditure()
+	_render_levy_cost()
 	_render_roster()
 	_render_actions()
 	_render_training()  # Phase 10A.3
@@ -206,6 +215,91 @@ func _render_expenditure() -> void:
 	# the symbol live for the static analyzer.)
 	@warning_ignore("unused_variable")
 	var _used := minimum_per_family_cp
+
+
+## RAW daw_armies_recruitment.xml:429-431 — every peasant levied into service
+## costs the domain one family's revenue and pushes domain morale down by 1
+## (or 2 at 2+ per 10 families), and those penalties last until the troops are
+## sent home. Two populations pay it: militia, and the tribal warriors a
+## clanhold chieftain levies past the free 1-per-family allotment
+## (ax_domains_of_chaos.xml:399).
+##
+## Shows the arithmetic rather than the conclusion — a ruler who sees revenue
+## fall should be able to read WHY off this card and know exactly what standing
+## the troops down would give back.
+func _render_levy_cost() -> void:
+	_clear_card_body(_levy_cost_card)
+	if _domain_id.is_empty():
+		_levy_cost_card.add_child(_dim_label("—"))
+		return
+
+	var families: int = int(_domain_data.get("peasant_families", 0))
+	var levy: Dictionary = LevyPenaltyCalculator.penalties_for_domain(_domain_id, families)
+	var levied: int = int(levy.get("levied", 0))
+	var families_lost: int = int(levy.get("revenue_family_reduction", 0))
+	var morale_hit: int = int(levy.get("morale_penalty", 0))
+
+	var is_clanhold: bool = String(_domain_data.get("domain_style", "civilized")) == "clanhold"
+	var pool: Dictionary = {}
+	if is_clanhold:
+		pool = TribalWarriorRegistry.pool_for_domain(_domain_id)
+
+	if levied <= 0:
+		var none := Label.new()
+		none.text = "No peasants under arms — the domain pays no levy penalty."
+		none.modulate = Color(0.6, 0.95, 0.6)
+		_levy_cost_card.add_child(none)
+	else:
+		var pct: int = 0
+		if families > 0:
+			pct = int(round(float(families_lost) * 100.0 / float(families)))
+		var top := Label.new()
+		top.text = "%d peasant%s under arms out of %d famil%s (%d per 10)." % [
+			levied, "" if levied == 1 else "s", families,
+			"y" if families == 1 else "ies",
+			0 if families == 0 else int(round(float(levied) * 10.0 / float(families))),
+		]
+		_levy_cost_card.add_child(top)
+
+		var rev := Label.new()
+		rev.text = "Revenue: −%d famil%s (%d%% of the domain's earning population) — RAW 1 family per levied peasant." % [
+			families_lost, "y" if families_lost == 1 else "ies", pct]
+		rev.modulate = Color(0.95, 0.65, 0.45)
+		_levy_cost_card.add_child(rev)
+
+		var mor := Label.new()
+		mor.text = "Base morale: %+d (%s)." % [
+			morale_hit,
+			"2 or more per 10 families" if morale_hit <= -2 else "under 2 per 10 families",
+		]
+		mor.modulate = Color(0.95, 0.45, 0.45) if morale_hit <= -2 else Color(0.95, 0.65, 0.45)
+		_levy_cost_card.add_child(mor)
+
+		var relief := Label.new()
+		relief.text = "Both penalties lift as soon as the troops stand down."
+		relief.modulate = Color(0.7, 0.7, 0.7)
+		_levy_cost_card.add_child(relief)
+
+	# Clanhold-only: the free allotment and the penalised allowance above it.
+	if is_clanhold:
+		var free_label := Label.new()
+		free_label.text = "Free allotment: %d dormant, %d levied of %d famil%s (1 per family, no penalty)." % [
+			int(pool.get("available", 0)), int(pool.get("levied", 0)), families,
+			"y" if families == 1 else "ies"]
+		free_label.modulate = Color(0.8, 0.9, 0.8)
+		_levy_cost_card.add_child(free_label)
+
+		var excess_label := Label.new()
+		var used: int = int(pool.get("excess_levied", 0))
+		var cap: int = int(pool.get("excess_cap", 0))
+		if cap <= 0:
+			excess_label.text = "Excess levy: unavailable — a clanhold needs 10+ families to raise warriors past the free allotment."
+			excess_label.modulate = Color(0.7, 0.7, 0.7)
+		else:
+			excess_label.text = "Excess levy: %d of %d used (%d still available, 2 per 10 families). These are the warriors charged above." % [
+				used, cap, int(pool.get("excess_room", 0))]
+			excess_label.modulate = Color(0.95, 0.65, 0.45) if used > 0 else Color(0.8, 0.9, 0.8)
+		_levy_cost_card.add_child(excess_label)
 
 
 func _render_roster() -> void:

@@ -279,6 +279,12 @@ func _spawn_wave_troop_units(stronghold: Dictionary, owner: Dictionary,
 	var morale_bonus: int = int(table.get("morale_bonus", 0))
 	var equipment_kit: String = String(attractor.get("equipment_kit", template.get("equipment_kit", "")))
 	var wages_required: bool = bool(table.get("wages_required", true))
+	# RAW daw_armies_recruitment.xml:481 — "Cleric and bladedancer followers are
+	# religious fanatics"; :483 — they "do not make loyalty rolls for calamities,
+	# but still make morale rolls in battle". Recorded on the row (migration 214)
+	# rather than re-derived at roll time: `wages_required` alone would also
+	# catch the MAGE table, which is wages_required=false and not fanatic.
+	var religious_fanatic: bool = bool(table.get("religious_fanatic", false))
 
 	# Followers count by cp value toward garrison cost when they don't require wages
 	# (faithful clerics/bladedancers per acore_axioms §garrison L229). When wages_required
@@ -322,6 +328,7 @@ func _spawn_wave_troop_units(stronghold: Dictionary, owner: Dictionary,
 			"assignment_kind": "garrison",
 			"hire_calendar_day": calendar_day,
 			"equipment_kit": equipment_kit,
+			"is_religious_fanatic": religious_fanatic,
 		})
 		if not unit_id.is_empty():
 			ids.append(unit_id)

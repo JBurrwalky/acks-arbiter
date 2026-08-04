@@ -36,6 +36,8 @@ func run_all_tests() -> void:
 	test_garrison_sizing_borderlands()
 	test_garrison_sizing_wilderness()
 	test_garrison_meets_calculator_minimum()
+	test_battle_rating_table_matches_raw()
+	test_garrison_battle_rating_is_raw_light_infantry()
 	_cleanup_unit()
 	test_integration_avalon_full_stocking()
 	_cleanup_avalon()
@@ -154,6 +156,140 @@ func test_garrison_meets_calculator_minimum() -> void:
 				int(breakdown.get("minimum_total_cp", 0)),
 			])
 	print("  garrison_meets_calculator_minimum: OK")
+
+
+# ---------------------------------------------------------------------------
+# Unit: garrison battle rating
+# ---------------------------------------------------------------------------
+
+## RAW per-soldier Battle Ratings, duplicated here so the test fails loudly if
+## TroopBattleRatingTable drifts away from RAW. Source is
+## `rules/daw_campaigns_troop_tables_summary.xml` §troop_tables, whose ratings
+## are per CREATURE (L9) — the direct per-soldier figure. Veterans have no
+## per-creature row, so that one is derived from the per-unit table (L278/L273:
+## BR per unit, 120 infantry / 60 cavalry per unit).
+const _RAW_BR_PER_SOLDIER := {
+	# L102 — Untrained Conscripts/Militia.
+	"untrained": 0.003,
+	# L105 — Light Infantry A (the default mercenary loadout per L7).
+	"light_infantry_average": 0.008,
+	# L299 — 120 Veteran Light Infantry A/B/C/D/E at BR 3, ÷ 120. This is the
+	# figure domain_stocker used to write for ORDINARY light infantry.
+	"light_infantry_veteran": 3.0 / 120.0,
+	# L129 — Heavy Infantry A.
+	"heavy_infantry_average": 0.017,
+	# L156 — Light Cavalry A.
+	"light_cavalry_average": 0.061,
+}
+
+
+func test_battle_rating_table_matches_raw() -> void:
+	_check_br("Light Infantry", "average", _RAW_BR_PER_SOLDIER["light_infantry_average"])
+	_check_br("light_infantry", "veteran", _RAW_BR_PER_SOLDIER["light_infantry_veteran"])
+	_check_br("Heavy Infantry", "average", _RAW_BR_PER_SOLDIER["heavy_infantry_average"])
+	_check_br("Light Cavalry", "average", _RAW_BR_PER_SOLDIER["light_cavalry_average"])
+	# Untrained conscripts / militia share one RAW row, and an untrained unit
+	# of any troop type falls to that row.
+	_check_br("Untrained Conscripts", "untrained", _RAW_BR_PER_SOLDIER["untrained"])
+	_check_br("Untrained Militia", "untrained", _RAW_BR_PER_SOLDIER["untrained"])
+	_check_br("Light Infantry", "untrained", _RAW_BR_PER_SOLDIER["untrained"])
+
+	# Free-text spellings of the same troop type must resolve identically —
+	# troop_units.troop_type is unconstrained TEXT and call sites vary.
+	check(is_equal_approx(
+			TroopBattleRatingTable.per_soldier("Light Infantry", "average"),
+			TroopBattleRatingTable.per_soldier("light_infantry", "average")),
+		"'Light Infantry' and 'light_infantry' must resolve to the same rating")
+
+	# Base morale is the troop's own, per the RAW `morale` attribute on the same
+	# per-creature rows. Leader effects (a bard's Chronicles of Battle +1, the
+	# officer morale modifier) are roll-time modifiers and must NOT be baked in.
+	# [Jedidiah ruling 2026-08-01.]
+	check(TroopBattleRatingTable.base_morale("Light Infantry", "average") == -1,
+		"RAW L105: Light Infantry A base morale is -1")
+	check(TroopBattleRatingTable.base_morale("Untrained Conscripts", "untrained") == -2,
+		"RAW L102: untrained conscripts/militia base morale is -2")
+	check(TroopBattleRatingTable.base_morale("Longbowmen", "untrained") == -2,
+		"an untrained unit takes the untrained row's morale whatever its label")
+	check(TroopBattleRatingTable.base_morale("Heavy Infantry", "average") == 0,
+		"RAW L129: Heavy Infantry A base morale is 0")
+	check(TroopBattleRatingTable.base_morale("Light Cavalry", "average") == 1,
+		"RAW L156: Light Cavalry A base morale is +1")
+	# RAW L266: "Veterans have 1 HD, 5 hp, +1 morale, and +1 to damage rolls."
+	check(TroopBattleRatingTable.base_morale("Light Infantry", "veteran")
+			== TroopBattleRatingTable.base_morale("Light Infantry", "average") + 1,
+		"veterans gain +1 morale per RAW L266")
+
+	# Whole-unit rating is per-soldier × count. A 120-man company of Light
+	# Infantry A comes to 0.96, which RAW's coarser per-unit table (L298)
+	# rounds to 1 — the two RAW tables agree to within that rounding.
+	var unit_br: float = TroopBattleRatingTable.for_unit("Light Infantry", "average", 120)
+	check(is_equal_approx(unit_br, 0.008 * 120.0),
+		"120 average Light Infantry should be 120 × RAW L105 0.008; got %f" % unit_br)
+	check(absf(unit_br - 1.0) < 0.05,
+		"per-creature total %f should round to the RAW per-unit BR 1 (L298)" % unit_br)
+	print("  battle_rating_table_matches_raw: OK")
+
+
+func _check_br(troop_type: String, tier: String, expected: float) -> void:
+	var actual: float = TroopBattleRatingTable.per_soldier(troop_type, tier)
+	check(is_equal_approx(actual, expected),
+		"%s/%s: expected RAW %f BR per soldier; got %f" % [
+			troop_type, tier, expected, actual])
+
+
+## The load-bearing regression: a stocked garrison's persisted battle_rating
+## must equal the RAW per-soldier figure for the row's own troop_type + tier,
+## not the veteran figure (which overstated every NPC garrison 3×).
+func test_garrison_battle_rating_is_raw_light_infantry() -> void:
+	_cleanup_unit()
+	_make_campaign(_CAMPAIGN_ID)
+	for territory in ["civilized", "borderlands", "wilderness"]:
+		var domain_id: String = _make_domain(_CAMPAIGN_ID, territory, 250)
+		var domain: Dictionary = CampaignRepository.get_domain(domain_id)
+		var ids: Array = DomainStocker.stock_garrison(domain)
+		check(ids.size() == 1, "%s: expected 1 garrison unit; got %d" % [territory, ids.size()])
+		if ids.is_empty():
+			continue
+		if not CampaignRepository.db.query_with_bindings(
+				"SELECT troop_type, tier, count, battle_rating, morale FROM troop_units WHERE id = ?",
+				[String(ids[0])]):
+			check(false, "%s: garrison row query failed" % territory)
+			continue
+		var rows: Array = CampaignRepository.db.query_result
+		check(not rows.is_empty(), "%s: garrison row not found" % territory)
+		if rows.is_empty():
+			continue
+		var row: Dictionary = rows[0]
+		# Fail loudly on a missing column rather than letting a sentinel default
+		# masquerade as a wrong value.
+		for col in ["troop_type", "tier", "count", "battle_rating", "morale"]:
+			check(row.has(col), "%s: garrison row query did not return '%s'" % [territory, col])
+		var troop_type: String = String(row.get("troop_type", ""))
+		var tier: String = String(row.get("tier", ""))
+		var unit_count: int = int(row.get("count", 0))
+		var actual: float = float(row.get("battle_rating", 0.0))
+		var expected: float = TroopBattleRatingTable.per_soldier(troop_type, tier) * float(unit_count)
+
+		check(unit_count > 0, "%s: garrison count should be positive; got %d" % [territory, unit_count])
+		# Morale is the troop's own base, not a leader bonus baked in — RAW
+		# L105 gives Light Infantry A -1. [conventions §129.]
+		check(int(row.get("morale", 99)) == -1,
+			"%s: garrison morale should be the RAW L105 base -1; got %d" % [
+				territory, int(row.get("morale", 99))])
+		check(int(row.get("morale", 99))
+				== TroopBattleRatingTable.base_morale(troop_type, tier),
+			"%s: garrison morale must come from its own troop type's RAW base" % territory)
+		check(is_equal_approx(actual, expected),
+			"%s: battle_rating %f != RAW %f for %d × %s/%s" % [
+				territory, actual, expected, unit_count, troop_type, tier])
+		# Explicit guard against the veteran-rating regression: RAW L299's
+		# 0.025/soldier is 3× the ordinary L298 figure.
+		var veteran_br: float = _RAW_BR_PER_SOLDIER["light_infantry_veteran"] * float(unit_count)
+		check(not is_equal_approx(actual, veteran_br),
+			"%s: battle_rating %f is the VETERAN Light Infantry rating (RAW L299); ordinary troops use L298" % [
+				territory, actual])
+	print("  garrison_battle_rating_is_raw_light_infantry: OK")
 
 
 # ---------------------------------------------------------------------------

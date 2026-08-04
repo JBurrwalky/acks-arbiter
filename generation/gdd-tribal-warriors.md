@@ -296,17 +296,37 @@ New activity, ships in Phase 11D.5. Lives alongside the Phase 5 garrison + Phase
 - **Activity classification:** minor; **may be repeated within a month** (RAW: *"The levy may occur all at once or over time"* — `rules/ax_domains_of_chaos.xml:400`). Each individual levy completes within one week.
 - **Requirement:** `domain_style='clanhold'` OR `alignment='chaotic'`. Ruler must be at the domain's stronghold.
 - **Inputs:**
-  - `count` — number of warriors to levy (1 to `available_tribal_warriors`).
+  - `count` — number of warriors to levy (1 to `available_tribal_warriors` + the §5.1a excess allowance).
 - **Validation:**
-  - Reject if `count > available_tribal_warriors`.
-  - Reject if `available_tribal_warriors == 0`.
+  - Reject only when BOTH the dormant pool and the excess allowance are exhausted. An empty `available_tribal_warriors` is by itself no longer a refusal.
 - **Effects:**
-  - `available_tribal_warriors` decrements by `count`.
-  - The procedural composition resolver (§5.2) splits `count` into per-troop-type chunks per the race column of the RAW table.
-  - One `troop_units` row inserts per non-zero troop type (potentially up to 8-9 rows for high-variety races; usually 2-4 in practice).
+  - `available_tribal_warriors` decrements by the FREE portion only.
+  - The procedural composition resolver (§5.2) splits the free and excess portions **separately** into per-troop-type chunks per the race column of the RAW table.
+  - One `troop_units` row inserts per non-zero troop type per portion. Excess rows carry `is_excess_levy=1` (migration 213); a row is never a mix of free and excess warriors.
   - Each row's `assignment_kind = 'available'`.
-  - Departure log entry: `event_type='tribal_warriors_levied'`.
+  - Departure log entry: `event_type='tribal_warriors_levied'`, with `free_count` / `excess_count` in the payload.
   - EventBus signal: `tribal_warriors_levied(...)`.
+
+### 5.1a Levying past the free allotment (Jedidiah ruling, 2026-08-03)
+
+RAW `rules/ax_domains_of_chaos.xml:398-399`: 1 warrior per family levies "without reducing domain morale or domain revenue"; **"any additional levies are treated as militia."**
+
+**What "treated as militia" means:** the militia *limits and penalties* attach to the excess — not militia stat blocks. The excess warriors remain tribal warriors, trained and equipped per tribal custom (`:408`). That is the whole point: a clanhold at full stretch fields 1.2 real warriors per family against a standard domain's 0.3 conscripts-and-militia, which is what makes clanholds dangerous enough to offset their population-density ceiling.
+
+**The cap.** RAW puts no explicit ceiling on the excess, but the economics are degenerate without one — each excess warrior costs a family's revenue, so at 2/family the domain earns nothing while still owing expenses, morale collapses, families leave (taking their warriors), and rebellion follows. The excess is therefore capped at the standard domain's militia allowance: **2 per 10 families**, i.e. `(peasant_families / 10) * 2`. This is not an arbitrary number — it is literally RAW's militia cap at `daw_armies_recruitment.xml:428`, which is the population `:399` borrows from. Dial down if play proves it strong; `LevyPenaltyCalculator.MAX_LEVIED_PER_10_FAMILIES` is the single knob.
+
+**The cost**, per `daw_armies_recruitment.xml:429-432`, applied by `LevyPenaltyCalculator`:
+
+| | |
+|---|---|
+| Revenue | −1 family's worth per excess warrior, across service, tax **and** land (`:429` says "domain revenue", not one stream). `peasant_families` is NOT reduced — they are under arms, not dead. |
+| Morale | −1 at ≤1 per 10 families, −2 at ≥2 per 10 (`:430`), applied to **base** morale because `:431` makes it standing rather than a monthly event. |
+| Duration | Until they stand down (`:431`) — the penalty basis is a live query over active rows, so any removal path relieves it automatically. |
+| On death | Permanent, via the existing `ArmyCasualtyResolver` militia-loss path (`:432`, conventions §100). |
+
+**Two ceilings, independently enforced.** The free-allotment invariant (`available + free levied ≤ peasant_families`) counts only `is_excess_levy=0` rows — otherwise a legal `:399` overflow would read as a violation. The excess cap is separate and also derives from `peasant_families`, so a population shrink enforces both: the §3.2 release on the free side, and a trim of excess above the new ceiling. A shrink can breach either, both, or neither.
+
+**Note `ax_domains_of_chaos.xml:36` still stands** — a clanhold chieftain cannot raise militia *units*. The excess levy is not militia; it borrows militia's price.
 
 ### 5.2 Per-race procedural composition
 
@@ -482,25 +502,37 @@ Per `rules/ax_domains_of_chaos.xml:453-456`:
 
 Per `rules/ax_domains_of_chaos.xml:456`: *"Tribal warriors also make morale rolls after 3 consecutive months of service without receiving spoils from a battle or siege equal to at least their wages."*
 
+**RAW correction (Jedidiah, 2026-08-01).** The printed "morale rolls" is a RAW error; later errata make this a straight **loyalty** roll after 3 consecutive months without spoils worth at least the unit's monthly wage. There is no morale-roll step and no cascade from a failed morale roll into a loyalty roll. This resolves the gap the printed text left: the only morale table in the corpus is the battle-phase one (`rules/daw_axioms_pitching_battle.xml:511-521` — rout / flee / waver / stand_firm / rally), whose results have no out-of-battle meaning.
+
 Mechanism:
 
 - The `troop_units.months_without_qualifying_spoils` counter tracks consecutive months without spoils ≥ wages (§6.3).
-- When the counter reaches 3 on the monthly tick: morale roll fires.
-- The morale roll uses the unit's current morale score with **no special tribal-warrior modifier** — the fact that the roll occurs at all is the penalty. Standard modifiers per `gdd-army-warfare.md` apply as normal.
-- On success: counter resets to 0; unit continues service.
-- On failure: a loyalty roll fires (see §7.4 — the unit may depart).
-- Either way, `months_without_qualifying_spoils` resets to 0 after the roll.
+- When the counter reaches 3 on the monthly tick, the 3-month stretch is treated as one more **calamity kind** (`TribalWarriorLoyaltyResolver.CALAMITY_NO_SPOILS`) and a Unit Loyalty roll fires per §7.4.
+- No special tribal-warrior modifier applies — the fact that the roll occurs at all is the penalty.
+- `months_without_qualifying_spoils` resets to 0 after the roll regardless of outcome, so a surviving unit starts its clock over instead of re-rolling every subsequent month on the same stretch.
 
-EventBus signal: `tribal_warriors_morale_check_triggered(troop_unit_id, reason='3_months_without_spoils')`.
+EventBus signal: `tribal_warriors_morale_check_triggered(troop_unit_id, reason='three_months_without_qualifying_spoils')`. The signal and the matching departure-log event type keep their migration-129 names even though the roll they now drive is a loyalty roll — renaming would cost a migration plus a schema `CHECK` rebuild plus a UI filter-dropdown change for a purely cosmetic gain. Read the name as "the 3-month spoils trigger fired".
 
 ### 7.4 Departure consequences
 
-Per `rules/ax_domains_of_chaos.xml:460-462`: on a failed loyalty roll, consult the Unit Loyalty table. v1 implementation:
+Per `rules/ax_domains_of_chaos.xml:460-462`: on a calamity, consult the Unit Loyalty table (`rules/daw_armies_recruitment.xml:265-275`). v1 implementation:
 
-- The Unit Loyalty table resolves to one of: continue service (with possible morale adjustment), partial departure (some count departs), full departure.
-- Departing warriors: `departure_kind='returned_to_villages'`. The warriors return to the dormant pool: `available_tribal_warriors += departed_count`.
-- The departed warriors come off the `troop_units.count` (or the row is fully departed if all warriors leave).
-- Departure-log entry: `event_type='tribal_warriors_loyalty_failed'` with `departure_kind` in the payload.
+**Outcomes are UNIT-LEVEL, not partial-count** (corrected 2026-08-01; Jedidiah). Earlier drafts of this section described "partial departure (some count departs)", which has no basis in RAW — `rules/daw_armies_recruitment.xml:103-107` defines all five outcomes as things the unit does as a whole. Per CLAUDE.md's layering, RAW wins:
+
+| Adjusted 2d6 | Result | v1 effect |
+|---|---|---|
+| 2− | Enmity | Unit leaves service immediately. |
+| 3-5 | Resignation | Unit leaves service. RAW's "at the first advantageous safe moment" resolves immediately in v1 — there is no in-data "leaving soon" state for a unit to sit in. |
+| 6-8 | Grudging Loyalty | Unit stays. Two **consecutive** Grudging results end service (`:105`), tracked by `troop_units.loyalty_consecutive_grudging`. |
+| 9-11 | Loyalty | Unit continues; grudging run resets. |
+| 12+ | Fanatic loyalty | +1 on all future loyalty rolls (`troop_units.loyalty_is_fanatic`). **Never** results from going without pay — becomes ordinary Loyalty in that case (`:107`). |
+
+The roll is `2d6 + the unit's own morale − 2 per calamity after the first` (`:99-100`). The officer/leader morale modifier is explicitly **excluded**: `rules/daw_armies_recruitment.xml:775` — *"Morale modifier affects Unit Morale rolls for units under the officer's command; it does not affect Unit Loyalty rolls."* See `docs/coding_conventions.md` §129 and §131.
+
+Note these carryover semantics are **not** the henchman ladder's, despite sharing all five bands: henchman loyalty gives Fanatic +2 and Grudging a one-shot −1 next roll. Do not consolidate the two.
+
+- Departing warriors return to the dormant pool: `available_tribal_warriors += survivors`, capped by the §3 invariant. Per Jedidiah (2026-08-01) they return **if the clanhold still exists** and may be levied again later as normal; an `abandoned` / `salted_to_ruin` clanhold cannot take them back and those warriors are simply lost. RAW's brigand/mercenary branch (`:462`) is that "return is not possible" case and is deliberately not materialised as a hostile on-map force in v1.
+- Departure-log entry: `event_type='tribal_warriors_loyalty_failed'` with `departure_kind` in the payload. Only departures are chronicled — a unit that rolled Loyalty did not fail anything.
 
 EventBus signal: `tribal_warriors_loyalty_failed(troop_unit_id, departure_kind)`.
 

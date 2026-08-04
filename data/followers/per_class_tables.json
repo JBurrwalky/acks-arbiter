@@ -57,6 +57,8 @@
       },
       "wages_required": false,
       "morale_bonus": 4,
+      "religious_fanatic": true,
+      "religious_fanatic_citation": "daw_armies_recruitment.xml:481-483 — cleric and bladedancer followers are religious fanatics; religious fanatics do not make loyalty rolls for calamities, but still make morale rolls in battle",
       "morale_note": "Faithful never check morale per acore §cleric L1318"
     },
     "mage": {
@@ -112,7 +114,9 @@
         "as_henchmen": true
       },
       "wages_required": false,
-      "morale_bonus": 4
+      "morale_bonus": 4,
+      "religious_fanatic": true,
+      "religious_fanatic_citation": "daw_armies_recruitment.xml:481-483 — cleric and bladedancer followers are religious fanatics; religious fanatics do not make loyalty rolls for calamities, but still make morale rolls in battle"
     },
     "bard": {
       "structure_type": "stronghold",

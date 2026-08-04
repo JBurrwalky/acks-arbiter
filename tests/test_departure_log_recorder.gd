@@ -28,6 +28,8 @@ func run_all_tests() -> void:
 	test_export_json_is_valid()
 	test_export_txt_is_tab_separated()
 	test_valid_event_types_matches_check_constraint()
+	test_every_valid_event_type_round_trips_through_record()
+	test_tribal_warrior_event_types_reach_the_table_through_record()
 	_cleanup()
 	if not has_failures():
 		print("DepartureLogRecorder: all tests passed.")
@@ -215,12 +217,161 @@ func test_export_txt_is_tab_separated() -> void:
 		"txt has tab-separated row")
 
 
+## Set EQUALITY between `VALID_EVENT_TYPES` and the live CHECK constraint.
+##
+## [Rewritten 2026-08-01.] The previous version of this test only walked
+## VALID_EVENT_TYPES and asserted each was accepted by the constraint — i.e. it
+## tested `list ⊆ CHECK`, the one direction that a LAGGING list can never fail.
+## Migration 129 added six `tribal_warriors_*` types to the CHECK and never
+## added them here; this test passed throughout while `record` silently
+## rejected every tribal-warrior entry. The missing direction (`CHECK ⊆ list`)
+## is the one that catches it, so assert both.
+##
+## Its old comment claimed "we can't read the constraint directly". We can —
+## sqlite_master holds the CREATE TABLE DDL, which is the constraint as it
+## actually exists in this database (i.e. after all migrations have run), a
+## strictly better oracle than re-reading db/schema.sql.
 func test_valid_event_types_matches_check_constraint() -> void:
-	# Smoke: every value in VALID_EVENT_TYPES must actually be acceptable to
-	# the migration 121 CHECK constraint. We can't read the constraint
-	# directly, but we can try to insert each and verify success.
+	var schema_types: Array = _event_types_from_live_check()
+	check(not schema_types.is_empty(),
+		"could not read the event_type CHECK from sqlite_master")
+	if schema_types.is_empty():
+		return
+
+	var in_code := {}
+	for et in DepartureLogRecorder.VALID_EVENT_TYPES:
+		in_code[String(et)] = true
+	var in_schema := {}
+	for et in schema_types:
+		in_schema[String(et)] = true
+
+	# Direction 1 — the schema allows nothing the code rejects. This is the
+	# direction that was missing, and the one that catches a lagging list.
+	var missing_from_code: Array = []
+	for et in in_schema.keys():
+		if not in_code.has(et):
+			missing_from_code.append(et)
+	missing_from_code.sort()
+	check(missing_from_code.is_empty(),
+		"CHECK allows event_type(s) that VALID_EVENT_TYPES omits, so record() rejects them and the entry is silently lost: %s"
+			% str(missing_from_code))
+
+	# Direction 2 — the code claims nothing the schema would refuse.
+	var missing_from_schema: Array = []
+	for et in in_code.keys():
+		if not in_schema.has(et):
+			missing_from_schema.append(et)
+	missing_from_schema.sort()
+	check(missing_from_schema.is_empty(),
+		"VALID_EVENT_TYPES contains event_type(s) the CHECK would reject: %s"
+			% str(missing_from_schema))
+
+	check(in_code.size() == in_schema.size(),
+		"VALID_EVENT_TYPES has %d entries; CHECK has %d" % [
+			in_code.size(), in_schema.size()])
+
+
+## Every value in VALID_EVENT_TYPES survives a real round-trip THROUGH
+## `record()` — not a direct INSERT. The pre-existing tribal-warrior test
+## inserted straight into the table, which exercises the CHECK but never the
+## GDScript guard, so it passed while every real write was being dropped.
+func test_every_valid_event_type_round_trips_through_record() -> void:
+	var domain_id := "test_dlog_roundtrip_d"
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM domain_departure_log WHERE domain_id = ?", [domain_id])
 	for et in DepartureLogRecorder.VALID_EVENT_TYPES:
 		var id := DepartureLogRecorder.record(
-			TEST_CAMPAIGN, "test_dlog_etype_d", 1, String(et), "", {})
+			TEST_CAMPAIGN, domain_id, 1, String(et), "roundtrip", {})
 		check(not id.is_empty(),
-			"VALID_EVENT_TYPES '%s' accepted by CHECK constraint" % String(et))
+			"record() returned '' for event_type '%s' — rejected before insert" % String(et))
+		if id.is_empty():
+			continue
+		var row: Dictionary = DepartureLogRecorder.get_entry(id)
+		check(String(row.get("event_type", "")) == String(et),
+			"row for '%s' did not persist with that event_type" % String(et))
+	var persisted: int = _count(
+		"SELECT COUNT(*) AS n FROM domain_departure_log WHERE domain_id = ?", [domain_id])
+	check(persisted == DepartureLogRecorder.VALID_EVENT_TYPES.size(),
+		"expected %d persisted rows, one per valid event type; got %d" % [
+			DepartureLogRecorder.VALID_EVENT_TYPES.size(), persisted])
+
+
+## The two live tribal-warrior call sites specifically — the ones that were
+## losing data. Asserts the handlers' own event_type strings reach the table.
+func test_tribal_warrior_event_types_reach_the_table_through_record() -> void:
+	var domain_id := "test_dlog_tribal_d"
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM domain_departure_log WHERE domain_id = ?", [domain_id])
+	# levy_tribal_warriors.gd and stand_down_tribal_warriors.gd pass these two;
+	# the other four are reserved by migration 129 with no caller yet.
+	for et in [
+		"tribal_warriors_levied",
+		"tribal_warriors_stood_down",
+		"tribal_warriors_released_for_population_loss",
+		"tribal_warriors_morale_check_triggered",
+		"tribal_warriors_loyalty_failed",
+		"tribal_warriors_called_to_arms",
+	]:
+		var id := DepartureLogRecorder.record(
+			TEST_CAMPAIGN, domain_id, 1, String(et), "tribal", {})
+		check(not id.is_empty(),
+			"record() rejected migration-129 event_type '%s'" % String(et))
+	var persisted: int = _count(
+		"SELECT COUNT(*) AS n FROM domain_departure_log WHERE domain_id = ?", [domain_id])
+	check(persisted == 6,
+		"all 6 tribal-warrior event types should persist; got %d" % persisted)
+
+
+## Parse the `event_type` CHECK out of the live CREATE TABLE DDL. Returns the
+## quoted literals inside `CHECK(event_type IN ( ... ))`.
+func _event_types_from_live_check() -> Array:
+	if not CampaignRepository.db.query(
+		"SELECT sql FROM sqlite_master WHERE type='table' AND name='domain_departure_log'"):
+		return []
+	if CampaignRepository.db.query_result.is_empty():
+		return []
+	var ddl: String = String(CampaignRepository.db.query_result[0].get("sql", ""))
+	var anchor: int = ddl.find("event_type")
+	if anchor < 0:
+		return []
+	var open_paren: int = ddl.find("IN", anchor)
+	if open_paren < 0:
+		return []
+	open_paren = ddl.find("(", open_paren)
+	if open_paren < 0:
+		return []
+	# Walk to the matching close paren so a later CHECK can't bleed in.
+	var depth: int = 0
+	var close_paren: int = -1
+	for i in range(open_paren, ddl.length()):
+		var c: String = ddl[i]
+		if c == "(":
+			depth += 1
+		elif c == ")":
+			depth -= 1
+			if depth == 0:
+				close_paren = i
+				break
+	if close_paren < 0:
+		return []
+	var body: String = ddl.substr(open_paren + 1, close_paren - open_paren - 1)
+	var out: Array = []
+	# SQL string literals are single-quoted; strip the `-- ...` comments first
+	# so a commented-out type can't be picked up.
+	var cleaned: String = ""
+	for line in body.split("\n"):
+		var comment_at: int = line.find("--")
+		cleaned += (line if comment_at < 0 else line.substr(0, comment_at)) + "\n"
+	var regex := RegEx.new()
+	regex.compile("'([a-z_]+)'")
+	for m in regex.search_all(cleaned):
+		out.append(m.get_string(1))
+	return out
+
+
+func _count(sql: String, params: Array) -> int:
+	if not CampaignRepository.db.query_with_bindings(sql, params):
+		return -1
+	if CampaignRepository.db.query_result.is_empty():
+		return 0
+	return int(CampaignRepository.db.query_result[0].get("n", 0))

@@ -73,12 +73,26 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 			"tier": "untrained",
 			"starting_count": merc_count,
 			"count": merc_count,
-			"battle_rating": 0.5 * merc_count,  # light infantry baseline BR
+			# RAW: daw_campaigns_troop_tables_summary.xml:102 — Untrained
+			# Conscripts/Militia are battle_rating 0.003 PER CREATURE (L9). The
+			# 0.5 this line used to carry is the per-UNIT figure for a 120-man
+			# company (L297) applied once per soldier — ≈167× RAW. Look the
+			# rating up rather than writing a literal; see coding_conventions §128.
+			"battle_rating": TroopBattleRatingTable.for_unit(
+				"light_infantry", "untrained", merc_count),
 			"monthly_wage_cp": 300 * merc_count,    # standard mercenary wage 3 gp/mo = 300 cp
 			"monthly_supply_cp": 400 * merc_count,  # 1 gp/week × 4 weeks = 400 cp
 			"monthly_specialist_cp": 0,
 			"monthly_cost_cp": 700 * merc_count,
-			"morale": 0,
+			# The troop's OWN morale — RAW L102 gives untrained conscripts and
+			# militia -2. The bard does not change it. His Chronicles of Battle
+			# +1 (acore_campaign_classes.xml:572) is presence-gated and applied
+			# at roll time by ChroniclesOfBattleAura, and his officer morale
+			# modifier (daw_armies_recruitment.xml:773-779) applies to units
+			# under his command when they roll. Neither is baked in here; the
+			# hardcoded 0 this line used to carry was those bonuses
+			# pre-applied, which survives the bard leaving or dying.
+			"morale": TroopBattleRatingTable.base_morale("light_infantry", "untrained"),
 			"is_veteran": false,
 			"is_trained": false,
 			"unit_xp": 0,
