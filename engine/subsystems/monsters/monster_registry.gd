@@ -7,7 +7,17 @@ extends RefCounted
 
 const CATALOG_PATH := "res://data/monsters/monster_catalog.json"
 
-var _monsters: Dictionary = {}  # monster_id -> Dictionary
+## Parsed ONCE per process and shared by every MonsterRegistry instance
+## (2026-08-06; the SheetRegistries / DragonVariantResolver static-cache
+## precedent, conventions §42/§141). Before this, every `MonsterRegistry.new()`
+## re-parsed the 750 KB catalog — 216 times per test run, ~0.6-1.0 GB
+## retained across never-freed holders. CONTRACT: dictionaries handed out
+## by get_monster()/get_hit_dice() are references INTO this shared catalog.
+## Consumers must never write into them (every call site audited read-only
+## 2026-08-06) — `duplicate(true)` first if you need a mutable copy.
+static var _shared_monsters: Dictionary = {}
+
+var _monsters: Dictionary = {}  # alias of _shared_monsters after _init
 
 
 func _init() -> void:
@@ -15,6 +25,9 @@ func _init() -> void:
 
 
 func _load_catalog() -> void:
+	if not _shared_monsters.is_empty():
+		_monsters = _shared_monsters
+		return
 	var file := FileAccess.open(CATALOG_PATH, FileAccess.READ)
 	if file == null:
 		push_error("MonsterRegistry: Cannot open %s" % CATALOG_PATH)
@@ -25,13 +38,16 @@ func _load_catalog() -> void:
 	if err != OK:
 		push_error("MonsterRegistry: JSON parse error: %s" % json.get_error_message())
 		return
+	var parsed: Dictionary = {}
 	var entries: Array = json.data
 	for entry in entries:
 		var id: String = entry.get("id", "")
 		if id.is_empty():
 			push_error("MonsterRegistry: Entry missing id: %s" % str(entry))
 			continue
-		_monsters[id] = entry
+		parsed[id] = entry
+	_shared_monsters = parsed
+	_monsters = _shared_monsters
 	print("MonsterRegistry: Loaded %d monster definitions" % _monsters.size())
 
 

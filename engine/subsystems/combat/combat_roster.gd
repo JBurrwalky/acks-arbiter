@@ -85,6 +85,8 @@ func add_party_creatures(party_data: PartyData, monster_registry: MonsterRegistr
 		if not creature.is_alive or not creature.has_combat_role():
 			continue
 		if creature.monster_data.is_empty():
+			# Reference into the process-shared monster catalog (static since
+			# 2026-08-06) — read-only by contract; duplicate(true) before any write.
 			creature.monster_data = monster_registry.get_monster(creature.species_id)
 		var combatant := Combatant.from_trained_creature(
 			creature, "creature_" + creature.id)

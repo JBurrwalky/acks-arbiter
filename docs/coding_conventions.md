@@ -5069,3 +5069,42 @@ the aggregate right?" but "how many times is it charged?"
 - **`primary_family` derives from the SECONDARY's tag, not `inherits[0]`.** The primary is the complementary `inherits` family (cross-family), or `inherits[0]` (same-family / no secondary). A no-secondary entry takes the kit's DOMINANT primary family (mode over its tagged entries), so an untagged inverted entry (sebasos/Numeno) still labels classical, not `inherits[0]` near_eastern. The family-tag vocabulary VARIES per kit (`Pers.`/`Persian`, `Lat`/`Latin`, `Eg.`/`Egyptian`, `Sin`/`Sinitic`, `Wd.`/`Woodland`, …) → normalized in a `TAG_FAMILY` map. `the_one` is LEFT a string — it carries etymology (`< Aeternus`) and sometimes >2 morphs (zetana), and is the distant honored-not-petitioned One, not part of the stratified pantheon.
 - **The transform is byte-identical for the name banks.** `build_name_banks.deity_stems_for` now reads `value["primary"]` (with a legacy bare-string fallback). Because `primary` is the leading token, `first_token(primary) == first_token(old packed string)` — ASSERTED per entry by the transform — so every `categories.*` pool is unchanged; only the `religion` passthrough shape shifts in the 70 rebuilt banks. Still `python tools/build_name_banks.py` + commit after touching the kits (§81 freshness gate is the authority).
 - **Two deterministic-transform guards worth reusing on any in-place JSON rewrite.** (1) A ROUND-TRIP guard: the tool refuses to rewrite a file unless `json.dumps(data, indent=2, ensure_ascii=False)+"\n"` reproduces its current bytes, so it never reformats unrelated content (this matches the `tools/generate_hybrid_kits.py` writer; the conlang kits are pure-ASCII + trailing-newline). (2) FAIL-LOUD parsing over silent drops: every entry must parse to a validated morph (`_MORPH_RE`; family ∈ inherits; no descriptor word — `temple-name`/`face`/`island`/… — leaking into the morph), and genuinely tag-less secondaries (hoshtara's "island face X-no-kami") live in an explicit `OVERRIDES` table, never a fuzzy guess.
+
+## 141. Shared static catalog on multi-instance registries (MonsterRegistry, 2026-08-06) [PROVISIONAL]
+
+`MonsterRegistry` (`class_name ... extends RefCounted`) is constructed per consumer — ~45 direct
+`.new()` sites in tests plus per-instance lazy builds in SessionRunner, WildernessHandlers,
+ClassedNpcBuilder, ShopService, FamiliarFormRegistry, DomainEncounterResolver, DungeonGeneratorV1
+and CampaignRepository — which used to mean one full parse of the 750 KB
+`data/monsters/monster_catalog.json` per construction: 216 parses per headless test run and
+~0.6-1.0 GB retained across never-freed holders (2026-08-06 memory investigation). The catalog is
+now parsed ONCE per process into `static var _shared_monsters`; every instance's `_monsters`
+aliases it. Rules established:
+
+- **When a `RefCounted` registry over an immutable data file is constructed per consumer, the
+  PARSED DATA goes in a `static var`, not the instance.** The instance stays cheap to construct
+  and its API is unchanged; only the parse is shared. This extends §42's static-cached-INSTANCE
+  pattern (DomainEncounterResolver / DragonVariantResolver / SheetRegistries) down into the
+  registry itself, so consumers that never adopted the instance-cache pattern still stop paying
+  for redundant parses.
+- **Sharing the parse creates an immutability CONTRACT on everything the accessors return.**
+  `get_monster()` / `get_hit_dice()` hand out references INTO the shared catalog (Godot
+  Dictionaries/Arrays are reference types, nested ones included). A caller write that yesterday
+  polluted one private instance now corrupts every consumer for the rest of the process. The
+  contract must be (a) stated on the static var and at the widest hand-out apertures, and
+  (b) VERIFIED before the change lands: the 2026-08-06 sweep audited all 70 `get_monster` +
+  27 convenience-accessor call sites (4-agent fan-out, one-level-deep follow of every dict that
+  escaped into Combatant/TrainedCreatureData/MonsterGroupData) — zero mutation sites existed.
+  Do not repeat this change on another registry without the same audit.
+- **A shallow `duplicate()` of a catalog entry is a FALSE COPY.** Nested `hit_dice` / `movement`
+  / `attack_routines` still alias the shared catalog after `duplicate()`; only `duplicate(true)`
+  detaches. The one pre-existing shallow copy (dungeon_encounter_spawner placements) was
+  converted to a deep copy when the static landed.
+- **Known long-lived aliases (read-only today, the future risk surface):**
+  `Combatant._monster_data`, `TrainedCreatureData.monster_data` (7 hydration sites),
+  `MonsterGroupData.special_treasure`, and `FamiliarFormRegistry.get_form_stats()`'s raw return.
+  Each carries a contract comment; a future feature that needs to WRITE per-creature state must
+  `duplicate(true)` at hydration, never write through the alias.
+- **Parse-failure path stays per-instance:** on a failed open/parse the static stays empty and the
+  next construction retries, preserving the old failure behaviour (error spam, empty registry)
+  rather than caching a permanently-empty catalog.

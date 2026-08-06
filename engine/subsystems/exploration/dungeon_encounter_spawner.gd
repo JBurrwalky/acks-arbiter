@@ -99,7 +99,11 @@ func spawn_encounter(
 		var base_hp: int = _roll_hp(monster_data.get("hp_dice", "1d8"), dice_system)
 		placements.append({
 			"combatant_id": "%s_%d" % [monster_group, i + 1],
-			"monster_data": monster_data.duplicate(),
+			# Deep copy: the registry's catalog is process-shared (static) as of
+			# 2026-08-06, and a shallow duplicate() would leave nested
+			# hit_dice/movement/attack_routines aliasing it — a later write
+			# through a placement would corrupt every consumer in the process.
+			"monster_data": monster_data.duplicate(true),
 			"grid_position": spawn_cells[i],
 			"rolled_hp": base_hp,
 			"group_id": monster_group,

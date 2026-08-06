@@ -140,7 +140,9 @@ static func roll_monster_group(
 	group.treasure_type_letter = tt_letter
 	group.initial_inventory = []
 	# Stamp the monster's catalog special_treasure spec (e.g. Giant Ant gold nuggets)
-	# for the stocker to roll into the lair hoard. Generation-time only (not persisted).
+	# for the stocker to roll into the lair hoard. Generation-time only (not
+	# persisted). This is a reference into the process-shared monster catalog
+	# (static since 2026-08-06) — read-only by contract; duplicate before any write.
 	var st_raw: Variant = md.get("special_treasure", {})
 	group.special_treasure = st_raw if st_raw is Dictionary else {}
 	return group

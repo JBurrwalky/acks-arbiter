@@ -133,6 +133,9 @@ func get_form_stats(form_key: String) -> Dictionary:
 	if _monster_registry == null or not _monster_registry.has_monster(monster_id):
 		push_error("FamiliarFormRegistry: form '%s' references unknown monster '%s'" % [form_key, monster_id])
 		return {}
+	# Reference into the process-shared monster catalog (static since
+	# 2026-08-06) — callers must treat it (and its nested dicts/arrays) as
+	# read-only; duplicate(true) before any write.
 	return _monster_registry.get_monster(monster_id)
 
 
