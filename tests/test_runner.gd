@@ -697,15 +697,21 @@ func _ready() -> void:
 	# into test results. Test-DB isolation redirects the DB, not settings.cfg;
 	# this closes that hole.
 	LLMManager.force_mock(true)
-	run()  # not awaited: run() now suspends internally (async-suite block,
-	# gdd-live-llm-integration.md §20 point 3) and resumes across later
-	# frames; the headless run stays alive because run() itself calls
+	run()  # not awaited: run() now suspends internally (one process_frame
+	# await per sync suite for memory reclamation, plus the async-suite
+	# block, gdd-live-llm-integration.md §20 point 3) and resumes across
+	# later frames; the headless run stays alive because run() itself calls
 	# get_tree().quit() once every suite (sync + async) has finished.
 
 
 func run() -> void:
 	var passed := 0
 	var failed := 0
+
+	# 2026-08-06 — leave _ready()'s scene-setup phase before the loop starts,
+	# so the per-suite free() below never removes a child while the tree is
+	# still setting up. Costs one frame.
+	await get_tree().process_frame
 
 	for suite in [_terrain_tests, _controller_tests, _climb_resolver_tests, _territory_cap_tests, _overseas_tests, _hybridization_tests, _strategic_disposition_tests, _ruler_action_catalog_tests, _ruler_ai_monthly_tests, _issue_decree_handler_tests, _ruler_crisis_lod_tests, _ruler_narration_state_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
@@ -1381,6 +1387,28 @@ func run() -> void:
 			passed += 1
 		else:
 			failed += 1
+		# 2026-08-06 — per-suite reclamation. All ~530 sync suites run inside
+		# one call with ZERO frame processing until the async block, so
+		# every queue_free()/call_deferred a suite issues accumulates in the
+		# engine MessageQueue for the whole run. At the async block's first
+		# await the queue is over its 32 MB cap and Godot's overflow dump
+		# (CallQueue::statistics, one "Object was deleted while awaiting a
+		# callback." line per dead-target message — 9,883 of them) corrupts
+		# the queue and segfaults (signal 11, exit 139), while the heap sits
+		# at a measured 9.13 GB peak (build_log 2026-08-06). Three-part fix:
+		# free() the suite as soon as its result is read (releases member-
+		# held data — parsed catalogs, registries — and auto-disconnects its
+		# signal wiring; safety swept 2026-08-06: no suite awaits, none
+		# stores self-bound callables into autoloads); clear GameLog, the
+		# one autoload accumulator suite-freeing cannot reach (it appends a
+		# duplicated payload per EventBus emission and clears only on
+		# session_ended, which almost no suite emits); and process one frame
+		# so the MessageQueue flushes incrementally — flush() silently skips
+		# dead-target messages, so the overflow dump never runs. Only the
+		# three async suites outlive the sync loop (awaited below).
+		suite.free()
+		GameLog.clear_for_tests()
+		await get_tree().process_frame
 
 	# ---------------------------------------------------------------------
 	# Async suites (gdd-live-llm-integration.md §20 point 3; conventions
