@@ -345,10 +345,26 @@
     "religious_orders_pattern": "the Bit-ili / Per-netjer (god-house/temple) of [power]: 'the Bit-ili of Tulrishu'.",
     "saints_pattern": "deified law-givers and the justified dead, on the temple-stele and in tomb-chapels; 'the Just [name]'.",
     "sample_deity_renames": {
-      "Argentus": "Arganzu (trade and the city)",
-      "Orlandus": "Urlanzu (iron-sworn)",
-      "Realta": "Rialtu (the mother)",
-      "Tulrius": "Tulrishu (sun and judgment)"
+      "Argentus": {
+        "gloss": "trade and the city",
+        "primary": "Arganzu",
+        "primary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron-sworn",
+        "primary": "Urlanzu",
+        "primary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "sun and judgment",
+        "primary": "Tulrishu",
+        "primary_family": "near_eastern"
+      }
     },
     "the_one": "Atharnu (< Punic Atharon < Aeternus; the great distant maker, honored through His ministers)",
     "worship_by_alignment": {

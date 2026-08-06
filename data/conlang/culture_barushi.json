@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian canon-morphs PRIMARY (family_near_eastern / hammuran, the akkadian column), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column), never real Mesopotamian gods or Shinto kami. The fused rite identifies the temple-power and the shrine-kami as one face: the sangu of the ziggurat and the kannushi of the torii keep the same powers. All three alignments.",
     "the_one": "Itarnu (Akkadian; Jp shrine-name Takamu-no-kami) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Jp Terashu) - the sun and judgment",
-      "Orlandus": "Urlandu (Jp Haganu) - iron, oath, war",
-      "Gaiandus": "Gayandu (Jp Iwanu) - the enduring earth and mountain",
-      "Numeno": "Numunu (Jp Amatsukazu) - sky and scribe-wisdom",
-      "Realta": "Rialtu (Jp Megumu) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Terashu",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Haganu",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Iwanu",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Amatsukazu",
+        "secondary_family": "east_asian",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Megumu",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn oath, Rialtu the merciful - at the ziggurat and the torii-grove alike, and names the Chaotic powers lemnu (evil) or aramitama (the wild spirits), warded; the law-stele and the kami-rite bind together",

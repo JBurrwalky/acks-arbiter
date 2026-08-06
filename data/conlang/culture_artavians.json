@@ -267,12 +267,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Old-Persian-shifted reflexes PRIMARY (the axsatran shifted stems: Turvasa, Urlaspa, Naumana, Arzanta, Asturna), Latinate Agrippan morphs SECONDARY (the agrippan canon keys: Tulrius, Orlandus, Argentus, Numeno, Realta), recognizably the same powers, never real Iranian/Roman gods. All three alignments (standard lens). The cardinal virtue is ARTA (Truth/Right-order); its opposite is DRAUGA (the Lie). The Persian fire-and-Arta cult is the spine; the Roman temple-rite and the pontifical college are the older western overlay - the crown keeps both the atash fire-altar and the templum god-house.",
     "the_one": "Asturna (Latin Aeternus / Itarnu) - the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (Latin Tulrius) - the sun and Arta, lamp of right-order; Lawful",
-      "Orlandus": "Urlaspa (Latin Orlandus) - the iron-oath, war and the cavalier; Lawful",
-      "Numeno": "Naumana (Latin Numeno) - the good mind, wisdom and the law; Lawful",
-      "Argentus": "Arzanta (Latin Argentus) - trade, the road and increase; Lawful",
-      "Gaiandus": "Gayanta (Latin Gaiandus) - the enduring earth and mountain",
-      "Realta": "Riyata (Latin Realta) - the Lady of Waters, mother and mercy"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulrius",
+        "secondary_family": "classical",
+        "gloss": "the sun and Arta, lamp of right-order; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandus",
+        "secondary_family": "classical",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numeno",
+        "secondary_family": "classical",
+        "gloss": "the good mind, wisdom and the law; Lawful"
+      },
+      "Argentus": {
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Argentus",
+        "secondary_family": "classical",
+        "gloss": "trade, the road and increase; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Realta",
+        "secondary_family": "classical",
+        "gloss": "the Lady of Waters, mother and mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Asturna the Wise Lord, Turvasa the just, Urlaspa of the sworn war, Riyata the merciful, Naumana of the law - upholding ARTA (Truth/Right-order) and naming the Chaotic powers the hosts of DRAUGA (the Lie), warded; the fire-altar and the law-stele bind alike, and the king's word is bond",

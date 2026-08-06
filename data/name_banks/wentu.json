@@ -343,11 +343,41 @@
     "religious_orders_pattern": "the Bit-ili (Akkadian god-house) or Miao (fitted Sinitic temple) of [power]: 'the Bit-ili of Tullaru', 'the Miao of Tuli'; the ancestral Ci (clan-shrine) for the zu beneath the temple-stele.",
     "saints_pattern": "deified law-givers and worthy officials enrolled both on the temple-stele and in the celestial register, honored at the ziggurat-terrace, the Ci (ancestral shrine), and the Miao; 'the Just [name]' / 'the Lord [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gayandu (Sin Gaidun) - the enduring earth, lord of mountains and the grain-altar",
-      "Numeno": "Numunu (Sin Numeng) - sky and scribe-wisdom, patron of the cuneiform-and-mandarin ministry",
-      "Orlandus": "Urlandu (Sin Aolan) - iron, oath, war",
-      "Realta": "Rialtu (Sin Lianta) - the mother, mercy",
-      "Tulrius": "Tullaru (Sin Tuli) - the sun and judgment, the Sun-Justice power of the stele and the celestial register"
+      "Gaiandus": {
+        "gloss": "the enduring earth, lord of mountains and the grain-altar",
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom, patron of the cuneiform-and-mandarin ministry",
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Aolan",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment, the Sun-Justice power of the stele and the celestial register",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Itarnu (Akk; Sin Aiteng) - the Highest Heaven and the great distant one, the source of the Mandate, honored not petitioned",
     "worship_by_alignment": {

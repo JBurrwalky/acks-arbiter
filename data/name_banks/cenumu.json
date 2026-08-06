@@ -356,10 +356,26 @@
     "religious_orders_pattern": "the Nemedonon (grove-shrine) of [power] in the deep forest: 'the Nemedonon of Toranon'; the thanksgiving-circle of the clans.",
     "saints_pattern": "the Tuath-spirits (the god-kin and forest-spirits) and the honored clan-mothers and ancestral heroes, kept in the grove-recital.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaianon (the enduring earth and forest; Lawful power)",
-      "Maraxus": "Marakson (the war-fire; Chaotic power)",
-      "Realta": "Realwen (the mother, clan-mother of the powers; Neutral-honored)",
-      "Tulrius": "Toranon (the sun, the day-keeper; Lawful power)"
+      "Gaiandus": {
+        "gloss": "the enduring earth and forest; Lawful power",
+        "primary": "Gaianon",
+        "primary_family": "celtic"
+      },
+      "Maraxus": {
+        "gloss": "the war-fire; Chaotic power",
+        "primary": "Marakson",
+        "primary_family": "celtic"
+      },
+      "Realta": {
+        "gloss": "the mother, clan-mother of the powers; Neutral-honored",
+        "primary": "Realwen",
+        "primary_family": "celtic"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the day-keeper; Lawful power",
+        "primary": "Toranon",
+        "primary_family": "celtic"
+      }
     },
     "the_one": "Eteronon (< Aeternus; fused Celtic Eternan / Iroquoian Aterhonon) - the Sky-Ancient-Above; acknowledged and set aside (Neutral), reviled as the far tyrant when Chaotic",
     "worship_by_alignment": {

@@ -252,11 +252,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Akkadian reflexes PRIMARY (family_near_eastern / hammuran morphs: Tullaru-, Urlandu-, Numunu-), Mayan morphs SECONDARY (family_mesoamerican.json theonym_sets.mayan: Tulax, Orlanab, Numench, aj-/ix- prefixed), never real Mesopotamian or Maya gods. Same shared pantheon, two registers. All three alignments. The witz (pyramid) and the ziggurat are one altar; the Long-Count calendar and the law-stele bind the sharru and the ajaw alike to the powers.",
     "the_one": "Itarnu (Akk; Maya Aj Ternaj) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (Maya Tulax) - the sun and judgment",
-      "Orlandus": "Urlandu (Maya Orlanab) - iron, oath, war",
-      "Gaiandus": "Gayandu (Maya Kayanab) - the enduring earth",
-      "Numeno": "Numunu (Maya Numench) - sky and scribe-wisdom",
-      "Realta": "Rialtu (Maya Ix Rialtaj) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Itarnu, Tullaru the just, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers lemnu (evil) or demonizes the Mayan Marakab/Wakix/Lusankaan, warded; the law-stele and the Long-Count calendar bind alike",

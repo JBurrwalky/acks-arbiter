@@ -365,11 +365,41 @@
     "religious_orders_pattern": "the Temenos/Mysteria (Hellenic precinct) or the Miao (Sinitic temple) of [power]: 'the Mysteries of Numenos', 'the Miao of Tuli-di'; the ancestral Ci (clan-shrine) for the zu.",
     "saints_pattern": "the Heroes (deified founders and sages, venerated at a heroon tomb-shrine) and the worthy officials enrolled in the celestial register, honored at the Ci (ancestral shrine) and the miao-temple; 'Heros [name]', 'the Lord [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiandros (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
-      "Numeno": "Numenos (Sinitic Numeng-jun) - air and sage-wisdom of the winds",
-      "Orlandus": "Orlandros (Sinitic Aolan-jun) - iron, oath, war",
-      "Realta": "Realtia (Sinitic Lianta-mu) - the mother, mercy",
-      "Tulrius": "Tulrios (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+      "Gaiandus": {
+        "gloss": "the enduring earth, lord of mountains",
+        "primary": "Gaiandros",
+        "primary_family": "classical",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air and sage-wisdom of the winds",
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "secondary": "Aolan-jun",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Realtia",
+        "primary_family": "classical",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice, the Sun-Justice Emperor",
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Aiternos (Hellenic, < Aeternus; Sinitic Aiteng, the Highest Heaven and source of the Mandate) - the One, unknowable source, honored and contemplated, not petitioned",
     "worship_by_alignment": {

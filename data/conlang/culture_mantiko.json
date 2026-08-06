@@ -257,11 +257,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Hellenic canon-morphs PRIMARY (the achillean column: Tulrios, Orlandros, Numenos, Gaiandros, Realtia, softened through Hellenic -os/-on/-eus and th/ph/kh), Japonic kami-morphs SECONDARY (the yamataian / family_east_asian.json japonic column: Terashi-no-kami, Hagane-no-kami, Iwane-no-kami, softened to Hellenic shape), never real Greek gods or Shinto kami. Wahellas seeds/shifts across all three alignments; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met at the temenos and the torii-shrine of the isle; the hierophant-and-kannushi (fused philosopher-priest and shrine-keeper) mediate, and the honored ancestral dead are kept at the household heroon and the clan-jinja.",
     "the_one": "Aiternos (< Aeternus; Hellenic Aiternos, Japonic kami-face Takami-no-kami) - the One, the unknowable source, the High-Heaven distant above the myriad powers; honored not petitioned, revered when Lawful, set aside when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Tulrios (the sun and just rule; Japonic face Terashio-no-kami, the Shining One; Lawful power)",
-      "Orlandus": "Orlandros (iron, oath and war; Japonic face Haganos-no-kami, the Steel One)",
-      "Gaiandus": "Gaiandros (the enduring earth-mountain; Japonic face Iwanos-no-kami, the Rock-Root; Lawful power)",
-      "Numeno": "Numenos (the sky-wisdom lord; Japonic face Amatkazos-no-kami)",
-      "Realta": "Realtia (the mercy-mother; Japonic face Megumihime; Neutral-honored)"
+      "Tulrius": {
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Terashio-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and just rule; Lawful power"
+      },
+      "Orlandus": {
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "secondary": "Haganos-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath and war"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandros",
+        "primary_family": "classical",
+        "secondary": "Iwanos-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth-mountain; Lawful power"
+      },
+      "Numeno": {
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "secondary": "Amatkazos-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the sky-wisdom lord"
+      },
+      "Realta": {
+        "primary": "Realtia",
+        "primary_family": "classical",
+        "secondary": "Megumihime",
+        "secondary_family": "east_asian",
+        "gloss": "the mercy-mother; Neutral-honored"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aiternos) and the Lawful powers - Tulrios the just, Orlandros of the sworn war, Gaiandros the enduring, Realtia the merciful - at the temenos and the sun-shrine; the philosopher's law and the warrior's honor-code bind alike, and the Chaotic powers are named the kakodaimones (evil spirits) and warded.",

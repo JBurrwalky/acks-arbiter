@@ -355,10 +355,26 @@
     "religious_orders_pattern": "the Nelok'tl (pyramid-grove) of [power]: 'the Nelok'tl of Marak'on', its steps dark with offering.",
     "saints_pattern": "the devouring ancestors and war-captains of the houses (the ek'tl), fed at the pyramid and the obsidian-stone.",
     "sample_deity_renames": {
-      "Maraxus": "Marak'on (the war-fire and conquest; chief venerated power, masc.)",
-      "Raptis": "Rap'ak'el (the blood-hunt, the Huntress; venerated, fem.)",
-      "Tulrius": "Tul'ak'on (the sun and law; DEMONIZED as the Burning-Eye, masc.)",
-      "Vacidus": "Wakidak'on (the devouring void; venerated, masc.)"
+      "Maraxus": {
+        "gloss": "the war-fire and conquest; chief venerated power, masc.",
+        "primary": "Marak'on",
+        "primary_family": "elvish"
+      },
+      "Raptis": {
+        "gloss": "the blood-hunt, the Huntress; venerated, fem.",
+        "primary": "Rap'ak'el",
+        "primary_family": "elvish"
+      },
+      "Tulrius": {
+        "gloss": "the sun and law; DEMONIZED as the Burning-Eye, masc.",
+        "primary": "Tul'ak'on",
+        "primary_family": "elvish"
+      },
+      "Vacidus": {
+        "gloss": "the devouring void; venerated, masc.",
+        "primary": "Wakidak'on",
+        "primary_family": "elvish"
+      }
     },
     "the_one": "Atyarnak'on (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -ak'on; among the overwhelmingly Chaotic Xilvaneth the One is the DEMONIZED enemy - 'the Sun-Jailer', the cold tyrant of the high sky who would cage the wild; revered only by the rare Lawful minority)",
     "worship_by_alignment": {

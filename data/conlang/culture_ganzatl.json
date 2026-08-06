@@ -259,12 +259,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Old-Persian-shifted Axsatran morphs PRIMARY (the culture_axsatran shifted set: Turvasa, Urlaspa, Naumana, Arzanta, Asturna), Mayan Ixalan morphs SECONDARY (family_mesoamerican theonym_sets.mayan: Tulax, Orlanab, Numench, Marakab), never real Iranian/Zoroastrian or Maya gods (no Ahura Mazda, Mithra, Itzamna, Kukulkan, Chaac). Shared pantheon, two registers married. The cardinal virtue from the Persian backbone is ARTA (Truth/Right-order); its opposite is DRAUGA (the Lie); the king's word is bond. The realm fuses the paradaida walled-garden rite and the witz pyramid blood-rite into one cult of the flowering offering. Worship vs demonization follows the culture's CURRENT alignment (see worship_by_alignment).",
     "the_one": "Asturna (< Aeternus / Axsatran Asturna; the Wise Lord Most High, upholder of Arta and source of the king's farnah-glory; Mayan substrate variant Aj Ternaj, the sky-most-high maker) - revered above His ministers when Lawful, set aside when Neutral",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (Mayan Tulax) - the sun and Arta, the lamp of right-order; Lawful",
-      "Numeno": "Naumana (Mayan Numench) - the good mind, sky-wisdom and the glyph-law; Lawful",
-      "Orlandus": "Urlaspa (Mayan Orlanab) - the iron-oath, war and the cavalier; Lawful",
-      "Argentus": "Arzanta (Mayan Arkanab) - trade, the road and increase; Lawful",
-      "Gaiandus": "Gayanta (Mayan Kayanab) - the enduring earth, the maize-jungle",
-      "Realta": "Riyata (Mayan Ix Rialtaj) - the Lady of Waters and the flowering moon, mother and mercy"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and Arta, the lamp of right-order; Lawful"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "the good mind, sky-wisdom and the glyph-law; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Argentus": {
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Arkanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "trade, the road and increase; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth, the maize-jungle"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Lady of Waters and the flowering moon, mother and mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the One (Asturna) and the Lawful powers - Turvasa the just, Urlaspa of the sworn war, Naumana of the glyph-law, Riyata the merciful - upholds ARTA (Truth) and names the Chaotic powers the hosts of DRAUGA the Lie (Marakhsha / Marakab, demonized), warded; the paridaida-garden and the witz-altar are tended as the flowering rite of right-order",

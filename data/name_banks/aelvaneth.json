@@ -359,10 +359,26 @@
     "religious_orders_pattern": "the Nemreth (star-grove) of [power]: 'the Nemreth of Tularon', under the silver trees.",
     "saints_pattern": "the elder-fathers and song-makers of the houses (the edhrath), honored at the grove and the white-stone.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaianaron (the enduring forest-earth; Lawful power)",
-      "Maraxus": "Marakharon (the war-fire, the ruin; Chaotic power)",
-      "Realta": "Realtarien (the mother, the mercy-star; Neutral-honored)",
-      "Tulrius": "Tularon (the sun and just light; Lawful power)"
+      "Gaiandus": {
+        "gloss": "the enduring forest-earth; Lawful power",
+        "primary": "Gaianaron",
+        "primary_family": "elvish"
+      },
+      "Maraxus": {
+        "gloss": "the war-fire, the ruin; Chaotic power",
+        "primary": "Marakharon",
+        "primary_family": "elvish"
+      },
+      "Realta": {
+        "gloss": "the mother, the mercy-star; Neutral-honored",
+        "primary": "Realtarien",
+        "primary_family": "elvish"
+      },
+      "Tulrius": {
+        "gloss": "the sun and just light; Lawful power",
+        "primary": "Tularon",
+        "primary_family": "elvish"
+      }
     },
     "the_one": "Aiternaron (< Proto-Elvish AtyarnA < Aeternus; the Star-Kindler, the Eldest; sacred-masculine ending -aron; revered when Lawful, set aside when Neutral, named the Long-Tyrant when Chaotic)",
     "worship_by_alignment": {

@@ -342,10 +342,26 @@
     "religious_orders_pattern": "the Bit-ili (god-house/temple) of [power]: 'the Bit-ili of Tullaru'.",
     "saints_pattern": "deified law-givers and heroes inscribed on the temple-stele; 'the Just [name]'.",
     "sample_deity_renames": {
-      "Argentus": "Argantu (trade and the city)",
-      "Lieta": "Littu (the grain)",
-      "Numeno": "Numunu (the scribe-wisdom)",
-      "Tulrius": "Tullaru (sun and judgment)"
+      "Argentus": {
+        "gloss": "trade and the city",
+        "primary": "Argantu",
+        "primary_family": "near_eastern"
+      },
+      "Lieta": {
+        "gloss": "the grain",
+        "primary": "Littu",
+        "primary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "the scribe-wisdom",
+        "primary": "Numunu",
+        "primary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "sun and judgment",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern"
+      }
     },
     "the_one": "Itarnu (< Aeternus; the great distant one, honored not petitioned)",
     "worship_by_alignment": {

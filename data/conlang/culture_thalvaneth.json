@@ -211,10 +211,26 @@
     "_note": "Deity-names are the Thalvaneth (smooth Mediterranean) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real Greek/Roman/Punic gods; they carry the sacred GENDERED ending -aros (masc) / -aressa (fem) - the divine class, distinct from mortal -os/-ios/-a and common-noun -os. The Thalvaneth are predominantly Neutral (weights L20/N60/C20); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment), but the cultural default is the worldly Neutral coast - the genos-ancestors, the sea-spirits and the sea-mother foremost. The alseos (sea-grove shrine) above the harbor is the altar.",
     "the_one": "Aiternaros (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -aros; the distant Star-Father; among the predominantly Neutral Thalvaneth honored from afar but rarely central; revered when Lawful, named the Sky-Tyrant when Chaotic)",
     "sample_deity_renames": {
-      "Realta": "Rialtaressa (the mother, mercy, patroness of safe voyage; Neutral-honored, fem.)",
-      "Tulrius": "Tularos (the sun and just light; Lawful power, masc.)",
-      "Numeno": "Numenaros (sky-wisdom and navigation; Lawful power, masc.)",
-      "Maraxus": "Maraksaros (the storm-war, the corsair's ruin; Chaotic power, masc.)"
+      "Realta": {
+        "primary": "Rialtaressa",
+        "primary_family": "elvish",
+        "gloss": "the mother, mercy, patroness of safe voyage; Neutral-honored, fem."
+      },
+      "Tulrius": {
+        "primary": "Tularos",
+        "primary_family": "elvish",
+        "gloss": "the sun and just light; Lawful power, masc."
+      },
+      "Numeno": {
+        "primary": "Numenaros",
+        "primary_family": "elvish",
+        "gloss": "sky-wisdom and navigation; Lawful power, masc."
+      },
+      "Maraxus": {
+        "primary": "Maraksaros",
+        "primary_family": "elvish",
+        "gloss": "the storm-war, the corsair's ruin; Chaotic power, masc."
+      }
     },
     "worship_by_alignment": {
       "Neutral": "the worldly majority are ambivalent toward both poles; they foreground the genos-ancestors (the edhros), the sea-spirits and the sea-mother Numyaressa, and the local lore-saints, honoring the One only distantly",

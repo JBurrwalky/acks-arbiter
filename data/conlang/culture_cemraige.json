@@ -256,12 +256,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - CELTIC (Insular / Goidelic) reflexes PRIMARY (family_celtic theonym_set), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Celtic/Egyptian gods. All three alignments: the Lawful keep the sun-and-oath powers, the Neutral the ancestral war-dead and the land and river powers, the Chaotic the war-fury and raven powers; the druidic drui/fili and the Egyptian hem-netjer mediate side by side.",
     "the_one": "Eternan (Eg. Atjernaa) - the Ancient One beyond the god-kin, the hidden distant maker, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Eg. Tjuraa) - the sun, the just brightness and right-order",
-      "Orlandus": "Orlann (Eg. Oranetj) - the iron-oath, battle, war",
-      "Gaiandus": "Gaian (Eg. Geandaa) - the enduring land, the black alluvial earth",
-      "Numeno": "Numan (Eg. Numenaa) - air, lightning and sky-wisdom",
-      "Realta": "Realtan (Eg. Riaret) - the mother, the mercy-star, healing",
-      "Delorum": "Dolar (Eg. Djeroraa) - death, the rest of the dead, lord of the peaceful dead"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun, the just brightness and right-order"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Oranetj",
+        "secondary_family": "near_eastern",
+        "gloss": "the iron-oath, battle, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Geandaa",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring land, the black alluvial earth"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numenaa",
+        "secondary_family": "near_eastern",
+        "gloss": "air, lightning and sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, the mercy-star, healing"
+      },
+      "Delorum": {
+        "primary": "Dolar",
+        "primary_family": "celtic",
+        "secondary": "Djeroraa",
+        "secondary_family": "near_eastern",
+        "gloss": "death, the rest of the dead, lord of the peaceful dead"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan, Toran the just (the sun above the feather of right-order), Orlann of the sworn oath-war, Realtan the merciful - and names the Chaotic powers as the warded ill-kin (Goid. namnamed at the cairn; Eg. framed as -kin of the great serpent Hefau), unworshipped; the fian's sworn oath and the just over-king are the social ideal",

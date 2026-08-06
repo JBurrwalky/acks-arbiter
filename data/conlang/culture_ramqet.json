@@ -249,10 +249,26 @@
     "_note": "Deity-names are second-order phoneme-morphs: the canonical Agrippan pantheon as morphed into Punic (Barcan) trade-forms, then drifted again through Akkadian phonology with an Egyptian solar-funerary coloring - never real Mesopotamian or Egyptian gods. Lawful/Neutral/Chaotic; a law-stele cult over a solar and tomb-cult overlay.",
     "the_one": "Atharnu (< Punic Atharon < Aeternus; the great distant maker, honored through His ministers)",
     "sample_deity_renames": {
-      "Tulrius": "Tulrishu (sun and judgment)",
-      "Orlandus": "Urlanzu (iron-sworn)",
-      "Argentus": "Arganzu (trade and the city)",
-      "Realta": "Rialtu (the mother)"
+      "Tulrius": {
+        "primary": "Tulrishu",
+        "primary_family": "near_eastern",
+        "gloss": "sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Urlanzu",
+        "primary_family": "near_eastern",
+        "gloss": "iron-sworn"
+      },
+      "Argentus": {
+        "primary": "Arganzu",
+        "primary_family": "near_eastern",
+        "gloss": "trade and the city"
+      },
+      "Realta": {
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "gloss": "the mother"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atharnu the distant maker, Tulrishu the just-judge of the law-stele, Urlanzu of the sworn iron, Rialtu the merciful mother - inscribed on the stele and honored in the sun-temple; the Chaotic powers are named -lemnu (evil) and warded.",

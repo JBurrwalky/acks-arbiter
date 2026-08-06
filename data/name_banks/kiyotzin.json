@@ -360,11 +360,41 @@
     "religious_orders_pattern": "the Jinja (Japonic shrine) within its torii and sacred grove, or the Teokari (Nahuatl pyramid-temple) crowning the sun-pyramid, of [power]: 'the Jinja of Terashi-no-kami', 'the Teokari of Takebi-no-kami'.",
     "saints_pattern": "great ancestors and fallen heroes enshrined as kami (the eirei, honored dead) at the clan jinja, and the offered captives and conqueror-tlatoque honored as sun-feeding companions at the teocalli and the skull-rack.",
     "sample_deity_renames": {
-      "Gaiandus": "Iwane-no-kami (Nahuatl Gaiantli) - the Rock-Root, the enduring mountain",
-      "Numeno": "Amatsukaze-no-kami (Nahuatl Numenatl) - the Heaven-Wind, sky and wisdom",
-      "Orlandus": "Hagane-no-kami (Nahuatl Orlantzin) - the Steel One, the blade-oath and war",
-      "Realta": "Megumi-hime (Nahuatl Rialtzin) - the Mercy-Maiden, mother and healing",
-      "Tulrius": "Terashi-no-kami (Nahuatl Tolratl) - the Shining One, sun and right-rule"
+      "Gaiandus": {
+        "gloss": "the Rock-Root, the enduring mountain",
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Gaiantli",
+        "secondary_family": "mesoamerican"
+      },
+      "Numeno": {
+        "gloss": "the Heaven-Wind, sky and wisdom",
+        "primary": "Amatsukaze-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Numenatl",
+        "secondary_family": "mesoamerican"
+      },
+      "Orlandus": {
+        "gloss": "the Steel One, the blade-oath and war",
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Orlantzin",
+        "secondary_family": "mesoamerican"
+      },
+      "Realta": {
+        "gloss": "the Mercy-Maiden, mother and healing",
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian",
+        "secondary": "Rialtzin",
+        "secondary_family": "mesoamerican"
+      },
+      "Tulrius": {
+        "gloss": "the Shining One, sun and right-rule",
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Tolratl",
+        "secondary_family": "mesoamerican"
+      }
     },
     "the_one": "Takami-no-kami (Japonic; Nahuatl Aiternatl) - the High-Heaven One, distant above the myriad kami, honored not petitioned (and, where the realm turns Chaotic, reviled with the Nahuatl substrate as the Tyrant-Sun)",
     "worship_by_alignment": {

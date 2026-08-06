@@ -216,10 +216,26 @@
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Akkadian phonology (-us/-ius -> -u/-ishu; o -> u; v -> b; doubling) - recognizably the same powers, never real Mesopotamian gods. All three alignments.",
     "the_one": "Itarnu (< Aeternus; the great distant one, honored not petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Tullaru (sun and judgment)",
-      "Numeno": "Numunu (the scribe-wisdom)",
-      "Lieta": "Littu (the grain)",
-      "Argentus": "Argantu (trade and the city)"
+      "Tulrius": {
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "gloss": "sun and judgment"
+      },
+      "Numeno": {
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "gloss": "the scribe-wisdom"
+      },
+      "Lieta": {
+        "primary": "Littu",
+        "primary_family": "near_eastern",
+        "gloss": "the grain"
+      },
+      "Argentus": {
+        "primary": "Argantu",
+        "primary_family": "near_eastern",
+        "gloss": "trade and the city"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers of the canon - Itarnu the distant, Tullaru the just sun-judge, Urlandu of the sworn war, Rialtu the merciful - and names the Chaotic powers -lemnu (evil), warded by the law-stele and the temple rite",

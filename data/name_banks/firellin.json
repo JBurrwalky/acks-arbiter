@@ -354,11 +354,41 @@
     "religious_orders_pattern": "the Nemed (Celtic sacred grove) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Nemed of Toran', 'the Temenos of Tulrios'.",
     "saints_pattern": "the deified ri and the heroes of the ruling cland (the war-dead honored at the cairn / the dun), and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
     "sample_deity_renames": {
-      "Gaiandus": "Gaian (Hell. Gaiandros) - the enduring earth, cold, endurance",
-      "Numeno": "Numan (Hell. Numenos) - air, lightning, sky-wisdom",
-      "Orlandus": "Orlann (Hell. Orlandros) - iron, oath, war",
-      "Realta": "Realtan (Hell. Realtia) - the mother, mercy, healing",
-      "Tulrius": "Toran (Hell. Tulrios) - the sun, fire, and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth, cold, endurance",
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "air, lightning, sky-wisdom",
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numenos",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Orlandros",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, healing",
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Realtia",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun, fire, and justice",
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tulrios",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Eternan (Celtic; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

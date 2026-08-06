@@ -208,10 +208,26 @@
     "_note": "Deity-names are the Gormdurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real dwarf-gods; sacred ending -drumm (masc) / -drumma (fem). ANCESTOR-CENTRIC like all dwarves (daily prayer to the durnad and fadrun at the tomb-hall), but the Gormdurn lean hardest into FIRE: the forge (Orlunndrumm) and, in the Chaotic fire-cult, the forge-fire/volcano power Marakkadrumm - honored with HUMAN SACRIFICE cast into the volcanoes. The drumgrund and the caldera's edge are both altars.",
     "the_one": "Atrunndrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at festivals, distant from daily prayer; named the Cold-Vault by the fire-cult)",
     "sample_deity_renames": {
-      "Orlandus": "Orlunndrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
-      "Maraxus": "Marakkadrumm (the forge-fire and the volcano; the fire-cult's power, fed with human sacrifice; Chaotic, masc.)",
-      "Gaiandus": "Gundunndrumm (the mountain, the mine, the deep earth; honored, masc.)",
-      "Realta": "Reltaddrumma (the hearth-mother, mercy; honored, fem.)"
+      "Orlandus": {
+        "primary": "Orlunndrumm",
+        "primary_family": "dwarven",
+        "gloss": "the forge, the smith, oaths and iron; most honored god, masc."
+      },
+      "Maraxus": {
+        "primary": "Marakkadrumm",
+        "primary_family": "dwarven",
+        "gloss": "the forge-fire and the volcano; the fire-cult's power, fed with human sacrifice; Chaotic, masc."
+      },
+      "Gaiandus": {
+        "primary": "Gundunndrumm",
+        "primary_family": "dwarven",
+        "gloss": "the mountain, the mine, the deep earth; honored, masc."
+      },
+      "Realta": {
+        "primary": "Reltaddrumma",
+        "primary_family": "dwarven",
+        "gloss": "the hearth-mother, mercy; honored, fem."
+      }
     },
     "worship_by_alignment": {
       "Neutral": "the dwarven norm: daily prayer to the honored dead (durnad) and clan-fathers (fadrun); the gods at yearly/seasonal festivals, foremost the forge (Orlunndrumm) and the mountain/mine (Gundunndrumm); the volcano-fire (Marakkadrumm) honored AND feared, fed offerings at the caldera",

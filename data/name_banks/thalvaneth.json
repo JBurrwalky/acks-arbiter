@@ -366,10 +366,26 @@
     "religious_orders_pattern": "the Alseos (sea-grove shrine) of [power]: 'the Alseos of Rialtaressa', above the harbor.",
     "saints_pattern": "the elder-navigators and lore-singers of the houses (the edhros), honored at the shore-shrine and the white headland.",
     "sample_deity_renames": {
-      "Maraxus": "Maraksaros (the storm-war, the corsair's ruin; Chaotic power, masc.)",
-      "Numeno": "Numenaros (sky-wisdom and navigation; Lawful power, masc.)",
-      "Realta": "Rialtaressa (the mother, mercy, patroness of safe voyage; Neutral-honored, fem.)",
-      "Tulrius": "Tularos (the sun and just light; Lawful power, masc.)"
+      "Maraxus": {
+        "gloss": "the storm-war, the corsair's ruin; Chaotic power, masc.",
+        "primary": "Maraksaros",
+        "primary_family": "elvish"
+      },
+      "Numeno": {
+        "gloss": "sky-wisdom and navigation; Lawful power, masc.",
+        "primary": "Numenaros",
+        "primary_family": "elvish"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, patroness of safe voyage; Neutral-honored, fem.",
+        "primary": "Rialtaressa",
+        "primary_family": "elvish"
+      },
+      "Tulrius": {
+        "gloss": "the sun and just light; Lawful power, masc.",
+        "primary": "Tularos",
+        "primary_family": "elvish"
+      }
     },
     "the_one": "Aiternaros (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -aros; the distant Star-Father; among the predominantly Neutral Thalvaneth honored from afar but rarely central; revered when Lawful, named the Sky-Tyrant when Chaotic)",
     "worship_by_alignment": {

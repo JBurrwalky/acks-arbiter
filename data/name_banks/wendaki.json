@@ -342,11 +342,31 @@
     "religious_orders_pattern": "few built temples - the medicine-cairn or vision-bluff of [power] on a high place: 'the Medicine-Bluff of Maraksa'.",
     "saints_pattern": "the great chiefs and vision-seers who became sky- and animal-spirits; honored at the burial-scaffold and the medicine-cairn.",
     "sample_deity_renames": {
-      "Dementus": "Tamawi (the storm-thunder; Chaotic power)",
-      "Gaiandus": "Kayanta (the enduring earth; Lawful power)",
-      "Maraxus": "Maraksa (the war-fire, the raider; Chaotic power)",
-      "Realta": "Reawina (the mother, the life-giver; Neutral-honored)",
-      "Tulrius": "Torawi (the sun, justice; Lawful power)"
+      "Dementus": {
+        "gloss": "the storm-thunder; Chaotic power",
+        "primary": "Tamawi",
+        "primary_family": "north_american"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth; Lawful power",
+        "primary": "Kayanta",
+        "primary_family": "north_american"
+      },
+      "Maraxus": {
+        "gloss": "the war-fire, the raider; Chaotic power",
+        "primary": "Maraksa",
+        "primary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the mother, the life-giver; Neutral-honored",
+        "primary": "Reawina",
+        "primary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the sun, justice; Lawful power",
+        "primary": "Torawi",
+        "primary_family": "north_american"
+      }
     },
     "the_one": "Ateruna (< Aeternus; the Great-Above - acknowledged as the distant maker when Lawful or Neutral, reviled as the cold sky-tyrant when Chaotic)",
     "worship_by_alignment": {

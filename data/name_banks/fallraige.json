@@ -345,11 +345,41 @@
     "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Templum / Collegium (Latinate) of [power]: 'the Nemed of Toran', 'the Collegium of Tulrius'.",
     "saints_pattern": "the deified clan-dead (the noble sinsir of the ruling cland, honored at the cairn and the nemed) and the Latin Divus/Diva (deified founders and law-givers of the chartered cities, inscribed on the senate-stele).",
     "sample_deity_renames": {
-      "Gaiandus": "Gaian (Lat Gaiandus) - the enduring earth",
-      "Numeno": "Numan (Lat Numeno / Numenius) - sky and law-wisdom",
-      "Orlandus": "Orlann (Lat Orlandus) - iron, oath, war",
-      "Realta": "Realtan (Lat Realta) - the mother, mercy",
-      "Tulrius": "Toran (Lat Tulrius) - the sun, fire and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "sky and law-wisdom",
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numeno",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Orlandus",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Realta",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun, fire and justice",
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tulrius",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Eternan (Goidelic; Lat Aeternus) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

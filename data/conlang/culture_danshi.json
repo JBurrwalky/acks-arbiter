@@ -260,12 +260,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Old-Persian-shifted reflexes PRIMARY (the Axsatran set: Turvasa, Urlaspa, Naumana, Arzanta, Gayanta, Riyata, Asturna), Sinitic morphs SECONDARY (the Jinxian / family_east_asian sinitic set: Tuli-di, Gaidun-di, Numeng-jun, Lianta-mu), recognizably the same powers under two faces, never real Iranian/Zoroastrian/Chinese gods. Lawful henotheist but TOLERANT (the silk-road empire shelters its subject cults): Asturna the Wise Lord Most High upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Mandate of Heaven (morphed Tian-farnah) legitimizes the Shah; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie. All three alignments are playable.",
     "the_one": "Asturna (< Aeternus / the Persian-shifted Itarnu; the Sinitic face Aiteng, the Highest Heaven) - the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory and the Mandate, revered above His ministers, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (Sinitic Tuli-di) - the sun and Arta, lamp of right-order; Lawful",
-      "Orlandus": "Urlaspa (Sinitic Aolan) - the iron-oath, war and the cavalier; Lawful",
-      "Numeno": "Naumana (Sinitic Numeng-jun) - the good mind, wisdom and the law; Lawful",
-      "Argentus": "Arzanta (Sinitic Argan) - trade, the silk-road and increase; Lawful",
-      "Gaiandus": "Gayanta (Sinitic Gaidun-di) - the enduring earth and mountain",
-      "Realta": "Riyata (Sinitic Lianta-mu) - the Lady of Waters, mother and mercy"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and Arta, lamp of right-order; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Aolan",
+        "secondary_family": "east_asian",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian",
+        "gloss": "the good mind, wisdom and the law; Lawful"
+      },
+      "Argentus": {
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Argan",
+        "secondary_family": "east_asian",
+        "gloss": "trade, the silk-road and increase; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian",
+        "gloss": "the Lady of Waters, mother and mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Asturna the Wise Lord, Turvasa of Arta, Urlaspa of the sworn war, Riyata the merciful - upholds Arta against Drauga the Lie, and names the Chaotic powers the hosts of the Lie, warded; the Shah's farnah and the Mandate of Heaven bind the realm.",

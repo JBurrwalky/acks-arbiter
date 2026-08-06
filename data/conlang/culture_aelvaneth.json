@@ -211,10 +211,26 @@
     "_note": "Deity-names are the Aelvaneth (smooth) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real gods; they carry the sacred GENDERED ending -aron (masc) / -arien (fem) - the divine class, distinct from mortal -ion/-iel and common-noun -ath. The Aelvaneth are predominantly Lawful (weights L70/N20/C10), though a realm can seed or drift to Neutral or Chaotic; the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment). The nemreth (star-grove) under the silver trees is the altar; the edhrath (ancestral dead) and the forest-spirits are ever-honored.",
     "the_one": "Aiternaron (< Proto-Elvish AtyarnA < Aeternus; the Star-Kindler, the Eldest; sacred-masculine ending -aron; revered when Lawful, set aside when Neutral, named the Long-Tyrant when Chaotic)",
     "sample_deity_renames": {
-      "Tulrius": "Tularon (the sun and just light; Lawful power)",
-      "Gaiandus": "Gaianaron (the enduring forest-earth; Lawful power)",
-      "Realta": "Realtarien (the mother, the mercy-star; Neutral-honored)",
-      "Maraxus": "Marakharon (the war-fire, the ruin; Chaotic power)"
+      "Tulrius": {
+        "primary": "Tularon",
+        "primary_family": "elvish",
+        "gloss": "the sun and just light; Lawful power"
+      },
+      "Gaiandus": {
+        "primary": "Gaianaron",
+        "primary_family": "elvish",
+        "gloss": "the enduring forest-earth; Lawful power"
+      },
+      "Realta": {
+        "primary": "Realtarien",
+        "primary_family": "elvish",
+        "gloss": "the mother, the mercy-star; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Marakharon",
+        "primary_family": "elvish",
+        "gloss": "the war-fire, the ruin; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "the high-elven court reveres the One (Aiternaron) and the Lawful powers (Tularon, Orlandaron, Gaianaron, Numenaron), demonize the Chaotic powers",

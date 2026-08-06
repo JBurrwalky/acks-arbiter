@@ -256,11 +256,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Celtic Goidelic reflexes PRIMARY (family_celtic.json theonym_set.forms), Mayan variants SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real Celtic/Maya gods (no Lugh, Brigid, Dagda; no Itzamna, Kukulkan, Chaac, Kinich Ahau). Shared pantheon, two registers. Xochidon allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Goidelic nemed (sacred grove) and the Maya witz (pyramid) are both altars; the Long-Count calendar and the bardic-druidic lore bind the ri to the powers.",
     "the_one": "Eternan (Goidelic; Maya Aj Ternaj) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Toran (Maya Tulax) - the sun and justice",
-      "Orlandus": "Orlann (Maya Orlanab) - iron, oath, war",
-      "Gaiandus": "Gaian (Maya Kayanab) - the enduring earth, the maize-ground",
-      "Numeno": "Numan (Maya Numench) - air, lightning, sky-wisdom",
-      "Realta": "Realtan (Maya Ix Rialtaj) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and justice"
+      },
+      "Orlandus": {
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth, the maize-ground"
+      },
+      "Numeno": {
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "air, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Eternan the One foremost, Toran the just, Orlann of the sworn war, Realtan the merciful - and names the Chaotic powers demons to be warded; the bardic law-lore and the Long-Count rite bind alike",

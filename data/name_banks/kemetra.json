@@ -339,10 +339,26 @@
     "religious_orders_pattern": "the Per-netjer (god's-house/temple) of [power]: 'the Per-netjer of Tjuraa'.",
     "saints_pattern": "the deified dead (akhu) and god-kings, venerated at tomb-temples; 'the justified [name]' (maa-kheru).",
     "sample_deity_renames": {
-      "Delorum": "Djeroraa (lord of the peaceful dead)",
-      "Raptis": "Rapetj (the red hunter)",
-      "Realta": "Riaret (the mother)",
-      "Tulrius": "Tjuraa (sun and right-order)"
+      "Delorum": {
+        "gloss": "lord of the peaceful dead",
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern"
+      },
+      "Raptis": {
+        "gloss": "the red hunter",
+        "primary": "Rapetj",
+        "primary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother",
+        "primary": "Riaret",
+        "primary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "sun and right-order",
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern"
+      }
     },
     "the_one": "Atjernaa (< Aeternus; the hidden distant maker, honored not petitioned)",
     "worship_by_alignment": {

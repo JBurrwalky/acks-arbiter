@@ -344,11 +344,41 @@
     "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Cill (church/cell), or the Miao (Sinitic temple) of [power]: 'the Nemed of Toran', 'the Miao of Tuli-di'; the ancestral Ci (Sinitic clan-shrine) for the zu.",
     "saints_pattern": "the deified war-dead and ri of the Goidelic cland, honored at the nemed-grove and the cill; and the worthy officials and heroes of the silk-empire enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaian (Sinitic Gaidun-di) - the enduring earth, lord of mountains",
-      "Numeno": "Numan (Sinitic Numeng-jun) - air, lightning, sky-wisdom",
-      "Orlandus": "Orlann (Sinitic Aolan-jun) - iron, oath, war",
-      "Realta": "Realtan (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy",
-      "Tulrius": "Toran (Sinitic Tuli-di) - the sun and justice, the Sun-Justice Emperor"
+      "Gaiandus": {
+        "gloss": "the enduring earth, lord of mountains",
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air, lightning, sky-wisdom",
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Aolan-jun",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, the Mother of Mercy",
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and justice, the Sun-Justice Emperor",
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Eternan (Celtic; Sinitic Aiteng) - the distant Ancient One, the Highest Heaven, honored not petitioned",
     "worship_by_alignment": {

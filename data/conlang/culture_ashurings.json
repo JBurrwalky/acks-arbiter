@@ -251,11 +251,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Gothic Germanic reflexes PRIMARY (family_germanic theonym_ancestors, the gothic column), Akkadian variants SECONDARY (the family_near_eastern / hammuran morphs), never real Germanic/Mesopotamian gods. Alignment PROVISIONAL (Lawful/Neutral): the Germanic war-oath order meets the Akkadian law-stele tradition.",
     "the_one": "Aiterns (Gothic; Akk Itarnu) - the distant Ancient One, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Thulrs (Akk Tullaru) - the sun and judgment",
-      "Orlandus": "Erlands (Akk Urlandu) - iron, oath, war",
-      "Gaiandus": "Gauands (Akk Gayandu) - the enduring earth",
-      "Numeno": "Numins (Akk Numunu) - sky and scribe-wisdom",
-      "Realta": "Riala (Akk Rialtu) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Tullaru",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun and judgment"
+      },
+      "Orlandus": {
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Urlandu",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gayandu",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Numunu",
+        "secondary_family": "near_eastern",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Rialtu",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterns, Thulrs the just, Erlands of the sworn war, Riala the merciful - and names the Chaotic powers skohsla (demons), warded; the war-oath and the law-stele bind alike",

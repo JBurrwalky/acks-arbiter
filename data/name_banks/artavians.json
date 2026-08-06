@@ -374,12 +374,48 @@
     "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashana), woven with the Roman Kollegia ([college] of [power]): 'the Atashana of Turvasa', 'the Kollegia of the Dawn Throne'; the magi keep the ever-burning fire (Atar) and the pontifices keep the older templum-rite.",
     "saints_pattern": "the honest dead and the just kings, kept as fravashi (fore-spirits) and petitioned at the fire-altar; the deified founders of the western cities (Diva [name], the Roman divus, Persianized); 'the Arta-true [name]' (the righteous [name]).",
     "sample_deity_renames": {
-      "Argentus": "Arzanta (Latin Argentus) - trade, the road and increase; Lawful",
-      "Gaiandus": "Gayanta (Latin Gaiandus) - the enduring earth and mountain",
-      "Numeno": "Naumana (Latin Numeno) - the good mind, wisdom and the law; Lawful",
-      "Orlandus": "Urlaspa (Latin Orlandus) - the iron-oath, war and the cavalier; Lawful",
-      "Realta": "Riyata (Latin Realta) - the Lady of Waters, mother and mercy",
-      "Tulrius": "Turvasa (Latin Tulrius) - the sun and Arta, lamp of right-order; Lawful"
+      "Argentus": {
+        "gloss": "trade, the road and increase; Lawful",
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Argentus",
+        "secondary_family": "classical"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandus",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "the good mind, wisdom and the law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numeno",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandus",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters, mother and mercy",
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Realta",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, lamp of right-order; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulrius",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Asturna (Latin Aeternus / Itarnu) - the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory, honored not petitioned",
     "worship_by_alignment": {

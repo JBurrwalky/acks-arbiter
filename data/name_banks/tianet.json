@@ -346,11 +346,41 @@
     "religious_orders_pattern": "the Per-netjer (god's-house/river-temple) of [power]: 'the Per-netjer of Tjuraa'; the celestial Miao (temple) of the same power for the bureau: 'the Miao of Tuli-di'.",
     "saints_pattern": "the deified god-kings and akhu (the justified dead; maa-kheru) venerated at the tomb-temples, and the worthy officials and deified heroes enrolled in the celestial register, honored at the Ci (ancestral shrine) and the Miao.",
     "sample_deity_renames": {
-      "Delorum": "Djeroraa (Sinitic Delu) - lord of the peaceful dead, the funerary judge",
-      "Gaiandus": "Gauandj (Sinitic Gaidun-di) - the enduring earth and the river-flood, lord of mountains and grain",
-      "Numeno": "Numenaa (Sinitic Numeng-jun) - sky-wisdom and the scribal arts, the Sage Lord of winds",
-      "Realta": "Riaret (Sinitic Lianta-mu) - the mother, mercy, the Mother of Mercy",
-      "Tulrius": "Tjuraa (Sinitic Tuli-di) - the sun-disc and right-order; the Sun-Justice Emperor of the celestial bureau"
+      "Delorum": {
+        "gloss": "lord of the peaceful dead, the funerary judge",
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Delu",
+        "secondary_family": "east_asian"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and the river-flood, lord of mountains and grain",
+        "primary": "Gauandj",
+        "primary_family": "near_eastern",
+        "secondary": "Gaidun-di",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "sky-wisdom and the scribal arts, the Sage Lord of winds",
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, the Mother of Mercy",
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun-disc and right-order; the Sun-Justice Emperor of the celestial bureau",
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Atjernaa (Egyptian; < Aeternus; Sinitic Aiteng) - the hidden distant maker and Highest Heaven, source of the Mandate, honored not petitioned",
     "worship_by_alignment": {

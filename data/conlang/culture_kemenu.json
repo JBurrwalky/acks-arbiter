@@ -257,13 +257,55 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (abydosian sample_deity_renames, via Egyptian phonology: l->r, v->w, -us/-a -> -aa/-et, dj/tj/kh flavor), Plains canon-morphs SECONDARY (family_north_american theonym_sets.plains / numinan), never real Egyptian or Plains gods. Same shared pantheon, two name-sets for the two ancestries. Alignment any of Lawful/Neutral/Chaotic (per the 2026-06-27 update); the realm's stance follows its CURRENT alignment (see worship_by_alignment). The solar disc of the river-temple rides over the horse-and-eagle banner of the plains; the powers are met both in the built per-netjer of the river-cities and at the open-sky medicine-cairn of the herds.",
     "the_one": "Atjernaa (Egyptian; Plains Ateruna) - the hidden distant maker, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (Plains Torawi) - the sun-disc and right-order",
-      "Delorum": "Djeroraa (Plains Dolawa) - lord of the peaceful dead",
-      "Realta": "Riaret (Plains Reawina) - the mother, mercy",
-      "Numeno": "Numenaa (Plains Nimawi) - air, sky-wisdom and the scribe",
-      "Orlandus": "Oranetj (Plains Olanta) - iron, oath, war",
-      "Gaiandus": "Gayandaa (Plains Kayanta) - the enduring earth",
-      "Raptis": "Rapetj (Plains Rapita) - the red hunter of the herds"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Torawi",
+        "secondary_family": "north_american",
+        "gloss": "the sun-disc and right-order"
+      },
+      "Delorum": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Dolawa",
+        "secondary_family": "north_american",
+        "gloss": "lord of the peaceful dead"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Reawina",
+        "secondary_family": "north_american",
+        "gloss": "the mother, mercy"
+      },
+      "Numeno": {
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american",
+        "gloss": "air, sky-wisdom and the scribe"
+      },
+      "Orlandus": {
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Olanta",
+        "secondary_family": "north_american",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gayandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american",
+        "gloss": "the enduring earth"
+      },
+      "Raptis": {
+        "primary": "Rapetj",
+        "primary_family": "near_eastern",
+        "secondary": "Rapita",
+        "secondary_family": "north_american",
+        "gloss": "the red hunter of the herds"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa, Tjuraa the just sun, Oranetj of the sworn war, Riaret the merciful, Gayandaa the enduring earth - through the river-temple's offerings and the law of right-order (maat); names the Chaotic powers the -kin of the great serpent Hefau, warded; the solar disc and the medicine-cairn bind alike",

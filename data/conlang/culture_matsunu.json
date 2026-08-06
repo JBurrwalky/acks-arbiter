@@ -257,11 +257,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Japonic native-kami canon-morphs PRIMARY (family_east_asian.json theonym_sets.japonic, the yamataian column: Terashi-no-kami, Hagane-no-kami, Iwane-no-kami, Amatsukaze-no-kami, Megumi-hime, Takami-no-kami), Woodland morphs SECONDARY (family_north_american.json theonym_sets.woodland, the oronan column, softened to Japonic CV shape), never real Shinto kami or Iroquois gods. The fused rite identifies the shrine-kami and the forest-spirit as one face - the kami and the forest-spirit as one: the kannushi of the torii and the rotihontsa faithkeeper of the rite-longhouse keep the same powers. All three alignments; the kami pervade all things, the forest- and clan-spirits dwell in the deep wood, and the ancestral dead are honored at the household shrine and the burial-grove.",
     "the_one": "Takami-no-kami (Japonic; Woodland grove-name Terano-Aterhon) - the High-Heaven One, distant above the myriad kami and forest-spirits, honored not petitioned; revered when Lawful, set aside when Neutral",
     "sample_deity_renames": {
-      "Tulrius": "Terashi-no-kami (Woodland Tarano) - the Shining One, sun and right-rule, the day-keeper; Lawful power",
-      "Orlandus": "Hagane-no-kami (Woodland Orano) - the Steel One, the blade-oath and war",
-      "Gaiandus": "Iwane-no-kami (Woodland Kayano) - the Rock-Root, the enduring mountain and forest-earth",
-      "Realta": "Megumi-hime (Woodland Reawen) - the Mercy-Maiden, mother and the life-giving clan-mother of the powers",
-      "Numeno": "Amatsukaze-no-kami (Woodland Nunaro) - the sky-wind and forest-wisdom"
+      "Tulrius": {
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Tarano",
+        "secondary_family": "north_american",
+        "gloss": "the Shining One, sun and right-rule, the day-keeper; Lawful power"
+      },
+      "Orlandus": {
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Orano",
+        "secondary_family": "north_american",
+        "gloss": "the Steel One, the blade-oath and war"
+      },
+      "Gaiandus": {
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Kayano",
+        "secondary_family": "north_american",
+        "gloss": "the Rock-Root, the enduring mountain and forest-earth"
+      },
+      "Realta": {
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian",
+        "secondary": "Reawen",
+        "secondary_family": "north_american",
+        "gloss": "the Mercy-Maiden, mother and the life-giving clan-mother of the powers"
+      },
+      "Numeno": {
+        "primary": "Amatsukaze-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Nunaro",
+        "secondary_family": "north_american",
+        "gloss": "the sky-wind and forest-wisdom"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Takami-no-kami, Terashi-no-kami the just sun, Hagane-no-kami of the sworn blade, Megumi-hime the merciful - at the torii-shrine and the rite-longhouse alike, and names the Chaotic powers oni (devouring spirits) or the wild aramitama, warded; the ordered warrior-way and the council's peace bind together",

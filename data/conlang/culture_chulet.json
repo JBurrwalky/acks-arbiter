@@ -256,12 +256,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Egyptian reflexes PRIMARY (abydosian sample_deity_renames, the morphed-through-Egyptian-phonology set), Mayan morphs SECONDARY (family_mesoamerican.json theonym_sets.mayan), never real Egyptian/Maya gods (no Ra, Osiris, Isis; no Itzamna, Kukulkan, Chaac). Shared Agrippan pantheon, two registers. The solar god-king ideology and the funerary cult meet the Long-Count calendar and the witz-pyramid altar; the per-aa and the k'uhul ajaw both mediate the powers. Ramaya seeds/shifts Lawful, Neutral, or Chaotic (see worship_by_alignment).",
     "the_one": "Atjernaa (Egyptian; Maya Aj Ternaj) - the hidden distant maker, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (Maya Tulax) - the sun and right-order",
-      "Delorum": "Djeroraa (Maya Aj Delor) - lord of the peaceful dead",
-      "Realta": "Riaret (Maya Ix Rialtaj) - the mother, mercy",
-      "Gaiandus": "Gaiandaa (Maya Kayanab) - the enduring earth",
-      "Numeno": "Numenaa (Maya Numench) - sky and scribe-wisdom",
-      "Raptis": "Rapetj (Maya Aj Raptaj) - the red hunter"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun and right-order"
+      },
+      "Delorum": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Aj Delor",
+        "secondary_family": "mesoamerican",
+        "gloss": "lord of the peaceful dead"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth"
+      },
+      "Numeno": {
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "sky and scribe-wisdom"
+      },
+      "Raptis": {
+        "primary": "Rapetj",
+        "primary_family": "near_eastern",
+        "secondary": "Aj Raptaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the red hunter"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa the One, Tjuraa the just sun, Gaiandaa the enduring, Numenaa the wise - and names the Chaotic powers the kin of the great serpent Hefau (and the Maya Lusankaan), warded; the solar law-of-maat and the Long-Count order bind alike",

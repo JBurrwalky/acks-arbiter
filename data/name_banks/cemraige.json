@@ -356,12 +356,48 @@
     "religious_orders_pattern": "the Nemed (Goidelic sacred grove) or Per-netjer (Egyptian god's-house) of [power]: 'the Nemed of Toran', 'the Per-netjer of Tjuraa'.",
     "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the ruling cland (honored at the cairn and the holy well) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
     "sample_deity_renames": {
-      "Delorum": "Dolar (Eg. Djeroraa) - death, the rest of the dead, lord of the peaceful dead",
-      "Gaiandus": "Gaian (Eg. Geandaa) - the enduring land, the black alluvial earth",
-      "Numeno": "Numan (Eg. Numenaa) - air, lightning and sky-wisdom",
-      "Orlandus": "Orlann (Eg. Oranetj) - the iron-oath, battle, war",
-      "Realta": "Realtan (Eg. Riaret) - the mother, the mercy-star, healing",
-      "Tulrius": "Toran (Eg. Tjuraa) - the sun, the just brightness and right-order"
+      "Delorum": {
+        "gloss": "death, the rest of the dead, lord of the peaceful dead",
+        "primary": "Dolar",
+        "primary_family": "celtic",
+        "secondary": "Djeroraa",
+        "secondary_family": "near_eastern"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring land, the black alluvial earth",
+        "primary": "Gaian",
+        "primary_family": "celtic",
+        "secondary": "Geandaa",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "air, lightning and sky-wisdom",
+        "primary": "Numan",
+        "primary_family": "celtic",
+        "secondary": "Numenaa",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, battle, war",
+        "primary": "Orlann",
+        "primary_family": "celtic",
+        "secondary": "Oranetj",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, the mercy-star, healing",
+        "primary": "Realtan",
+        "primary_family": "celtic",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the just brightness and right-order",
+        "primary": "Toran",
+        "primary_family": "celtic",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Eternan (Eg. Atjernaa) - the Ancient One beyond the god-kin, the hidden distant maker, honored not petitioned",
     "worship_by_alignment": {

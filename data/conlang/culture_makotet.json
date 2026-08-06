@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Egyptian canon-morphs PRIMARY (family_near_eastern / abydosian, the egyptian column: Tjuraa, Oranetj, Geandaa, Numenaa, Riaret, Atjernaa), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, hardened/breathed to Egyptian shape), never real Egyptian gods or Shinto kami. The fused rite identifies the sun-temple-power and the shrine-kami as one face - the sun-disc and the rising sun as one: the hem-netjer of the per-netjer and the kannushi of the torii keep the same powers. All three alignments; strong solar god-king and funerary cult fused with the household shrine and ancestral kami.",
     "the_one": "Atjernaa (Egyptian; Jp shrine-name Takamaa-no-kami) - the hidden distant maker, the High-Heaven One above the myriad powers, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (Jp Terashaa) - the sun and right-order, the solar disc and the rising sun",
-      "Orlandus": "Oranetj (Jp Haganetj) - iron, oath, war",
-      "Gaiandus": "Geandaa (Jp Iwanaa) - the enduring earth and mountain",
-      "Numeno": "Numenaa (Jp Amatkazaa) - air, sky and scribe-wisdom",
-      "Realta": "Riaret (Jp Megumaa) - the mother, mercy"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Terashaa",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and right-order, the solar disc and the rising sun"
+      },
+      "Orlandus": {
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Haganetj",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Geandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Iwanaa",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Numeno": {
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Amatkazaa",
+        "secondary_family": "east_asian",
+        "gloss": "air, sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Megumaa",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa, Tjuraa the just sun, Oranetj of the sworn oath, Riaret the merciful - at the per-netjer and the torii-grove alike, and names the Chaotic powers as the -kin of the great serpent Hefau or the aramitama (the wild spirits), warded; the right-order of the sun-temple and the kami-rite bind together",

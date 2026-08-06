@@ -220,10 +220,26 @@
     "_note": "Deity-names are phoneme-morphs of the canonical (Agrippan) pantheon through Egyptian phonology (l -> r; v -> w; -us/-a -> -aa/-et; dj/tj/kh flavor) - recognizably the same powers, never real Egyptian gods. Lawful/Neutral/Chaotic; strong funerary cult and god-king ideology.",
     "the_one": "Atjernaa (< Aeternus; the hidden distant maker, honored not petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Tjuraa (sun and right-order)",
-      "Delorum": "Djeroraa (lord of the peaceful dead)",
-      "Realta": "Riaret (the mother)",
-      "Raptis": "Rapetj (the red hunter)"
+      "Tulrius": {
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "gloss": "sun and right-order"
+      },
+      "Delorum": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "gloss": "lord of the peaceful dead"
+      },
+      "Realta": {
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "gloss": "the mother"
+      },
+      "Raptis": {
+        "primary": "Rapetj",
+        "primary_family": "near_eastern",
+        "gloss": "the red hunter"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Atjernaa the hidden maker, Tjuraa of right-order (maat), Djeroraa who judges the peaceful dead, Riaret the mother - and wards the Chaotic powers as the kin of the great serpent Hefau; maat (right-order) binds god-king and commoner alike, upheld at the per-netjer.",

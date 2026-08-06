@@ -362,11 +362,41 @@
     "religious_orders_pattern": "the Hof (Norse grove-temple) or Hieron / Temenos (Hellenic sacred precinct) of [power]: 'the Hof of Thulr', 'the Temenos of Tulrios'.",
     "saints_pattern": "the disir and the deified jarls (the war-dead of the ruling house, honored at the haugr / barrow) and the Hellenic heroes (Heros [name], venerated at a heroon / tomb-shrine in the poleis).",
     "sample_deity_renames": {
-      "Gaiandus": "Geyandr (Hell. Gaiandros) - the enduring earth, cold, endurance",
-      "Numeno": "Nymir (Hell. Numenos) - air, lightning, sky-wisdom",
-      "Orlandus": "Orlund (Hell. Orlandros) - iron, oath, war",
-      "Realta": "Rjalta (Hell. Realtia) - the mother, mercy, healing",
-      "Tulrius": "Thulr (Hell. Tulrios) - the sun, fire, and justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth, cold, endurance",
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "air, lightning, sky-wisdom",
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Numenos",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Orlandros",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, healing",
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Realtia",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun, fire, and justice",
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tulrios",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Eitnir (Norse; Hellenic Aiternos) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

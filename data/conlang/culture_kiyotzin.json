@@ -259,11 +259,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Japonic NATIVE-kami canon-morphs PRIMARY (family_east_asian.json theonym_sets.japonic; the wholly-native kami, NOT the Sinitic forms), Nahuatl morphs SECONDARY (family_mesoamerican.json theonym_sets.nahuatl), never real kami or Aztec gods (no Amaterasu/Susanoo, no Quetzalcoatl/Huitzilopochtli/Tlaloc). Same shared pantheon, two faces (honji-suijaku: the kami of the shrine-isle and the power of the sun-pyramid are one). Lawful/Neutral/Chaotic: the Lawful keep the ordered way of the blade and the just sun (the kami of sun, steel and ancestors); the Chaotic the blood-fed war-sun and the wild kami (the war-flame, the devouring void, the mountain-oni); the Neutral the ancestral dead (senzo) and the calendar-round, honored at the household shrine and the teocalli.",
     "the_one": "Takami-no-kami (Japonic; Nahuatl Aiternatl) - the High-Heaven One, distant above the myriad kami, honored not petitioned (and, where the realm turns Chaotic, reviled with the Nahuatl substrate as the Tyrant-Sun)",
     "sample_deity_renames": {
-      "Tulrius": "Terashi-no-kami (Nahuatl Tolratl) - the Shining One, sun and right-rule",
-      "Orlandus": "Hagane-no-kami (Nahuatl Orlantzin) - the Steel One, the blade-oath and war",
-      "Gaiandus": "Iwane-no-kami (Nahuatl Gaiantli) - the Rock-Root, the enduring mountain",
-      "Numeno": "Amatsukaze-no-kami (Nahuatl Numenatl) - the Heaven-Wind, sky and wisdom",
-      "Realta": "Megumi-hime (Nahuatl Rialtzin) - the Mercy-Maiden, mother and healing"
+      "Tulrius": {
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Tolratl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Shining One, sun and right-rule"
+      },
+      "Orlandus": {
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Orlantzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Steel One, the blade-oath and war"
+      },
+      "Gaiandus": {
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Gaiantli",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Rock-Root, the enduring mountain"
+      },
+      "Numeno": {
+        "primary": "Amatsukaze-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Numenatl",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Heaven-Wind, sky and wisdom"
+      },
+      "Realta": {
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian",
+        "secondary": "Rialtzin",
+        "secondary_family": "mesoamerican",
+        "gloss": "the Mercy-Maiden, mother and healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Takami-no-kami, Terashi-no-kami the just sun, Hagane-no-kami of the sworn blade, Megumi-hime the merciful - and names the Chaotic powers oni and tzitzimitl (devils), warded; the warrior-way and the just sun bind alike",

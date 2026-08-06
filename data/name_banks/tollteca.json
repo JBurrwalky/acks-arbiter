@@ -342,10 +342,34 @@
     "religious_orders_pattern": "the Teocalli (Nahua) or K'uh-nah (Maya) atop the pyramid of [power]: 'the Teocalli of Tolratl', 'the K'uh-nah of Tulax'.",
     "saints_pattern": "the Plumed-Serpent dynasts, deified rulers and fallen warriors, honored at the teocalli and the ancestral tomb.",
     "sample_deity_renames": {
-      "Maraxus": "Marakatl / Maya Marakab (the war-fire; Chaotic power)",
-      "Numeno": "Numenatl / Maya Numench (sky-wisdom; Lawful power)",
-      "Realta": "Rialtzin / Maya Ix Rialtaj (the mother; Neutral-honored)",
-      "Tulrius": "Tolratl / Maya Tulax (sun and law; Lawful power)"
+      "Maraxus": {
+        "gloss": "the war-fire; Chaotic power",
+        "primary": "Marakatl",
+        "primary_family": "mesoamerican",
+        "secondary": "Marakab",
+        "secondary_family": "mesoamerican"
+      },
+      "Numeno": {
+        "gloss": "sky-wisdom; Lawful power",
+        "primary": "Numenatl",
+        "primary_family": "mesoamerican",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican"
+      },
+      "Realta": {
+        "gloss": "the mother; Neutral-honored",
+        "primary": "Rialtzin",
+        "primary_family": "mesoamerican",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican"
+      },
+      "Tulrius": {
+        "gloss": "sun and law; Lawful power",
+        "primary": "Tolratl",
+        "primary_family": "mesoamerican",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican"
+      }
     },
     "the_one": "Aiternatl (< Aeternus; Maya substrate: Aj Ternaj) - the One; revered as supreme Giver-of-Life when Lawful, set aside when Neutral, reviled as the tyrant-sun when Chaotic",
     "worship_by_alignment": {

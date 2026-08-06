@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Sinitic celestial reflexes PRIMARY (family_east_asian.json theonym_sets.sinitic), Plains variants SECONDARY (family_north_american.json theonym_sets.plains), never real Chinese/Plains gods. A Celestial Bureaucracy under the Mandate of Heaven married to the open-sky vision-religion: the One (Aiteng / Plains Ateruna) presides as Highest Heaven; the Lawful powers are the celestial officials (-di emperors, -jun lords) AND the sky-and-earth powers met on the high plain; the Neutral honor the ancestral zu and the band-dead through Confucian rite and the vision-quest (puha) alike.",
     "the_one": "Aiteng (< Aeternus; the Highest Heaven, source of the Mandate; Plains Ateruna, the Great-Above - served not petitioned)",
     "sample_deity_renames": {
-      "Tulrius": "Tuli-di (Sinitic, the Sun-Justice Emperor; Plains Torawi the Sun)",
-      "Gaiandus": "Gaidun-di (Sinitic, the Earth Emperor, lord of mountains; Plains Kayanta the enduring earth)",
-      "Orlandus": "Aolan-jun (Sinitic, the Iron-Oath War Lord; Plains Olanta of the bound oath)",
-      "Numeno": "Numeng-jun (Sinitic, the Sage Lord of the winds; Plains Nimawi the sky-wisdom)",
-      "Realta": "Lianta-mu (Sinitic, the Mother of Mercy; Plains Reawina the life-giver)"
+      "Tulrius": {
+        "primary": "Tuli-di",
+        "primary_family": "east_asian",
+        "secondary": "Torawi",
+        "secondary_family": "north_american",
+        "gloss": "the Sun-Justice Emperor"
+      },
+      "Gaiandus": {
+        "primary": "Gaidun-di",
+        "primary_family": "east_asian",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american",
+        "gloss": "the Earth Emperor, lord of mountains"
+      },
+      "Orlandus": {
+        "primary": "Aolan-jun",
+        "primary_family": "east_asian",
+        "secondary": "Olanta",
+        "secondary_family": "north_american",
+        "gloss": "the Iron-Oath War Lord"
+      },
+      "Numeno": {
+        "primary": "Numeng-jun",
+        "primary_family": "east_asian",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american",
+        "gloss": "the Sage Lord of the winds"
+      },
+      "Realta": {
+        "primary": "Lianta-mu",
+        "primary_family": "east_asian",
+        "secondary": "Reawina",
+        "secondary_family": "north_american",
+        "gloss": "the Mother of Mercy"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiteng the Highest Heaven, Tuli-di the just sun, Aolan-jun of the sworn war, Lianta-mu the merciful (Plains Torawi, Olanta, Reawina honored at the high plain) - and names the Chaotic powers mo (demon-marshals) or the war-fire raiders, warded; the Mandate's law and the medicine-bond bind alike",

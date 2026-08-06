@@ -257,11 +257,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Latinate canon-morphs PRIMARY (the agrippan column, the canonical pantheon keys: Tulrius, Orlandus, Gaiandus, Numeno, Realta, Aeternus), Japonic kami-morphs SECONDARY (family_east_asian.json theonym_sets.japonic, the yamataian column, recut to Latin shape: Teraso, Hagano, Iwano, Numeno-no-kami, Megumarus, Aeternus-no-kami), never real Roman gods or Shinto kami. The fused rite identifies the temple-power and the shrine-kami as one face - the eagle and the rising sun as one: the pontifex of the forum-temple and the kannushi of the torii keep the same powers. All three alignments; the law-stele and the civic cult fused with the household shrine and the ancestral kami, the legion's oath and the samurai's way under one heaven.",
     "the_one": "Aeternus (the One / True God; Jp shrine-name Takamus-no-kami) - the distant Ancient One, the High-Heaven One above the myriad powers, honored in liturgy not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrius (Jp Teraso-no-kami) - the sun and right-rule, the rayed sun-disc and the rising sun",
-      "Orlandus": "Orlandus (Jp Hagano-no-kami) - iron, oath, war, the blade and the eagle",
-      "Gaiandus": "Gaiandus (Jp Iwano-no-kami) - the enduring earth and mountain",
-      "Numeno": "Numeno (Jp Amatkazus-no-kami) - air, sky and scribe-wisdom",
-      "Realta": "Realta (Jp Megumarus-hime) - the mother, mercy and healing"
+      "Tulrius": {
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Teraso-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the sun and right-rule, the rayed sun-disc and the rising sun"
+      },
+      "Orlandus": {
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Hagano-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "iron, oath, war, the blade and the eagle"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Iwano-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth and mountain"
+      },
+      "Numeno": {
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Amatkazus-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "air, sky and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Megumarus-hime",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy and healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aeternus, Tulrius the just sun, Orlandus of the sworn oath, Realta the merciful, Numeno of the law - at the forum-temple and the torii-grove alike, and names the Chaotic powers the brood of the great serpent Lusanto or the aramus (the wild spirits), warded; the law-stele and the civic rite, the legion's oath and the samurai's way, bind together",

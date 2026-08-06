@@ -340,11 +340,41 @@
     "religious_orders_pattern": "the Collegium (Latin) or Temenos (Greek) of [power]: 'the Collegium of the Dawn Throne (Tulrius)', 'the Temenos of Numenos'.",
     "saints_pattern": "the Divi (the deified founders and law-givers of the gens, Divus [name]) and the Heroes (the deified founders of the polis, Heros [name]), honored at the templum and the heroon.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiandus (Hellenic Gaiandros) - the enduring earth",
-      "Numeno": "Numeno (Hellenic Numenos) - sky, wisdom, the scholar's lord",
-      "Orlandus": "Orlandus (Hellenic Orlandros) - iron, oath, war",
-      "Realta": "Realta (Hellenic Realte) - the mother, mercy",
-      "Tulrius": "Tulrius (Hellenic Tulrios) - the sun and judgment, the canon-key near-unchanged"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gaiandus",
+        "primary_family": "classical",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "sky, wisdom, the scholar's lord",
+        "primary": "Numeno",
+        "primary_family": "classical",
+        "secondary": "Numenos",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlandus",
+        "primary_family": "classical",
+        "secondary": "Orlandros",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Realte",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment, the canon-key near-unchanged",
+        "primary": "Tulrius",
+        "primary_family": "classical",
+        "secondary": "Tulrios",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Aeternus (the One / True God, near-canonical; Hellenic learned variant Aiternos) - honored in liturgy, not petitioned",
     "worship_by_alignment": {

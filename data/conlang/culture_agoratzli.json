@@ -255,11 +255,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Hellenic reflexes PRIMARY (family_classical / achillean: Tulrios/Orlandros/Numenos, the -os/-on/-es Hellenic column), Mayan morphs SECONDARY (family_mesoamerican theonym_sets.mayan: Tulax/Orlanab/Numench), never real Greek/Maya gods (no Apollo, no Kukulkan). Shared pantheon; the oracle speaks in Hellenic names, the day-keeper in Maya names. Oracmaya allows Lawful/Neutral/Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The Delphic oracle-rite and the Maya bloodletting-and-day-count both bind the basileus to the powers; the manteion-portico and the witz-pyramid are twin altars.",
     "the_one": "Aiternos (Hellenic; Maya Aj Ternaj) - the distant One, the unknowable source, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Tulrios (Maya Tulax) - the sun, the oracle, and right-order; Lawful power",
-      "Orlandus": "Orlandros (Maya Orlanab) - iron, oath, war",
-      "Gaiandus": "Gaiandros (Maya Kayanab) - the enduring earth, the maize-ground",
-      "Numeno": "Numenos (Maya Numench) - air, sky-wisdom, the seer's breath",
-      "Realta": "Rialta (Maya Ix Rialtaj) - the mother, mercy, the moon-and-maize"
+      "Tulrius": {
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Tulax",
+        "secondary_family": "mesoamerican",
+        "gloss": "the sun, the oracle, and right-order; Lawful power"
+      },
+      "Orlandus": {
+        "primary": "Orlandros",
+        "primary_family": "classical",
+        "secondary": "Orlanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Gaiandros",
+        "primary_family": "classical",
+        "secondary": "Kayanab",
+        "secondary_family": "mesoamerican",
+        "gloss": "the enduring earth, the maize-ground"
+      },
+      "Numeno": {
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "secondary": "Numench",
+        "secondary_family": "mesoamerican",
+        "gloss": "air, sky-wisdom, the seer's breath"
+      },
+      "Realta": {
+        "primary": "Rialta",
+        "primary_family": "classical",
+        "secondary": "Ix Rialtaj",
+        "secondary_family": "mesoamerican",
+        "gloss": "the mother, mercy, the moon-and-maize"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiternos, Tulrios the just oracle, Orlandros of the sworn war, Rialta the merciful - and names the Chaotic powers as daimones (Hellenic) / k'ak'as (Maya evil), warded; the oracle-rite and the day-count bind alike",

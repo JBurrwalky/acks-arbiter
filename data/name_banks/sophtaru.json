@@ -344,11 +344,41 @@
     "religious_orders_pattern": "the Bit-ili (Akkadian god-house) or Temenos (Hellenic sacred-precinct) of [power]: 'the Bit-ili of Tullaru', 'the Temenos of Tulrios'.",
     "saints_pattern": "the deified law-givers of the cities and the Heros [name] (deified founder), inscribed on the stele and honored at the ziggurat and the heroon.",
     "sample_deity_renames": {
-      "Gaiandus": "Gayandu (Hellenic Gaiandros) - the enduring earth",
-      "Numeno": "Numunu (Hellenic Numenos) - sky and scribe-wisdom",
-      "Orlandus": "Urlandu (Hellenic Orlandros) - iron, oath, war",
-      "Realta": "Rialtu (Hellenic Realtia) - the mother, mercy",
-      "Tulrius": "Tullaru (Hellenic Tulrios) - the sun and judgment"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gayandu",
+        "primary_family": "near_eastern",
+        "secondary": "Gaiandros",
+        "secondary_family": "classical"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numunu",
+        "primary_family": "near_eastern",
+        "secondary": "Numenos",
+        "secondary_family": "classical"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Urlandu",
+        "primary_family": "near_eastern",
+        "secondary": "Orlandros",
+        "secondary_family": "classical"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Rialtu",
+        "primary_family": "near_eastern",
+        "secondary": "Realtia",
+        "secondary_family": "classical"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment",
+        "primary": "Tullaru",
+        "primary_family": "near_eastern",
+        "secondary": "Tulrios",
+        "secondary_family": "classical"
+      }
     },
     "the_one": "Itarnu (Akkadian; Hellenic Aiternos) - the great distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

@@ -210,10 +210,26 @@
     "_note": "Deity-names are the Xilvaneth (harsh) reflexes of the Proto-Elvish theonym roots (family_elvish.json) - the eldest forms of the Agrippan canon, never real Maya/Nahua gods; they carry the sacred GENDERED ending -ak'on (masc) / -ak'el (fem) - the divine class, distinct from mortal -tl/-tzin/ix- and common-noun -tl. The Xilvaneth are overwhelmingly Chaotic (weights C80/N10/L10); the worship/demonize set follows the realm's CURRENT alignment (see worship_by_alignment), but the cultural default is the Chaotic blood-cult. The nelok'tl (pyramid-grove), its steps dark with offering, is the altar; the ek'tl (devouring ancestors) are fed there.",
     "the_one": "Atyarnak'on (< Proto-Elvish Atyarnaaron < Aeternus; sacred-masculine ending -ak'on; among the overwhelmingly Chaotic Xilvaneth the One is the DEMONIZED enemy - 'the Sun-Jailer', the cold tyrant of the high sky who would cage the wild; revered only by the rare Lawful minority)",
     "sample_deity_renames": {
-      "Maraxus": "Marak'on (the war-fire and conquest; chief venerated power, masc.)",
-      "Raptis": "Rap'ak'el (the blood-hunt, the Huntress; venerated, fem.)",
-      "Vacidus": "Wakidak'on (the devouring void; venerated, masc.)",
-      "Tulrius": "Tul'ak'on (the sun and law; DEMONIZED as the Burning-Eye, masc.)"
+      "Maraxus": {
+        "primary": "Marak'on",
+        "primary_family": "elvish",
+        "gloss": "the war-fire and conquest; chief venerated power, masc."
+      },
+      "Raptis": {
+        "primary": "Rap'ak'el",
+        "primary_family": "elvish",
+        "gloss": "the blood-hunt, the Huntress; venerated, fem."
+      },
+      "Vacidus": {
+        "primary": "Wakidak'on",
+        "primary_family": "elvish",
+        "gloss": "the devouring void; venerated, masc."
+      },
+      "Tulrius": {
+        "primary": "Tul'ak'on",
+        "primary_family": "elvish",
+        "gloss": "the sun and law; DEMONIZED as the Burning-Eye, masc."
+      }
     },
     "worship_by_alignment": {
       "Chaotic": "the overwhelming majority venerate the Chaotic powers (Marak'on the war-fire, Rap'ak'el the blood-hunt, Wakidak'on the void, Lusanak'on the hoard-serpent, Dementak'on the storm-madness), and demonize the One (Atyarnak'on the Sun-Jailer) and the Lawful powers (Tul'ak'on, Orlanak'on)",

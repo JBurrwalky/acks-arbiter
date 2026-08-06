@@ -363,12 +363,48 @@
     "religious_orders_pattern": "the Alah (Frankish grove-temple) or Per-netjer (Egyptian god's-house) of [power]: 'the Alah of Dulro', 'the Per-netjer of Tjuraa'.",
     "saints_pattern": "the deified war-dead of the crusader-house (honored at the howe and on the tomb-stele) and the akhu / justified dead (maa-kheru) of the river-kingdom, venerated at the tomb-temples and the per-netjer.",
     "sample_deity_renames": {
-      "Delorum / death-lord": "Djeroraa (Frk. Deloro) - lord of the peaceful dead",
-      "Gaiandus": "Giando (Eg. Geandaa) - the enduring earth, the black alluvial land",
-      "Numeno": "Numino (Eg. Numenaa) - sky, lightning and scribe-wisdom",
-      "Orlandus": "Erlant (Eg. Oranetj) - iron, oath, war",
-      "Realta": "Rialda (Eg. Riaret) - the mother, mercy",
-      "Tulrius": "Dulro (Eg. Tjuraa) - the sun, right-order and judgment"
+      "Delorum / death-lord": {
+        "gloss": "lord of the peaceful dead",
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Deloro",
+        "secondary_family": "germanic"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth, the black alluvial land",
+        "primary": "Giando",
+        "primary_family": "germanic",
+        "secondary": "Geandaa",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky, lightning and scribe-wisdom",
+        "primary": "Numino",
+        "primary_family": "germanic",
+        "secondary": "Numenaa",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Erlant",
+        "primary_family": "germanic",
+        "secondary": "Oranetj",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Rialda",
+        "primary_family": "germanic",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun, right-order and judgment",
+        "primary": "Dulro",
+        "primary_family": "germanic",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Aiterno (Frankish; Eg. Atjernaa) - the distant Ancient One, the hidden maker, honored not petitioned",
     "worship_by_alignment": {

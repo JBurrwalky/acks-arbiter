@@ -259,12 +259,44 @@
     "_note": "Deity-names are morphs of the Agrippan canon - the Persian-shifted canon morphs PRIMARY (the Axsatran set: Turvasa, Urlaspa, Gayanta, Naumana, Riyata, Asturna, from family_near_eastern via the Old-Persian shift) and the Egyptian morphs SECONDARY (the Abydosian set: Tjuraa, Djeroraa, Riaret, Numenaa), recognizably the same powers, never real Persian/Egyptian gods. Lawful henotheist but TOLERANT in the Axsatran manner: Asturna the Wise Lord Most High upholds ARTA (Truth/Right-order) and the Lawful powers are His yazata-ministers; the Chaotic powers are the hosts of DRAUGA (the Lie). The cardinal sin is the Lie; the Shah's word is bond. The satrapal crown shelters the Nile cults - the per-netjer temples of the river and the funerary cult of the justified dead - under Asturna's peace, never suppressing them. All three alignments worship.",
     "the_one": "Asturna (< Aeternus; the Wise Lord Most High, upholder of Arta and source of the Shah's farnah-glory; in the Egyptian temple-register Atjernaa, the hidden distant maker)",
     "sample_deity_renames": {
-      "Tulrius": "Turvasa (the sun and Arta, lamp of right-order; Egyptian temple-name Tjuraa; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; Lawful)",
-      "Gaiandus": "Gayanta (the enduring earth and the river's-mountain)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; Egyptian Numenaa; Lawful)",
-      "Realta": "Riyata (the Lady of Waters, mother and mercy; Egyptian Riaret)",
-      "Delorum": "Djerlaspa (lord of the peaceful dead and the funerary rite; Egyptian Djeroraa)"
+      "Tulrius": {
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun and Arta, lamp of right-order; Lawful"
+      },
+      "Orlandus": {
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "gloss": "the iron-oath, war and the cavalier; Lawful"
+      },
+      "Gaiandus": {
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "gloss": "the enduring earth and the river's-mountain"
+      },
+      "Numeno": {
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Numenaa",
+        "secondary_family": "near_eastern",
+        "gloss": "the good mind, wisdom and the law; Lawful"
+      },
+      "Realta": {
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern",
+        "gloss": "the Lady of Waters, mother and mercy"
+      },
+      "Delorum": {
+        "primary": "Djerlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Djeroraa",
+        "secondary_family": "near_eastern",
+        "gloss": "lord of the peaceful dead and the funerary rite"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Asturna Most High, Turvasa the just sun, Urlaspa of the sworn war, Naumana of the law, Riyata the merciful - upholds ARTA (Truth) against DRAUGA (the Lie), keeps the ever-burning Atash-fire and honors the justified dead of the Nile; names the Chaotic powers the hosts of Drauga, warded",

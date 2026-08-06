@@ -367,10 +367,26 @@
     "religious_orders_pattern": "the Nemiya (grove-shrine) of [power] on the misted slope: 'the Nemiya of Toranshi', within its torii-arch and sacred grove.",
     "saints_pattern": "the Tuath-kami (the god-kin and grove-spirits) and the ancestral heroes of the finuji, enshrined at the clan-shrine and the holy peak.",
     "sample_deity_renames": {
-      "Gaiandus": "Gaiwane (the enduring rock-mountain; Lawful power)",
-      "Maraxus": "Maratake (the war-flame, the spirit-frenzy; Chaotic power)",
-      "Realta": "Realhime (the mercy-mother; Neutral-honored)",
-      "Tulrius": "Toranshi (the sun, the shining order; Lawful power)"
+      "Gaiandus": {
+        "gloss": "the enduring rock-mountain; Lawful power",
+        "primary": "Gaiwane",
+        "primary_family": "celtic"
+      },
+      "Maraxus": {
+        "gloss": "the war-flame, the spirit-frenzy; Chaotic power",
+        "primary": "Maratake",
+        "primary_family": "celtic"
+      },
+      "Realta": {
+        "gloss": "the mercy-mother; Neutral-honored",
+        "primary": "Realhime",
+        "primary_family": "celtic"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the shining order; Lawful power",
+        "primary": "Toranshi",
+        "primary_family": "celtic"
+      }
     },
     "the_one": "Eterami (< Aeternus; fused Celtic Eternan / Japonic Takami) - the Ancient-Above, the sky over the misted peaks; revered when Lawful, set aside when Chaotic",
     "worship_by_alignment": {

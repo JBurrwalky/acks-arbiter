@@ -374,12 +374,48 @@
     "religious_orders_pattern": "the Atash ([fire] of [power]) and its fire-temple (Atashkanusa) over the rite-longhouse (kanusa) of [power] and the forest-grove: 'the Atashkanusa of Turvasa', 'the Kanusa of Tularsa'; the magi keep the ever-burning fire (Atar) on the altar and the faithkeepers keep the council's thanksgivings.",
     "saints_pattern": "the honest dead and the just kings (kept as fravashi and petitioned at the fire-altar; 'the Arta-true [name]') together with the founders of the council's peace and the honored clan-mothers and sachems, kept in the council's recital and at the burial-grove.",
     "sample_deity_renames": {
-      "Argentus": "Arzanta (trade, the road and increase; woodland Arensa; Lawful)",
-      "Gaiandus": "Gayanta (the enduring earth and the rooted oak; woodland Kayansa)",
-      "Numeno": "Naumana (the good mind, wisdom and the law; woodland Nunarsa; Lawful)",
-      "Orlandus": "Urlaspa (the iron-oath, war and the cavalier; woodland Oransa; Lawful)",
-      "Realta": "Riyata (the Lady of Waters, the mother and life-giver, clan-mother of the powers; woodland Riyawenne)",
-      "Tulrius": "Turvasa (the sun and Arta, the day-keeper; woodland Tularsa; Lawful)"
+      "Argentus": {
+        "gloss": "trade, the road and increase; Lawful",
+        "primary": "Arzanta",
+        "primary_family": "near_eastern",
+        "secondary": "Arensa",
+        "secondary_family": "north_american"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth and the rooted oak",
+        "primary": "Gayanta",
+        "primary_family": "near_eastern",
+        "secondary": "Kayansa",
+        "secondary_family": "north_american"
+      },
+      "Numeno": {
+        "gloss": "the good mind, wisdom and the law; Lawful",
+        "primary": "Naumana",
+        "primary_family": "near_eastern",
+        "secondary": "Nunarsa",
+        "secondary_family": "north_american"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war and the cavalier; Lawful",
+        "primary": "Urlaspa",
+        "primary_family": "near_eastern",
+        "secondary": "Oransa",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the Lady of Waters, the mother and life-giver, clan-mother of the powers",
+        "primary": "Riyata",
+        "primary_family": "near_eastern",
+        "secondary": "Riyawenne",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the sun and Arta, the day-keeper; Lawful",
+        "primary": "Turvasa",
+        "primary_family": "near_eastern",
+        "secondary": "Tularsa",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Asturna (< Aeternus / Itarnu / woodland Aterhonon; the Wise Lord Most High, the Sky-Holder-Above, upholder of Arta and source of the king's farnah-glory, revered above His ministers and acknowledged at the council-fire)",
     "worship_by_alignment": {

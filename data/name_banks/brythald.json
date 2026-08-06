@@ -371,11 +371,41 @@
     "religious_orders_pattern": "the Ealh (temple) or Hearg (grove-shrine) of [power]: 'the Ealh of Thulor', 'the Hearg of Geand'; the Brythonic substrate keeps Llan- (sacred enclosure): 'Llan-Toran'.",
     "saints_pattern": "the ielde (ancestral heroes) and the hallowed dead of the cynn, honored at the beorg (barrow), the holy well (wielle) and the grove; the Brittonic seintiau (saints) honored at the Llan.",
     "sample_deity_renames": {
-      "Gaiandus": "Geand (Bryth. Gaian) - the enduring earth",
-      "Numeno": "Numen (Bryth. Numan) - sky, lightning, sky-wisdom",
-      "Orlandus": "Eorland (Bryth. Orlann) - iron, oath, war",
-      "Realta": "Realda (Bryth. Realtan) - the mother, the mercy-star",
-      "Tulrius": "Thulor (Bryth. Toran) - the sun, the just brightness"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Geand",
+        "primary_family": "germanic",
+        "secondary": "Gaian",
+        "secondary_family": "celtic"
+      },
+      "Numeno": {
+        "gloss": "sky, lightning, sky-wisdom",
+        "primary": "Numen",
+        "primary_family": "germanic",
+        "secondary": "Numan",
+        "secondary_family": "celtic"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Eorland",
+        "primary_family": "germanic",
+        "secondary": "Orlann",
+        "secondary_family": "celtic"
+      },
+      "Realta": {
+        "gloss": "the mother, the mercy-star",
+        "primary": "Realda",
+        "primary_family": "germanic",
+        "secondary": "Realtan",
+        "secondary_family": "celtic"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the just brightness",
+        "primary": "Thulor",
+        "primary_family": "germanic",
+        "secondary": "Toran",
+        "secondary_family": "celtic"
+      }
     },
     "the_one": "Aetern (< Aeternus; Brythonic Eternan) - the Ancient One, the Wyrd-father above the lesser powers",
     "worship_by_alignment": {

@@ -356,13 +356,55 @@
     "religious_orders_pattern": "the Per-netjer (god's-house/temple) of [power] in the river-cities, and the open-sky medicine-cairn of [power] on the high plain: 'the Per-netjer of Tjuraa', 'the Medicine-Cairn of Maraksa'.",
     "saints_pattern": "the deified dead (akhu) and god-kings of the river, 'the justified [name]' (maa-kheru), venerated at tomb-temples; and the great chiefs and vision-seers of the plains who became sky- and animal-spirits, honored at the burial-scaffold and the medicine-cairn.",
     "sample_deity_renames": {
-      "Delorum": "Djeroraa (Plains Dolawa) - lord of the peaceful dead",
-      "Gaiandus": "Gayandaa (Plains Kayanta) - the enduring earth",
-      "Numeno": "Numenaa (Plains Nimawi) - air, sky-wisdom and the scribe",
-      "Orlandus": "Oranetj (Plains Olanta) - iron, oath, war",
-      "Raptis": "Rapetj (Plains Rapita) - the red hunter of the herds",
-      "Realta": "Riaret (Plains Reawina) - the mother, mercy",
-      "Tulrius": "Tjuraa (Plains Torawi) - the sun-disc and right-order"
+      "Delorum": {
+        "gloss": "lord of the peaceful dead",
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Dolawa",
+        "secondary_family": "north_american"
+      },
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gayandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Kayanta",
+        "secondary_family": "north_american"
+      },
+      "Numeno": {
+        "gloss": "air, sky-wisdom and the scribe",
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Nimawi",
+        "secondary_family": "north_american"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Olanta",
+        "secondary_family": "north_american"
+      },
+      "Raptis": {
+        "gloss": "the red hunter of the herds",
+        "primary": "Rapetj",
+        "primary_family": "near_eastern",
+        "secondary": "Rapita",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Reawina",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the sun-disc and right-order",
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Torawi",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Atjernaa (Egyptian; Plains Ateruna) - the hidden distant maker, honored not petitioned",
     "worship_by_alignment": {

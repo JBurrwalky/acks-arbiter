@@ -346,11 +346,41 @@
     "religious_orders_pattern": "the Jinja (torii-shrine) or the Kanomachi-rite-longhouse (the kanonhses of the Woodland substrate) of [power]: 'the Jinja of Terashi-no-kami', 'the rite-longhouse of Tarano', within its torii, sacred grove and thanksgiving-circle.",
     "saints_pattern": "great ancestors and fallen heroes enshrined as kami (the eirei, honored dead) at the clan jinja, and the founders of the council's peace and the honored clan-mothers kept in the council's recital; honored at the shrine, the rite-longhouse and the burial-grove; 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Iwane-no-kami (Woodland Kayano) - the Rock-Root, the enduring mountain and forest-earth",
-      "Numeno": "Amatsukaze-no-kami (Woodland Nunaro) - the sky-wind and forest-wisdom",
-      "Orlandus": "Hagane-no-kami (Woodland Orano) - the Steel One, the blade-oath and war",
-      "Realta": "Megumi-hime (Woodland Reawen) - the Mercy-Maiden, mother and the life-giving clan-mother of the powers",
-      "Tulrius": "Terashi-no-kami (Woodland Tarano) - the Shining One, sun and right-rule, the day-keeper; Lawful power"
+      "Gaiandus": {
+        "gloss": "the Rock-Root, the enduring mountain and forest-earth",
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Kayano",
+        "secondary_family": "north_american"
+      },
+      "Numeno": {
+        "gloss": "the sky-wind and forest-wisdom",
+        "primary": "Amatsukaze-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Nunaro",
+        "secondary_family": "north_american"
+      },
+      "Orlandus": {
+        "gloss": "the Steel One, the blade-oath and war",
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Orano",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the Mercy-Maiden, mother and the life-giving clan-mother of the powers",
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian",
+        "secondary": "Reawen",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the Shining One, sun and right-rule, the day-keeper; Lawful power",
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian",
+        "secondary": "Tarano",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Takami-no-kami (Japonic; Woodland grove-name Terano-Aterhon) - the High-Heaven One, distant above the myriad kami and forest-spirits, honored not petitioned; revered when Lawful, set aside when Neutral",
     "worship_by_alignment": {

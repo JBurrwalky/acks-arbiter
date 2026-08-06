@@ -358,10 +358,26 @@
     "religious_orders_pattern": "the Jinja (shrine) of [kami]: 'the Jinja of Terashi-no-kami', within its torii and sacred grove.",
     "saints_pattern": "great ancestors and fallen heroes enshrined as kami (the eirei, honored dead) at the clan jinja; 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Iwane-no-kami (the Rock-Root, the enduring mountain)",
-      "Orlandus": "Hagane-no-kami (the Steel One, the blade-oath and war)",
-      "Realta": "Megumi-hime (the Mercy-Maiden, mother and healing)",
-      "Tulrius": "Terashi-no-kami (the Shining One, sun and right-rule)"
+      "Gaiandus": {
+        "gloss": "the Rock-Root, the enduring mountain",
+        "primary": "Iwane-no-kami",
+        "primary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "the Steel One, the blade-oath and war",
+        "primary": "Hagane-no-kami",
+        "primary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the Mercy-Maiden, mother and healing",
+        "primary": "Megumi-hime",
+        "primary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the Shining One, sun and right-rule",
+        "primary": "Terashi-no-kami",
+        "primary_family": "east_asian"
+      }
     },
     "the_one": "Takami-no-kami (< the One, Aeternus, rendered as native kami; the High-Heaven One, distant above the myriad kami)",
     "worship_by_alignment": {

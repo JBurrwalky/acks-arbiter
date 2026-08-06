@@ -352,11 +352,41 @@
     "religious_orders_pattern": "the Per-netjer (god's-house/temple) or the Jinper (shrine-isle temple) of [power]: 'the Per-netjer of Tjuraa', 'the Jinper of Terashaa', within its pylon-court and torii-grove.",
     "saints_pattern": "the deified dead (akhu) and sun-god-kings venerated at tomb-temples ('the justified [name]', maa-kheru), and the great ancestors enshrined as kami at the isle-jinper (the honored dead); 'the kami [name]'.",
     "sample_deity_renames": {
-      "Gaiandus": "Geandaa (Jp Iwanaa) - the enduring earth and mountain",
-      "Numeno": "Numenaa (Jp Amatkazaa) - air, sky and scribe-wisdom",
-      "Orlandus": "Oranetj (Jp Haganetj) - iron, oath, war",
-      "Realta": "Riaret (Jp Megumaa) - the mother, mercy",
-      "Tulrius": "Tjuraa (Jp Terashaa) - the sun and right-order, the solar disc and the rising sun"
+      "Gaiandus": {
+        "gloss": "the enduring earth and mountain",
+        "primary": "Geandaa",
+        "primary_family": "near_eastern",
+        "secondary": "Iwanaa",
+        "secondary_family": "east_asian"
+      },
+      "Numeno": {
+        "gloss": "air, sky and scribe-wisdom",
+        "primary": "Numenaa",
+        "primary_family": "near_eastern",
+        "secondary": "Amatkazaa",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Oranetj",
+        "primary_family": "near_eastern",
+        "secondary": "Haganetj",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riaret",
+        "primary_family": "near_eastern",
+        "secondary": "Megumaa",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "the sun and right-order, the solar disc and the rising sun",
+        "primary": "Tjuraa",
+        "primary_family": "near_eastern",
+        "secondary": "Terashaa",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Atjernaa (Egyptian; Jp shrine-name Takamaa-no-kami) - the hidden distant maker, the High-Heaven One above the myriad powers, honored not petitioned",
     "worship_by_alignment": {

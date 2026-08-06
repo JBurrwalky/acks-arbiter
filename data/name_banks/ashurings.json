@@ -351,11 +351,41 @@
     "religious_orders_pattern": "the Alhs (Germanic grove-temple) or Bit-ili (Akkadian god-house) of [power]: 'the Alhs of Thulrs', 'the Bit-ili of Tullaru'.",
     "saints_pattern": "the Anses (the deified war-dead of the ruling house) and the deified law-givers of the cities, inscribed on the stele and honored at the howe and the ziggurat.",
     "sample_deity_renames": {
-      "Gaiandus": "Gauands (Akk Gayandu) - the enduring earth",
-      "Numeno": "Numins (Akk Numunu) - sky and scribe-wisdom",
-      "Orlandus": "Erlands (Akk Urlandu) - iron, oath, war",
-      "Realta": "Riala (Akk Rialtu) - the mother, mercy",
-      "Tulrius": "Thulrs (Akk Tullaru) - the sun and judgment"
+      "Gaiandus": {
+        "gloss": "the enduring earth",
+        "primary": "Gauands",
+        "primary_family": "germanic",
+        "secondary": "Gayandu",
+        "secondary_family": "near_eastern"
+      },
+      "Numeno": {
+        "gloss": "sky and scribe-wisdom",
+        "primary": "Numins",
+        "primary_family": "germanic",
+        "secondary": "Numunu",
+        "secondary_family": "near_eastern"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Erlands",
+        "primary_family": "germanic",
+        "secondary": "Urlandu",
+        "secondary_family": "near_eastern"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy",
+        "primary": "Riala",
+        "primary_family": "germanic",
+        "secondary": "Rialtu",
+        "secondary_family": "near_eastern"
+      },
+      "Tulrius": {
+        "gloss": "the sun and judgment",
+        "primary": "Thulrs",
+        "primary_family": "germanic",
+        "secondary": "Tullaru",
+        "secondary_family": "near_eastern"
+      }
     },
     "the_one": "Aiterns (Gothic; Akk Itarnu) - the distant Ancient One, honored not petitioned",
     "worship_by_alignment": {

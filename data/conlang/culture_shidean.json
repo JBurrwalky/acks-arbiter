@@ -257,10 +257,26 @@
     "_note": "Deity-names are fused morphs of the Agrippan canon (Celtic + Japonic), never real Celtic/Japanese gods. Shidhean seeds/shifts Lawful or Chaotic; its stance follows its CURRENT alignment (see worship_by_alignment). The powers are met at the grove-shrine (nemiya) and the misted peak; the spirit-keepers (fused druid-and-shrine-priest) mediate, and the honored ancestral dead are kept at the clan-shrine.",
     "the_one": "Eterami (< Aeternus; fused Celtic Eternan / Japonic Takami) - the Ancient-Above, the sky over the misted peaks; revered when Lawful, set aside when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Toranshi (the sun, the shining order; Lawful power)",
-      "Gaiandus": "Gaiwane (the enduring rock-mountain; Lawful power)",
-      "Realta": "Realhime (the mercy-mother; Neutral-honored)",
-      "Maraxus": "Maratake (the war-flame, the spirit-frenzy; Chaotic power)"
+      "Tulrius": {
+        "primary": "Toranshi",
+        "primary_family": "celtic",
+        "gloss": "the sun, the shining order; Lawful power"
+      },
+      "Gaiandus": {
+        "primary": "Gaiwane",
+        "primary_family": "celtic",
+        "gloss": "the enduring rock-mountain; Lawful power"
+      },
+      "Realta": {
+        "primary": "Realhime",
+        "primary_family": "celtic",
+        "gloss": "the mercy-mother; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Maratake",
+        "primary_family": "celtic",
+        "gloss": "the war-flame, the spirit-frenzy; Chaotic power"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Eterami) and the Lawful powers (Toranshi, Orhagane, Gaiwane, Num-ami), demonize the Chaotic powers (Maratake, Faikido, Losankr)",

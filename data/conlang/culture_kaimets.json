@@ -257,12 +257,48 @@
     "_note": "Deity-names are morphs of the Agrippan canon - FRANKISH (Old High German) reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column), Egyptian morphs SECONDARY (the abydosian deity-morphs), never real Germanic/Egyptian gods. Alignment PROVISIONAL (Lawful/Neutral): the Frankish crusader-oath order (the sworn knighthood of a Lawful high-king) meets the Egyptian right-order / maa-kheru funerary tradition; the older heathen-and-funerary layer reads Neutral.",
     "the_one": "Aiterno (Frankish; Eg. Atjernaa) - the distant Ancient One, the hidden maker, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Dulro (Eg. Tjuraa) - the sun, right-order and judgment",
-      "Orlandus": "Erlant (Eg. Oranetj) - iron, oath, war",
-      "Gaiandus": "Giando (Eg. Geandaa) - the enduring earth, the black alluvial land",
-      "Numeno": "Numino (Eg. Numenaa) - sky, lightning and scribe-wisdom",
-      "Realta": "Rialda (Eg. Riaret) - the mother, mercy",
-      "Delorum / death-lord": "Djeroraa (Frk. Deloro) - lord of the peaceful dead"
+      "Tulrius": {
+        "primary": "Dulro",
+        "primary_family": "germanic",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern",
+        "gloss": "the sun, right-order and judgment"
+      },
+      "Orlandus": {
+        "primary": "Erlant",
+        "primary_family": "germanic",
+        "secondary": "Oranetj",
+        "secondary_family": "near_eastern",
+        "gloss": "iron, oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Giando",
+        "primary_family": "germanic",
+        "secondary": "Geandaa",
+        "secondary_family": "near_eastern",
+        "gloss": "the enduring earth, the black alluvial land"
+      },
+      "Numeno": {
+        "primary": "Numino",
+        "primary_family": "germanic",
+        "secondary": "Numenaa",
+        "secondary_family": "near_eastern",
+        "gloss": "sky, lightning and scribe-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialda",
+        "primary_family": "germanic",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother, mercy"
+      },
+      "Delorum / death-lord": {
+        "primary": "Djeroraa",
+        "primary_family": "near_eastern",
+        "secondary": "Deloro",
+        "secondary_family": "germanic",
+        "gloss": "lord of the peaceful dead"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterno, Dulro the just (the sun above the feather of right-order), Erlant of the sworn crusade, Rialda the merciful - and names the Chaotic powers tiufala (devils) / Hefau-kin, warded and unworshipped; the sworn knighthood and the just high-king are the social ideal",

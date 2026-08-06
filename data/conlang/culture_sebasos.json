@@ -255,10 +255,32 @@
     "_note": "Deity-names are morphs of the Agrippan canon (Hellenic reflexes primary, from classical theonym treatment; Egyptian variants secondary, from near_eastern theonym_sets), never real Greek/Egyptian gods. The Ptolan fuse the two cults (a Serapis-style syncretism): each power has a Hellenic court-name and an Egyptian temple-name, held to be one. Ptolan stance follows its CURRENT alignment (see worship_by_alignment). The polis-temple and the Egyptian Per-netjer keep the rites together.",
     "the_one": "Aiternos (< Aeternus; Egyptian temple-name Atjernaa) - the One, revered as the Most High when Lawful, acknowledged but set aside when Neutral, defied as the tyrant-god when Chaotic",
     "sample_deity_renames": {
-      "Tulrius": "Tulrios (Egy. Tjuraa) - sun and right-order; Lawful",
-      "Numeno": "Numenos - sky-wisdom; Lawful",
-      "Realta": "Realta (Egy. Riaret) - the mother; Neutral-honored",
-      "Maraxus": "Maraxos (Egy. Marakhu) - the war-fire; Chaotic, demonized"
+      "Tulrius": {
+        "primary": "Tulrios",
+        "primary_family": "classical",
+        "secondary": "Tjuraa",
+        "secondary_family": "near_eastern",
+        "gloss": "sun and right-order; Lawful"
+      },
+      "Numeno": {
+        "primary": "Numenos",
+        "primary_family": "classical",
+        "gloss": "sky-wisdom; Lawful"
+      },
+      "Realta": {
+        "primary": "Realta",
+        "primary_family": "classical",
+        "secondary": "Riaret",
+        "secondary_family": "near_eastern",
+        "gloss": "the mother; Neutral-honored"
+      },
+      "Maraxus": {
+        "primary": "Maraxos",
+        "primary_family": "classical",
+        "secondary": "Marakhu",
+        "secondary_family": "near_eastern",
+        "gloss": "the war-fire; Chaotic, demonized"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "revere the One (Aiternos/Atjernaa) and the Lawful powers (Tulrios, Orlandros, Numenos, Gauandos), demonize the Chaotic powers",

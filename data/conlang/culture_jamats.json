@@ -258,11 +258,41 @@
     "_note": "Deity-names are morphs of the Agrippan canon - Frankish reflexes PRIMARY (family_germanic theonym_ancestors, the frankish column: the High German shift th>d, d>t), Japonic variants SECONDARY and treated exactly as Yamataian treats them: wholly NATIVE kami (family_east_asian theonym_sets.japonic), NOT borrowed from the Sinitic forms and never real Shinto kami. ALIGNMENT IS PROVISIONAL (Lawful/Neutral): the Frankish feudal oath-order and the samurai bushido way both read Lawful (the sworn lord-vassal bond, the disciplined warrior-code, the kami of sun and blade and ancestors), but an older island layer reads Neutral (the wild kami, the mountain-oni, the local hearth- and grove-spirits). Both treatments given below pending Jedidiah's alignment decision (see gdd-culture-emergence-and-territory.md open questions).",
     "the_one": "Aiterno (Frankish < *Aiternaz; Japonic Takami-no-kami) - the distant Ancient One, the High-Heaven One above the lesser powers, honored not petitioned",
     "sample_deity_renames": {
-      "Tulrius": "Dulro (Jp. Terashi-no-kami) - the sun, the just brightness, right-rule",
-      "Orlandus": "Erlant (Jp. Hagane-no-kami) - iron, the blade-oath, war",
-      "Gaiandus": "Giando (Jp. Iwane-no-kami) - the enduring earth, the rock-root mountain",
-      "Numeno": "Numino (Jp. Amatsukaze-no-kami) - air, lightning, sky-wisdom",
-      "Realta": "Rialda (Jp. Megumi-hime) - the mother, mercy, healing"
+      "Tulrius": {
+        "primary": "Dulro",
+        "primary_family": "germanic",
+        "secondary": "Terashi-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the sun, the just brightness, right-rule"
+      },
+      "Orlandus": {
+        "primary": "Erlant",
+        "primary_family": "germanic",
+        "secondary": "Hagane-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "iron, the blade-oath, war"
+      },
+      "Gaiandus": {
+        "primary": "Giando",
+        "primary_family": "germanic",
+        "secondary": "Iwane-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "the enduring earth, the rock-root mountain"
+      },
+      "Numeno": {
+        "primary": "Numino",
+        "primary_family": "germanic",
+        "secondary": "Amatsukaze-no-kami",
+        "secondary_family": "east_asian",
+        "gloss": "air, lightning, sky-wisdom"
+      },
+      "Realta": {
+        "primary": "Rialda",
+        "primary_family": "germanic",
+        "secondary": "Megumi-hime",
+        "secondary_family": "east_asian",
+        "gloss": "the mother, mercy, healing"
+      }
     },
     "worship_by_alignment": {
       "Lawful": "venerates the Lawful powers - Aiterno foremost, Dulro the just-bright, Erlant of the sworn war, Rialda the merciful, Giando the steadfast earth (and their kami faces: Terashi-no-kami, Hagane-no-kami) - and names the Chaotic powers warded and unworshipped (the Frankish ungiwiht/devils, the wild oni); the sworn lord-vassal oath and the bushido way are the social ideal",

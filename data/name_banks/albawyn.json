@@ -350,10 +350,26 @@
     "religious_orders_pattern": "the Nemed (sacred grove) of [power]: 'the Nemed of Toran'.",
     "saints_pattern": "the Tuath-de (the god-kin) and the ancestral heroes of the fine, honored at the cairn and the holy well; the Lawful add 'Naomh [name]' (saint).",
     "sample_deity_renames": {
-      "Gaiandus": "Gaian (the enduring land)",
-      "Orlandus": "Orlann (the iron-oath, battle)",
-      "Realta": "Realtan (the mother, the mercy-star)",
-      "Tulrius": "Toran (the sun, the just brightness)"
+      "Gaiandus": {
+        "gloss": "the enduring land",
+        "primary": "Gaian",
+        "primary_family": "celtic"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, battle",
+        "primary": "Orlann",
+        "primary_family": "celtic"
+      },
+      "Realta": {
+        "gloss": "the mother, the mercy-star",
+        "primary": "Realtan",
+        "primary_family": "celtic"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the just brightness",
+        "primary": "Toran",
+        "primary_family": "celtic"
+      }
     },
     "the_one": "Eternan (< Aeternus; the Ancient One beyond the god-kin, seldom petitioned)",
     "worship_by_alignment": {

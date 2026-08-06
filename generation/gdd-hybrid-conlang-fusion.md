@@ -5,7 +5,7 @@
 **Depends on ACKS rules:** None. ACKS 1e does not specify conlang construction; this is naming/flavor only (catalog §5.3 allows real-register common words; deity names remain Agrippan-canon morphs).
 **Depends on project GDDs:** [`gdd-naming-conventions.md`](gdd-naming-conventions.md), [`gdd-culture-emergence-and-territory.md`](gdd-culture-emergence-and-territory.md).
 **Modifiable by Claude Code:** This governs authored data, not runtime code; the protocol itself is a design decision.
-**Last updated:** 2026-06-27
+**Last updated:** 2026-07-01
 
 ---
 
@@ -96,20 +96,30 @@ The archetype (emergence GDD §3.2) sets the naming device:
 
 Two coupled runtime rules that finish the hybrid model: **how** a hybrid's pantheon is voiced at play time, and **which** runtime merges may produce which archetype. Both are MATERIALIZATION/runtime features — specced here, implemented when NPC/temple/shrine naming lands (deity stratification) and in Phase 4c/4d (merge gating).
 
-### 6.1 The data already in place
-Every hybrid conlang `religion.sample_deity_renames` maps each Agrippan canon-name to **two morphs — one per parent family** — written `PRIMARY (Lang. SECONDARY)`:
-- `arjungs` (Conquest): `Thulrs (Pers. Turvasa)` — Gothic primary, Persian secondary.
-- `djetani` (Peer): `Tjuraa (Lat. Tulri)` — Egyptian primary, Latin secondary.
-- `samanumu` (Confed): `Thulr (Woodland Tularonon)` — Norse primary, Woodland secondary.
+### 6.1 The data shape — structured per-family morphs (implemented 2026-07-01)
+Every hybrid conlang `religion.sample_deity_renames` maps each Agrippan canon-name to a **structured object** carrying up to two morphs — one per parent language family — plus the shared gloss. These were originally packed into one string `PRIMARY (Lang. SECONDARY) - gloss`; `tools/restructure_deity_renames.py` (an idempotent one-off) split them into role-keyed objects so the runtime router (§6.2) does a clean lookup with no re-parsing:
 
-`religion._note` states which family is primary/secondary. **PRIMARY = the linguistic backbone** (`blend.lean` / `inherits[0]`) — the tongue whose phonology dominates the fused language. This is a *linguistic* axis, **decoupled** from the *religious* conqueror (§6.2). No new data is needed for stratification; both morphs already exist, family-tagged.
+```json
+"Tulrius": {
+  "primary": "Thulrs", "primary_family": "germanic",
+  "secondary": "Turvasa", "secondary_family": "near_eastern",
+  "gloss": "the sun, justice, and the lamp of right-order"
+}
+```
+- `arjungs` (Conquest): primary `Thulrs`[germanic], secondary `Turvasa`[near_eastern].
+- `djetani` (Peer): primary `Tjuraa`[near_eastern], secondary `Tulri`[classical].
+- `samanumu` (Confed): primary `Thulr`[germanic], secondary `Tularonon`[north_american].
+
+**`primary` = the leading (backbone / canon-key) morph; its family comes from the SECONDARY's tag** (the primary is the complementary `inherits` family), NOT from `inherits[0]` — because `inherits[0]` is not reliably the backbone: `sebasos` (near_eastern×classical) and the `kaimets/Delorum` entry INVERT, carrying the primary morph in `inherits[1]`. The morph's family is a *linguistic* axis, **decoupled** from the *religious* conqueror (§6.2). Entries with only one morph — bases, fully-fused Confederated / single-register hybrids (cenumu, shidean, ramqet, tamkari), and same-family Peer pairs where only the primary was authored — omit the `secondary`/`secondary_family` keys. `the_one` is intentionally left as a string: it carries etymology (`< Aeternus`) and occasionally >2 morphs (zetana), and the router stratifies the *pantheon*, not the distant honored-not-petitioned One.
+
+**Shape decision — role-keyed, not the bare family-keyed `{germanic: .., near_eastern: ..}`.** The inversions above, plus same-family Peer hybrids (ausonians/hekana/mudana/tollteca — two morphs from ONE family, which collide under family keys), both break a naïve family→morph map. Role keys (`primary`/`secondary` + `*_family`) sidestep both and keep `primary` positionally stable, so the offline name-bank build stays byte-identical: `build_name_banks.deity_stems_for` reads `["primary"]`, and `first_token(primary) == first_token(old packed string)` by construction (asserted by the transform).
 
 ### 6.2 Deity stratification — Conquest hybrids (two registers)
 Per Jedidiah: a conquered people keeps its gods in the folk layer while the conqueror's gods rule the state cult. Same canon-deity, two names:
 - **Temples + Ruler/Noble NPCs → the CONQUEROR's morph** (the clan).
 - **Shrines + commoner/peasant NPCs → the CONQUERED's morph** (the civ).
 
-**Route by parent-FAMILY (conqueror = the clan, §6.4), not by primary/secondary slot.** For the Germanic/Celtic conquests the conqueror *is* the primary (Gothic/Goidelic backbone), so temples read the primary. But the **8 Wendaki conquests keep the settled civ as their linguistic backbone** (a nomad conqueror adopting the literate administrative tongue — historically the norm: Mongols/Yuan, Manchu/Qing, Germanic/Rome), so there the conqueror (Wendaki) is the **secondary** morph and the temples read the *secondary*. The materializer selects "the morph tagged with the **clan** family," whichever slot it occupies. *(Impl note: the two morphs currently share one string `Primary (Lang. Secondary)`; a clean materializer wants them split to `{family: morph}` per canon-deity — a later data-shape refinement, not a re-authoring.)*
+**Route by parent-FAMILY (conqueror = the clan, §6.4), not by primary/secondary slot.** For the Germanic/Celtic conquests the conqueror *is* the primary (Gothic/Goidelic backbone), so temples read the primary. But the **8 Wendaki conquests keep the settled civ as their linguistic backbone** (a nomad conqueror adopting the literate administrative tongue — historically the norm: Mongols/Yuan, Manchu/Qing, Germanic/Rome), so there the conqueror (Wendaki) is the **secondary** morph and the temples read the *secondary*. The materializer selects "the morph whose `*_family` is the **clan** family," whichever role slot it occupies. *(The two morphs are now stored structured — `{primary, primary_family, secondary, secondary_family, gloss}` per canon-deity (§6.1, implemented 2026-07-01) — so the materializer matches on `primary_family`/`secondary_family` directly, no string parsing. For an entry with only a `primary` (single-register hybrid), that morph serves both registers.)*
 
 ### 6.3 Deity fusion — Peer & Confederated hybrids (one register)
 No conqueror → no elite/folk split. The **primary (backbone-fused) morph is used uniformly** at temples and shrines — it is already the canon-name reflexed through the fused phonology (`Tjuraa < Tulrius`), i.e. the "hybridize via the conlang sound-laws" result Jedidiah asked for. The secondary morph survives as a dialectal/older variant for flavor, not stratified by class.
@@ -130,5 +140,5 @@ Because all 24 Conquest kits encode clan-as-conqueror uniformly, **one archetype
 - **Etymology transparency.** `fusion_rules` documents the derivation so names stay reproducible and reviewable; if that proves noisy in the data files, it could move to a sidecar doc.
 - **Deep-fusion vs lean-fusion.** All hybrids currently use the same protocol. If some pairings (e.g. a light, recent contact) should stay more diglossic, that would need a per-hybrid "fusion depth" flag — not currently modeled.
 - **Name banks.** The build step that assembles `data/name_banks/` from kits should draw on the fused lexicon, not the retired slash forms.
-- **Deity-morph data shape (§6.1).** The two per-deity morphs currently live in one string `Primary (Lang. Secondary)`. The temple/shrine router (§6.2) needs to select by parent-family; a clean shape is `sample_deity_renames[canon] = {<family_a>: morph, <family_b>: morph}` (or a `morphs_by_family` sidecar). Deferred to the NPC/temple/shrine materialization pass — the current strings are sufficient for the spec and are family-tagged, just parse-y.
+- **Deity-morph data shape (§6.1) — DONE 2026-07-01.** The per-deity morphs are now split from the packed string into a structured object `{primary, primary_family, secondary, secondary_family, gloss}` (`tools/restructure_deity_renames.py`, idempotent). The shape is **role-keyed, not the bare `{family: morph}`** sketched here originally: two kinds of entry break a bare family map — (a) INVERSIONS (`sebasos`, `kaimets/Delorum`) where the primary morph belongs to `inherits[1]`, and (b) same-family Peer hybrids (ausonians/hekana/mudana/tollteca) whose two morphs share one family and would collide on the key. Role keys carry the family as a value (`*_family`) and keep `primary` positionally stable, so the name-bank build (`deity_stems_for`) stays byte-identical. The runtime router (§6.2) selects on `primary_family`/`secondary_family`. `the_one` was intentionally left a string (etymology + occasional >2 morphs; not part of the stratified pantheon).
 - **Wendaki-conquest backbone (§6.2).** The 8 Wendaki conquests carry the *settled civ* as their linguistic backbone, so the conqueror (Wendaki) is the deity **secondary**. The decoupling (route religion by conqueror-family, not by backbone) resolves this and is arguably more realistic (nomad conqueror adopts the administrative tongue). Left as-is; revisit only if a uniform "conqueror = backbone" is ever wanted (that would mean re-fusing 8 lexicons — heavy, not recommended).

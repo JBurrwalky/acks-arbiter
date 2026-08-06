@@ -346,10 +346,34 @@
     "religious_orders_pattern": "the Templ-miao (temple) of [power]: 'the Templ-miao of Tulin'; the law-curia keeps its codex-stele.",
     "saints_pattern": "deified law-givers and worthy officials enrolled in the celestial register; 'Divus [name]' / 'the Lord [name]', honored at the ancestral hall and the miao.",
     "sample_deity_renames": {
-      "Numeno": "Numengus (Sinitic Numeng-jun) - the scribe-wisdom, keeper of the codex; Lawful power",
-      "Orlandus": "Orlanus (Sinitic Orla-jun) - the iron-oath, war; Lawful power",
-      "Realta": "Relianta (Sinitic Lianta-mu) - the mother of mercy; Neutral-honored",
-      "Tulrius": "Tulin (Sinitic Tuli-di) - sun and judgment, lord of the law-stele; Lawful power"
+      "Numeno": {
+        "gloss": "the scribe-wisdom, keeper of the codex; Lawful power",
+        "primary": "Numengus",
+        "primary_family": "classical",
+        "secondary": "Numeng-jun",
+        "secondary_family": "east_asian"
+      },
+      "Orlandus": {
+        "gloss": "the iron-oath, war; Lawful power",
+        "primary": "Orlanus",
+        "primary_family": "classical",
+        "secondary": "Orla-jun",
+        "secondary_family": "east_asian"
+      },
+      "Realta": {
+        "gloss": "the mother of mercy; Neutral-honored",
+        "primary": "Relianta",
+        "primary_family": "classical",
+        "secondary": "Lianta-mu",
+        "secondary_family": "east_asian"
+      },
+      "Tulrius": {
+        "gloss": "sun and judgment, lord of the law-stele; Lawful power",
+        "primary": "Tulin",
+        "primary_family": "classical",
+        "secondary": "Tuli-di",
+        "secondary_family": "east_asian"
+      }
     },
     "the_one": "Aiterneng (< Aeternus; fused Latin Aeternus / Sinitic Aiteng) - Highest Heaven, the source of the Mandate and the law; revered above all when Lawful, served-not-petitioned when Neutral",
     "worship_by_alignment": {

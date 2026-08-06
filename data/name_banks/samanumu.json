@@ -354,11 +354,41 @@
     "religious_orders_pattern": "the Hof (Norse temple) or Lundr (sacred grove) of [power] beside the Woodland Kanonhses (rite-longhouse) and the forest-grove: 'the Hof of Thulr', 'the Kanonhses of Tularonon', 'the Lundr of Geyandr'.",
     "saints_pattern": "the deified aett-dead (the war-honored ancestors of the settler-houses, kept at the howe) and the founders of the kindred-peace and the honored clan-mothers and sachems, kept in the thing's recital and the council's recital; honored at the howe, the hof-grove and the burial-grove.",
     "sample_deity_renames": {
-      "Gaiandus": "Geyandr (Woodland Kayanonon) - the enduring earth, the earth-holder",
-      "Numeno": "Nymir (Woodland Nunaronon) - air, sky-wisdom, lightning",
-      "Orlandus": "Orlund (Woodland Oranhonon) - iron, oath, war",
-      "Realta": "Rjalta (Woodland Realwenne) - the mother, mercy, the clan-mother of the powers",
-      "Tulrius": "Thulr (Woodland Tularonon) - the sun, the day-keeper, justice"
+      "Gaiandus": {
+        "gloss": "the enduring earth, the earth-holder",
+        "primary": "Geyandr",
+        "primary_family": "germanic",
+        "secondary": "Kayanonon",
+        "secondary_family": "north_american"
+      },
+      "Numeno": {
+        "gloss": "air, sky-wisdom, lightning",
+        "primary": "Nymir",
+        "primary_family": "germanic",
+        "secondary": "Nunaronon",
+        "secondary_family": "north_american"
+      },
+      "Orlandus": {
+        "gloss": "iron, oath, war",
+        "primary": "Orlund",
+        "primary_family": "germanic",
+        "secondary": "Oranhonon",
+        "secondary_family": "north_american"
+      },
+      "Realta": {
+        "gloss": "the mother, mercy, the clan-mother of the powers",
+        "primary": "Rjalta",
+        "primary_family": "germanic",
+        "secondary": "Realwenne",
+        "secondary_family": "north_american"
+      },
+      "Tulrius": {
+        "gloss": "the sun, the day-keeper, justice",
+        "primary": "Thulr",
+        "primary_family": "germanic",
+        "secondary": "Tularonon",
+        "secondary_family": "north_american"
+      }
     },
     "the_one": "Eitnir (Norse; Woodland Aterhonon) - the distant Ancient One, the Sky-Holder-Above, acknowledged but set aside, honored not petitioned",
     "worship_by_alignment": {

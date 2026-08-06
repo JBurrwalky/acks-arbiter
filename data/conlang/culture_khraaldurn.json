@@ -208,10 +208,26 @@
     "_note": "Deity-names are the Khraaldurn reflexes of the Dwarven morphs of the Agrippan canon (family_dwarven.json) - never real dwarf-gods; sacred ending -drumm (masc) / -drumma (fem). The MOST ancestor-centric of all dwarves: in the long dark the durnad (honored dead) and fadruun (clan-fathers) are nearly all of daily faith, kept on the longest ancestor-rolls and cairns; the gods are honored only at the great seasonal festivals, foremost the forge (Orluundrumm) and the mountain/mine (Gunduundrumm). Withdrawn, traditional, and overwhelmingly Neutral.",
     "the_one": "Atruundrumm (< Aeternus; sacred-masc -drumm; the Stone-Father, the First Shaper; honored at the great festivals, most distant of all from the daily cairn-prayers)",
     "sample_deity_renames": {
-      "Orlandus": "Orluundrumm (the forge, the smith, oaths and iron; most honored god, masc.)",
-      "Gaiandus": "Gunduundrumm (the mountain, the mine, the deep earth; co-foremost, masc.)",
-      "Delorum": "Delruundrumm (death and the honored dead; the ancestor-warden, central here, masc.)",
-      "Realta": "Reltaadrumma (the hearth-mother, mercy; honored, fem.)"
+      "Orlandus": {
+        "primary": "Orluundrumm",
+        "primary_family": "dwarven",
+        "gloss": "the forge, the smith, oaths and iron; most honored god, masc."
+      },
+      "Gaiandus": {
+        "primary": "Gunduundrumm",
+        "primary_family": "dwarven",
+        "gloss": "the mountain, the mine, the deep earth; co-foremost, masc."
+      },
+      "Delorum": {
+        "primary": "Delruundrumm",
+        "primary_family": "dwarven",
+        "gloss": "death and the honored dead; the ancestor-warden, central here, masc."
+      },
+      "Realta": {
+        "primary": "Reltaadrumma",
+        "primary_family": "dwarven",
+        "gloss": "the hearth-mother, mercy; honored, fem."
+      }
     },
     "worship_by_alignment": {
       "Neutral": "the dwarven norm at its deepest: daily prayer to the honored dead (durnad) and clan-fathers (fadruun) at the cairn and tomb-hall, kept on the longest ancestor-rolls; the gods honored only at the great seasonal festivals, foremost the forge (Orluundrumm) and the mountain/mine (Gunduundrumm); the long-dark moon (Noklaadrumma) watched and respected",
