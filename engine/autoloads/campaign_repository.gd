@@ -504,6 +504,17 @@ func get_character(id: String) -> Dictionary:
 	return _sanitize_character_record(db.query_result[0])
 
 
+## Persist only the personality JSON for a character (gdd-npc-personality.md §7;
+## DispositionTracker writes runtime disposition changes here without rewriting
+## the whole row). [param personality_json] is the NpcPersonality.to_json() string.
+func update_character_personality(id: String, personality_json: String) -> bool:
+	if id.is_empty():
+		return false
+	return db.query_with_bindings(
+		"UPDATE characters SET personality = ?, updated_at = datetime('now') WHERE id = ?",
+		[personality_json, id])
+
+
 func save_character(data: Dictionary) -> bool:
 	# Upsert: update if exists, insert if not
 	data = _sanitize_character_record(data)

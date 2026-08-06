@@ -32,8 +32,15 @@ var distinctive_feature: String = ""    # §4.3 one-line memorable detail
 var personality_summary: String = ""    # 2-3 sentence human-readable summary
 var speech_notes: String = ""           # dialogue-voice instructions
 
-## Runtime disposition toward the party (-5..+5, starts 0; updated during play).
+## Runtime disposition toward the party (-5..+5, starts 0; updated during play
+## by DispositionTracker as the party interacts with this NPC). This is the
+## per-NPC, direct-interaction feeling — distinct from the broad/cascading
+## ReputationSystem standing (faction/settlement/domain). See gdd-npc-personality.md §7.1.
 var disposition: int = 0
+## Direction of the most recent disposition change: "warming" | "cooling" | "stable".
+var disposition_trend: String = "stable"
+## Capped log of recent disposition changes (newest last): [{delta, reason, value}].
+var disposition_history: Array = []
 
 
 ## Returns the integer score (1-10) for an axis, defaulting to the neutral
@@ -76,6 +83,8 @@ static func from_dict(data: Dictionary) -> NpcPersonality:
 	p.personality_summary = String(data.get("personality_summary", ""))
 	p.speech_notes = String(data.get("speech_notes", ""))
 	p.disposition = int(data.get("disposition", 0))
+	p.disposition_trend = String(data.get("disposition_trend", "stable"))
+	p.disposition_history = data.get("disposition_history", [])
 	return p
 
 
@@ -90,9 +99,12 @@ func to_dict() -> Dictionary:
 		"personality_summary": personality_summary,
 		"speech_notes": speech_notes,
 		"disposition": disposition,
+		"disposition_trend": disposition_trend,
 	}
 	if not sampled_axes.is_empty():
 		out["sampled_axes"] = sampled_axes.duplicate()
+	if not disposition_history.is_empty():
+		out["disposition_history"] = disposition_history.duplicate()
 	return out
 
 

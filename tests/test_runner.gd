@@ -711,6 +711,8 @@ extends Node
 @onready var _region_label_renderer_tests = $RegionLabelRendererTests
 # 2026-06-24 — Continent/sea/ocean labels on the 24-mile World Map tab (PoliticalMapView)
 @onready var _political_map_view_labels_tests = $PoliticalMapViewLabelsTests
+# 2026-06-14 — Personality consumers (reaction modifiers + disposition + loyalty)
+@onready var _personality_consumers_tests = $PersonalityConsumersTests
 
 
 func _ready() -> void:
@@ -1436,7 +1438,9 @@ func run() -> void:
 			_dungeon_tie_in_consequences_tests,
 			# 2026-07-18 — Creature size / multi-cell footprints
 			_creature_footprint_tests,
-			_monster_footprint_data_tests]:
+			_monster_footprint_data_tests,
+			# 2026-06-14 — Personality consumers (reaction / disposition / loyalty)
+			_personality_consumers_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
