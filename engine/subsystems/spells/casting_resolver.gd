@@ -1028,7 +1028,7 @@ func _apply_condition(
 ## charm-like spells (charm_animal when its effect block lands, command
 ## spells, etc.) reuse the same step kind.
 func _flip_to_caster_team(
-		step: Dictionary,
+		_step: Dictionary,
 		target_descriptor: TargetDescriptor,
 		targets_by_id: Dictionary,
 		caster_entity: Variant,
