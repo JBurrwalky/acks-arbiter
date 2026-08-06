@@ -81,4 +81,15 @@ Select-String -Path $log -Pattern "TEST MODE|passed|failed|PASS|FAIL|TOTAL" |
     Select-Object -Last 12 |
     ForEach-Object { "  " + $_.Line }
 
+# Crash detection (2026-08-06): a run that dies before printing the
+# "=== TEST RESULTS ===" line (e.g. the signal-11 memory-exhaustion crash in
+# the async block, exit 139) is INCOMPLETE, not failed — but it must never
+# read as a clean run either. Force a non-zero exit and say so loudly.
+if (-not (Select-String -Path $log -Pattern "=== TEST RESULTS" -Quiet)) {
+    Write-Host "RUN INCOMPLETE: no '=== TEST RESULTS' line in the log - the process"
+    Write-Host "crashed or hung before finishing (last exit code: $exit)."
+    Write-Host "This is NOT a test failure signal; see the log tail for the crash site."
+    exit 1
+}
+
 exit $exit

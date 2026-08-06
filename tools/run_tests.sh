@@ -58,6 +58,17 @@ echo "Summary (last lines):"
 # `|| true` so a no-match grep (or the pipeline under pipefail) can't trip set -e.
 grep -E "TEST MODE|passed|failed|PASS|FAIL|TOTAL" "$log" | tail -n 12 | sed 's/^/  /' || true
 
+# Crash detection (2026-08-06): a run that dies before printing the
+# "=== TEST RESULTS ===" line (e.g. the signal-11 memory-exhaustion crash in
+# the async block, exit 139) is INCOMPLETE, not failed — but it must never
+# read as a clean run either. Force a non-zero exit and say so loudly.
+if ! grep -q "=== TEST RESULTS" "$log"; then
+  echo "RUN INCOMPLETE: no '=== TEST RESULTS' line in the log — the process"
+  echo "crashed or hung before finishing (last exit code: $exit_code)."
+  echo "This is NOT a test failure signal; see the log tail for the crash site."
+  exit 1
+fi
+
 # Propagate the last run's exit code (parity with run_tests.ps1) — informational
 # only; the authoritative pass/fail is the summary above.
 exit "$exit_code"

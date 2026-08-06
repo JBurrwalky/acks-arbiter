@@ -1557,6 +1557,47 @@ Two test-authoring bugs recur often enough to name. Both make a test fail while 
   For signals that carry payload, accumulate the payload: `sink.append([from, to])` then assert on `sink[-1]`, or `var seen := {}; ...seen["pos"] = p...` then assert on `seen["pos"]`. This is the pattern already used in `test_session_runner.gd::test_nested_transition_skips_stale_postamble`.
 
 - **A bare `.new()` on a Node/scene script skips `_ready()`.** Fields that the script initializes in `_ready()` (registries, sub-services, scheduler loops, monster registries) stay `null`, so any method that assumes full init null-derefs and aborts mid-way — often *before* the line the test is actually checking, producing a misleading "got 0 / empty" result rather than an obvious crash. Fixes, in order of preference: call the script's own init helper if it is factored out (e.g. `screen._init_registries()`), set the specific fields the exercised path needs (`runner._monster_registry = MonsterRegistry.new()`), or use a helper that stubs them (`_make_runner_with_hex_controller()` wires `_scheduler`/`_handler_registry`/`_scheduler_loop`). If the code under test needs the scene tree (e.g. `PopupPanel.popup_centered_ratio` errors with `!is_inside_tree()`), `add_child(node)` before exercising it and free it afterward. Prefer the test-side fix over adding a production null-guard unless the guard is independently warranted.
+### 9.8 Test-runner per-suite reclamation (2026-08-06)
+
+All ~530 sync suites run inside one call, so without intervention the engine
+never processes a frame until the async block at the end of the run. That
+single-frame-for-the-whole-run shape caused a measured 9.13 GB peak working
+set and a reproducible signal-11 crash (exit 139, 3 of 4 runs): every
+`queue_free()`/`call_deferred` a suite issued accumulated in the engine
+MessageQueue, and at the first real frame boundary the queue was over its
+32 MB cap — Godot's overflow dump (`CallQueue::statistics`, one
+`Object was deleted while awaiting a callback.` line per dead-target message)
+then corrupted the queue and segfaulted before `=== TEST RESULTS ===` printed.
+
+`test_runner.gd.run()` therefore does three things after every sync suite,
+and future suite/runner work must preserve them:
+
+- **`suite.free()`** as soon as `has_failures()`/`fail_count()` are read.
+  Releases member-held data (parsed catalogs, registries, seed worlds) and
+  auto-disconnects the suite's signal wiring. Safety was swept 2026-08-06:
+  no sync suite `await`s, none stores self-bound Callables into autoloads,
+  none reads DB rows another suite created. **Keep it that way** — a suite
+  must be freeable the moment its result is read. The three async suites are
+  excluded (they are awaited after the sync loop).
+- **`GameLog.clear_for_tests()`** — GameLog is the one autoload accumulator
+  suite-freeing cannot reach: it appends a duplicated payload dict per
+  EventBus emission (every dice roll, hp change, scheduler event) and clears
+  only on `session_ended`, which almost no suite emits. The hook is the same
+  discard `_on_session_ended` performs: no persistence, no signals.
+- **`await get_tree().process_frame`** — flushes the MessageQueue
+  incrementally (flush silently skips dead-target messages, so the overflow
+  dump never runs) and lets `SceneTreeTimer`s fire near when they were made.
+  A consequence to remember: deferred work a suite queues now executes at
+  the frame boundary right after that suite, not at end of run — a suite
+  must not queue deferred work whose execution would corrupt a LATER suite
+  (there is deliberately no mid-run DB wipe, so deferred work that touches
+  its own campaign rows still finds them).
+
+Post-fix peak working set is ~2.4 GB and the `TEST RESULTS` line prints
+reliably. The wrappers (`tools/run_tests.sh` / `.ps1`) additionally detect a
+log with no `=== TEST RESULTS` line and report `RUN INCOMPLETE` with a
+forced non-zero exit, so a future crash-before-summary can never read as a
+clean run.
 
 ---
 

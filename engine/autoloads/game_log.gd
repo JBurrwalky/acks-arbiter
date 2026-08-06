@@ -224,6 +224,18 @@ func _on_session_ended() -> void:
 	_ruler_pending_slots.clear()
 
 
+## Test-runner-only reclamation hook (2026-08-06, wipe_for_tests naming
+## precedent). The headless suite runs ~530 test suites in one process and
+## almost none of them emit session_ended, so _stores grows one duplicated
+## payload dict per EventBus emission — every dice roll, hp change and
+## scheduler event of the whole run — and became a GB-scale share of the
+## memory-exhaustion crash. test_runner.gd calls this between suites; it is
+## the same discard _on_session_ended performs, and it must stay a discard:
+## no persistence, no signals.
+func clear_for_tests() -> void:
+	_on_session_ended()
+
+
 func _on_campaign_saved(campaign_id: String) -> void:
 	_append("session", "campaign_saved",
 		"Campaign saved", "", "",
