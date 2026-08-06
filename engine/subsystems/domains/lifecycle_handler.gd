@@ -183,8 +183,8 @@ static func conquer_domain(
 	var pillage_result: Dictionary = RealmRepository.apply_pillage(
 		domain_id, pillage_severity)
 
-	# Cascade vassals before mutating the row.
-	_cascade_vassals(domain_id, prior_owner, calendar_day)
+	# The domain's own oath upward ends on every outcome — its overlord has lost it.
+	_detach_upward_edge(domain_id, calendar_day)
 
 	match outcome:
 		OUTCOME_OCCUPIED:
@@ -199,6 +199,24 @@ static func conquer_domain(
 				domain_id, STATE_SALTED_TO_RUIN, calendar_day, 0)
 			CampaignRepository.release_domain_hexes(domain_id)
 
+	# R-5 (DOWNWARD): the fiefs held OF this domain. A domain salted to ruin has no
+	# lord left to swear to, so those oaths simply end; a domain that survives under
+	# a new owner gives each sub-vassal a loyalty roll against the man who took his
+	# lord's place, at RAW's alignment modifiers plus the ruling's -2 for conquest.
+	#
+	# ORDER MATTERS. This runs BEFORE `domain_conquered` is emitted, so the
+	# sub-vassals are already re-pointed (or gone) by the time
+	# `VassalLoyaltyTriggers._on_domain_conquered` fires the PRIOR owner's "my lord
+	# lost a stronghold" roll over his remaining vassals. Without that ordering the
+	# same vassal would roll twice for one conquest.
+	var sub_vassal_reports: Array = []
+	if outcome == OUTCOME_SALTED_TO_RUIN:
+		_detach_downward_edges(domain_id, calendar_day)
+	else:
+		sub_vassal_reports = SubVassalLoyalty.roll_for_transfer(
+			domain_id, prior_owner, new_owner_id,
+			SubVassalLoyalty.ACQ_CONQUEST, calendar_day)
+
 	# Departure-log entry. Summary carries the outcome + new owner + pillage
 	# result so future readers can reconstruct what happened end-to-end.
 	var log_payload: Dictionary = {
@@ -207,6 +225,7 @@ static func conquer_domain(
 		"prior_owner_id": prior_owner,
 		"pillage_severity": pillage_severity,
 		"pillage_result": pillage_result,
+		"sub_vassal_transfers": sub_vassal_reports,
 	}
 	for k in summary.keys():
 		log_payload[k] = summary[k]
@@ -217,7 +236,7 @@ static func conquer_domain(
 		log_payload)
 	# Signal payload changed at 0b: (domain_id, outcome, new_owner_id) per
 	# the polymorphic-new-owner-id pattern documented in coding_conventions §61.
-	EventBus.domain_conquered.emit(domain_id, outcome, new_owner_id)
+	EventBus.domain_conquered.emit(domain_id, outcome, new_owner_id, prior_owner)
 	return true
 
 
@@ -282,8 +301,11 @@ static func abandon_domain(
 		else:
 			liquidated_cp = 0  # report 0 in the log when there's no recipient
 
-	# Cascade vassals + release hexes.
-	_cascade_vassals(domain_id, prior_owner, calendar_day)
+	# Cascade vassals + release hexes. An abandoned domain has no successor lord,
+	# so both directions simply detach — there is nobody for the sub-vassals to
+	# roll loyalty AGAINST (contrast conquest, which hands them a new lord).
+	_detach_upward_edge(domain_id, calendar_day)
+	_detach_downward_edges(domain_id, calendar_day)
 	CampaignRepository.release_domain_hexes(domain_id)
 	CampaignRepository.update_domain_lifecycle_state(
 		domain_id, STATE_ABANDONED, calendar_day, 0)
@@ -412,32 +434,58 @@ static func _get_domain(domain_id: String) -> Dictionary:
 	return CampaignRepository.db.query_result[0].duplicate()
 
 
-## Mark every active vassal_assignment touching this domain as 'departed'.
-## Two cases:
-##   1. Domain D has vassals: terminate every assignment where the prior
-##      owner of D was the liege.
-##   2. Domain D IS a vassal of someone: terminate the assignment whose
-##      vassal_domain_id is D (the overlord loses this vassal).
-static func _cascade_vassals(
-	domain_id: String,
-	prior_owner_id: String,
-	calendar_day: int,
-) -> void:
-	# Case 1: this ruler's vassals lose their lord.
-	if not prior_owner_id.is_empty():
-		var assignments: Array = VassalRepository.list_active_for_liege(prior_owner_id)
-		for a: Dictionary in assignments:
-			VassalRepository.update_status(
-				String(a.get("id", "")), "departed", calendar_day)
-	# Case 2: any active assignment whose vassal_domain_id == this domain.
-	if not CampaignRepository.db.query_with_bindings("""
+## UPWARD: this domain's own oath ends — its overlord has lost it.
+##
+## R-5 split this out of the old `_cascade_vassals`, which handled both directions
+## with the same blunt "mark everything departed". The two directions are not
+## symmetrical: losing a domain always ends ITS oath upward, but what happens to
+## the fiefs held OF it depends on whether anyone is left to hold them of.
+##
+## Clears BOTH records, per conventions §135. The old code departed the assignment
+## and left `domains.liege_domain_id` pointing at the overlord — the two sources of
+## truth then disagreed, and because the downward cascade finds vassals THROUGH
+## that pointer, the stale edge became permanently unreachable.
+static func _detach_upward_edge(domain_id: String, calendar_day: int) -> void:
+	if CampaignRepository.db.query_with_bindings("""
 		SELECT id FROM vassal_assignments
 		WHERE vassal_domain_id = ? AND status = 'active'
+	""", [domain_id]):
+		for row: Dictionary in CampaignRepository.db.query_result.duplicate():
+			VassalRepository.update_status(
+				str(row.get("id", "")), "departed", calendar_day)
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET liege_domain_id = NULL, updated_at = datetime('now') WHERE id = ?",
+		[domain_id])
+
+
+## DOWNWARD, when there is no new lord to swear to: the domain is gone (salted to
+## ruin, or abandoned), so the fiefs held of it are simply released.
+##
+## When a domain survives under a NEW owner, do NOT call this — the sub-vassals get
+## `SubVassalLoyalty.roll_for_transfer` instead and decide for themselves whether
+## to serve him (R-5).
+##
+## Scoped by the authoritative `liege_domain_id` pointer (R-1), never liege-wide by
+## character: before R-1 this was `list_active_for_liege(prior_owner)`, which would
+## have dissolved a duke's ENTIRE realm on the loss of one frontier barony.
+##
+## Assignments with a NULL `vassal_domain_id` are deliberately untouched — those
+## are personal oaths with no fief attached, sworn to the ruler rather than to one
+## of his domains, so a lord who loses one domain does not lose his household.
+static func _detach_downward_edges(domain_id: String, calendar_day: int) -> void:
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT va.id AS assignment_id, vd.id AS vassal_domain_id
+		FROM vassal_assignments va
+		JOIN domains vd ON vd.id = va.vassal_domain_id
+		WHERE va.status = 'active' AND vd.liege_domain_id = ?
 	""", [domain_id]):
 		return
 	for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 		VassalRepository.update_status(
-			str(row.get("id", "")), "departed", calendar_day)
+			str(row.get("assignment_id", "")), "departed", calendar_day)
+		CampaignRepository.db.query_with_bindings(
+			"UPDATE domains SET liege_domain_id = NULL, updated_at = datetime('now') WHERE id = ?",
+			[str(row.get("vassal_domain_id", ""))])
 
 
 

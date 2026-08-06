@@ -73,17 +73,20 @@ static func _on_siege_started(_siege_id: String, stronghold_id: String,
 		"domain_id": domain_id, "stronghold_id": stronghold_id})
 
 
-## Site 2 — vassal / domain seizure (§10.5). The ruler whose situation changed
-## is the one who LOST the domain. domain_conquered fires AFTER the domain's
-## hexes/state are updated, but owner_character_id on the domain row still names
-## the prior owner at emit time (lifecycle_handler records the new owner into
-## the departure log, not onto the domain row).
+## Site 2 — vassal / domain seizure (§10.5). The ruler whose situation changed is
+## the one who LOST the domain.
+##
+## CORRECTED 2026-08-04 (R-5). The old comment here claimed "owner_character_id on
+## the domain row still names the prior owner at emit time" — it does not.
+## `conquer_domain` calls `reassign_domain_owner` BEFORE emitting, so reading the
+## owner back off the row returned the CONQUEROR, and Seam B was telling the winner
+## to reassess because he had been seized from. `prior_owner_id` now rides the
+## signal, so the loser is named directly instead of inferred.
 static func _on_domain_conquered(domain_id: String, _outcome: String,
-		_new_owner_id: String) -> void:
+		_new_owner_id: String, prior_owner_id: String) -> void:
 	if not LLMManager.is_configured() or domain_id.is_empty():
 		return   # inert under the mock (reassess is a no-op)
-	var ruler_id: String = _ruler_for_domain(domain_id)
-	dispatch(ruler_id, "vassal_seized", {"domain_id": domain_id})
+	dispatch(prior_owner_id, "vassal_seized", {"domain_id": domain_id})
 
 
 ## Site 3 — domain morale collapse (§10.5): new morale at or below Turbulent

@@ -781,7 +781,7 @@ static func compute_settled_lair_morale_penalty(domain_id: String, families: int
 	##   ÷ families in domain (peasant + urban; caller computes the sum)
 	##   banker's rounded to nearest whole number
 	## Returned as a POSITIVE penalty value; caller (domain_handlers
-	## ._event_modifiers_sum) subtracts from the morale-roll modifier.
+	## ._union_event_modifiers_sum) subtracts from the morale-roll modifier.
 	## Returns 0 if no settled lairs / no families / unknown creatures.
 	if domain_id.is_empty() or families <= 0:
 		return 0

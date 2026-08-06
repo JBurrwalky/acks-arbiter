@@ -533,6 +533,11 @@ extends Node
 # Phase 11D.5 — Tribal Warriors subsystem
 @onready var _tribal_warriors_tests = $TribalWarriorsTests
 @onready var _unit_loyalty_tests = $UnitLoyaltyTests
+@onready var _ruler_stub_minter_tests = $RulerStubMinterTests
+@onready var _sub_vassal_loyalty_tests = $SubVassalLoyaltyTests
+@onready var _domain_xp_award_tests = $DomainXpAwardTests
+@onready var _personal_domain_tests = $PersonalDomainTests
+@onready var _domain_unified_month_tests = $DomainUnifiedMonthTests
 # Phase 11E — Scenario harness integration tests
 @onready var _scenario_chaotic_clanhold = $ScenarioChaoticClanhold
 @onready var _scenario_succession = $ScenarioSuccession
@@ -1143,6 +1148,14 @@ func run() -> void:
 			_tribal_warriors_tests,
 			# RAW Unit Loyalty for the non-tribal source types (2026-08-03)
 			_unit_loyalty_tests,
+			_ruler_stub_minter_tests,
+			# R-5 — sub-vassal loyalty on a transfer of lordship
+			_sub_vassal_loyalty_tests,
+			# R-7a: domain income becomes character XP
+			_domain_xp_award_tests,
+			# D-12: the unified personal domain
+			_personal_domain_tests,
+			_domain_unified_month_tests,
 			# Phase 11E — Scenario integration tests
 			_scenario_chaotic_clanhold,
 			_scenario_succession,

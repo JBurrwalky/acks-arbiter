@@ -67,14 +67,20 @@ func _insert_character(id: String, name: String) -> void:
 	""", [id, TEST_CAMPAIGN, name])
 
 
-func _create_domain(domain_id: String, owner_id: String, treasury_cp: int = 0) -> void:
+## [param liege_domain_id] is the authoritative realm pointer (ruling R-1). A vassal
+## domain MUST carry it: `LifecycleHandler._cascade_vassals` scopes to the LOST
+## domain through it, so a vassal_assignment whose domain does not point at the
+## domain being abandoned is — correctly — left alone.
+func _create_domain(domain_id: String, owner_id: String, treasury_cp: int = 0,
+		liege_domain_id: String = "") -> void:
 	CampaignRepository.db.query_with_bindings("""
 		INSERT OR REPLACE INTO domains
 			(id, campaign_id, name, owner_character_id, territory_type,
 			 peasant_families, morale, treasury_cp,
-			 established_calendar_day, lifecycle_state)
-		VALUES (?, ?, ?, ?, 'wilderness', 100, 0, ?, 100, 'active')
-	""", [domain_id, TEST_CAMPAIGN, "Test Domain " + domain_id, owner_id, treasury_cp])
+			 established_calendar_day, lifecycle_state, liege_domain_id)
+		VALUES (?, ?, ?, ?, 'wilderness', 100, 0, ?, 100, 'active', ?)
+	""", [domain_id, TEST_CAMPAIGN, "Test Domain " + domain_id, owner_id, treasury_cp,
+		null if liege_domain_id.is_empty() else liege_domain_id])
 
 
 func _add_hex(domain_id: String, q: int, r: int) -> void:
@@ -163,7 +169,8 @@ func test_voluntary_abandon_liquidates_treasury_to_ruler() -> void:
 func test_voluntary_abandon_releases_hexes_and_cascades_vassals() -> void:
 	_cleanup(); _setup_campaign_and_owner()
 	_create_domain(DOMAIN_ID, OWNER_ID, 0)
-	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID, 0)
+	# R-1: the fief is held OF the abandoned domain, so the cascade reaches it.
+	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID, 0, DOMAIN_ID)
 	_add_hex(DOMAIN_ID, 0, 0)
 	_add_hex(DOMAIN_ID, 1, 0)
 	var assignment_id := _create_vassal_assignment(OWNER_ID, HENCHMAN_VASSAL_ID, VASSAL_DOMAIN_ID)

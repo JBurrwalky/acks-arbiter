@@ -143,6 +143,71 @@ static func compute_from_domain(domain: Dictionary) -> Dictionary:
 	}
 
 
+## D-12 Phase B — fold several parcels' summaries into the ONE garrison picture
+## the character's domain presents to the morale resolver.
+##
+## RAW states both garrison thresholds as gp **per family** over "the domain"
+## (§garrison L218/L226-227, §additional_troops L461-464). Under D-12 the domain
+## is the character's whole holding, so the ratio must be taken over the union:
+## a lord who garrisons his populous seat lavishly and leaves a small frontier
+## parcel bare is one ruler underpaying a little, not one paying well and one
+## paying nothing. Evaluating each parcel separately produced both a bonus and a
+## penalty in the same month for the same purse.
+##
+## Only the MORALE signals combine. Expenses stay per-parcel — each parcel's own
+## `total_paid_cp` is what its treasury actually pays out — so this is never fed
+## to `DomainExpenseCalculator`.
+##
+## `minimum_total_cp` is SUMMED rather than recomputed, which is what makes a
+## mixed clanhold/civilized holding come out right: each parcel keeps its own
+## RAW floor (400 vs 200 cp/family) and the union's per-family minimum falls out
+## as the population-weighted blend. [param classification] is the union's WORST
+## classification (`PersonalDomain.worst_classification`), matching the morale
+## resolver's classification modifier.
+##
+## Returns the same key set as [compute_from_domain], so every consumer —
+## `RulerBackdropStabilizer.adjust_garrison_summary` included — works unchanged.
+static func combine(summaries: Array, classification: String) -> Dictionary:
+	if summaries.is_empty():
+		return _empty_result()
+	var out: Dictionary = _empty_result()
+	var total_paid: int = 0
+	var unpaid_value: int = 0
+	var peasants: int = 0
+	var minimum_total: int = 0
+	for s in summaries:
+		if not (s is Dictionary):
+			continue
+		var row: Dictionary = s
+		total_paid += int(row.get("total_paid_cp", 0))
+		unpaid_value += int(row.get("unpaid_value_cp", 0))
+		peasants += int(row.get("peasant_families", 0))
+		minimum_total += int(row.get("minimum_total_cp", 0))
+	var total_value: int = total_paid + unpaid_value
+	var minimum_per_family: int = (minimum_total / peasants) if peasants > 0 \
+		else UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY
+	var cp_per_family: int = (total_value / peasants) if peasants > 0 else 0
+	var below_per_family_cp: int = maxi(0, minimum_per_family - cp_per_family)
+	out["total_paid_cp"] = total_paid
+	out["unpaid_value_cp"] = unpaid_value
+	out["total_value_cp"] = total_value
+	out["peasant_families"] = peasants
+	out["minimum_cp_per_family"] = minimum_per_family
+	out["minimum_total_cp"] = minimum_total
+	out["cp_per_family_value"] = cp_per_family
+	out["meets_minimum"] = total_value >= minimum_total
+	out["cp_below_minimum_per_family"] = below_per_family_cp
+	out["gp_below_minimum_per_family"] = int(ceil(float(below_per_family_cp) / 100.0)) \
+		if below_per_family_cp > 0 else 0
+	out["morale_incentive_bonus"] = _morale_incentive_bonus(
+		classification, cp_per_family, UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY)
+	out["wilderness_under_4gp"] = classification == "wilderness" and cp_per_family < 400
+	out["clanhold_offset_per_family_cp"] = maxi(
+		0, minimum_per_family - UNIVERSAL_GARRISON_MIN_CP_PER_FAMILY)
+	out["classification"] = classification
+	return out
+
+
 ## Compute the +0/+1/+2 morale incentive band per
 ## `acore_axioms` §additional_troops L461-464. RAW expresses the thresholds in
 ## gp/family; cp arithmetic uses 100 cp/family steps.

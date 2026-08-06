@@ -16,6 +16,10 @@ extends "res://tests/test_suite_base.gd"
 const TEST_CAMPAIGN := "test_outcomes_campaign"
 const DOMAIN_ID := "test_outcomes_domain"
 const VASSAL_DOMAIN_ID := "test_outcomes_vassal_domain"
+# R-1 cascade-scoping fixture: a second domain under the SAME liege, with its own
+# vassal, so a conquest can be shown not to touch it.
+const OTHER_DOMAIN_ID := "test_outcomes_other_domain"
+const OTHER_VASSAL_DOMAIN_ID := "test_outcomes_other_vassal_domain"
 const OWNER_ID := "test_outcomes_owner"
 const HENCHMAN_VASSAL_ID := "test_outcomes_henchman_vassal"
 const ATTACKER_ID := "test_outcomes_attacker"
@@ -27,7 +31,9 @@ const HEX_MAP_ID := "test_outcomes_map"
 func run_all_tests() -> void:
 	_cleanup()
 	test_outcome_occupied_preserves_hexes_reassigns_owner()
-	test_outcome_occupied_cascades_vassals()
+	test_outcome_occupied_transfers_or_breaks_vassals()
+	test_cascade_is_scoped_to_the_lost_domain()
+	test_cascade_leaves_landless_personal_oaths_alone()
 	test_outcome_occupied_logs_payload_with_outcome_and_new_owner()
 	test_outcome_looted_local_succession_applies_pillage_and_reassigns()
 	test_outcome_looted_requires_new_owner_id()
@@ -65,15 +71,20 @@ func _setup() -> void:
 		""", [cid, TEST_CAMPAIGN, "Char " + cid])
 
 
+## [param liege_domain_id] is the authoritative realm pointer (ruling R-1). A vassal
+## domain MUST carry it: `LifecycleHandler._cascade_vassals` is scoped to the lost
+## domain via `domains.liege_domain_id`, so a vassal_assignment whose vassal domain
+## does not point at the conquered domain is — correctly — left alone.
 func _create_domain(domain_id: String, owner_id: String, treasury_cp: int = 0,
-		peasants: int = 100) -> void:
+		peasants: int = 100, liege_domain_id: String = "") -> void:
 	CampaignRepository.db.query_with_bindings("""
 		INSERT OR REPLACE INTO domains
 			(id, campaign_id, name, owner_character_id, territory_type,
 			 peasant_families, morale, treasury_cp,
-			 established_calendar_day, lifecycle_state)
-		VALUES (?, ?, ?, ?, 'wilderness', ?, 0, ?, 100, 'active')
-	""", [domain_id, TEST_CAMPAIGN, "Test " + domain_id, owner_id, peasants, treasury_cp])
+			 established_calendar_day, lifecycle_state, liege_domain_id)
+		VALUES (?, ?, ?, ?, 'wilderness', ?, 0, ?, 100, 'active', ?)
+	""", [domain_id, TEST_CAMPAIGN, "Test " + domain_id, owner_id, peasants, treasury_cp,
+		null if liege_domain_id.is_empty() else liege_domain_id])
 
 
 func _add_hex(domain_id: String, q: int, r: int) -> void:
@@ -96,7 +107,7 @@ func _create_vassal_assignment(liege: String, vassal: String, vassal_domain: Str
 
 
 func _cleanup() -> void:
-	for d in [DOMAIN_ID, VASSAL_DOMAIN_ID]:
+	for d in [DOMAIN_ID, VASSAL_DOMAIN_ID, OTHER_DOMAIN_ID, OTHER_VASSAL_DOMAIN_ID]:
 		CampaignRepository.db.query_with_bindings(
 			"DELETE FROM domain_hexes WHERE domain_id = ?", [d])
 		CampaignRepository.db.query_with_bindings(
@@ -151,17 +162,87 @@ func test_outcome_occupied_preserves_hexes_reassigns_owner() -> void:
 	check(hexes.size() == 2, "hexes preserved, got %d" % hexes.size())
 
 
-func test_outcome_occupied_cascades_vassals() -> void:
+## R-5 changed what "cascade" MEANS on an occupied conquest. A sub-vassal no
+## longer simply departs — he rolls loyalty against the man who took his lord's
+## place, and either serves him (edge re-pointed, oath intact) or breaks away
+## (revolted, and the fief leaves the realm tree). The invariant that holds
+## whatever the dice say: he is no longer the PRIOR owner's vassal.
+func test_outcome_occupied_transfers_or_breaks_vassals() -> void:
 	_cleanup(); _setup()
 	_create_domain(DOMAIN_ID, OWNER_ID)
-	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID)
+	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID, 0, 100, DOMAIN_ID)
 	var assignment_id := _create_vassal_assignment(OWNER_ID, HENCHMAN_VASSAL_ID, VASSAL_DOMAIN_ID)
 	LifecycleHandler.conquer_domain(
 		DOMAIN_ID, 200,
 		LifecycleHandler.OUTCOME_OCCUPIED, ATTACKER_ID, 0, {})
 	var post: Dictionary = VassalRepository.get_assignment(assignment_id)
-	check(String(post.get("status", "")) == "departed",
-		"vassal cascade fires on occupied conquest")
+	var status := String(post.get("status", ""))
+	var liege := String(post.get("liege_character_id", ""))
+	check(not (status == "active" and liege == OWNER_ID),
+		"the sub-vassal no longer serves the lord who lost the domain (status=%s liege=%s)"
+			% [status, liege])
+	if status == "active":
+		check(liege == ATTACKER_ID,
+			"a retained sub-vassal is re-pointed to the conqueror, keeping his loyalty history")
+	else:
+		check(status == "revolted",
+			"a sub-vassal who refuses the conqueror REVOLTS rather than quietly departing")
+
+
+## R-1 companion lock. `_cascade_vassals` Case 1 was liege-WIDE BY CHARACTER: it
+## departed every assignment where the prior owner was the liege, no matter which
+## domain the fief was held of. That was invisible while world generation left
+## `vassal_assignments` empty; once R-1 fills it, a duke who lost one frontier
+## barony would have his ENTIRE realm dissolve in a single conquest.
+##
+## Setup: one liege holding TWO domains, with one vassal under each. Conquering the
+## first must release ONLY the fief held of it.
+func test_cascade_is_scoped_to_the_lost_domain() -> void:
+	_cleanup(); _setup()
+	var other_vassal := LOCAL_NPC_ID  # a second, distinct vassal character
+	_create_domain(DOMAIN_ID, OWNER_ID)
+	_create_domain(OTHER_DOMAIN_ID, OWNER_ID)
+	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID, 0, 100, DOMAIN_ID)
+	_create_domain(OTHER_VASSAL_DOMAIN_ID, other_vassal, 0, 100, OTHER_DOMAIN_ID)
+	var lost_edge := _create_vassal_assignment(
+		OWNER_ID, HENCHMAN_VASSAL_ID, VASSAL_DOMAIN_ID)
+	var kept_edge := _create_vassal_assignment(
+		OWNER_ID, other_vassal, OTHER_VASSAL_DOMAIN_ID)
+
+	LifecycleHandler.conquer_domain(
+		DOMAIN_ID, 200,
+		LifecycleHandler.OUTCOME_OCCUPIED, ATTACKER_ID, 0, {})
+
+	var lost: Dictionary = VassalRepository.get_assignment(lost_edge)
+	check(not (String(lost.get("status", "")) == "active"
+			and String(lost.get("liege_character_id", "")) == OWNER_ID),
+		"the fief held OF the conquered domain leaves the prior owner (R-5 rolls it)")
+	var kept: Dictionary = VassalRepository.get_assignment(kept_edge)
+	check(String(kept.get("status", "")) == "active"
+			and String(kept.get("liege_character_id", "")) == OWNER_ID,
+		"the same liege's OTHER domain keeps its vassal, still sworn to him — the "
+		+ "cascade is scoped to the lost domain, not liege-wide")
+
+
+## A personal oath with no fief attached (`vassal_domain_id` NULL) is sworn to the
+## RULER, not to one of his domains, so losing one domain must not dissolve it.
+func test_cascade_leaves_landless_personal_oaths_alone() -> void:
+	_cleanup(); _setup()
+	_create_domain(DOMAIN_ID, OWNER_ID)
+	var landless := VassalRepository.create_assignment({
+		"campaign_id": TEST_CAMPAIGN,
+		"liege_character_id": OWNER_ID,
+		"vassal_character_id": HENCHMAN_VASSAL_ID,
+		"vassal_domain_id": "",
+		"assigned_calendar_day": 100,
+		"status": "active",
+		"is_henchman_vassal": true,
+	})
+	LifecycleHandler.conquer_domain(
+		DOMAIN_ID, 200,
+		LifecycleHandler.OUTCOME_OCCUPIED, ATTACKER_ID, 0, {})
+	check(String(VassalRepository.get_assignment(landless).get("status", "")) == "active",
+		"a landless personal oath survives the loss of one of the lord's domains")
 
 
 func test_outcome_occupied_logs_payload_with_outcome_and_new_owner() -> void:
@@ -238,7 +319,10 @@ func test_outcome_looted_requires_new_owner_id() -> void:
 func test_refused_conquest_changes_nothing() -> void:
 	_cleanup(); _setup()
 	_create_domain(DOMAIN_ID, OWNER_ID, 50_000, 200)
-	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID)
+	# The vassal domain is held OF the conquered domain, so this edge WOULD
+	# cascade if the validation gate failed to refuse — without the liege pointer
+	# the assertion below would pass vacuously under the R-1 scoped cascade.
+	_create_domain(VASSAL_DOMAIN_ID, HENCHMAN_VASSAL_ID, 0, 100, DOMAIN_ID)
 	_add_hex(DOMAIN_ID, 0, 0)
 	var assignment_id := _create_vassal_assignment(
 		OWNER_ID, HENCHMAN_VASSAL_ID, VASSAL_DOMAIN_ID)

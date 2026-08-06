@@ -77,6 +77,14 @@ const CURRENT_MORALE_MAX := 4
 ## :431 makes it a standing condition of the domain, the same shape as the
 ## classification and insufficient-stronghold penalties above — not a
 ## this-month event. Defaults to 0 so pre-existing callers are unaffected.
+##
+## [param classification_override] is D-12 Phase B's seam. A character's parcels
+## are ONE domain, so the §classification_modifiers penalty is taken over his
+## whole holding — the WORST classification among his hexes (Jedidiah 2026-08-05,
+## explicitly provisional) — rather than from whichever parcel row happens to be
+## resolving. The monthly tick passes `PersonalDomain.worst_classification`.
+## Empty (the default) keeps reading `domain.territory_type`, so every other
+## caller and every single-parcel ruler is unaffected.
 static func resolve_base_morale(
 	domain: Dictionary,
 	ruler: Dictionary,
@@ -84,7 +92,8 @@ static func resolve_base_morale(
 	stronghold_value_cp: int,
 	stronghold_minimum_cp: int,
 	additional_troops_morale_bonus: int,
-	levy_morale_penalty: int = 0
+	levy_morale_penalty: int = 0,
+	classification_override: String = ""
 ) -> int:
 	var base: int = levy_morale_penalty
 	base += int(ruler.get("cha_modifier", 0))
@@ -105,7 +114,8 @@ static func resolve_base_morale(
 			base -= 3
 
 	# Classification penalty per §classification_modifiers L457-460.
-	var territory: String = String(domain.get("territory_type", "wilderness"))
+	var territory: String = classification_override if not classification_override.is_empty() \
+		else String(domain.get("territory_type", "wilderness"))
 	if territory == "borderlands":
 		base -= 1
 	elif territory == "wilderness":

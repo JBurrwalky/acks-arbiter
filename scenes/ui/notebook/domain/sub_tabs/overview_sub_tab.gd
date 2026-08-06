@@ -224,13 +224,13 @@ func _render_classification() -> void:
 		info.text = "—"
 		return
 	var territory := String(_domain_data.get("territory_type", "wilderness"))
-	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
-	# domains) per RAW §noncontiguous_domains; identical to owned count when
-	# the domain is contiguous.
-	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
-	# Both values are cp post-Migration 116.
-	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum_cp := StrongholdRepository.classification_minimum_cp(territory, sufficiency_hex_count)
+	# D-12: judged over the OWNER'S whole holding — combined stronghold value
+	# against the summed per-hex minimum over owned PLUS intervening hexes (RAW
+	# §noncontiguous_domains). Same union the monthly tick uses, so this panel and
+	# the income gate can never disagree. Both values are cp post-Migration 116.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(_domain_id)
+	var stronghold_value_cp: int = int(sufficiency["value_cp"])
+	var minimum_cp: int = int(sufficiency["minimum_cp"])
 	var sufficiency_text: String
 	if minimum_cp <= 0:
 		sufficiency_text = "—"
@@ -509,10 +509,20 @@ func _on_abandon_pressed() -> void:
 	var name: String = String(_domain_data.get("name", "this domain"))
 	var treasury_cp: int = int(_domain_data.get("treasury_cp", 0))
 	var peasants: int = int(_domain_data.get("peasant_families", 0))
-	var owner_id: String = String(_domain_data.get("owner_character_id", ""))
+	# R-1: count with the SAME predicate the cascade uses, so the warning and the
+	# effect cannot diverge. `list_active_for_liege` is liege-WIDE by character —
+	# it counts every vassal the ruler has anywhere, while
+	# `LifecycleHandler._cascade_vassals` releases only the fiefs held OF this
+	# domain. On an irreversible action, over-counting is a lie to the player.
 	var vassal_count: int = 0
-	if not owner_id.is_empty():
-		vassal_count = VassalRepository.list_active_for_liege(owner_id).size()
+	if not _domain_id.is_empty():
+		CampaignRepository.db.query_with_bindings("""
+			SELECT COUNT(*) AS n FROM vassal_assignments va
+			JOIN domains vd ON vd.id = va.vassal_domain_id
+			WHERE va.status = 'active' AND vd.liege_domain_id = ?
+		""", [_domain_id])
+		if not CampaignRepository.db.query_result.is_empty():
+			vassal_count = int(CampaignRepository.db.query_result[0].get("n", 0))
 	var treasury_gp: int = treasury_cp / 100
 	var remainder_cp: int = treasury_cp - (treasury_gp * 100)
 	var text: String = (
@@ -520,7 +530,7 @@ func _on_abandon_pressed() -> void:
 		+ "This action [b]cannot be undone[/b].\n\n"
 		+ "• Treasury [b]%d gp %d cp[/b] will transfer to the ruler's coin.\n"
 		+ "• [b]%d[/b] peasant families will disperse.\n"
-		+ "• [b]%d[/b] vassal henchman(en) will become independent.\n"
+		+ "• [b]%d[/b] vassal(s) holding of this domain will become independent.\n"
 		+ "• Stronghold (if any) reverts to ruined / available for other rulers.\n"
 		+ "• Domain hexes are released back to the unowned pool.\n\n"
 		+ "A Departure Log entry will record the event."

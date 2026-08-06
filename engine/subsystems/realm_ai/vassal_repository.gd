@@ -22,6 +22,12 @@ extends RefCounted
 
 const _UPDATE_FIELDS := [
 	"vassal_domain_id",
+	# R-5: a transfer of lordship re-points an EXISTING edge rather than departing
+	# it and minting a new one, so the loyalty history (fanatic/grudging carryover,
+	# last outcome, compliance tag) survives the change of lord. Route through
+	# `repoint_liege`, which guards the partial unique index; this whitelist entry
+	# is what makes that possible at all.
+	"liege_character_id",
 	"status",
 	"base_loyalty_modifier",
 	"last_loyalty_roll_day",
@@ -134,6 +140,41 @@ static func update_status(id: String, status: String, calendar_day: int) -> bool
 		SET status = ?, last_loyalty_roll_day = ?, updated_at = datetime('now')
 		WHERE id = ?
 	""", [status, calendar_day, id])
+
+
+## R-5: move an existing edge to a new lord, preserving its loyalty history.
+##
+## GUARDS THE PARTIAL UNIQUE INDEX. `idx_vassal_assignments_unique_active(
+## liege_character_id, vassal_character_id) WHERE status = 'active'` permits ONE
+## active edge per character pair, so re-pointing onto a lord who already holds an
+## oath from this same vassal would fail the INSERT-equivalent UPDATE *silently*
+## and strand the edge on its old lord. When that collision exists the older edge
+## is the survivor and this one is departed — the vassal already answers to that
+## lord, and two active oaths between the same pair is not a state the schema (or
+## the fiction) admits.
+##
+## Returns true when the edge now points at [param new_liege_character_id].
+static func repoint_liege(id: String, new_liege_character_id: String, calendar_day: int) -> bool:
+	if id.is_empty() or new_liege_character_id.is_empty():
+		return false
+	var assignment: Dictionary = get_assignment(id)
+	if assignment.is_empty():
+		return false
+	var vassal_id: String = String(assignment.get("vassal_character_id", ""))
+	if vassal_id == new_liege_character_id:
+		push_error("VassalRepository.repoint_liege: refusing a self-edge for %s" % vassal_id)
+		return false
+	if String(assignment.get("liege_character_id", "")) == new_liege_character_id:
+		return true  # already there
+	if CampaignRepository.db.query_with_bindings("""
+		SELECT id FROM vassal_assignments
+		WHERE liege_character_id = ? AND vassal_character_id = ?
+		  AND status = 'active' AND id != ?
+	""", [new_liege_character_id, vassal_id, id]) \
+			and not CampaignRepository.db.query_result.is_empty():
+		update_status(id, "departed", calendar_day)
+		return false
+	return update(id, {"liege_character_id": new_liege_character_id})
 
 
 static func record_loyalty_roll(id: String, outcome: String, calendar_day: int) -> bool:

@@ -40492,3 +40492,462 @@ Derived before running rather than tuned after. With the driver present: `cha_mo
 - Consider the `persistence_tier`/`character_type` transposition sweep above — the same silent-rejection pattern may sit in other fixtures.
 - R-4 stub minter (`docs/handoff-domain-rulings-implementation.md`) — still the forced next step in the domain-acquisition arc, still blocks R-1.
 - D-5 — the stocker conscript/militia/mercenary mix through `TroopBattleRatingTable.for_unit` AND `base_morale`.
+
+## Session 2026-08-03 — R-4 ruler stub minter (handoff D-8): realm-tree spine no longer ownerless
+
+**Task:** Re-orient the domain-acquisition arc against HEAD after intervening troop/supply work, then build R-4 — the eager-cheap half of the M2b-2 ruler promotion, which totally blocks R-1.
+
+**Model used:** Opus 5. Two-agent verification workflow for the re-orientation; direct implementation for the build.
+
+**Completed:**
+
+- **Re-verified the whole arc against HEAD `f7e6c98`.** A 30-item ledger: 28 NOT_DONE, 2 PARTIAL, 0 newly done. The intervening work (conventions §128-134, migrations 212-214, the tribal-warrior and battle-rating chips) is ADJACENT, not overlapping — no domain-plan item advanced. Three audit items were fixed incidentally: `DomainStocker`'s hardcoded garrison morale 0 (now `TroopBattleRatingTable.base_morale`), and the per-soldier battle-rating overstatements in `solicit_followers` and `tribal_warrior_registry`.
+- **NEW `engine/subsystems/generation/materialization/ruler_stub_minter.gd`** — `RulerStubMinter.mint(campaign_id, opts) -> String`. ONE `create_character` INSERT at `persistence_tier='named'`: name, class, level, race, alignment, sex, rolled Charisma. No proficiencies/powers/spells/equipment/personality/disposition — that is the lazy-rich half, deferred to first contact per D-8.
+- **KEY DESIGN CORRECTION vs D-8: R-4 is a PROMOTION, not a generation.** `setting_domains` already carries pre-rolled stubs — `ruler_class` (rolled by `history_simulator._domain_ruler_class`), `ruler_level` (already drawn from `DomainTierTable`, so D-9-canonical for free) and `ruler_name` (a culture-derived DYNASTY SURNAME from `NameAssembler.dynasty_name` via `NameGenerator._name_domains`). The minter promotes that existing text rather than inventing an identity, so the ruler inherits the noble house the world generator already gave his domain.
+- **Wired `_create_ladder_for_polity`** (the intra-polity civ vassal ladder — the bulk of the realm tree). Each node's owner is now set in the same UPDATE that sets `liege_domain_id`.
+- **Wired the crown owner pass (Pass 3).** Reading it revealed the real gap: crown owners were already assigned, but only for polities present in `ruler_by_pid`, which is populated ONLY in the `is_sovereign` branch — so every WAR-VASSAL polity's crown stayed ownerless. A crown is the liege of that polity's entire ladder, so a null crown would have left the realm tree broken at its apex even after the ladder gained owners. Minted in Pass 3 rather than in `_create_crown_domain`, because that function runs before the ruler map is complete and has no `campaign_seed` in scope.
+
+**Decisions made:**
+
+- **One shared `ClassRegistry` per materialization pass, never per domain.** The registry loads every class JSON on construction; per-domain construction would reintroduce exactly the cost the eager/lazy split exists to avoid. Held as a lazily-created `_stub_minter` member on the materializer. Verified in the log: `ClassRegistry: Loaded 29 class definitions` appears EXACTLY ONCE across a full run.
+- **Every roll is keyed on `domain_id`, never call order** — `WorldGenRng.stream(campaign_seed, "ruler_stub", 0, domain_id)`. World generation is determinism-tested; the same world must mint byte-identical rulers.
+- **`combat_progression` and `race` come from `ClassRegistry.get_class_def`, not a hand-rolled mapping.** Both fields exist on the class JSON, so no second table can drift (cf. the D-9 level-table conflict).
+- **Unknown ruler class warns and falls back to fighter rather than failing.** A domain whose ruler class cannot be resolved is far less broken than a domain with NO ruler — the ownerless state is the bug R-4 exists to fix.
+- **The cheap stub gets a real Charisma but default combat stats.** CHA is the one ability the monthly tick actually reads (`DomainMoraleResolver` base morale). hp/AC stay at schema defaults; anything that fights, casts or plans must be promoted first, and `RulerLodManager` already gates the planner on a plannable domain.
+
+**Interfaces defined or changed:**
+
+- `RulerStubMinter.mint(campaign_id: String, opts: Dictionary) -> String` — NEW. opts: `domain_id` (REQUIRED, determinism key), `campaign_seed`, `ruler_class`, `ruler_level`, `dynasty`, `title` (accepts ruler OR domain vocabulary), `alignment`, `race` (optional), `fallback_name`.
+- `RulerStubMinter.ABILITY_MIN` / `ABILITY_MAX` / `RNG_SUBSYSTEM` — NEW constants.
+- `SettingMaterializer._create_ladder_for_polity(...)` — gained a trailing `campaign_seed: int = 0` parameter.
+- `SettingMaterializer._ruler_stub_minter()` — NEW private accessor over the new `_stub_minter` member.
+
+**Database changes:** None — character rows only. Migration 215 stays free for the R-2 P3 sweep (212/213/214 were taken by the troop work; the handoff's stale "migration 212" references were corrected).
+
+**Tests added/updated:**
+
+- NEW `tests/test_ruler_stub_minter.gd`, registered across all four runner touchpoints (ext_resource + node in `test_runner.tscn`, `@onready var` + run-loop entry in `test_runner.gd`). Locks the two load-bearing properties — DETERMINISM for a given (seed, domain_id), and a DISTINCT character per domain (required by `idx_vassal_assignments_unique_active`, which permits only one active edge per character pair) — plus tier/type, class-def-derived progression, unknown-class fallback, the `domain_id` guard, and dynasty/fallback/domain-title naming.
+
+**Test results:** `bash tools/run_tests.sh` — 575 suites passed, 0 failed on the second consecutive run. `RulerStubMinter`, `SettingMaterializationTests` (214 checks) and `StockRulersAndTribute` all green. The prior run's single failure was this session's own wrong assertion (`personality.is_empty()` — the column is TEXT NOT NULL DEFAULT the empty JSON object, so an unsampled stub holds that object, not an empty string); the minter was correct and the test now asserts an UNSAMPLED personality rather than an absent one.
+
+**Known issues:**
+
+- **TWO of the four null-owner sites remain**: `_create_sub_domain` (~:1596) and `_create_sub_clanhold` (~:1859) — the 6-mile M4-1b layer. Neither has a `setting_domains` pre-rolled stub to promote (they are handoff-invented sub-fiefs), so each needs a derived class/level from its tier and polity. The realm-tree SPINE (crowns + ladder) is done; these are the leaf layer.
+- **No test yet asserts that a GENERATED campaign's domains have owners.** `SettingMaterializationTests` passing only proves nothing broke. The valuable new assertion — every liege-bearing domain has a non-null `owner_character_id` — should be added to that integration test once the remaining two sites land.
+- **§133 invalidated part of D-6** (recorded in the handoff): `LevyPenaltyCalculator.levied_peasants_for_domain` charges the levy penalty from a live query with no `assignment_kind`/`is_trained`/called-up filter, while `GarrisonExpenditureCalculator` grants the RAW §230 unpaid credit only for active+garrison+cost-0 rows. Those are mutually exclusive, so "trained, equipped, sent home" is not representable and D-5's militia slice cannot be built as specified without an `is_called_up` flag. D-5 is also gated on R-4 — `DomainStocker` bails when the owner is empty and has ONE production caller (the Avalon test campaign).
+
+**Next session should:**
+
+- Wire the remaining two null-owner sites (`_create_sub_domain`, `_create_sub_clanhold`), then add the "every liege-bearing domain has an owner" assertion to `SettingMaterializationTests`.
+- Then **R-1 as ONE wave**: world-gen `vassal_assignments` writes + the `_cascade_vassals` domain-scoping fix + hoisting `_resolve_favors_and_duties` out of the per-domain loop into a per-RULER LOD-gated pass. Landing R-1 alone makes the still-liege-wide cascade live world-wide and uncorks the F&D d20 storm.
+
+## Session 2026-08-04 — R-4 COMPLETE: all four materializer sites owned + the R-1 precondition asserted end to end
+
+**Task:** Finish R-4 — wire the two remaining 6-mile M4-1b leaf sites, and add the integration assertion that proves the fix works rather than merely proving nothing broke.
+
+**Model used:** Opus 5.
+
+**Completed:**
+
+- **Wired `_create_sub_domain`** (M4-1b civ sub-fief) and **`_create_sub_clanhold`** (shallow clanhold tree). All FOUR materializer sites that used to write `owner_character_id: null` now mint a ruler; the generated world is no longer ownerless anywhere.
+- **NEW `SettingMaterializer._owner_class_for_domain(domain_id)`** — the leaf layer is handoff-invented and has no `setting_domains` pre-rolled stub to promote, so its ruler class is inherited from the PARENT domain's owner. Resolved ONCE per gov/crown (stashed in `sub_ctx`), never per sub-domain. This keeps a vassal coherent with the lord he serves — and, for clanholds, keeps a sub-chieftain the same beastman kind as his crown — without inventing a second class distribution that could drift from `HistorySimulator._domain_ruler_class`.
+- **Level for the leaf layer:** `DomainTierTable.ruler_level_for_tier(tier)` for civ sub-fiefs (the tier is already a parameter); the Barony floor for sub-clanholds, since "Chieftain" is not on the RAW nobility ladder and there is no tier to read.
+- **NEW `RulerStubMinter.display_title(title)`** — fixes a bug in this session's own minter. `_stub_name` previously ran every title through `DomainTierTable`, whose `tier_for_ruler_title` falls back to BARONY for anything unrecognised. That is the right answer for LEVEL and the wrong one for a NAME: it would have named every beastman sub-chieftain "Baron". `display_title` converts a DOMAIN title ("Barony" → "Baron"), passes a RULER title through, and leaves anything else ("Chieftain") VERBATIM.
+- **INVERTED two tests that codified the bug.** `tests/test_setting_materialization.gd` asserted `"sub-fiefs have lazy (NULL) rulers"` and folded `owner_character_id IS NOT NULL` into the sub-clanhold violation predicate — i.e. it asserted the unfinished M2b-2 state was correct. Jedidiah ruled that state a BUG, so both now assert the opposite: every sub-fief and sub-clanhold has an owner that RESOLVES to a character, and those owners are cheap `persistence_tier='named'` stubs rather than eager full builds (the expensive half is what stays lazy).
+- **NEW `test_every_liege_bearing_domain_has_an_owner(cid)`** — the assertion the earlier waves lacked. The per-site tests prove nothing BROKE; this proves the fix WORKS across a whole generated campaign. Four checks: (a) every domain that owes fealty has an owner; (b) every domain a vassal points AT has an owner — the LIEGE end, which the per-site tests never covered; (c) no owner id dangles (a dangling id satisfies NOT NULL and still breaks the FK); (d) **no ruler owns two domains under the same liege**, because `idx_vassal_assignments_unique_active` permits ONE active edge per (liege, vassal) character pair — a shared ruler would make R-1's second sibling edge silently fail to insert, surfacing much later as "R-1 doesn't work".
+
+**Decisions made:**
+
+- **Inherit the leaf ruler's class from the parent rather than rolling a new one.** A second distribution would be a second source of truth for something the history simulator already decides — the same class of drift as the D-9 level-table conflict.
+- **Invert the lazy-ruler tests rather than delete or skip them.** They encoded a real prior contract; the ruling changed the contract, so the assertions change with it and keep the coverage.
+- **Assert the LIEGE end separately from the vassal end.** A vassal with an owner pointing at an ownerless liege still cannot form an edge, and no per-site test would catch it.
+
+**Interfaces defined or changed:**
+
+- `RulerStubMinter.display_title(title: String) -> String` — NEW, static. Domain title → ruler title; ruler title → itself; anything else verbatim.
+- `SettingMaterializer._owner_class_for_domain(domain_id: String) -> String` — NEW. Returns "" when the parent has no owner, which the minter treats as unknown and falls back to fighter.
+- `sub_ctx` (both decomposition passes) gained `campaign_seed` and `parent_ruler_class`.
+
+**Database changes:** None — character rows only. Migration 215 remains free for the R-2 P3 sweep.
+
+**Tests added/updated:**
+
+- `tests/test_setting_materialization.gd`: two lazy-ruler assertions INVERTED, one new `persistence_tier='named'` assertion, and the new `test_every_liege_bearing_domain_has_an_owner`. Check count 214 → **221**, confirming the new assertions actually executed rather than being skipped.
+
+**Test results:** `bash tools/run_tests.sh` — **575 suites passed, 0 failed** on the second consecutive run. `RulerStubMinter` green; `SettingMaterializationTests` green at 221 checks.
+
+**Known issues:**
+
+- The **lazy-rich half of M2b-2 is still unbuilt** — nothing yet promotes a `named` stub to a full `ClassedNpcBuilder` character with proficiencies, powers, personality and `StrategicDisposition` on first contact / LOD activation. That is by design (D-8), but the trigger does not exist: the GDD's promote-on-visit path (`gdd-setting-runtime-materialization.md` §15.5) still has no runtime caller. A stub that enters combat would fight with schema-default hp 1 / AC 0.
+- **§133 still invalidates part of D-6** (recorded in the handoff): "trained, equipped, sent home" militia is not representable, so D-5's militia slice needs an `is_called_up` flag or must be dropped.
+
+**Next session should:**
+
+- **R-1, as ONE wave** — world-gen `vassal_assignments` writes + the `_cascade_vassals` domain-scoping fix + hoisting `_resolve_favors_and_duties` out of the per-domain loop into a per-RULER LOD-gated pass. R-4 has removed the block: every liege-bearing domain and every liege now has a distinct owning character, asserted end to end. Landing R-1 WITHOUT the cascade fix makes the still-liege-wide `_cascade_vassals` (lifecycle_handler.gd ~:425-431) live world-wide — one conquest would destroy every NPC duke's realm — and uncorks the Favors & Duties d20 storm across hundreds of off-camera realms.
+- Then the audit's Tier-1 ownership-transfer fixes, which R-1 makes observable.
+
+## Session 2026-08-04 — R-1 COMPLETE: the realm tree becomes real (vassal_assignments + cascade scoping + the Favors & Duties per-ruler hoist)
+
+**Task:** Land ruling R-1 as ONE wave, per the handoff's "R-1 is dangerous to land alone": world-gen `vassal_assignments` writes, the `_cascade_vassals` domain-scoping fix, and the Favors & Duties per-ruler LOD-gated hoist.
+
+**Model used:** Opus 5. An 8-agent scoping/adversarial workflow mapped the blast radius (5 readers over the three parts + 3 risk lenses); every finding it produced was re-verified against the repo before being acted on.
+
+**Completed:**
+
+- **NEW `SettingMaterializer._materialize_vassal_edges`** — ONE SWEEP, RUN LAST, deliberately not an INSERT beside each `liege_domain_id` write. Four passes write that column at four different moments and **Pass 3 assigns crown owners only AFTER Pass 2 has chained each polity's whole ladder to its crown**, so a per-site insert would be minting edges whose liege end has no owner yet. A terminal sweep is correct by construction, total (civ ladder + war-vassal crown chain + both 6-mile leaf types + pocket realms, without four call sites), free for any future pass, and — because it runs after `_materialize_county_settlements` — the only point where the RAW range-of-trade test can be evaluated at all.
+- **RAW `is_henchman_vassal = 0` for every world-gen edge.** `acore_axioms_strongholds_and_domains.xml` §non_henchman_vassals L392-397: a generated vassal is his lord's sworn noble, not his henchman — base loyalty −2 instead of 0, and no free duty each month. `VassalRepository.create_assignment` DEFAULTS the flag to **true**, so world gen must pass it explicitly; a missed argument would have had every NPC baron alive rolling as his duke's henchman, silently losing the RAW penalty.
+- **NEW `_apply_range_of_trade_loyalty`** — the RAW −4 (outside the liege's range of trade, L393-394) as a SECOND pass, and it has to be: `TradeRangeResolver.largest_urban_settlement_for_ruler` resolves settlements *through* `RealmAggregator.aggregate`, which walks the vassal edges. Asking during the mint answers from a half-built tree and gives each liege only the vassals minted before him. Restricted to LOCATED domains whose liege actually holds a settlement — `TradeRangeResolver` reads a missing settlement as "this ruler has no trade range" and returns −4, which would have stamped the harshest RAW modifier across the whole off-camera world as an artifact of LOD rather than of the fiction.
+- **`_cleanup_partial` now clears `vassal_obligations` + `vassal_assignments`** before `domains` and `characters`; both FKs are NOT NULL, so a rolled-back partial materialization was about to leave dangling appointment rows.
+- **`LifecycleHandler._cascade_vassals` scoped to the lost domain** via the authoritative `liege_domain_id` pointer, and it lost its now-meaningless `prior_owner_id` parameter. Case 1 was liege-WIDE BY CHARACTER: the first conquest after R-1 would have dissolved every NPC duke's entire realm. Landless personal oaths (NULL `vassal_domain_id`) are deliberately untouched — an oath is sworn to the ruler, not to one of his domains.
+- **F&D hoisted to `DomainHandlers._resolve_favors_and_duties_for_rulers`** — once per RULER (RAW §favors_and_duties L352), gated on the same PC-or-active-LOD predicate the domain loop uses, and placed AFTER the loop closes. `_resolve_favors_and_duties` became `_resolve_favors_and_duties_for_ruler(ruler_id, day)`. The old code was keyed on each domain's owner, so a ruler holding N domains rolled the full table for every vassal N times a month.
+- **The hoist also fixed a silent treasury clobber.** `_save_domain` writes `treasury_cp` as an ABSOLUTE `prior + net`, where `prior` came from the `domains` array fetched once before the loop — so a gift or loan F&D moved into another domain's treasury mid-loop was overwritten when that domain's turn came up. Running the pass after the loop puts every transfer strictly after the last absolute write.
+
+**Five further R-1-activated defects, each verified in the repo before acting:**
+
+1. **`RebelCoalition._repoint_domains_to_realm`** cleared `liege_domain_id` without departing the edge. A successful secession would have gone on paying tribute to the lord it just rebelled against — and the cascade could never have cleaned it up, because it finds a domain's vassals *through* the pointer being erased.
+2. **`ResignationLadder._reparent_domain_to`** re-pointed the domain but left the assignment on the OLD liege. Now departs the old edge and opens one under the new liege (release to independence opens none). `_execute_reparent` and `_reparent_domain_to` gained a `day` parameter.
+3. **`RealmAggregator.aggregate` walked every subtree TWICE** — the direct-vassal loop already had the peasant/urban split and discarded it, then line 97 re-walked the entire tree to recompute it.
+4. **Migration 215 `215_domain_owner_index.sql`** indexes `domains(owner_character_id)`. That column is the innermost lookup of every realm-tree node visit (`RealmAggregator._list_owned_domains`) and had no index, so each visit was a full table scan — tens of thousands of them per monthly tick once the edge table filled.
+5. **`RealmAggregator._MAX_DEPTH` 8 → 64**, matching `RealmGraph._MAX_LIEGE_HOPS`. R-1 made the tree genuinely walkable and a generated realm stacks the civ ladder under war-vassal crown chains, so 8 was reachable: it silently under-reported a deep realm's families — corrupting the RAW tribute-table lookup — while spamming `push_error` every month. The `visited` set was always the real cycle guard; depth is now a sanity backstop.
+6. **The abandonment dialog** (`overview_sub_tab.gd`) counted vassals liege-WIDE while the cascade releases only fiefs held of that domain — an inflated and mislabeled number on an irreversible player action. Now counts with the cascade's own predicate, and the "vassal henchman(en)" wording is gone (world-gen vassals are not henchmen).
+
+**Decisions made:**
+
+- **One terminal sweep over per-site inserts.** The scoping pass independently proposed a "Pass 3.5" sweep; running it later still (end of content placement) additionally covers the 6-mile leaf decompositions and is the only position where settlements exist for the range-of-trade test.
+- **`assigned_calendar_day = 0`**, matching every generated domain's `established_calendar_day`. The world predates the campaign clock, which `materialize()` stamps to day 1 only after all domain creation.
+- **Hard-fail the materialization on an ownerless edge end** rather than skipping it. R-4 guarantees both ends and asserts it end to end; if this fires, ruler promotion regressed, and a rollback is better than a half-recorded realm tree.
+- **`favors_duties` removed from the per-domain result dict** rather than back-filled. Nothing consumed it (the realm sub-tab's same-named renderer reads the DB), and F&D is a ruler-level event — the tick now returns `favors_duties_reports`.
+- **Deferred, deliberately, with reasons recorded in the handoff:** the tribute-in multiplication for multi-domain rulers (same defect class as F&D, currently MASKED because R-4 mints a distinct character per domain — it bites the moment anyone acquires a second domain, and needs a ruling on which domain is the ruler's seat); LOD-gating the tribute/title path (a naive gate is NOT safe — `tribute_out_owed` is persisted while `tribute_in` is recomputed, so gating only the liege side would drain the off-camera world); the `TestContentSeeder` Avalon fixture, which still writes `liege_domain_id` with no assignments; the ungated `VassalLoyaltyTriggers` listener; `realm_sub_tab`'s 3 + 2V aggregates per render.
+
+**Interfaces defined or changed:**
+
+- `SettingMaterializer._materialize_vassal_edges(campaign_id, result) -> bool` — NEW; last entry in the content-placement chain. Adds `vassal_edge_count` to the materialize result.
+- `SettingMaterializer._apply_range_of_trade_loyalty(pending: Array) -> void` — NEW.
+- `LifecycleHandler._cascade_vassals(domain_id, calendar_day)` — **`prior_owner_id` parameter REMOVED**.
+- `DomainHandlers._resolve_favors_and_duties(domain_data, day)` → **`_resolve_favors_and_duties_for_ruler(ruler_id, day)`**; NEW `_resolve_favors_and_duties_for_rulers(domains, pc_ids, active_ruler_ids, day) -> Array` returning `[{ruler_character_id, results}]`.
+- Monthly tick result: **`favors_duties` per-domain key REMOVED**; NEW top-level `favors_duties_reports`.
+- `ResignationLadder._execute_reparent(petition, kind, day)` and `._reparent_domain_to(domain_id, new_liege_domain_id, day)` — both gained `day`.
+- `RebelCoalition._repoint_domains_to_realm(character_id, realm_id, day)` — gained `day`.
+- `RealmAggregator._MAX_DEPTH` 8 → 64.
+
+**Database changes:** Migration **215** `215_domain_owner_index.sql` — `CREATE INDEX IF NOT EXISTS idx_domains_owner ON domains(owner_character_id)`, mirrored into `db/schema.sql`. Non-destructive, index only. **R-2 P3 must now use migration 216, not 215.**
+
+**Tests added/updated:**
+
+- `tests/test_setting_materialization.gd`: NEW `test_vassal_assignments_mint_one_edge_per_realm_edge` — totality (one active edge per liege-bearing domain, both directions, cross-checked against the count materialize() reports), no dangling `liege_domain_id` (the sweep's INNER JOIN would drop such an edge silently and the count check alone would not notice, since it uses the same join), liege/vassal characters match the domains' owners, `is_henchman_vassal = 0`, base loyalty in {−2, −4}, no self-edges, no duplicate active pair.
+- `tests/test_lifecycle_conquest_outcomes.gd`: NEW `test_cascade_is_scoped_to_the_lost_domain` (one liege, two domains, one vassal under each — conquering the first releases only its own fief) and `test_cascade_leaves_landless_personal_oaths_alone`. `_create_domain` gained a `liege_domain_id` parameter, and **`test_outcome_occupied_cascades_vassals` + `test_refused_conquest_changes_nothing` now set it** — without the pointer both would have passed VACUOUSLY under the scoped cascade.
+- `tests/test_ruler_ai_monthly.gd`: NEW `test_favors_duties_rolls_once_per_ruler_and_only_at_active_lod` — a two-domain PC lord with one vassal is reported ONCE with ONE roll (the old code gave two) and a backdrop-LOD lord does not roll at all. It also asserts the lord really does hold two domains, so the dedupe cannot pass vacuously. Driven through `_resolve_favors_and_duties_for_rulers` **directly**: the first version ran the whole tick and was FLAKY — it passed one clean double-run and failed the next with zero reports. Cause: because the hoisted pass now runs *after* the domain loop it sees post-loyalty-roll state, and a tick's stochastic loyalty rolls can route through the resignation/rebellion paths, which — as of this same wave — depart the very edge the assertion counts. That is correct behaviour and an unstable thing to assert on. The deterministic half of the coverage (the tick reaches the pass; the per-domain key is gone) moved into the existing `test_monthly_tick_integration`, where it holds regardless of any die.
+- `tests/test_lifecycle_handler.gd`: `_create_domain` gained a `liege_domain_id` parameter and `test_voluntary_abandon_releases_hexes_and_cascades_vassals` now sets it. This was the ONE suite the first clean double-run failed on — the abandon-side twin of the conquest fixtures, asserting the liege-wide behaviour that R-1 deliberately removed. Exactly the failure the scoping change should produce, and the fix is the pointer the fixture never set.
+
+**Test results:** `bash tools/run_tests.sh` — **575 suites passed, 0 failed** on the second consecutive run, both runs exiting 0. Matches the 575/0 baseline exactly. Log gates all clean: 0 `Nonexistent 'String' constructor` (§106 aborts fail nothing), 0 `database is locked`, 0 `_recursive_realm_sum: depth` errors, and **0 `vassal-edge sweep` errors** — the sweep's ownerless-end hard-fail never fired, so R-4's invariant genuinely holds across a real generated world. `SettingMaterializationTests` **221 → 230 checks**; `RulerAiMonthly` 59; `LifecycleHandler`, `LifecycleConquestOutcomes`, `VassalRepository`, `RealmGraph`, `RulerStubMinter`, `RegionFieldMaterializationTests` all green.
+
+Two intermediate runs are worth recording because each caught something real rather than noise. The first clean double-run came back 574/1 on `test_voluntary_abandon_releases_hexes_and_cascades_vassals` — the abandon-side twin of the conquest fixtures, asserting the liege-wide cascade R-1 removes; precisely the failure the scoping change should produce. The second came back 574/1 on this session's OWN new F&D test, which had passed the run before: a genuine flake, diagnosed rather than re-rolled (see the test note above).
+
+**Known issues:**
+
+- **The hoisted F&D pass sees post-loyalty-roll state.** Running after the domain loop is right for the treasury clobber, but it means an edge departed EARLIER in the same tick (a rebellion or a granted resignation petition) does not roll Favors & Duties that month. That reads as correct — a vassal who left does not owe his old lord a duty — but it is a behaviour change worth knowing, and it is what made the first version of the F&D test flaky.
+
+- Everything under "Deferred out of the R-1 wave" in `docs/handoff-domain-rulings-implementation.md`. The one to read before R-5 is the **tribute-in multiplication**: `_compute_tribute_in_for_ruler` is called per DOMAIN with the ruler's full vassal set and credited to that domain's revenue, so a multi-domain ruler banks his realm's tribute once per domain, and N× the domain XP with it. Masked today only because R-4 mints one character per domain.
+- The **lazy-rich half of M2b-2** is still unbuilt (carried from the R-4 session): nothing promotes a `named` stub to a full character on first contact, so a stub entering combat fights at schema-default hp 1 / AC 0.
+- §133 still invalidates part of D-6 — "trained, equipped, sent home" militia is not representable, so D-5's militia slice needs an `is_called_up` flag or must be dropped.
+
+**Next session should:**
+
+- **R-5** (SubVassalLoyalty on transfer) — now genuinely unblocked: R-1 gives it edges to roll on, and the R-5 spec's "any change of liege" trigger has real `vassal_assignments` rows behind every one of the transfer paths this wave touched (conquest cascade, secession, petition re-parent).
+- Then **R-6** (mercenaries and followers do not transfer) and **R-7** (domain XP, ruler only, tribute included) — R-7 should be taken together with the deferred tribute-in multiplication, since both concern what a ruler's realm income actually is.
+- The remaining audit **Tier-1** ownership-transfer fixes, which R-1 finally makes observable.
+
+## Session 2026-08-04 — D-10: tribute scope split (character-wide penalty, seat-scoped credit)
+
+**Task:** Resolve the tribute-in multiplication the R-1 wave deferred, on Jedidiah's ruling.
+
+**Model used:** Opus 5.
+
+**Ruling (Jedidiah 2026-08-04):** the question "which domain is a multi-domain ruler's seat for tribute?" was the wrong question. A lord "gets the tribute from all vassals of both domains", and the RAW inefficiency penalty applies to "the sum-total of ALL vassals paying tribute to a single character, **regardless of which domain seat they are paying to** so long as it goes to the same character." So the two halves have different scopes: the PENALTY is per CHARACTER, the CREDIT is per SEAT.
+
+**Completed:**
+
+- **`_compute_tribute_in_for_ruler(ruler_id)` → `_compute_tribute_in_for_domain(domain_data)`** (`domain_handlers.gd`). The efficiency factor still keys on `list_active_for_liege(ruler_character_id)` — every vassal across every seat — but each vassal's payment is now credited only to the seat his fief is actually held of. The lord's seats PARTITION his realm intake instead of each banking the whole of it.
+- **NEW `_tribute_destinations(ruler_character_id)`** — one query mapping each active assignment to the payer's liege seat via `vassal domain → liege_domain_id` (R-1's authoritative pointer). Two cases fall back to the lord's lowest-id holding rather than dropping the payment: an oath with no fief attached (NULL `vassal_domain_id`), and a fief whose liege pointer has drifted off this ruler's holdings. The fallback is arbitrary but stable, and it conserves the realm total.
+- **Summary gained `realm_total_received_cp`** (the lord's whole intake, for display) beside the now seat-scoped `total_received_cp`. `tribute_in_breakdown` has no external consumers, so no UI change was required.
+
+**Decisions made:**
+
+- **No new inefficiency table was needed — it was already right.** `TributeCalculator._EFFICIENCY_TABLE` already implements all eight RAW bands (§tribute_inefficiency L398-409), and `direct_count` already came from the CHARACTER-keyed `list_active_for_liege`. A twelve-vassal lord holding two seats was already taking the 9–16 band's 66% rather than two separate ≤8 bands at 100%. Verified rather than assumed before writing anything.
+- **Credit follows `liege_domain_id`, not a "seat" rule.** Every vassal edge already records which of the lord's domains the fief is held of, so no new concept (primary seat / capital) had to be invented, and the routing uses the pointer ruling R-1 made authoritative.
+- **Flagged, not changed:** the standing RAW patch at §tribute_inefficiency L406. The source reads "17-36 = 50%", leaving an algebraic gap 37–63 before the next band opens at 64; a prior session read it as a digit-transposition typo and implemented "17–63", leaving the XML untouched per the sacred-rules constraint. That is an interpretation of sacred text, not a mechanical reading, so it is surfaced for Jedidiah rather than silently relied on.
+
+**Interfaces defined or changed:**
+
+- `DomainHandlers._compute_tribute_in_for_ruler(ruler_id)` → **`_compute_tribute_in_for_domain(domain_data)`**.
+- NEW `DomainHandlers._tribute_destinations(ruler_character_id) -> Dictionary` (assignment id → destination domain id).
+- `tribute_in_breakdown` gained `realm_total_received_cp`; `total_received_cp` is now THIS SEAT's share, not the ruler's whole intake.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_ruler_ai_monthly.gd`: NEW `test_tribute_in_is_credited_once_per_seat_with_realm_wide_efficiency` — one lord, two seats, one vassal under each. Asserts BOTH seats report `direct_vassal_count == 2` (a per-domain count would say 1, and would put a 9-vassal lord in the wrong RAW band), that both seats agree on the realm total, that `seat_a + seat_b == realm_total` (the partition — no double credit), and that one seat alone does NOT bank the whole realm's tribute (the old bug, asserted directly rather than by absence).
+
+**Test results:** `bash tools/run_tests.sh` — **575 suites passed, 0 failed** on the second consecutive run, both runs exit 0. `RulerAiMonthly` 59 → **66 checks**, confirming the new assertions executed. Log gates clean: 0 `Nonexistent 'String' constructor`, 0 `database is locked`, 0 `vassal-edge sweep` errors.
+
+**Known issues:**
+
+- **Multi-domain rulers are not the rarity the deferral assumed.** FOUR production paths hand a domain to a character who may already hold one: conquest (`lifecycle_handler.gd:191`/`:194`), escheat to the liege (`ruler_death_handler.gd:393`), **heir inheritance by an already-landed vassal** (`:363` — likely the most common in a dynastic game, and not one of the cases originally identified), and RAW's Favors & Duties roll 20 *Grant of Land*. That last is still signal-only ("manual setup" per the audit), but by design it is a 1-in-20 monthly roll for EVERY vassal — once built, multi-domain rulers become routine rather than exceptional.
+- Still deferred from the R-1 wave: LOD-gating the tribute/title path (a naive gate drains the off-camera world — `tribute_out_owed` is persisted while `tribute_in` is recomputed), the `TestContentSeeder` Avalon fixture's missing `vassal_assignments`, the ungated `VassalLoyaltyTriggers` listener, and `realm_sub_tab`'s 3 + 2V aggregates per render.
+
+**Next session should:**
+
+- **R-5** (SubVassalLoyalty on transfer), then R-6 and R-7. R-7 (domain XP, ruler only, tribute included) is now much simpler: the tribute term it depends on is finally both correctly scoped and correctly denominated.
+
+## Session 2026-08-04 — R-5 COMPLETE: sub-vassal loyalty on a transfer of lordship
+
+**Task:** Build ruling R-5 — when a domain changes hands, the vassals holding fiefs of it decide whether they will serve the man who took their lord's place.
+
+**Model used:** Opus 5. A 37-agent adversarial review workflow (4 hunt lenses → 3 independent refuters per finding) ran against the finished build; every finding it produced was re-verified by hand before being acted on.
+
+**Completed:**
+
+- **NEW `engine/subsystems/domains/sub_vassal_loyalty.gd`** (`SubVassalLoyalty`). The roll is RAW's, not a new one: `VassalLoyaltyResolver.roll_for_trigger` already performs the §2.2 henchman check plus the §5.2 stack, and its `project_modifier_breakdown` reads the liege straight off the assignment dict — so the mechanism is a **SWAPPED-LIEGE PROBE**. Copy the edge, put the new lord in it, roll; alignment, culture, religion, relative strength and grievance all re-evaluate against the new man for free.
+- **Acquisition method is a PARAMETER, never a column.** Conquest carries the ruling's −2; grant/purchase/inheritance/abdication carry none. It must NOT be written to `domains.establishment_method`: that column is written once at founding and is **load-bearing for the beastman gate** — `LifecycleHandler._conquest_eligible` and `DomainMoraleResolver` both infer a beastman population from it, so overwriting it on conquest would silently flip who is allowed to rule.
+- **Band → fate mapping** through the existing §5.3 compliance ladder rather than a fourth vocabulary: 12+/9-11/6-8 stay (edge RE-POINTED, so loyalty history survives), 3-5 stays and opens the lawful-exit ladder, 2− revolts (edge `revolted`, fief leaves the realm tree, `vassal_revolted` emitted, rebellion seeded).
+- **`_cascade_vassals` SPLIT** into `_detach_upward_edge` (departs this domain's own oath AND clears its `liege_domain_id` — the missing half of the two-sources-of-truth bug) and `_detach_downward_edges`. Downward detaches only when there is NO successor lord (salted to ruin, abandoned); a domain that survives under a new owner gives its sub-vassals the roll instead.
+- **`VassalRepository.repoint_liege`** + `liege_character_id` added to `_UPDATE_FIELDS` (it was not whitelisted, so `update()` would have push_error'd and no-op'd). Guards `idx_vassal_assignments_unique_active` by departing the moving edge when the target pair already holds an active oath.
+- **`RealmGraph.direct_vassal_domains`** — the file's first DOWNWARD walker; every other walks up to an apex. One hop only, per the depth ruling.
+- **`EventBus.domain_conquered` gained `prior_owner_id`** (4th param), all three subscribers updated.
+- **Succession + escheat wired** (`RulerDeathHandler`): the ruling is "any change of liege", and `_apply_heir` was reassigning ownership while leaving every sub-vassal edge naming the DEAD ruler.
+
+**Two pre-existing bugs found while wiring, both the same shape:** `VassalLoyaltyTriggers._on_domain_conquered` and `RulerSeamBTrigger._on_domain_conquered` each read the owner back off the domain row to identify who LOST — but `conquer_domain` calls `reassign_domain_owner` BEFORE emitting, so both were acting on the **conqueror**. One fired RAW §5.2's "your lord looks weak" over the WINNER's vassals; the other told the winner to reassess because he had been seized from. `RulerSeamBTrigger` even carried a comment asserting the row still named the prior owner. Both now take `prior_owner_id` off the signal.
+
+**Defects found by the adversarial review and fixed (each re-verified by hand):**
+
+1. **[HIGH — found by two independent lenses] The inheritance path double-rolled every sub-vassal.** `_apply_heir` re-pointed the edges onto the heir, then `resolve_succession` emitted `succession_resolved`, and `VassalLoyaltyTriggers._on_succession_resolved` fired the §5.2 succession check over `list_active_for_liege(heir)` — which now CONTAINED those very edges. The second roll consumed the one-shot RAW Grudging −1 the first had just written for the NEXT check, and a vassal retained by the R-5 roll could come up 2− on the immediate re-roll and have a rebellion seeded against the heir. **The asymmetry is the lesson:** conquest is safe because its trigger fires over the PRIOR owner, off whom the vassals have already moved; succession's fires over the NEW owner — the very lord R-5 just handed them to. Fixed with **NEW `repoint_direct_sub_vassals`**: succession re-points WITHOUT rolling and lets the existing purpose-built trigger do the single roll. That is strictly better than suppressing the trigger — the re-point is what makes it work at all, since before R-5 the inherited edges still named the dead ruler and the check rolled over an empty list. **No test could have caught this**: `register_listeners()` runs from the session runner, not the harness.
+2. **[HIGH] Stranded `liege_domain_id` pointers.** When an oath ends without moving — the new lord already held the fief himself, or the unique-index guard departed it — the edge was departed but the fief kept pointing at its liege domain, violating §135 and leaving a fief held of a domain with no edge to release it from. This is the ORDINARY dynastic case, not an edge case: a landed henchman who inherits his lord's seat. New `_clear_liege_pointer` on all four such paths.
+3. **[MEDIUM] `repoint_liege`'s collision failure was reported as `"retained"`.** The return value was ignored, so the departure log recorded a lie.
+4. **[HIGH] The recomputed trade-range base was never persisted.** `_probe_for` recomputes `base_loyalty_modifier` because RAW L393-394 measures it against the LIEGE's largest urban settlement — but the probe is a throwaway and `repoint_liege` writes only `liege_character_id`, so every FUTURE roll on that edge kept measuring against the departed lord. Now persisted on a successful re-point.
+5. **[MEDIUM] The trade-range recompute was order-dependent.** `compute_non_henchman_base_loyalty` resolves the new lord's realm through `RealmAggregator.aggregate`, which folds in his CURRENTLY active vassals — so each sub-vassal re-pointed early enlarged his realm for the ones rolled later. Fixed with a **PRE-PASS** that builds every probe before the first write, so all are measured against the pre-transfer state. (Same defect class as R-1's `_apply_range_of_trade_loyalty`, and the same fix.)
+6. **[LOW] The revolt path never emitted `EventBus.vassal_revolted`**, so realm-relations drift never fired for an R-5 secession. The signal already existed.
+
+**Decisions made:**
+
+- **Succession re-points but does not roll; conquest rolls in place.** The trigger asymmetry above is the reason, and it is documented at both sites so a future session does not "helpfully" symmetrise them.
+- **Re-point rather than depart-and-re-mint.** A transfer preserves the edge's loyalty history — the RAW fanatic/grudging carryover, last outcome and compliance tag survive the change of lord.
+- **`alignment_steps()` is reporting-only.** `project_modifier_breakdown` already supplies the alignment term; summing the steps on top would double it invisibly. A test pins `modifier_total == breakdown + acquisition + base` exactly to lock this.
+
+**Interfaces defined or changed:**
+
+- NEW `SubVassalLoyalty.roll_for_transfer(domain_id, prior_owner_id, new_owner_id, acquisition_method, calendar_day, dice = null) -> Array`; `.repoint_direct_sub_vassals(domain_id, new_owner_id, calendar_day) -> Array`; `.preview_modifier(sub_vassal_domain_id, new_owner_id, acquisition_method) -> Dictionary`; `.acquisition_penalty(method) -> int`; `.alignment_steps(a, b) -> int`. Constants `ACQ_*`, `CONQUEST_LOYALTY_PENALTY = -2`, `TRIGGER_NEW_LIEGE`.
+- NEW `VassalRepository.repoint_liege(id, new_liege_character_id, calendar_day) -> bool`; `_UPDATE_FIELDS` gained `liege_character_id`.
+- NEW `RealmGraph.direct_vassal_domains(liege_domain_id) -> Array`.
+- `LifecycleHandler._cascade_vassals` **REPLACED** by `_detach_upward_edge(domain_id, day)` + `_detach_downward_edges(domain_id, day)`.
+- **`EventBus.domain_conquered` gained a 4th parameter `prior_owner_id`** — a breaking signal change; all three subscribers updated, plus two test emit sites.
+- `conquer_domain`'s departure-log payload gained `sub_vassal_transfers`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- NEW `tests/test_sub_vassal_loyalty.gd` (**32 checks**, registered as suite 610): the pure helpers; `preview_modifier` proven dice-free AND write-free; **a regression lock on the alignment double-count** (`modifier_total` pinned to exactly breakdown + acquisition + base, with opposed alignments to make the doubling maximal); the band→fate mapping asserted against whatever band the dice actually produced rather than pinning one outcome; the DIRECT-only depth ruling (a grandchild is untouched); and `repoint_liege`'s unique-index collision guard.
+- `tests/test_lifecycle_conquest_outcomes.gd`: `test_outcome_occupied_cascades_vassals` → `test_outcome_occupied_transfers_or_breaks_vassals`. R-5 changed what "cascade" MEANS — a sub-vassal no longer departs, he rolls — so the test now asserts the invariant that holds whatever the dice say: he is no longer the PRIOR owner's vassal, and is either re-pointed to the conqueror or revolted. Same treatment for the scoping test.
+
+**Test results:** `bash tools/run_tests.sh` — **576 suites passed, 0 failed** on the second consecutive run, both runs exit 0 (575 → 576 = the new suite). Log gates clean: 0 `Nonexistent 'String' constructor`, 0 `database is locked`, 0 `vassal-edge sweep` errors.
+
+**Known issues:**
+
+- **The office bonus is not swapped by the probe.** `FavorsDutiesResolver.office_bonus_for_vassal_roll(vassal_id)` takes only the VASSAL's id and re-reads the liege from the database, so RAW L369's +1 is measured against the DEPARTING lord during a transfer roll. Real, but it is a ±1 term in a function shared with `FavorsDutiesResolver`, and it was left alone rather than widening the blast radius under an active session limit.
+- **The Resignation band re-enters `ResignationLadder.abdicate_into_exile`**, which transfers an ARBITRARY domain of the sub-vassal (oldest by `created_at`) — pre-existing behaviour, newly reachable now that R-5 can route a land-holding vassal into it. Worth a look before R-6.
+- Everything still deferred from the R-1 wave (LOD-gating the tribute/title path, the `TestContentSeeder` fixture's missing `vassal_assignments`, the ungated `VassalLoyaltyTriggers` listener, `realm_sub_tab`'s repeated aggregates).
+
+**Next session should:**
+
+- Jedidiah's **revisit list** (recorded in the handoff): (1) leaf rulers inheriting the parent lord's class; (2) the multi-domain ownership accounting method (D-10); (3) gating the **Grant of Land** favor — candidate gates (a) granting liege holds multiple direct domains, (b) highly disfavored/rebellious vassal, (c) an ownerless domain not yet escheated, (d) brainstorm further. Ungated it is a 1-in-20 monthly roll per vassal.
+- Then **R-6** (mercenaries and followers do not transfer) and **R-7** (domain XP, ruler only, tribute included).
+
+## Session 2026-08-05 — R-7a COMPLETE: domain income becomes character experience
+
+**Task:** Build ruling R-7a — the plumbing half of "domain XP, ruler only, tribute included". R-7 was split this session because its two halves have opposite dependencies (see Decisions).
+
+**Model used:** Opus 5, planning through implementation.
+
+**Completed:**
+
+- **`XPAwardCalculator.calculate_domain_xp_cp(net_income_cp, level, is_henchman)`** — NEW, static, and the entry point production calls. RAW `acore-campaign-hijinks.xml` §experience_from_domain_and_mercantile_income L1026-1078. The RAW threshold table is published in gp and engine income is copper (§127), so the **threshold converts UP to cp** and the whole comparison happens in integer copper — no `cp_to_gp()` helper was added, because §127 deliberately forbids one. The trailing `/ 100.0` is RAW's **gp→XP rate**, not a currency conversion: it is where money leaves the money domain. The henchman 50% (L1040) folds into the same expression so the value lands on `bankers_round` exactly once. The gp-native `calculate_domain_xp` survives as the readable place to pin the RAW table.
+- **NEW `engine/subsystems/characters/xp_award_service.gd`** (`XpAwardService`) — the one path that may add to `characters.xp`, using the atomic `UPDATE characters SET xp = xp + ?` form and emitting `EventBus.xp_awarded`. Returns `xp_before` / `xp_after` / `reaches_next_level`. Non-positive amounts are a no-op that still returns a populated dict, so `.get()` chains stay safe; XP LOSS is deliberately unsupported (RAW does claw back stronghold XP at `:1017`, but a clawback can drop a level and needs its own path).
+- **NEW `engine/subsystems/domains/domain_xp_resolver.gd`** (`DomainXpResolver.resolve`) — threshold → henchman rate → prime-req (L1010) → RAW one-level cap (L1011) → award → auto-level, called from the `DomainHandlers` domain loop **before** `_save_domain`.
+- **`_save_domain` rewritten at the XP site.** `domain_xp_this_month` now records RAW's figure instead of `maxi(0, net_income_cp)`, and the double-award guard is stamped in the SAME `update_domain_monthly_state` call, so the record of the award and the guard against repeating it commit together. Neither is written when the resolver skipped, so a re-entered tick cannot overwrite a real figure with 0 or advance the guard for a month it did not pay.
+- **Migration 216** `domains.domain_xp_awarded_through_day INTEGER NOT NULL DEFAULT -1` (+ `db/schema.sql` mirror + `CampaignRepository._DOMAIN_MONTHLY_FIELDS`). `-1` not `0`, because day 0 is a legitimate calendar day and a 0 default would suppress the first award of a campaign started on it.
+
+**All four defects R-7 names are closed.** `calculate_domain_xp` had **zero callers**, so the RAW per-level threshold was never subtracted from anything; `domain_xp_this_month` was written monthly and **read by nothing**, so in the project's whole history no character had ever gained a point of domain XP; the stored value was raw copper handed to a gp-denominated table (a 100× inflation waiting for its first reader); and `int(round(x * 1.05))` rounded half away from zero — that multiplier is the RAW administer-domain bonus and now lives in `DomainXpResolver`, composed with the prime-requisite adjustment under a single banker's rounding.
+
+**Decisions made:**
+
+- **R-7 SPLIT into R-7a (plumbing) and R-7b (scope), because the original ordering was circular.** R-7's RAW scope rule — "no XP is earned from domains managed by vassals" (L1029) — is only expressible once a character can hold exactly one personal domain, which is **D-12's** invariant; but **D-11's** income gate needs R-7's threshold arithmetic. So R-7 → D-12 → D-11 could not all be true. R-7a has no D-12 dependency and ships now; R-7b lands with D-12. New ordering: **R-7a → D-12 (incl. R-7b) → D-11**, and D-12 is now unblocked.
+- **The +5% administer_domain XP bonus is RAW and was KEPT — after I wrongly removed it mid-session.** Migration 068 cites `acore_axioms §administration L499`, and that pointer is wrong: the block it names (`acore_axioms_strongholds_and_domains.xml:526-529`) grants the morale **+1** and defines administration *time*, with no XP percentage. I followed the citation to its target, found nothing, and deleted the bonus as fabricated. **Jedidiah supplied the Axioms text and it is real** — `rules/ax_campaign_play.xml:511`: *"Rulers who administer their domain gain +1 on domain morale rolls and +5% on domain XP that month."* Axioms is the project's **highest**-precedence source, so it outranks anything ACore says or omits. Restored, with the corrected citation moved into `domain_xp_resolver.gd`'s header where the next reader will actually look (a shipped migration is not re-run and should not be rewritten). **The lesson is recorded as conventions §138**: a citation names one location, RAW is a corpus, and `grep -rn "5% .* domain XP" rules/` would have found it in one command. Removing a player-facing rule needs a higher bar than a single failed lookup — the honest move was to ask Jedidiah where the rule lived, before touching the behaviour.
+- **The two RAW percentages compose into one multiplier and round once.** The +5% and the prime-requisite adjustment both scale the same figure; rounding after each in turn drifts, because the intermediate half-rounding is amplified by the second multiply (on a 2,990 base the two orders give 3,296 vs 3,297). NEW `XPAwardCalculator.prime_req_factor(adjustment_percent) -> float` exposes the prime-req rule as a bare factor so it keeps a single definition, and `apply_prime_req_adjustment` is now written in terms of it. The banker's-rounding half of the original defect stands: the old `int(round(x * 1.05))` rounded half away from zero.
+- **No `ledger_entries` row per award**, contrary to the handoff's own note. `ledger_entries.cp_amount` is money with a CHECK-constrained category list — writing XP into it violates §127's unit contract and would corrupt any treasury audit that sums the ledger. `EventBus.xp_awarded` → `GameLog._on_xp_awarded` is the existing, honest audit surface and already fires on every award.
+- **`persistence_tier='named'` ruler stubs BANK XP without levelling.** `LevelUpEngine.apply_level_up_auto` auto-selects and persists proficiency, power and spell rows; running that for every backdrop domain is exactly the eager per-domain cost **D-8** rejected, and it half-promotes a stub behind the promotion engine's back. Stubs accrue `characters.xp` (one integer) and advance when the play window promotes them to `'full'`. **This still satisfies D-4** — a rival the player can *see* is by definition active-LOD, hence `'full'`, hence levelling — while the off-camera nobility costs one integer a month.
+- **PCs are never auto-levelled.** The resolver reports `pending_level_up` and stops; a player advances through `LevelUpEngine.begin_interactive_level_up` so he keeps his proficiency and spell picks. Non-PCs advance automatically per D-4. This is the first production use of the auto-level-up path — `apply_level_up_auto` had **zero production callers** outside its own file.
+- **One `apply_level_up_auto` call, never a loop.** The RAW one-level cap runs first and guarantees the award cannot cover two thresholds, so looping could only ever double-advance a character the cap had just protected.
+- **The registry cache is process-lifetime and local to the resolver.** The monthly tick runs over every domain in the campaign, so a per-domain `ClassRegistry.new()` would parse the class data ~1,000 times a month. `SheetRegistries.get_or_create()` already caches the same bundle but is UI-namespaced; the domain layer keeps its own rather than taking that dependency. `RepertoireEngine` is threaded in so a divine-caster ruler receives the spells his new level unlocks.
+- **A cheap pre-load early-out.** `MIN_THRESHOLD_CP = 2500` is level 1's 25 gp in copper — no character at any level earns below it — so a small domain is dismissed without loading its owner.
+
+**Interfaces defined or changed:**
+
+- NEW `XpAwardService.award(character_id: String, amount: int, source_key: String) -> Dictionary` returning `{awarded, character_id, source_key, xp_before, xp_after, xp_for_next_level, reaches_next_level}`. Constants `SOURCE_DOMAIN_INCOME` / `SOURCE_MERCANTILE` / `SOURCE_HIJINKS` / `SOURCE_CONSTRUCTION`.
+- NEW `DomainXpResolver.resolve(domain_data: Dictionary, month_result: Dictionary, calendar_day: int) -> Dictionary` returning `{earned, awarded, character_id, is_henchman, level, threshold_cp, net_income_cp, before_prime_req, clamped_by_level_cap, leveled_up, pending_level_up, skipped, reason}`. Constants `MIN_THRESHOLD_CP`, `AUTO_LEVEL_TIERS`.
+- NEW `XPAwardCalculator.calculate_domain_xp_cp(net_income_cp: int, level: int, is_henchman: bool = false) -> int` — **static**, unlike the instance `calculate_domain_xp` beside it.
+- Each domain's monthly result dict gained **`domain_xp_award`** (the resolver's report). `_save_domain` reads it; the monthly-report presentation carries it.
+- `domains.domain_xp_this_month` **changed meaning** — RAW XP, not copper net income. Safe precisely because nothing read it.
+
+**Database changes:** Migration **216** `216_domain_xp_awarded_through_day.sql`. **217 is the next free number; R-2 P3 should take it** (the handoff's older note reserving 216 is superseded).
+
+**Tests added/updated:**
+
+- NEW `tests/test_domain_xp_award.gd` (**88 checks**, registered as suite 611 `DomainXpAwardTests`). Regression locks worth naming: the **100× lock** pins `calculate_domain_xp_cp(gp * 100, ...)` against `calculate_domain_xp(gp, ...)` across four levels and five incomes, so a unit slip on either side fails here rather than inflating every ruler's advancement by two orders of magnitude; **banker's rounding** is pinned at 2.5 gp → 2 and 3.5 gp → 4, both of which `roundi` gets wrong; the **henchman rate** is pinned at a value that only comes out right if the halving happens before the single rounding; the **one-level cap** is asserted relationally against `ClassRegistry.get_xp_for_level` rather than hard-coding a fighter's XP curve; and the **guard** is proven to block a repeat of the same day while leaving the following month unaffected; and the **compose-once** test picks a base (2,990) where sequential and composed rounding genuinely disagree — 3,297 vs the correct 3,296 — so a future "simplification" back to two sequential `bankers_round` calls fails here. The tick integration test asserts income-independently — whatever the economy produced, `domain_xp_this_month` must equal the RAW figure derived from `net_income_cp`.
+
+**Test results:** `bash tools/run_tests.sh` — **577 suites passed, 0 failed** on the second consecutive run, both runs exit 0 (576 → 577 = the new suite). Log gates clean: 0 `Nonexistent 'String' constructor`, 0 `database is locked`, 0 `ASSERTION FAILED`, and 0 push_errors from either new file. The 64 `get_character: not found` lines are all pre-existing callers (60 of them `henchman_calamity_watcher.gd:61`); `domain_xp_resolver.gd` contributed none, which also confirms every domain in every fixture has a real owner.
+
+**Known issues:**
+
+- **Nothing reconciles a stub's banked XP into levels at promotion.** A `'named'` stub promoted after two years of income arrives at its old level holding a large XP balance. Belongs with the lazy-rich half of R-4, which has no runtime caller yet either. **The divergence is self-bounding, though**, which is why it was safe to defer: a stub that banks XP eventually reaches its level+2 threshold, `clamp_to_one_level` then returns 0, and it stops earning — so a stub can never drift more than two levels' worth of XP ahead of its recorded level no matter how long it sits off camera. Reconciliation is therefore a bounded problem, not an unbounded one.
+- **The three legacy award sites were left alone** — `CombatFinalizer`, `QuestRegistry._award_xp` and `BattleXpDistributor` still roll their own read-modify-write. Converting them is a combat/quest change with its own blast radius, not R-7a's.
+- **Two RAW carve-outs still unmodelled** (logged, not scoped): scutage receipts must be excluded from the XP base (`acore_axioms:362`) but are not modelled as revenue at all; and a Gift must raise the recipient's XP base and lower the grantor's (`acore_axioms:368`) while `FavorsDutiesResolver` moves only treasuries. `experience_from_construction` (1 XP per 2 gp, clawed back if the stronghold is lost, possibly costing class levels) remains entirely unimplemented.
+- Everything still carried from R-1/R-5: the office-bonus term measured against the departing lord, the Resignation band re-entering `abdicate_into_exile`, the tribute/title LOD gate, `TestContentSeeder`'s missing `vassal_assignments`.
+
+**Next session should:**
+
+- **D-12 — the unified personal domain** (Path 2, aggregate-on-read), carrying **R-7b** (the "no XP from vassal-managed domains" scope rule). It is now unblocked, and it is the next stage in the forced order.
+- Two gotchas already recorded in the handoff for that build: **classification advancement would go inert** the moment D-12 moves stronghold minimum and garrison cost onto per-hex classification, because nothing updates `hex_cells.civilization` after generation and `ClassificationAdvancement` touches only `domains.territory_type`; and the **worst-classification morale rule** Jedidiah gave is marked provisional ("for the time being").
+- Then **D-11** (Grant of Land), whose (2)(c)(ii) income gate R-7a has now made answerable.
+- Small and unblocked whenever convenient: **leaf rulers inherit race but ROLL class** on the per-culture distribution the world generator already uses (`HistorySimulator._ruler_class_distribution` + `_racialize_ruler_class`); `SettingMaterializer._owner_class_for_domain` currently inherits the full class, conflating race with class.
+
+## Session 2026-08-05 — D-12 Phases A + C: the unified personal domain aggregate
+
+**Task:** Begin D-12 (one character, one domain — Path 2 aggregate-on-read). Phase A builds the union every later phase reads; Phase C closes the recorded gotcha that would have made classification advancement inert the moment costs move per-hex.
+
+**Model used:** Opus 5, planning through implementation.
+
+**Completed:**
+
+- **NEW `engine/subsystems/domains/personal_domain.gd`** (`PersonalDomain.for_character` / `.for_domain` / `.worst_classification`). The union of everything a character personally rules: families, revenue/expenses/net, hexes joined to `hex_cells.civilization`, per-classification counts, worst classification, per-hex stronghold minimum, per-hex garrison minimum, owned/intervening/effective hex counts, and total stronghold value.
+- **The two-tier rule is enforced, not assumed.** Only in-window domains have `domain_hexes` rows (`_materialize_domain_hexes` runs solely over the region map), so every per-hex quantity carries a documented aggregate fallback keyed on `domains.territory_type`, and `is_materialized` tells the caller which regime produced the numbers. The fallback reproduces today's behaviour exactly — `classification_minimum_cp(civ, 1)` per parcel, matching the existing `maxi(1, hex_count)` floor — so an abstract domain's numbers do not move under D-12.
+- **Terminal parcels are excluded** (`EXCLUDED_LIFECYCLE_STATES` = abandoned / salted_to_ruin). `DomainHandlers` already skips them in the monthly loop; counting their families would charge a ruler oversize and tribute for land he no longer holds.
+- **`StrongholdRepository.connecting_hexes_for_set` split out of `get_effective_hex_count_for_domain`** (behaviour unchanged — the latter is now `owned.size() + connecting_hexes_for_set(owned).size()`). D-12 needs the intervening hexes' COORDINATES, not just a count, because each one contributes its OWN classification's minimum.
+- **The contiguity walk groups by `map_id` — as a NAMESPACE GUARD, not multi-map support.** This shipped with a comment claiming it protected "holdings on separate maps"; **Jedidiah caught that same session and it is wrong.** A campaign has ONE rolling 6-mile map: `RegionZoomIn` inserts a single `regional_6mi` row (`region_zoom_in.gd:211`) and `grow_frontier` GROWS THAT SAME ROW (new `hex_cells` + an extended `parent_hex_footprint`) rather than minting another; `SettingMaterializer:192` and `RulerLodManager:176` both resolve it with `LIMIT 1`; world gen stamps every `domain_hexes` row with that one id (`setting_materializer.gd:1615`). `domain_hexes.map_id` is a **migration-119 holdover** from the older 24-mile-map-plus-discrete-insets model that the rolling frontier replaced, so the grouping is inert in production. It is kept because `CampaignRepository.add_domain_hex` writes `''` as a sentinel `map_id` for a domain with no `location_map_id`, and coordinates in that namespace are undefined — pathing them against real coordinates could collide on (q, r) or invent adjacency. Comments, the test name, and the handoff were corrected to say that instead. **Consequence for Phase B: assume a single coordinate space**, and note that intervening hexes are therefore always resolvable, since the materialized region is one contiguous footprint.
+- **NEW `ClassificationAdvancement.propagate_to_hexes(domain_id, new_classification)`**, called from `_save_domain` when the classification actually changes. Uses a correlated `EXISTS` rather than `(map_id, q, r) IN (SELECT …)` — row-value syntax needs SQLite 3.15+ and the EXISTS form works on any build godot-sqlite might ship. `PersonalDomain._classifications_for_coords` avoids the same row-value construct for the same reason.
+
+**Two defects found by reading the code rather than the spec:**
+
+1. **`CampaignRepository.add_domain_hex` silently dropped `families`.** Migration 173 added the column (the per-6-mile-hex population the M4-1b vassal decomposition conserves) and this writer was never updated, so every hex it created carried 0. It went unnoticed because world generation inserts `domain_hexes` with raw SQL (`setting_materializer.gd:1614`) and the helper has no production callers — D-12's per-hex garrison cost (families × that hex's RAW rate) is the first consumer to read the column. Caught by a new test asserting a garrison figure and getting 0.
+2. **The tribute-out defect is NOT what the D-12 spec says, and is worse.** The spec (which I wrote) claimed `18 × this parcel's families^0.6` and a ~55% concave-sum overcharge. In fact `_compute_tribute_out_for_vassal_domain` (`domain_handlers.gd:1265`) already passes `RealmAggregator.aggregate(owner).all_realm_families` — character-wide — into `TributeCalculator.compute_tribute_base_cp`. But it is invoked **once per parcel**, gated only on that parcel having a `liege_domain_id`, and writes the full figure to each. **A lord holding two liege-bearing parcels owes his entire realm's tribute TWICE** — a clean N× multiplication, not a concavity error. `idx_vassal_assignments_unique_active` forbids two parcels under the *same* liege, but two under *different* lieges is exactly the escheat/conquest case D-12 exists for. The Path-2 fix is "compute once per character and charge once", which falls out of resolving parcels together. Handoff corrected.
+
+**Decisions made:**
+
+- **Phase B is genuinely two passes, and the reason is narrow.** Of everything D-12 unifies, only **personal authority** needs THIS month's numbers: RAW cross-references class level against domain *income*, and `resolve_base_morale` is handed `revenue["total"]`, computed inside the parcel's own resolution. Families, hexes, classification and stronghold value all read persisted state and can be unioned at any point in the tick. So B needs: pass 1 revenue/expenses per parcel → pass 2 per owner (sum revenue → one personal-authority lookup → **one morale roll** → mirror to every parcel → per-parcel growth). Recorded in the handoff because it is not in the original spec and would otherwise be re-derived — including the trap that `_resolve_domain_month` is NOT safe to re-run for a revenue total (it mutates `tribute_out_owed` and calls `FaithMonthlyResolver.apply_pending_consecrate_fields`, a write), even though `DomainRevenueCalculator.calculate_monthly_revenue` itself is pure.
+- **Unified morale needs a carrier, not a migration.** The character's morale is one value stored per parcel; designate the owner's lowest-`id` parcel (the order `_list_parcels` already returns) as the carrier of *prior* morale and mirror the result to every parcel. Every existing reader of `domains.morale` keeps working, and `characters.domain_morale` is not needed.
+- **Intervening hexes contribute their minimum but no families** — they are secured, not held. A missing `hex_cells` row falls back to `wilderness`, the STRICTEST classification, so a data gap overcharges rather than undercharges.
+- **`worst_classification({})` returns `civilized`**, the mildest reading, so an empty set never invents a morale penalty out of missing data.
+- **Nothing in `PersonalDomain` writes to `settlement_entrances`.** Jedidiah's locality invariant: unification is about the RULER's economics and must never reach a settlement's own state. Documented in the file header, along with the rule that the settlement growth tick must keep receiving its PARCEL's `peasant_families` (realm-wide it would inflate the clanhold cap for every settlement the character owns).
+
+**Interfaces defined or changed:**
+
+- NEW `PersonalDomain.for_character(character_id) -> Dictionary` — keys: `character_id, parcels, parcel_ids, parcel_count, is_materialized, peasant_families, urban_families, families, revenue_cp, expenses_cp, net_income_cp, hexes, owned_hex_count, effective_hex_count, intervening_hex_count, classification_counts, worst_classification, stronghold_minimum_cp, stronghold_value_cp, garrison_minimum_cp`. Constants `EXCLUDED_LIFECYCLE_STATES`, `CLASSIFICATION_SEVERITY`, `DEFAULT_CLASSIFICATION`.
+- NEW `PersonalDomain.for_domain(domain_data) -> Dictionary` (resolves the owner; an ownerless parcel answers for itself rather than returning a zeroed dict).
+- NEW `PersonalDomain.worst_classification(classification_counts) -> String`.
+- NEW `StrongholdRepository.connecting_hexes_for_set(owned: Dictionary) -> Dictionary` — the intervening-hex SET. `get_effective_hex_count_for_domain` is unchanged in behaviour and now defined in terms of it.
+- NEW `ClassificationAdvancement.propagate_to_hexes(domain_id, new_classification) -> int`.
+- `CampaignRepository.add_domain_hex` now honours a `families` key.
+
+**Database changes:** None. Per-hex classification is already persisted at both scales (`hex_cells.civilization`, propagated parent→child by `RegionZoomIn`), and `domain_hexes(map_id, hex_q, hex_r)` joins straight to `hex_cells(map_id, q, r)` — the reason the domain layer never made that join is naming drift (`setting_hexes.territory_class` / `hex_cells.civilization` / `domains.territory_type`), not a missing column.
+
+**Tests added/updated:**
+
+- NEW `tests/test_personal_domain.gd` (**50 checks**, registered as suite 612 `PersonalDomainTests`). The two properties worth naming: **splitting a holding must not change any RAW quantity** — `test_separated_parcels_incur_intervening_hexes` proves the non-contiguity penalty now fires across parcels that are each internally contiguous, and that the intervening hexes raise the minimum at THEIR own classification's rate; and **advancement must stop being inert** — `test_classification_propagates_to_hexes` asserts the per-hex minimum actually moves from the wilderness rate to the borderlands rate after an advance, which is the failure mode that would otherwise have surfaced days into Phase B as "why does advancement do nothing?". Also covered: the aggregate fallback for abstract domains, terminal-parcel exclusion, cross-map non-joining, and the per-hex stronghold minimum asserted to differ from `domain.territory_type × hex_count`.
+
+**Test results:** `bash tools/run_tests.sh` — **578 suites passed, 0 failed** on the second consecutive run, both runs exit 0 (577 → 578 = the new suite). Log gates clean: 0 `Nonexistent 'String' constructor`, 0 `database is locked`, 0 `ASSERTION FAILED`, 0 push_errors from `PersonalDomain` or `propagate_to_hexes`.
+
+**Known issues:**
+
+- **Two constants hold the same RAW table in different units** — `StrongholdRepository._CLASSIFICATION_MIN_CP_PER_HEX` (cp) and `DomainStocker._STRONGHOLD_MIN_GP_PER_HEX` (gp). They agree today (15,000 gp = 1,500,000 cp etc.) and D-12 reads the cp one, but nothing tests them for set equality — exactly the drift §130 exists to catch.
+- **`PersonalDomain.for_character` is uncached.** ~3 queries per call, and Phase B will call it inside a tick that touches ~1,000 domains. The handoff records the fix: one dictionary keyed by owner, built once per tick.
+- **Naming drift is still unresolved** (D-12 open question 3) — three names for one concept. Documented in `PersonalDomain._list_hexes` as the reason the join was never made, but not normalized.
+
+**Next session should:**
+
+- **D-12 Phase B** — the RAW math seams onto the union. Read the handoff's "Phase B's ordering problem" section FIRST; the two-pass shape and the morale-carrier decision are already made.
+- Then **D** (directed investment — migration 217, `settlement_entrances.pending_investment_cp`), **E** (personal allegiance + the R-5 cascade rework), **F** (R-7b).
+- Still unblocked and small whenever convenient: leaf rulers inherit race but ROLL class.
+
+## Session 2026-08-06 — D-12 Phase B: the RAW monthly math moves onto the personal domain
+
+**Task:** Phase B of D-12 — make the monthly tick resolve a CHARACTER'S DOMAIN rather than a `domains` row, using the `PersonalDomain` union Phase A built. Carries the two findings from the Phase A session: only personal authority needs this month's numbers (so the tick must be re-passed), and tribute-out is an N× bug rather than the ~55% concave-sum error the spec claimed.
+
+**Model used:** Opus 5, planning through implementation.
+
+**Completed:**
+
+- **`DomainHandlers._handle_monthly_tick` restructured into THREE passes** (the plan said two — see Decisions). Pass 0 filters out terminal parcels, groups the rest by owner, and builds each owner's `PersonalDomain` union. Pass 1 builds each parcel's month context and accumulates the owner's total revenue. Pass 2 resolves, persists and emits exactly as before. Six per-tick caches (`_union_by_owner`, `_parcels_by_owner`, `_parcel_rows`, `_context_by_domain`, `_revenue_by_owner`, `_morale_by_owner`) are cleared by `_reset_month_caches` at the top of every tick.
+- **NEW `DomainHandlers._build_month_context`** — everything from `_resolve_domain_month`'s old prologue (hexes, stronghold value/minimum, ruler context, garrison summary, tribute in/out, scutage, investment, faith modifiers, levy, revenue, the consecrate-fields commit) lifted into one function that runs **exactly once per parcel per month** and is cached. Its docstring says plainly that it is NOT pure: it mutates `domain_data["tribute_out_owed"]` and calls `FaithMonthlyResolver.apply_pending_consecrate_fields`, so re-running it double-charges.
+- **NEW `DomainHandlers._unified_morale_for`** — ONE morale roll per character, cached per owner and mirrored to every parcel. It combines the union's revenue (personal authority), stronghold value and minimum (sufficiency), worst classification, the combined garrison summary and the union-scoped levy penalty; it reads prior morale and the categorical inputs from the SEAT parcel.
+- **NEW `DomainHandlers._union_event_modifiers_sum`**, replacing the deleted per-parcel `_event_modifiers_sum`. Tax and liturgy are per-family RATES, so they come from the seat (summing would multiply one policy by his parcel count); garrison underfunding comes from the combined summary; administration fires from ANY parcel; challenger and settled-lair penalties are summed across parcels, with the lair penalty rated against the union's families.
+- **NEW `DomainHandlers._tribute_out_for_parcel`** — the character's realm tribute is charged to `PersonalDomain.tribute_seat_id` and to nothing else. Scutage rides the same gate (it is an obligation of the OATH and its magnitude is realm-wide, so it had the identical N× shape). Because the payment loyalty roll only fires on a nonzero `tribute_out`, a shortfall now triggers one Henchman Loyalty roll per character instead of one per parcel.
+- **NEW `GarrisonExpenditureCalculator.combine(summaries, classification)`** — folds several parcels' summaries into one. Sums `total_paid_cp`, `unpaid_value_cp`, `peasant_families` and `minimum_total_cp`, then takes the gp/family ratio ONCE. Summing `minimum_total_cp` rather than recomputing a rate is what lets a mixed clanhold/civilized holding keep each parcel's own RAW floor (400 vs 200 cp/family) and still produce one population-weighted union minimum. Returns the same key set as `compute_from_domain`, so `RulerBackdropStabilizer.adjust_garrison_summary` and every other consumer works unchanged. Only MORALE signals combine; expenses stay per-parcel.
+- **`DomainMoraleResolver.resolve_base_morale` gained an 8th optional parameter, `classification_override`.** Empty (the default) keeps reading `domain.territory_type`, so every other caller and every single-parcel ruler is untouched; the tick passes `PersonalDomain.worst_classification`.
+- **`PersonalDomain` gained `seat_parcel_id` and `tribute_seat_id`** (and `liege_domain_id` in the parcel SELECT that derives the latter). The seat is the lowest-id parcel — the character's domain record page.
+- **NEW `PersonalDomain.sufficiency_for_domain(domain_id)` / `.sufficiency(union)`, and every reader converted to it.** Moving the tick onto the union left **eight** other call sites still asking "is his stronghold enough?" per parcel — the Domain status header, the Overview / Stronghold / Treasury sub-tabs, the `manage_stronghold` activity handler, `RulerActionCatalog._stronghold_below_minimum`, and `RulerAI._scoring_context`. For a single-parcel ruler they agree; for a multi-parcel one the UI would have contradicted the income gate it was explaining, and the ruler AI would have kept proposing stronghold investment for land his other keeps already secured — a wrong decision with real treasury behind it, not just a wrong label. That is conventions §130's two-copies-of-one-answer failure, so all eight now share the helper. `manage_stronghold._build` takes the whole verdict rather than the minimum alone: measuring a union minimum against ONE parcel's stronghold value would have overstated the shortfall by every other keep he owns. The Stronghold sub-tab and the Treasury gate banner say when the figures cover more than the domain on screen.
+- **Dead code removed:** `_event_modifiers_sum`, `_stub_stronghold_value`, `_classification_minimum_cp`. All three answered per parcel and have no remaining callers; `StrongholdRepository` is still the single source of the RAW §minimum_stronghold_value table. Stale prose pointers at `_event_modifiers_sum` in `domain_encounter_resolver.gd`, `domain_xp_resolver.gd`, `encounters_threats_sub_tab.gd`, `test_phase_9c.gd` and `test_ruler_ai_monthly.gd` were retargeted rather than left dangling.
+- **`_resolve_domain_month` returns a new `personal_domain` block** (parcel count and ids, seat, tribute seat, `is_materialized`, families, effective hex count, worst classification, stronghold value/minimum, union revenue, and which parcel the morale roll was taken on) so the monthly report can explain that a parcel's morale was rolled for a larger whole rather than looking mis-scoped.
+
+**Decisions made:**
+
+- **THREE passes, not two — pass 0 exists for a reason the plan missed.** `PersonalDomain.for_character` re-reads the `domains` table, and `_save_domain` UPDATEs each parcel as the tick walks it. A union built lazily during resolution would see some of a character's parcels carrying LAST month's morale/families/revenue and some carrying THIS month's — a different answer per parcel for a quantity that is supposed to be one number, and the answer would depend on `list_campaign_domains`' row order. Every union is therefore built before anything is written.
+- **The carrier is ordered by `id`, never by the tick's own order.** `list_campaign_domains` is `ORDER BY d.created_at`, which has second resolution and is unstable for rows created in the same second; `PersonalDomain._list_parcels` is `ORDER BY d.id`. Seating morale and tribute on the lowest-`id` parcel makes both deterministic regardless of how the tick happened to enumerate.
+- **Three buckets for every morale input, decided explicitly** (now conventions §139). EXTENSIVE quantities (families, revenue, stronghold value, levied peasants) are summed. INTENSIVE ones — anything per-family — are re-derived from summed numerator and denominator, never averaged: evaluating gp/family per parcel handed one lord a morale *bonus* on his well-garrisoned seat and a *penalty* on his bare frontier parcel in the same month, out of the same purse. CATEGORICAL ones (alignment, population kind, tax/liturgy rates, repression stance, prior morale) cannot be combined at all and are read from the seat.
+- **A per-parcel value on a non-seat parcel is invisible to morale, and that is the intended consequence** of "one character, one domain record", not an oversight. It is stated in `_unified_morale_for`'s docstring so the next session does not read it as a bug.
+- **Repression ORs the flag across parcels and takes the harshest rate.** It is a monthly stance toward one people; the column is a cp/family rate, so summing would invent a stance the ruler never took.
+- **The income gate is now character-wide, and that can OPEN a gate that used to be closed.** This is the RAW reading — a ruler may hold many strongholds in one domain "so long as their **combined** value secures the land" — and it is the same change that makes non-contiguity bite, since the minimum is summed over owned PLUS intervening hexes.
+- **Domain XP stays per parcel.** Awarding once per character and dropping the XP from vassal-managed land is R-7b (Phase F). The visible seam meanwhile: the administer flag is character-wide for morale but per-parcel for the +5% XP. Noted in the tick and in the handoff.
+- **D-10's `_tribute_destinations` was left alone.** It partitions the tribute a lord RECEIVES across his seats — a different question from the one Phase B fixed, which is how many times he PAYS.
+- **Moving a shared quantity means moving every reader of it, in the same session.** The eight per-parcel sufficiency call sites were not in the Phase B plan; they surfaced from a grep for the two helpers I was deleting. Half-moving a seam leaves the engine and the UI telling the player different things about the same rule, which is worse than not moving it — so they were converted here rather than deferred.
+
+**Interfaces defined or changed:**
+
+- `PersonalDomain.for_character(character_id) -> Dictionary` / `.for_domain(domain_data)` — return dict gains `seat_parcel_id: String` (lowest-id parcel, "" when he holds nothing) and `tribute_seat_id: String` (lowest-id parcel bearing a `liege_domain_id`, "" when he owes none).
+- `PersonalDomain.sufficiency_for_domain(domain_id) -> Dictionary` and `PersonalDomain.sufficiency(union) -> Dictionary` — NEW statics, **the one stronghold-sufficiency answer**. Keys: `value_cp`, `minimum_cp`, `shortfall_cp`, `is_sufficient`, `owned_hex_count`, `intervening_hex_count`, `effective_hex_count`, `parcel_count`, `is_materialized`, `character_id`. An empty or unknown domain id returns the zeroed verdict rather than fabricating a wilderness minimum out of a missing row.
+- `ManageStronghold._build(character_id, domain, sufficiency: Dictionary, budget_cp)` — third parameter changed from `minimum_cp: int` to the whole verdict.
+- `GarrisonExpenditureCalculator.combine(summaries: Array, classification: String) -> Dictionary` — NEW static. Same key set as `compute_from_domain`; `[]` returns the zeroed shape.
+- `DomainMoraleResolver.resolve_base_morale(domain, ruler, monthly_revenue_cp, stronghold_value_cp, stronghold_minimum_cp, additional_troops_morale_bonus, levy_morale_penalty = 0, classification_override = "")` — 8th parameter added, defaulted so existing callers are unaffected.
+- `DomainHandlers._resolve_domain_month` result gains `personal_domain: Dictionary` (see Completed for its keys).
+- REMOVED from `DomainHandlers`: `_event_modifiers_sum`, `_stub_stronghold_value`, `_classification_minimum_cp`.
+
+**Database changes:**
+
+- None. Phase B is entirely a read-and-arithmetic change; `PersonalDomain` needed no new columns and the carrier design deliberately avoids a `characters.domain_morale` migration. **Migration 217 is still the next free number.**
+
+**Tests added/updated:**
+
+- **NEW `tests/test_domain_unified_month.gd`** (suite 613, `DomainUnifiedMonthTests`, 50 checks), registered with the usual four edits. Each tick-driving test gets its own campaign, since `_handle_monthly_tick` resolves every domain in one. Coverage: one 2d6 rolled and mirrored to every parcel with the SEAT's prior morale as the drift anchor and both rows persisting the same value; personal authority computed on the summed income, with an explicit assertion that splitting the holding WOULD have been worth a point of morale (the exploit); a single-parcel ruler regression-locked to be unaffected; tribute charged once and summing to exactly one realm figure rather than two, on the lowest-id liege-bearing parcel; sufficiency judged on the whole holding in both directions (one keep securing two parcels, and one copper short gating both); worst classification driving the morale modifier and reported by both parcels; administering a NON-seat parcel lifting the character's one roll by exactly +1 against an otherwise identical control ruler; the garrison combine including the mixed clanhold/civilized blend, the wilderness +2 incentive band and the empty-array shape; a levy rated against the character's whole population rather than the parcel it was raised on; and one verdict from `PersonalDomain.sufficiency_for_domain` for every reader — identical from either parcel, matching the figures the tick used, and zeroed rather than fabricated for an unknown or empty domain id.
+
+**Test-run status — READ THIS BEFORE TRUSTING OR DOUBTING A NUMBER:**
+
+- **All 529 sync suites pass, with `FAILED (` at 0 in the log** — the string `_run_suite` prints on any failed assertion — across all four full runs made today. `DomainUnifiedMonth: all tests passed (58 checks)` in every one, alongside `PersonalDomain` (50), `DomainXpAward` (88), `RulerAiMonthly` (66), `TribalWarriors`, `UnitLoyalty`, `LifecycleHandler`, `ClanholdMechanics`, `ReligionConversion`, and all five Phase-11E scenario integration suites including `Scenario.BelowSufficiency`, which is the one that exercises the income gate Phase B moved.
+- **The first full run exited 0**, and `test_runner.gd` ends with `get_tree().quit(1 if failed > 0 else 0)` — so that run is a hard zero-failure signal across all 532 suites, async block included.
+- **Three subsequent full runs segfaulted (signal 11, exit 139) in the async-suite block, before the `TEST RESULTS` line.** This is NOT a Phase B regression and not a test failure: memory sampling of the test process shows **7.89 GB working set by suite ~378, 8.09 GB by ~400, peak 9.13 GB, with free system RAM down to 0.52 GB of 15.8 GB** at the crash. The new suite is #613 — the process is already at 8 GB two hundred suites before it runs, so the ceiling is pre-existing accumulation across 529 suites in one process. The three async suites pass **cleanly in isolation** (27 + 36 + 29 = 92 checks, exit 0, no crash, no `Object was deleted while awaiting a callback` flood) in a scratch scene without the sync block. Spawned as its own task.
+- **Gates:** `database is locked` 0 · `ASSERTION FAILED` 0 · `get_character: not found` 64, unchanged from the recorded baseline (60 of them from `henchman_calamity_watcher.gd:61`) · `Nonexistent 'String' constructor` 0.
+- **THE §106 GATE STRING IS STALE — Godot 4.6.1 renamed the error.** It now emits `Invalid call 'String' constructor`, which the recorded grep does not match. Searching for the new wording finds **3 real aborts at 2 sites**: `test_faction_ff4_betrayal.gd:141` and `test_phase_f_npc_siege.gd:181`, both bare `String(...)` on a nullable TEXT column, both in files untouched by this session, and **both suites still print "all tests passed"** because the abort skips the remaining checks. Spawned as its own task; the memory note's gate must grep BOTH spellings from now on.
+
+**Known issues:**
+
+- **The administer flag is read at two scopes.** Morale takes it from any parcel; `DomainXpResolver` still reads the parcel's own. Closes with Phase F.
+- **The settled-lair penalty is summed per parcel after rounding**, rather than summing the XP numerator and dividing once. At most one parcel normally carries a settled lair, so the drift is not observable in practice, but it is a real (tiny) divergence from a single division.
+- **One roll now emits N signals and N log lines for an N-parcel ruler.** `_emit_signals` fires `domain_morale_changed` per parcel and `DepartureLogRecorder` records a morale-tier transition per parcel, so a two-parcel lord produces two identical-looking entries. Each names its own holding, so it is defensible rather than wrong, but it reads as duplication. `RulerSeamBTrigger` is safe — its dispatch carries a one-game-month per-ruler cooldown, so N simultaneous crossings still fire one reassess. Cosmetic; worth folding into the monthly-report work.
+- **`PersonalDomain._list_parcels` has no campaign filter** — it scopes on `owner_character_id` alone. Characters are campaign-scoped so this cannot bite in production; `_seat_row` degrades to the parcel in hand if a union names a seat the tick did not load.
+- **Carried from Phase A, unchanged:** `StrongholdRepository._CLASSIFICATION_MIN_CP_PER_HEX` (cp) and `DomainStocker._STRONGHOLD_MIN_GP_PER_HEX` (gp) still hold the same RAW table in two units with no set-equality test (conventions §130 drift risk); the naming drift between `setting_hexes.territory_class`, `hex_cells.civilization` and `domains.territory_type` is still unresolved (D-12 open question 3).
+
+**Next session should:**
+
+0. **Decide whether the two spawned test-infrastructure tasks come first.** Neither blocks D-12 Phase D, but both weaken the evidence every future session relies on: the suite can no longer reliably print a `TEST RESULTS` line, and the §106 abort gate has been reading 0 against the wrong error string.
+1. **D-12 Phase D — directed investment.** Migration **217** adds `pending_investment_cp` to `settlement_entrances`; `oversee_investment` (activity handler) takes a target settlement id; the ruler-AI candidate picks one by disposition, keeping the existing 1,000 gp tranche and treasury gate; the default when nobody directed it is `TradeRangeResolver.largest_urban_settlement_for_ruler`, never "the first row". Jedidiah ruled this a REQUIRED part of D-12 because unification widens the pool from one domain's to the whole character's, so the current first-row routing gets worse, not better.
+2. **D-12 Phase E — personal allegiance.** `vassal_assignments.liege_character_id` becomes authoritative and `domains.liege_domain_id` demotes to a derived seat pointer; R-5's cascade is reworked around "did the lord lose his domain, or just some hexes?"
+3. **D-12 Phase F — R-7b.** Award domain XP once per CHARACTER on the union's net income, and none from vassal-managed domains (RAW `acore-campaign-hijinks.xml` §experience_from_campaigns). Closes the per-parcel threshold subtraction (divergence #4) and the administer-flag scope split above.
+4. Then **D-11 (Grant of Land)**, whose (2)(c)(ii) income gate R-7a already made answerable.

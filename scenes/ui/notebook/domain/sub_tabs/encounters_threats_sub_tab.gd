@@ -372,7 +372,7 @@ func _render_challenger() -> void:
 	refuse_btn.text = "Refuse battle"
 	refuse_btn.tooltip_text = "Refusing imposes -4 to monthly morale rolls until the challenger is resolved (RAW L627-630)."
 	# Phase 9C E4: stamp morale_penalty=4 on the challenger threat row so
-	# domain_handlers._event_modifiers_sum subtracts it from the monthly morale roll.
+	# domain_handlers._union_event_modifiers_sum subtracts it from the monthly morale roll.
 	refuse_btn.pressed.connect(func() -> void:
 		_on_refuse_battle_with_challenger_pressed(threat_id)
 	)
@@ -724,7 +724,7 @@ func _on_defeat_bandits_pressed(threat_id: String) -> void:
 
 func _on_refuse_battle_with_challenger_pressed(threat_id: String) -> void:
 	## Phase 9C E4 — stamp morale_penalty=4 on the challenger threat row.
-	## domain_handlers._event_modifiers_sum subtracts this on each monthly tick.
+	## domain_handlers._union_event_modifiers_sum subtracts this on each monthly tick.
 	if threat_id.is_empty():
 		return
 	DomainThreatRepository.update(threat_id, {"morale_penalty": 4})

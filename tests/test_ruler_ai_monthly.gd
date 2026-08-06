@@ -28,6 +28,8 @@ func run_all_tests() -> void:
 	test_mixed_batch_active_acts_backdrop_does_not()
 	test_provisional_active_set_excludes_pc_named_dead()
 	test_monthly_tick_integration()
+	test_favors_duties_rolls_once_per_ruler_and_only_at_active_lod()  # R-1
+	test_tribute_in_is_credited_once_per_seat_with_realm_wide_efficiency()
 	test_monthly_tick_no_pause_without_player_domain()
 
 	if not has_failures():
@@ -115,7 +117,7 @@ func _find_utility(scored: Array, action_id: String, decree_kind: String = "") -
 
 
 ## White-box event-modifier sum for the trend test (mirrors
-## domain_handlers._event_modifiers_sum's garrison + administer terms — the
+## domain_handlers._union_event_modifiers_sum's garrison + administer terms — the
 ## only terms these fixtures exercise; scenario_runner_base precedent).
 func _event_mods(domain: Dictionary) -> int:
 	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain)
@@ -436,6 +438,15 @@ func test_monthly_tick_integration() -> void:
 
 	check(bool(result.get("auto_pause", false)),
 		"monthly report pauses when the player owns a domain")
+	# R-1 wiring: the hoisted Favors & Duties pass is reached by the real tick, and
+	# the key no longer rides on each domain's result. Both are true regardless of
+	# what any die shows, so this is the deterministic half of the hoist's coverage —
+	# the counts live in test_favors_duties_rolls_once_per_ruler_and_only_at_active_lod.
+	check(result.has("favors_duties_reports"),
+		"the tick reports Favors & Duties per RULER")
+	for d in (result.get("presentation", {}) as Dictionary).get("domain_results", []):
+		check(not (d as Dictionary).has("favors_duties"),
+			"favors_duties is no longer a per-domain key")
 	var reports: Array = result.get("ruler_reports", [])
 	var active_report: Dictionary = {}
 	for r in reports:
@@ -463,6 +474,157 @@ func test_monthly_tick_integration() -> void:
 		"is_repressed_this_month reset after consumption")
 	check(int(active_domain.get("repression_cp_per_family_this_month", 1)) == 0,
 		"repression_cp_per_family_this_month reset after consumption")
+
+
+## Tribute-in keys on TWO different scopes, and the split is the point
+## (Jedidiah ruling 2026-08-04):
+##   * the RAW inefficiency penalty is CHARACTER-wide — "the sum-total of ALL
+##     vassals paying tribute to a single character, regardless of which domain
+##     seat they are paying to";
+##   * the credit is DOMAIN-scoped — each vassal's tribute lands in the seat his
+##     fief is actually held of.
+##
+## Before this, the ruler's ENTIRE tribute was credited to every domain he held,
+## so a two-domain lord banked his realm's tribute twice (and twice the domain XP).
+## Fixture: one lord, two seats, one vassal under each.
+func test_tribute_in_is_credited_once_per_seat_with_realm_wide_efficiency() -> void:
+	var camp := CampaignRepository.create_campaign("Tribute Split", "World")
+	var save := _campaign_id
+	_campaign_id = camp
+	var lord := _make_ruler_with_domain("tr_lord", {"character_type": "pc"})
+	var seat_b := CampaignRepository.create_domain({
+		"campaign_id": camp, "name": "Second Seat",
+		"owner_character_id": lord.ruler_id, "territory_type": "civilized",
+	})
+	var vassal_a := _make_ruler_with_domain("tr_va", {"persistence_tier": "named"})
+	var vassal_b := _make_ruler_with_domain("tr_vb", {"persistence_tier": "named"})
+	_campaign_id = save
+
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET liege_domain_id = ? WHERE id = ?", [lord.domain_id, vassal_a.domain_id])
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET liege_domain_id = ? WHERE id = ?", [seat_b, vassal_b.domain_id])
+	for pair in [[vassal_a.ruler_id, vassal_a.domain_id], [vassal_b.ruler_id, vassal_b.domain_id]]:
+		VassalRepository.create_assignment({
+			"campaign_id": camp,
+			"liege_character_id": lord.ruler_id,
+			"vassal_character_id": str(pair[0]),
+			"vassal_domain_id": str(pair[1]),
+			"assigned_calendar_day": 0, "status": "active",
+			"is_henchman_vassal": false, "base_loyalty_modifier": -2,
+		})
+
+	var handlers := DomainHandlers.new(FakeRunner.new(camp))
+	var a: Dictionary = handlers._compute_tribute_in_for_domain(
+		CampaignRepository.get_domain(lord.domain_id))
+	var b: Dictionary = handlers._compute_tribute_in_for_domain(
+		CampaignRepository.get_domain(seat_b))
+
+	# CHARACTER-wide: both seats see a TWO-vassal lord. A per-domain count would
+	# report 1 here, and would put a 9-vassal lord in the wrong RAW band.
+	check(int(a.get("direct_vassal_count", -1)) == 2,
+		"seat A sees the lord's realm-wide vassal count (got %d)" % int(a.get("direct_vassal_count", -1)))
+	check(int(b.get("direct_vassal_count", -1)) == 2,
+		"seat B sees the lord's realm-wide vassal count (got %d)" % int(b.get("direct_vassal_count", -1)))
+
+	# DOMAIN-scoped credit: each seat banks exactly its own vassal.
+	var a_cp: int = int(a.get("total_received_cp", 0))
+	var b_cp: int = int(b.get("total_received_cp", 0))
+	var realm_cp: int = int(a.get("realm_total_received_cp", 0))
+	check(a_cp > 0 and b_cp > 0, "each seat receives its own vassal's tribute (%d / %d)" % [a_cp, b_cp])
+	check(realm_cp == int(b.get("realm_total_received_cp", 0)),
+		"both seats agree on the lord's total realm intake")
+	check(a_cp + b_cp == realm_cp,
+		"the seats PARTITION the realm intake — no double credit (%d + %d vs %d)"
+			% [a_cp, b_cp, realm_cp])
+	check(a_cp < realm_cp,
+		"one seat alone does NOT bank the whole realm's tribute (the old bug)")
+	check((a.get("per_vassal", []) as Array).size() == 1,
+		"seat A itemizes exactly its own one vassal")
+
+
+## R-1: the Favors & Duties roll is once per RULER and LOD-gated.
+##
+## It used to run inside the per-domain loop keyed on `owner_character_id`, so a
+## ruler holding N domains rolled the full RAW table for every one of his vassals N
+## times a month. That was invisible only because world generation left
+## `vassal_assignments` empty; R-1 fills it, so the multiplication had to go first.
+##
+## Fixture: a PC lord holding TWO domains with ONE vassal — the old code would
+## report two rolls — plus a backdrop NPC lord with his own vassal, who must not
+## roll at all.
+##
+## Driven through `_resolve_favors_and_duties_for_rulers` DIRECTLY rather than
+## through `_handle_monthly_tick`. The first version of this test ran the whole tick
+## and was FLAKY: because the hoisted pass now runs after the domain loop, it sees
+## post-loyalty-roll state, and a tick's stochastic loyalty rolls can route through
+## the resignation/rebellion paths — which (as of this same wave) depart the very
+## vassal edge the assertion counts. That is correct behaviour and a genuinely
+## unstable thing to assert on. The dedupe and the LOD gate are what R-1 changed, so
+## that is what this exercises; `test_monthly_tick_integration` covers the wiring.
+func test_favors_duties_rolls_once_per_ruler_and_only_at_active_lod() -> void:
+	var camp := CampaignRepository.create_campaign("FD Hoist", "World")
+	var save := _campaign_id
+	_campaign_id = camp
+	var lord := _make_ruler_with_domain("fd_pc", {"character_type": "pc"})
+	var second_domain := CampaignRepository.create_domain({
+		"campaign_id": camp,
+		"name": "Second Seat",
+		"owner_character_id": lord.ruler_id,
+		"territory_type": "civilized",
+	})
+	var vassal := _make_ruler_with_domain("fd_vassal", {"persistence_tier": "named"})
+	var backdrop := _make_ruler_with_domain("fd_backdrop", {"persistence_tier": "named"})
+	var backdrop_vassal := _make_ruler_with_domain("fd_bd_vassal",
+		{"persistence_tier": "named"})
+	_campaign_id = save
+
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET liege_domain_id = ? WHERE id = ?", [lord.domain_id, vassal.domain_id])
+	CampaignRepository.db.query_with_bindings(
+		"UPDATE domains SET liege_domain_id = ? WHERE id = ?",
+		[backdrop.domain_id, backdrop_vassal.domain_id])
+	for pair in [[lord.ruler_id, vassal.ruler_id, vassal.domain_id],
+			[backdrop.ruler_id, backdrop_vassal.ruler_id, backdrop_vassal.domain_id]]:
+		VassalRepository.create_assignment({
+			"campaign_id": camp,
+			"liege_character_id": str(pair[0]),
+			"vassal_character_id": str(pair[1]),
+			"vassal_domain_id": str(pair[2]),
+			"assigned_calendar_day": 0,
+			"status": "active",
+			"is_henchman_vassal": false,
+			"base_loyalty_modifier": -2,
+		})
+
+	check(not second_domain.is_empty(), "the lord's second domain was created")
+	var domains: Array = CampaignRepository.list_campaign_domains(camp)
+	var lord_domains: int = 0
+	for d in domains:
+		if String((d as Dictionary).get("owner_character_id", "")) == lord.ruler_id:
+			lord_domains += 1
+	check(lord_domains == 2,
+		"the lord holds TWO domains, so a per-domain roll would double (got %d)" % lord_domains)
+
+	var handlers := DomainHandlers.new(FakeRunner.new(camp))
+	# The lord is PC-side; the backdrop lord is in neither set, which is the gate.
+	var reports: Array = handlers._resolve_favors_and_duties_for_rulers(
+		domains, {lord.ruler_id: true}, [], 100)
+
+	var lord_reports: int = 0
+	var lord_rolls: int = 0
+	for r in reports:
+		var row: Dictionary = r
+		var rid := String(row.get("ruler_character_id", ""))
+		check(rid != backdrop.ruler_id,
+			"a backdrop-LOD lord does not hold court (no F&D roll off camera)")
+		if rid == lord.ruler_id:
+			lord_reports += 1
+			lord_rolls += (row.get("results", []) as Array).size()
+	check(lord_reports == 1,
+		"the two-domain lord is reported ONCE, not once per domain (got %d)" % lord_reports)
+	check(lord_rolls == 1,
+		"one roll per VASSAL, not per (vassal x domain) (got %d)" % lord_rolls)
 
 
 func test_monthly_tick_no_pause_without_player_domain() -> void:

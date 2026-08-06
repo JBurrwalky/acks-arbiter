@@ -36,7 +36,14 @@ extends RefCounted
 ##       domains_ruled: int,               — count of domains the ruler personally owns
 ##     }
 
-const _MAX_DEPTH := 8
+## Sanity backstop only — the `visited` set in `_recursive_realm_sum` is the real
+## cycle guard. R-1 made the liege tree genuinely walkable (world generation now
+## mints an appointment row per realm edge), and a generated realm stacks the civ
+## ladder under war-vassal crown chains, so the old cap of 8 was reachable: it
+## would silently under-report a deep realm's families — corrupting the RAW tribute
+## table lookup — while spamming push_error every month. Matches
+## `RealmGraph._MAX_LIEGE_HOPS`, so the two walkers agree on what counts as a cycle.
+const _MAX_DEPTH := 64
 
 
 static func aggregate(ruler_character_id: String) -> Dictionary:
@@ -77,11 +84,20 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 	var visited: Dictionary = {}  # character_id → true
 	visited[ruler_character_id] = true
 	var vassal_families_total: int = 0
+	# R-1 perf: accumulate the peasant/urban split from the SAME walk that produces
+	# `families`. `_recursive_realm_sum` already returns all three, and the second
+	# full-tree walk that used to compute this split below made every consumer pay
+	# for the realm twice — once per direct vassal here, then the whole tree again.
+	# With `vassal_assignments` empty that cost nothing; R-1 makes the trees real.
+	var vassal_peasant_total: int = 0
+	var vassal_urban_total: int = 0
 	for assn in direct_assignments:
 		var vassal_char: String = String(assn.get("vassal_character_id", ""))
 		var sub: Dictionary = _recursive_realm_sum(vassal_char, visited, 1)
 		var fam: int = int(sub.get("families", 0))
 		vassal_families_total += fam
+		vassal_peasant_total += int(sub.get("peasant_families", 0))
+		vassal_urban_total += int(sub.get("urban_families", 0))
 		result["direct_vassals"].append({
 			"vassal_assignment_id": String(assn.get("id", "")),
 			"vassal_character_id": vassal_char,
@@ -93,10 +109,14 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 	result["vassal_families"] = vassal_families_total
 	result["all_realm_families"] = int(result["personal_families"]) + vassal_families_total
 
-	# Recursive peasant/urban breakdown — used by tribute UI display.
-	var deep_breakdown: Dictionary = _recursive_realm_sum(ruler_character_id, {}, 0)
-	result["all_realm_peasant_families"] = int(deep_breakdown.get("peasant_families", 0))
-	result["all_realm_urban_families"] = int(deep_breakdown.get("urban_families", 0))
+	# Recursive peasant/urban breakdown — used by tribute UI display. Personal plus
+	# what the loop above already summed; identical to the result of re-walking the
+	# whole tree from the ruler, because that walk visits exactly the ruler's own
+	# domains plus each direct vassal's subtree.
+	result["all_realm_peasant_families"] = \
+		int(result["personal_peasant_families"]) + vassal_peasant_total
+	result["all_realm_urban_families"] = \
+		int(result["personal_urban_families"]) + vassal_urban_total
 
 	return result
 

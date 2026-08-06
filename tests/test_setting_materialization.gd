@@ -43,6 +43,8 @@ func run_all_tests() -> void:
 		test_idempotent_guard(cid)
 		test_campaign_origin_generated(cid)
 		test_frontier_growth(cid)               # asserts the rolling-frontier growth (M2 rolling)
+		test_every_liege_bearing_domain_has_an_owner(cid)  # R-4: the R-1 precondition
+		test_vassal_assignments_mint_one_edge_per_realm_edge(cid)  # R-1
 	if not has_failures():
 		print("SettingMaterializationTests: all tests passed (%d checks)" % test_count())
 
@@ -746,8 +748,13 @@ func test_clanhold_decomposition(cid: String) -> void:
 	const SC := "establishment_method = 'materialized_subclanhold'"
 	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s" % SC, [cid]) == nsc,
 		"subclanhold_count matches tagged sub-clanhold rows (%d)" % nsc)
-	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND (domain_style != 'clanhold' OR location_map_id != ? OR liege_domain_id IS NULL OR owner_character_id IS NOT NULL)" % SC, [cid, rid]) == 0,
-		"sub-clanholds are clanhold-style, located, lieged, lazy-ruled")
+	# R-4 / handoff D-8 (2026-08-04): the `owner_character_id IS NOT NULL` clause
+	# was removed from this violation predicate — sub-clanholds are now eagerly
+	# owned by a cheap stub (see the sub-fief block for the full rationale).
+	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND (domain_style != 'clanhold' OR location_map_id != ? OR liege_domain_id IS NULL)" % SC, [cid, rid]) == 0,
+		"sub-clanholds are clanhold-style, located, lieged")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.owner_character_id IS NULL OR d.owner_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?))" % SC, [cid, cid]) == 0,
+		"every sub-clanhold has a sub-chieftain resolving to a character")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND d.liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)" % SC, [cid, cid]) == 0,
 		"every sub-clanhold liege resolves")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id AND s.archetype = 'clanhold')" % SC, [cid]) == 0,
@@ -843,9 +850,17 @@ func test_subfief_decomposition(cid: String) -> void:
 		"every sub-fief liege resolves to a domain")
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.realm_id IS NULL OR d.realm_id NOT IN (SELECT id FROM realms WHERE campaign_id = ?))" % SF, [cid, cid]) == 0,
 		"every sub-fief is in a resolving realm")
-	# Lazy rulers (region-zoom-in §5.6a perf split): sub-fiefs carry NO eager ruler.
-	check(_scalar("SELECT COUNT(*) AS n FROM domains WHERE campaign_id = ? AND %s AND owner_character_id IS NOT NULL" % SF, [cid]) == 0,
-		"sub-fiefs have lazy (NULL) rulers")
+	# R-4 / handoff D-8 (2026-08-04) — INVERTED. This used to assert
+	# "sub-fiefs have lazy (NULL) rulers", codifying the unfinished M2b-2 step.
+	# Jedidiah ruled the ownerless state a BUG, not a design: `vassal_assignments`
+	# declares both character FKs NOT NULL, so R-1 cannot mint a realm edge for a
+	# domain with no owner. Every sub-fief now carries an eager-cheap
+	# `persistence_tier='named'` stub; the EXPENSIVE half (proficiencies, powers,
+	# personality, disposition) is what stays lazy.
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND (d.owner_character_id IS NULL OR d.owner_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?))" % SF, [cid, cid]) == 0,
+		"every sub-fief has an owner resolving to a character")
+	check(_scalar("SELECT COUNT(*) AS n FROM domains d JOIN characters c ON c.id = d.owner_character_id WHERE d.campaign_id = ? AND %s AND c.persistence_tier != 'named'" % SF, [cid]) == 0,
+		"sub-fief rulers are cheap 'named'-tier stubs, not eagerly-built full characters")
 	# Every sub-fief has a watchtower stronghold (the UI hook).
 	check(_scalar("SELECT COUNT(*) AS n FROM domains d WHERE d.campaign_id = ? AND %s AND NOT EXISTS (SELECT 1 FROM strongholds s WHERE s.domain_id = d.id)" % SF, [cid]) == 0,
 		"every sub-fief has a stronghold")
@@ -1104,6 +1119,146 @@ func test_frontier_growth(cid: String) -> void:
 		guard += 1
 	check(not bool(last.get("grew", false)), "growth stops cleanly at the world edge (grew=false)")
 	check(guard < 40, "world-edge stop reached within the guard (no runaway growth)")
+
+
+## R-4 (handoff D-8) — the PRECONDITION FOR R-1, asserted end to end.
+##
+## `vassal_assignments` declares `liege_character_id` and `vassal_character_id`
+## as NOT NULL FKs to `characters(id)`. So world-gen cannot mint a single realm
+## edge unless BOTH ends of every edge have an owning character. Before R-4 the
+## generated world was almost entirely ownerless and R-1 could mint ZERO rows.
+##
+## This is the assertion the earlier waves lacked: the per-site tests prove
+## nothing BROKE, this one proves the fix actually WORKS across a whole
+## generated campaign.
+func test_every_liege_bearing_domain_has_an_owner(cid: String) -> void:
+	# The vassal end: any domain that owes fealty must have an owner.
+	var orphan_vassals := _scalar("""
+		SELECT COUNT(*) AS n FROM domains
+		WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND liege_domain_id != ''
+		  AND (owner_character_id IS NULL OR owner_character_id = '')
+	""", [cid])
+	check(orphan_vassals == 0,
+		"every liege-bearing domain has an owner (R-1 precondition); %d ownerless" % orphan_vassals)
+
+	# The liege end: the domain each vassal points AT must have an owner too.
+	var orphan_lieges := _scalar("""
+		SELECT COUNT(*) AS n FROM domains v JOIN domains l ON l.id = v.liege_domain_id
+		WHERE v.campaign_id = ? AND (l.owner_character_id IS NULL OR l.owner_character_id = '')
+	""", [cid])
+	check(orphan_lieges == 0,
+		"every LIEGE of a vassal domain has an owner; %d ownerless lieges" % orphan_lieges)
+
+	# Owners must resolve — a dangling id would satisfy NOT NULL and still break the FK.
+	var dangling := _scalar("""
+		SELECT COUNT(*) AS n FROM domains d
+		WHERE d.campaign_id = ? AND d.owner_character_id IS NOT NULL AND d.owner_character_id != ''
+		  AND d.owner_character_id NOT IN (SELECT id FROM characters WHERE campaign_id = ?)
+	""", [cid, cid])
+	check(dangling == 0, "every domain owner resolves to a character; %d dangling" % dangling)
+
+	# DISTINCTNESS. `idx_vassal_assignments_unique_active(liege_character_id,
+	# vassal_character_id) WHERE status='active'` permits ONE active edge per
+	# character pair, so sharing a ruler across sibling domains under one liege
+	# would make R-1's second edge silently fail to insert.
+	var shared := _scalar("""
+		SELECT COUNT(*) AS n FROM (
+			SELECT owner_character_id, liege_domain_id FROM domains
+			WHERE campaign_id = ? AND owner_character_id IS NOT NULL AND owner_character_id != ''
+			GROUP BY owner_character_id, liege_domain_id HAVING COUNT(*) > 1
+		)
+	""", [cid])
+	check(shared == 0,
+		"no ruler owns two domains under the same liege (unique-index requirement); %d collisions" % shared)
+
+	# And the split actually held: these are CHEAP stubs, not eager full builds.
+	var total_owned := _scalar("""
+		SELECT COUNT(*) AS n FROM domains
+		WHERE campaign_id = ? AND owner_character_id IS NOT NULL AND owner_character_id != ''
+	""", [cid])
+	check(total_owned > 0, "the generated world has owned domains at all")
+
+
+## R-1 — the appointment record exists for the whole realm tree.
+##
+## Before this, world generation wrote only `domains.liege_domain_id` and left
+## `vassal_assignments` completely empty, so every consumer keyed on it — tribute-in,
+## Favors & Duties, call to arms, vassal loyalty, realm diplomacy, the realm UI —
+## was dormant in every generated campaign.
+func test_vassal_assignments_mint_one_edge_per_realm_edge(cid: String) -> void:
+	# TOTALITY: one active edge per liege-bearing domain. Counting BOTH sides
+	# catches an edge silently lost to the unique index as well as one invented.
+	var liege_bearing := _scalar("""
+		SELECT COUNT(*) AS n FROM domains v JOIN domains l ON l.id = v.liege_domain_id
+		WHERE v.campaign_id = ?
+	""", [cid])
+	var edges := _scalar(
+		"SELECT COUNT(*) AS n FROM vassal_assignments WHERE campaign_id = ? AND status = 'active'",
+		[cid])
+	check(liege_bearing > 0, "the generated world has realm edges at all (%d)" % liege_bearing)
+	# The sweep JOINs vassal→liege, so a liege pointer that resolves to nothing
+	# would drop its edge SILENTLY and still satisfy the count check above, since
+	# that count uses the same JOIN. Assert the pointers resolve independently.
+	var dangling_liege := _scalar("""
+		SELECT COUNT(*) AS n FROM domains
+		WHERE campaign_id = ? AND liege_domain_id IS NOT NULL AND liege_domain_id != ''
+		  AND liege_domain_id NOT IN (SELECT id FROM domains WHERE campaign_id = ?)
+	""", [cid, cid])
+	check(dangling_liege == 0,
+		"every liege_domain_id resolves to a real domain; %d dangling" % dangling_liege)
+	check(edges == liege_bearing,
+		"one active vassal_assignment per liege-bearing domain: %d edges vs %d domains"
+			% [edges, liege_bearing])
+	check(int(_mat_result.get("vassal_edge_count", -1)) == edges,
+		"materialize() reports the edges it minted (%d reported vs %d rows)"
+			% [int(_mat_result.get("vassal_edge_count", -1)), edges])
+
+	# CONSISTENCY: both character ends must match the domains' actual owners.
+	# A mismatch would still satisfy the NOT NULL FKs and silently misroute
+	# tribute and every loyalty roll.
+	var mismatched := _scalar("""
+		SELECT COUNT(*) AS n FROM vassal_assignments va
+		JOIN domains v ON v.id = va.vassal_domain_id
+		JOIN domains l ON l.id = v.liege_domain_id
+		WHERE va.campaign_id = ?
+		  AND (va.vassal_character_id != v.owner_character_id
+		       OR va.liege_character_id != l.owner_character_id)
+	""", [cid])
+	check(mismatched == 0,
+		"every edge's liege/vassal characters match the domains' owners; %d mismatched" % mismatched)
+
+	# RAW acore_axioms §non_henchman_vassals L392-397: a world-generated vassal is
+	# NOT his lord's henchman. `VassalRepository.create_assignment` defaults the flag
+	# to TRUE, so a missed argument here would silently make every NPC baron in the
+	# world roll as a henchman — and lose the RAW base-loyalty penalty with it.
+	var henchmen := _scalar("""
+		SELECT COUNT(*) AS n FROM vassal_assignments
+		WHERE campaign_id = ? AND is_henchman_vassal != 0
+	""", [cid])
+	check(henchmen == 0, "world-gen vassals are non-henchman (RAW L392); %d henchmen" % henchmen)
+	var bad_base := _scalar("""
+		SELECT COUNT(*) AS n FROM vassal_assignments
+		WHERE campaign_id = ? AND base_loyalty_modifier NOT IN (-2, -4)
+	""", [cid])
+	check(bad_base == 0,
+		"non-henchman base loyalty is RAW -2 (in trade range) or -4 (outside); %d off-table"
+			% bad_base)
+
+	# No self-edges, and no duplicate active pair (the unique index would have
+	# rejected the second silently, leaving a hole in the tree).
+	var self_edges := _scalar("""
+		SELECT COUNT(*) AS n FROM vassal_assignments
+		WHERE campaign_id = ? AND liege_character_id = vassal_character_id
+	""", [cid])
+	check(self_edges == 0, "no ruler is his own vassal; %d self-edges" % self_edges)
+	var dupes := _scalar("""
+		SELECT COUNT(*) AS n FROM (
+			SELECT liege_character_id, vassal_character_id FROM vassal_assignments
+			WHERE campaign_id = ? AND status = 'active'
+			GROUP BY liege_character_id, vassal_character_id HAVING COUNT(*) > 1
+		)
+	""", [cid])
+	check(dupes == 0, "no duplicate active liege/vassal pair; %d duplicated" % dupes)
 
 
 func _scalar_str(sql: String, binds: Array) -> String:

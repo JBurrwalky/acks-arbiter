@@ -136,6 +136,51 @@ static func check_classification_change(
 	}
 
 
+## D-12: push a domain's new classification down onto its own hexes.
+##
+## WHY THIS EXISTS — the alternative is silent inertness. Until D-12, this file
+## read and wrote ONLY `domains.territory_type`, and nothing anywhere updated
+## `hex_cells.civilization` after world generation (the sole runtime writers were
+## `fog_state` and the dev override `CampaignRepository.update_hex_terrain_field`).
+## That was harmless while every RAW cost keyed on the domain aggregate. The
+## moment D-12 moves the stronghold minimum and the garrison rate onto each hex's
+## OWN classification, a domain that grows Wilderness -> Borderlands -> Civilized
+## would keep paying wilderness rates forever, because its hexes still say
+## `wilderness` — advancement would appear to do nothing, and the symptom would
+## surface days later as a mystery rather than as a missing write.
+##
+## The decision stays at the DOMAIN level (this file's thresholds are domain-wide
+## population and settlement tests); only its CONSEQUENCE is per-hex. Per-hex
+## independent advancement is a much larger design and is deliberately not this.
+##
+## Returns the number of hexes updated. Abstract off-window domains own no
+## `domain_hexes` rows and return 0 — correct, since they use the aggregate
+## fallback (`PersonalDomain`'s two-tier rule) and never consult `hex_cells`.
+static func propagate_to_hexes(domain_id: String, new_classification: String) -> int:
+	if domain_id.is_empty() or new_classification.is_empty():
+		return 0
+	# Correlated EXISTS rather than `(map_id, q, r) IN (SELECT …)`: row-value
+	# syntax needs SQLite 3.15+, and this form works on every build godot-sqlite
+	# might ship.
+	if not CampaignRepository.db.query_with_bindings("""
+		UPDATE hex_cells SET civilization = ?
+		WHERE EXISTS (
+			SELECT 1 FROM domain_hexes dh
+			WHERE dh.domain_id = ?
+			  AND dh.map_id = hex_cells.map_id
+			  AND dh.hex_q = hex_cells.q
+			  AND dh.hex_r = hex_cells.r
+		)
+	""", [new_classification, domain_id]):
+		push_error(
+			"ClassificationAdvancement.propagate_to_hexes: failed. domain=%s new=%s" % [
+				domain_id, new_classification])
+		return 0
+	# godot-sqlite exposes no affected-row count, so report the domain's own hex
+	# count — every one of them was in the UPDATE's subquery by construction.
+	return CampaignRepository.get_domain_hexes(domain_id).size()
+
+
 ## Returns the per-6-mile-hex family cap for a given classification per
 ## §limits_of_growth L156-161.
 static func family_cap_per_hex(classification: String) -> int:

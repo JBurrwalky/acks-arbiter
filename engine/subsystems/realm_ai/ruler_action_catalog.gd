@@ -245,10 +245,11 @@ static func _stronghold_below_minimum(domain: Dictionary) -> bool:
 	var domain_id: String = String(domain.get("id", ""))
 	if domain_id.is_empty():
 		return false
-	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
-		String(domain.get("territory_type", "wilderness")), hex_count)
-	return minimum_cp - StrongholdRepository.get_stronghold_value_for_domain(domain_id) >= 100
+	# D-12: judged over the ruler's whole holding, matching the monthly tick's
+	# income gate. Per parcel this would keep offering an investment for land his
+	# other keeps already secure — a wrong decision with real treasury behind it,
+	# not just a wrong label.
+	return int(PersonalDomain.sufficiency_for_domain(domain_id)["shortfall_cp"]) >= 100
 
 
 static func _candidate(action_id: String, base_value: float, weight_key: String,

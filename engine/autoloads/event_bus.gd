@@ -642,7 +642,14 @@ signal domain_established(domain_id: String, owner_character_id: String, classif
 ##     'looted_local_succession' — attacker scooted; [param new_owner_id] is
 ##                                  a freshly-spawned local NPC
 ##     'salted_to_ruin'          — terminal; [param new_owner_id] is empty
-signal domain_conquered(domain_id: String, outcome: String, new_owner_id: String)
+## [param prior_owner_id] (R-5, 2026-08-04) is who LOST the domain. It has to be
+## carried on the signal: the emit happens AFTER `reassign_domain_owner`, so a
+## subscriber reading `domains.owner_character_id` gets the CONQUEROR. That is
+## exactly the bug it fixes — `VassalLoyaltyTriggers` was firing RAW §5.2's "your
+## lord just lost a stronghold" roll over the WINNER's vassals. Empty when the
+## domain had no owner.
+signal domain_conquered(domain_id: String, outcome: String, new_owner_id: String,
+	prior_owner_id: String)
 
 ## A domain was abandoned. [param reason] is one of 'voluntary',
 ## 'ruler_bankrupt', 'stronghold_collapsed', 'no_heir'.

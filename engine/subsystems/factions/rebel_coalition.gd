@@ -266,7 +266,7 @@ static func launch(plot_id: String, liege_character_id: String, day: int,
 		var member_head: String = StringUtils.s(member_faction.get("leader_npc_id"), "")
 		if member_head == "":
 			continue
-		if _repoint_domains_to_realm(member_head, rebel_realm_id):
+		if _repoint_domains_to_realm(member_head, rebel_realm_id, day):
 			flipped += 1
 
 	# realm_relations(rebels, liege) = hostile.
@@ -501,8 +501,26 @@ static func _realm_mirror_for_character(campaign_id: String, character_id: Strin
 ## Re-point every domain the character owns to [param realm_id] (the realm-cache
 ## flip; full liege-chain surgery belongs to the realms-titles path). Returns true
 ## if any domain was re-pointed.
-static func _repoint_domains_to_realm(character_id: String, realm_id: String) -> bool:
-	return CampaignRepository.db.query_with_bindings(
+##
+## R-1: erasing `liege_domain_id` without also terminating the matching
+## `vassal_assignments` row would strand a STALE ACTIVE edge that nothing can ever
+## clean up — `LifecycleHandler._cascade_vassals` finds a domain's vassals THROUGH
+## the very pointer being erased here. While world generation left the table empty
+## this was invisible; now a successful secession would go on paying tribute to the
+## lord it just rebelled against and go on rolling his Favors & Duties. Depart the
+## seceding ruler's edges FIRST, mirroring `RulerDeathHandler._revert_to_overlord`.
+static func _repoint_domains_to_realm(
+	character_id: String, realm_id: String, day: int) -> bool:
+	var db = CampaignRepository.db
+	# Keyed on the CHARACTER, not on his domains: secession ends every oath he
+	# swore, including a landless personal one with no vassal_domain_id.
+	if db.query_with_bindings("""
+		SELECT id FROM vassal_assignments
+		WHERE vassal_character_id = ? AND status = 'active'
+	""", [character_id]):
+		for row: Dictionary in db.query_result.duplicate():
+			VassalRepository.update_status(str(row.get("id", "")), "departed", day)
+	return db.query_with_bindings(
 		"UPDATE domains SET realm_id = ?, liege_domain_id = NULL WHERE owner_character_id = ?",
 		[realm_id, character_id])
 

@@ -22,6 +22,43 @@ extends RefCounted
 
 const WORLD_MAP_SCALE := "campaign_24mi"
 
+## R-4 (handoff D-8): one shared RulerStubMinter for the whole materialization
+## pass. It owns a ClassRegistry, which loads every class JSON on construction —
+## building one per domain would reintroduce exactly the per-domain cost the
+## eager-cheap/lazy-rich split exists to avoid. Lazily created so callers that
+## never mint a ruler never pay for the registry.
+var _stub_minter = null
+
+
+func _ruler_stub_minter():
+	if _stub_minter == null:
+		_stub_minter = RulerStubMinter.new()
+	return _stub_minter
+
+
+## R-4: the class to give a 6-mile sub-fief's ruler, taken from the class of the
+## PARENT domain's owner.
+##
+## The M4-1b leaf layer is handoff-invented — unlike the `setting_domains` ladder
+## it has no sim-rolled `ruler_class` to promote. Inheriting the parent's class
+## keeps a vassal coherent with the lord he serves (and, for clanholds, keeps a
+## sub-chieftain the same beastman kind as his crown) without inventing a second
+## class distribution that could drift from `HistorySimulator._domain_ruler_class`.
+## Called ONCE per parent, not per sub-domain. Returns "" when the parent has no
+## owner, which the minter treats as "unknown" and falls back to fighter.
+func _owner_class_for_domain(domain_id: String) -> String:
+	if domain_id.is_empty():
+		return ""
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT c.character_class AS cc
+		FROM domains d JOIN characters c ON c.id = d.owner_character_id
+		WHERE d.id = ?
+	""", [domain_id]):
+		return ""
+	if CampaignRepository.db.query_result.is_empty():
+		return ""
+	return str(CampaignRepository.db.query_result[0].get("cc", ""))
+
 const _VALID_CIVILIZATION := ["civilized", "borderlands", "wilderness"]
 const _VALID_WATER := ["", "ocean", "lake"]
 
@@ -37,6 +74,7 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		"located_domain_count": 0, "tracked_realm_count": 0, "settlement_count": 0,
 		"dungeon_count": 0, "poi_count": 0, "domain_hex_count": 0,
 		"pocket_realm_count": 0, "river_edge_count": 0, "road_count_6mi": 0,
+		"vassal_edge_count": 0,
 	}
 	var errors: Array = result["errors"]
 	# In-memory handoff between phases (NOT persisted): each runtime domain's 24-mile
@@ -118,6 +156,11 @@ func materialize(campaign_id: String, _start_settlement_id: String = "") -> Dict
 		# --- Quest-Rumor Q-2: seed → runtime quests/rumors ---------------
 		and _materialize_quests(campaign_id, region_map_id, result)
 		and _materialize_rumors(campaign_id, region_map_id, result)
+		# R-1: the vassal_assignments sweep runs LAST, once every domain exists and
+		# owns a ruler. It must follow _decompose_* (which create the 6-mile leaf
+		# sub-fiefs) and _materialize_county_settlements (whose settlements the RAW
+		# range-of-trade check reads) — see _materialize_vassal_edges.
+		and _materialize_vassal_edges(campaign_id, result)
 	)
 	if not content_ok:
 		errors.append("content placement failed")
@@ -216,6 +259,11 @@ func _cleanup_partial(campaign_id: String) -> void:
 		"DELETE FROM dungeon_entrances WHERE campaign_id = ?",
 		"DELETE FROM pois WHERE campaign_id = ?",
 		"DELETE FROM strongholds WHERE location_map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)",
+		# R-1: vassal_assignments holds NOT NULL FKs to BOTH domains and characters,
+		# so it must be cleared before either — otherwise a rolled-back partial
+		# materialization leaves dangling appointment rows behind.
+		"DELETE FROM vassal_obligations WHERE vassal_assignment_id IN (SELECT id FROM vassal_assignments WHERE campaign_id = ?)",
+		"DELETE FROM vassal_assignments WHERE campaign_id = ?",
 		"DELETE FROM domains WHERE campaign_id = ?",
 		"DELETE FROM realms WHERE campaign_id = ?",
 		"DELETE FROM characters WHERE campaign_id = ?",
@@ -449,7 +497,7 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary, ctx: 
 		var pid := str(p["id"])
 		if not sdoms_by_pid.has(pid):
 			continue
-		if not _create_ladder_for_polity(campaign_id, p, sdoms_by_pid[pid], crown_by_pid[pid], domain_pid, domain_seats, result):
+		if not _create_ladder_for_polity(campaign_id, p, sdoms_by_pid[pid], crown_by_pid[pid], domain_pid, domain_seats, result, campaign_seed):
 			return false
 
 	# Pass 3 — realm_id (walk liege chain to the sovereign root) + crown owner wiring.
@@ -463,6 +511,30 @@ func _materialize_political_layer(campaign_id: String, result: Dictionary, ctx: 
 			db.query_with_bindings(
 				"UPDATE domains SET owner_character_id = ?, updated_at = datetime('now') WHERE id = ?",
 				[ruler_by_pid[cpid], crown_by_pid[cpid]])
+			continue
+		# R-4 (handoff D-8): a crown WITHOUT a full ruler. `ruler_by_pid` is
+		# populated only for SOVEREIGN polities (the `is_sovereign` branch above),
+		# so every war-vassal polity's crown used to stay ownerless — and a crown
+		# is the liege of that polity's entire ladder, so leaving it null would
+		# break the realm tree at its apex even after the ladder gained owners.
+		# Mint the cheap stub here rather than in `_create_crown_domain`: that
+		# function runs before the ruler map is complete and has no campaign_seed.
+		var cp: Dictionary = by_id.get(cpid, {})
+		var crown_ruler: String = _ruler_stub_minter().mint(campaign_id, {
+			"domain_id": str(crown_by_pid[cpid]),
+			"campaign_seed": campaign_seed,
+			"ruler_class": str(cp.get("ruler_class", "")),
+			"ruler_level": int(cp.get("ruler_level", 1)),
+			"title": ruler_title_for(str(cp.get("title", ""))),
+			"alignment": _alignment_or_neutral(str(cp.get("alignment", ""))),
+			"fallback_name": str(cp.get("name", "")),
+		})
+		if crown_ruler.is_empty():
+			result["errors"].append("crown ruler stub mint failed for polity %s" % cpid)
+			continue
+		db.query_with_bindings(
+			"UPDATE domains SET owner_character_id = ?, updated_at = datetime('now') WHERE id = ?",
+			[crown_ruler, crown_by_pid[cpid]])
 
 	# Pass 4 — tribute. Vassals owe up-chain (abstract per-title rate while owner is
 	# NULL); sovereign + zero-family apexes owe 0 (compute_tribute_owed handles both).
@@ -548,6 +620,148 @@ func _set_war_vassal_tribute(campaign_id: String, ordered: Array, by_id: Diction
 		db.query_with_bindings(
 			"UPDATE domains SET tribute_out_owed = ?, updated_at = datetime('now') WHERE id = ?",
 			[owed, crown_by_pid[pid]])
+
+
+## R-1 — mint the `vassal_assignments` APPOINTMENT record for every realm edge.
+##
+## Ruling R-1 (Jedidiah 2026-07-31): `domains.liege_domain_id` is AUTHORITATIVE for
+## the realm tree; `vassal_assignments` is the appointment + loyalty record. World
+## generation wrote only the pointer, so the appointment table was empty in every
+## generated world and everything keyed on it stayed dormant — tribute-in, Favors &
+## Duties, call to arms, vassal loyalty rolls, realm diplomacy, the realm UI.
+##
+## ONE SWEEP, RUN LAST — deliberately NOT an INSERT beside each `liege_domain_id`
+## write. Those writes happen at four different moments, and Pass 3 assigns the CROWN
+## owners only AFTER Pass 2 has already chained a polity's whole ladder to that crown
+## — so a per-site insert would be minting edges whose liege end has no owner yet.
+## Sweeping once at the end is correct by construction (every domain exists and owns
+## a ruler by then), total (the civ ladder, the war-vassal crown chain, the 6-mile
+## leaf sub-fiefs and sub-clanholds, pocket realms — without four call sites), and
+## free for any future domain-creating pass.
+##
+## RAW — a world-generated vassal is NOT a henchman. `acore_axioms_strongholds_and_domains.xml`
+## §non_henchman_vassals L392-397 gives them base loyalty −2 instead of 0, and there
+## is no free duty each month. `VassalRepository.create_assignment` DEFAULTS
+## `is_henchman_vassal` to true (the PC enfeoffing his own henchman is the common
+## runtime case), so world gen must pass it explicitly or every NPC baron in the
+## world would roll as his duke's henchman.
+func _materialize_vassal_edges(campaign_id: String, result: Dictionary) -> bool:
+	var db = CampaignRepository.db
+	if not db.query_with_bindings("""
+		SELECT v.id                 AS vassal_domain_id,
+		       v.owner_character_id AS vassal_character_id,
+		       v.location_map_id    AS vassal_location_map_id,
+		       l.owner_character_id AS liege_character_id
+		FROM domains v
+		JOIN domains l ON l.id = v.liege_domain_id
+		WHERE v.campaign_id = ?
+		  AND v.liege_domain_id IS NOT NULL
+		  AND v.liege_domain_id != ''
+		ORDER BY v.id
+	""", [campaign_id]):
+		result["errors"].append("vassal-edge sweep: query failed")
+		return false
+	var edges: Array = db.query_result.duplicate()
+	var seen_pairs := {}
+	# Edges whose RAW base loyalty still needs the range-of-trade test, deferred to
+	# a second pass below: [{assignment_id, vassal_domain_id, liege_character_id}].
+	var pending_trade_range: Array = []
+	var minted := 0
+	for edge: Dictionary in edges:
+		var vassal_domain := str(edge.get("vassal_domain_id", ""))
+		var vassal_v: Variant = edge.get("vassal_character_id")
+		var liege_v: Variant = edge.get("liege_character_id")
+		var vassal_char := String(vassal_v) if vassal_v != null else ""
+		var liege_char := String(liege_v) if liege_v != null else ""
+		if vassal_char.is_empty() or liege_char.is_empty():
+			# R-4 guarantees an owner on BOTH ends of every edge, and
+			# `test_every_liege_bearing_domain_has_an_owner` asserts it end to end.
+			# If this fires, ruler promotion has regressed — fail the materialization
+			# loudly rather than ship a half-recorded realm tree.
+			result["errors"].append(
+				"vassal-edge sweep: domain %s has an ownerless end (vassal='%s', liege='%s')"
+					% [vassal_domain, vassal_char, liege_char])
+			return false
+		if vassal_char == liege_char:
+			# A ruler cannot be his own vassal. Unreachable today (R-4 mints a
+			# DISTINCT character per domain), but a self-edge would make every apex
+			# walk cycle, so refuse it rather than record it.
+			result["errors"].append(
+				"vassal-edge sweep: domain %s would be its own liege" % vassal_domain)
+			continue
+		var pair_key := "%s|%s" % [liege_char, vassal_char]
+		if seen_pairs.has(pair_key):
+			# `idx_vassal_assignments_unique_active` permits exactly ONE active edge
+			# per (liege, vassal) character pair, so the second INSERT would fail
+			# silently. Surface it instead of losing an edge without a trace.
+			result["errors"].append(
+				"vassal-edge sweep: duplicate liege/vassal pair at domain %s" % vassal_domain)
+			continue
+		seen_pairs[pair_key] = true
+		var assignment_id: String = VassalRepository.create_assignment({
+			"campaign_id": campaign_id,
+			"liege_character_id": liege_char,
+			"vassal_character_id": vassal_char,
+			"vassal_domain_id": vassal_domain,
+			# The world already existed when play begins; materialize() sets the
+			# clock to day 1 and every generated domain carries
+			# established_calendar_day 0, so these oaths predate the campaign too.
+			"assigned_calendar_day": 0,
+			"status": "active",
+			"is_henchman_vassal": false,
+			# RAW's in-range value. The -4 refinement needs the COMPLETE edge table
+			# (see below), so it cannot be decided while we are still building it.
+			"base_loyalty_modifier": -2,
+		})
+		if assignment_id.is_empty():
+			result["errors"].append(
+				"vassal-edge sweep: create_assignment failed for domain %s" % vassal_domain)
+			return false
+		minted += 1
+		var loc_v: Variant = edge.get("vassal_location_map_id")
+		if loc_v != null and not String(loc_v).is_empty():
+			pending_trade_range.append({
+				"assignment_id": assignment_id,
+				"vassal_domain_id": vassal_domain,
+				"liege_character_id": liege_char,
+			})
+	_apply_range_of_trade_loyalty(pending_trade_range)
+	result["vassal_edge_count"] = minted
+	return true
+
+
+## RAW §non_henchman_vassals L393-394: a non-henchman vassal is at base loyalty −2,
+## or −4 when outside the range of trade of the liege's largest urban settlement.
+##
+## SECOND PASS, and it has to be. `TradeRangeResolver.largest_urban_settlement_for_ruler`
+## resolves a ruler's settlements through `RealmAggregator.aggregate`, which walks
+## his vassal edges — so asking the question while the sweep above is still MINTING
+## those edges would answer it from a half-built tree, and each liege would see only
+## the vassals minted before him. Running it once the table is complete makes the
+## answer whole, and independent of row order.
+##
+## Only LOCATED domains are tested. An abstracted domain has no 6-mile position, and
+## a liege whose realm lies outside the play window has no materialized settlements
+## at all — `TradeRangeResolver` reads a missing settlement as "this ruler has no
+## trade range" and returns −4, which would stamp the harshest RAW modifier across
+## the whole off-camera world as an artifact of level-of-detail rather than of the
+## fiction. Those keep the in-range −2 they were minted with.
+func _apply_range_of_trade_loyalty(pending: Array) -> void:
+	if pending.is_empty():
+		return
+	var urban_by_liege := {}   # liege → largest urban settlement (memoized)
+	for entry: Dictionary in pending:
+		var liege_char: String = str(entry.get("liege_character_id", ""))
+		if not urban_by_liege.has(liege_char):
+			urban_by_liege[liege_char] = \
+				TradeRangeResolver.largest_urban_settlement_for_ruler(liege_char)
+		if (urban_by_liege[liege_char] as Dictionary).is_empty():
+			continue  # no settlement to measure from — keep the -2 default
+		var base: int = TradeRangeResolver.compute_non_henchman_base_loyalty(
+			str(entry.get("vassal_domain_id", "")), liege_char)
+		if base != -2:
+			VassalRepository.update(
+				str(entry.get("assignment_id", "")), {"base_loyalty_modifier": base})
 
 
 ## M2b-2: locate domains whose 24-mile seat falls inside the zoomed start region.
@@ -1460,6 +1674,7 @@ func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ct
 		ORDER BY peasant_families DESC, location_hex_q, location_hex_r, id
 	""", [campaign_id, region_map_id])
 	var govs: Array = db.query_result.duplicate(true)
+	var _decompose_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
 	db.query("BEGIN TRANSACTION")
 	var made := 0
 	for g in govs:
@@ -1483,6 +1698,11 @@ func _decompose_in_window_domains(campaign_id: String, region_map_id: String, ct
 			"territory": str(g.get("territory_type", "wilderness")),
 			"alignment": str(g.get("alignment", "neutral")),
 			"gov_name": str(g.get("name", "")), "result": result, "n": 0,
+			# R-4: the sub-fief's ruler inherits the gov's class, and every stub
+			# roll keys off the world seed. Both resolved ONCE per gov here, not
+			# per sub-domain.
+			"campaign_seed": _decompose_seed,
+			"parent_ruler_class": _owner_class_for_domain(gov_id),
 		}
 		# The gov KEEPS a personal demesne — the seat + its densest neighbour hexes up to its
 		# tier's RAW family budget (± jitter, §5.6a). Those hexes' domain_hexes already point
@@ -1592,6 +1812,23 @@ func _create_sub_domain(tier: int, liege_id: String, seat: Vector2i, families: i
 	})
 	if dom_id.is_empty():
 		return ""
+	# R-4 (handoff D-8). Unlike the `setting_domains` ladder this leaf has no
+	# sim-rolled stub to promote, so the class comes from the gov (resolved once
+	# per gov in the caller's sub_ctx) and the level from the tier via the
+	# D-9-canonical DomainTierTable. Without an owner this domain could not
+	# anchor a `vassal_assignments` edge — both character FKs are NOT NULL.
+	var sub_ruler: String = _ruler_stub_minter().mint(str(sub_ctx["campaign_id"]), {
+		"domain_id": dom_id,
+		"campaign_seed": int(sub_ctx.get("campaign_seed", 0)),
+		"ruler_class": str(sub_ctx.get("parent_ruler_class", "")),
+		"ruler_level": DomainTierTable.ruler_level_for_tier(tier),
+		"title": ruler_title_for(title),
+		"alignment": str(sub_ctx.get("alignment", "neutral")),
+		"fallback_name": str(sub_ctx.get("gov_name", "")),
+	})
+	if not sub_ruler.is_empty():
+		db.query_with_bindings(
+			"UPDATE domains SET owner_character_id = ? WHERE id = ?", [sub_ruler, dom_id])
 	db.query_with_bindings(
 		"UPDATE domains SET peasant_families = ?, morale = 0, realm_title = ?, culture_id = ?, realm_id = ?, liege_domain_id = ? WHERE id = ?",
 		[families, ruler_title_for(title), str(sub_ctx.get("culture", "")),
@@ -1778,6 +2015,7 @@ func _decompose_clanholds(campaign_id: String, region_map_id: String, ctx: Dicti
 		ORDER BY available_tribal_warriors DESC, location_hex_q, location_hex_r, id
 	""", [campaign_id, region_map_id])
 	var crowns: Array = db.query_result.duplicate(true)
+	var _decompose_seed := int(SettingRepository.get_parameters(campaign_id).get("campaign_seed", 0))
 	db.query("BEGIN TRANSACTION")
 	var made := 0
 	for c in crowns:
@@ -1804,6 +2042,10 @@ func _decompose_clanholds(campaign_id: String, region_map_id: String, ctx: Dicti
 			"territory": str(c.get("territory_type", "wilderness")),
 			"alignment": str(c.get("alignment", "chaotic")),
 			"crown_name": str(c.get("name", "Clanhold")), "result": result, "n": 0,
+			# R-4: a sub-chieftain inherits the crown's class, which for a clanhold
+			# also keeps him the same beastman kind as his crown.
+			"campaign_seed": _decompose_seed,
+			"parent_ruler_class": _owner_class_for_domain(crown_id),
 		}
 		var n_groups := clampi(roundi(float(_fam_of(others)) / float(_CLANHOLD_FAMILIES)), 1, others.size())
 		others.sort_custom(_child_canonical_less)
@@ -1853,6 +2095,22 @@ func _create_sub_clanhold(seat: Vector2i, hexes: int, warriors: int, liege_id: S
 	})
 	if dom_id.is_empty():
 		return ""
+	# R-4 (handoff D-8). Level is the Barony floor: a sub-chieftain is the
+	# smallest modeled holding, and 'Chieftain' is not on the RAW nobility ladder
+	# so there is no tier to read. `RulerStubMinter.display_title` passes the
+	# title through verbatim rather than converting it to "Baron".
+	var sub_chief: String = _ruler_stub_minter().mint(str(sub_ctx["campaign_id"]), {
+		"domain_id": dom_id,
+		"campaign_seed": int(sub_ctx.get("campaign_seed", 0)),
+		"ruler_class": str(sub_ctx.get("parent_ruler_class", "")),
+		"ruler_level": DomainTierTable.ruler_level_for_tier(DomainTierTable.BARONY),
+		"title": "Chieftain",
+		"alignment": str(sub_ctx.get("alignment", "chaotic")),
+		"fallback_name": str(sub_ctx.get("crown_name", "")),
+	})
+	if not sub_chief.is_empty():
+		db.query_with_bindings(
+			"UPDATE domains SET owner_character_id = ? WHERE id = ?", [sub_chief, dom_id])
 	db.query_with_bindings(
 		"UPDATE domains SET available_tribal_warriors = ?, morale = 0, realm_title = 'Chieftain', culture_id = ?, realm_id = ?, liege_domain_id = ? WHERE id = ?",
 		[warriors, str(sub_ctx.get("culture", "")), str(sub_ctx.get("realm_id", "")), liege_id, dom_id])
@@ -2659,7 +2917,8 @@ func _create_crown_domain(campaign_id: String, p: Dictionary, crown_by_pid: Dict
 ## stay abstract (owner NULL) until M2b-2. Records every runtime domain in
 ## [param domain_pid] for the realm backfill.
 func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
-		crown_id: String, domain_pid: Dictionary, domain_seats: Dictionary, result: Dictionary) -> bool:
+		crown_id: String, domain_pid: Dictionary, domain_seats: Dictionary, result: Dictionary,
+		campaign_seed: int = 0) -> bool:
 	var pid := str(p["id"])
 	var culture := str(p.get("culture_id", ""))
 	var alignment := _alignment_or_neutral(str(p.get("alignment", "")))
@@ -2693,11 +2952,37 @@ func _create_ladder_for_polity(campaign_id: String, p: Dictionary, sdoms: Array,
 		if domain_id.is_empty():
 			result["errors"].append("ladder domain create failed (polity %s, sdom %s)" % [pid, sd_id])
 			return false
+		# R-4 (handoff D-8): PROMOTE the pre-rolled text stub into a real
+		# `characters` row. The sim already rolled this node's ruler_class and
+		# ruler_level (history_simulator._domain_row, the latter straight from
+		# DomainTierTable per D-9) and Layer 5 already named the noble house
+		# (NameGenerator._name_domains → NameAssembler.dynasty_name), so this is
+		# a promotion of existing data, not a fresh identity.
+		#
+		# Ownership is set HERE rather than left NULL because `vassal_assignments`
+		# declares both character FKs NOT NULL — R-1 cannot mint a single realm
+		# edge until every liege-bearing domain has an owner. A DISTINCT stub per
+		# domain is mandatory: `idx_vassal_assignments_unique_active` allows only
+		# one active edge per (liege, vassal) character pair, so a shared stub
+		# would make the second sibling edge silently fail to insert.
+		var ruler_id: String = _ruler_stub_minter().mint(campaign_id, {
+			"domain_id": domain_id,
+			"campaign_seed": campaign_seed,
+			"ruler_class": str(sd.get("ruler_class", "")),
+			"ruler_level": int(sd.get("ruler_level", 0)),
+			"dynasty": str(sd.get("ruler_name", "")),
+			"title": realm_title,
+			"alignment": alignment,
+			"fallback_name": dname,
+		})
+		if ruler_id.is_empty():
+			result["errors"].append("ruler stub mint failed (polity %s, sdom %s)" % [pid, sd_id])
+			return false
 		CampaignRepository.db.query_with_bindings("""
 			UPDATE domains SET peasant_families = ?, morale = 0, realm_title = ?,
-				culture_id = ?, liege_domain_id = ?
+				culture_id = ?, liege_domain_id = ?, owner_character_id = ?
 			WHERE id = ?
-		""", [node_families, realm_title, culture, liege_runtime, domain_id])
+		""", [node_families, realm_title, culture, liege_runtime, ruler_id, domain_id])
 		local[sd_id] = domain_id
 		domain_pid[domain_id] = pid
 		domain_seats[domain_id] = Vector2i(seat_q, seat_r)

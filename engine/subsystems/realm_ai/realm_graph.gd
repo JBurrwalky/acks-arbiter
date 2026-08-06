@@ -209,6 +209,29 @@ static func muster_delay_period_for_apex(apex_id: String) -> String:
 # Internals
 # ---------------------------------------------------------------------------
 
+## R-5: the DIRECT vassal domains held of [param liege_domain_id] — one hop down.
+##
+## Every other walker in this file goes UPWARD (a domain to its apex), because
+## until ruling R-1 filled `vassal_assignments` there was nothing downward worth
+## walking. A transfer of lordship needs the opposite direction: when a domain
+## changes hands, the fiefs held OF it are the ones whose lord just changed.
+##
+## ONE HOP ONLY, per Jedidiah's ruling on roll depth (2026-07-31): a sub-vassal's
+## own vassals keep answering to him, and his oath to his new overlord is his
+## business, not theirs. Ordered by id so a transfer resolves deterministically.
+static func direct_vassal_domains(liege_domain_id: String) -> Array:
+	if liege_domain_id.is_empty():
+		return []
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT id FROM domains WHERE liege_domain_id = ? ORDER BY id
+	""", [liege_domain_id]):
+		return []
+	var out: Array = []
+	for row in CampaignRepository.db.query_result:
+		out.append(String((row as Dictionary).get("id", "")))
+	return out
+
+
 static func _get_domain_row(domain_id: String) -> Dictionary:
 	if domain_id.is_empty():
 		return {}

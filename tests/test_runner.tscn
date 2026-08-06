@@ -575,6 +575,11 @@
 [ext_resource type="Script" path="res://tests/subsystems/generation/dungeon_generator_v1/test_dg_c3d_g_ui.gd" id="603_dg_c3d_g_ui_tests"]
 [ext_resource type="Script" path="res://tests/subsystems/generation/battlemap/test_battle_map_generator.gd" id="604_battle_map_generator_tests"]
 [ext_resource type="Script" path="res://tests/test_unit_loyalty.gd" id="608_unit_loyalty_tests"]
+[ext_resource type="Script" path="res://tests/test_ruler_stub_minter.gd" id="609_ruler_stub_minter_tests"]
+[ext_resource type="Script" path="res://tests/test_sub_vassal_loyalty.gd" id="610_sub_vassal_loyalty_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_xp_award.gd" id="611_domain_xp_award_tests"]
+[ext_resource type="Script" path="res://tests/test_personal_domain.gd" id="612_personal_domain_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_unified_month.gd" id="613_domain_unified_month_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -2300,3 +2305,18 @@ script = ExtResource("607_swarm_monsters_tests")
 
 [node name="UnitLoyaltyTests" type="Node" parent="."]
 script = ExtResource("608_unit_loyalty_tests")
+
+[node name="RulerStubMinterTests" type="Node" parent="."]
+script = ExtResource("609_ruler_stub_minter_tests")
+
+[node name="SubVassalLoyaltyTests" type="Node" parent="."]
+script = ExtResource("610_sub_vassal_loyalty_tests")
+
+[node name="DomainXpAwardTests" type="Node" parent="."]
+script = ExtResource("611_domain_xp_award_tests")
+
+[node name="PersonalDomainTests" type="Node" parent="."]
+script = ExtResource("612_personal_domain_tests")
+
+[node name="DomainUnifiedMonthTests" type="Node" parent="."]
+script = ExtResource("613_domain_unified_month_tests")

@@ -798,6 +798,11 @@ CREATE TABLE IF NOT EXISTS domains (
     expenses_cp INTEGER NOT NULL DEFAULT 0,
     net_income_cp INTEGER NOT NULL DEFAULT 0,
     domain_xp_this_month INTEGER NOT NULL DEFAULT 0,
+    -- Migration 216 (R-7a): last calendar_day whose domain XP was actually paid to
+    -- the owner's `characters.xp`. The monthly tick awards only when
+    -- calendar_day > this, so a replayed save or a re-entered tick cannot pay a
+    -- ruler twice for one month. -1 = never awarded.
+    domain_xp_awarded_through_day INTEGER NOT NULL DEFAULT -1,
     -- Migration 025: ruler used in reputation cascade (ruler -> domain -> settlement)
     ruler_npc_id TEXT REFERENCES characters(id),
     -- Migration 056: Domain economy extensions (Domain Phase 0)
@@ -882,6 +887,11 @@ CREATE INDEX IF NOT EXISTS idx_domains_lifecycle_state
 -- Migration 127 (Phase 11D.1): index for style-driven monthly-tick filtering.
 CREATE INDEX IF NOT EXISTS idx_domains_style
     ON domains(campaign_id, domain_style);
+-- Migration 215 (ruling R-1): RealmAggregator walks the realm tree every monthly
+-- tick and looks up `WHERE owner_character_id = ?` at every node. Unindexed, that
+-- was a full table scan per node visit.
+CREATE INDEX IF NOT EXISTS idx_domains_owner
+    ON domains(owner_character_id);
 
 -- Migration 055: Domain hex land values (Domain Phase 0).
 -- Per-hex 3-9 gp/family base land value (3d3 when surveyed) plus up to +3

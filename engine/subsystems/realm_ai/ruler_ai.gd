@@ -456,17 +456,17 @@ static func _is_sovereign_domain(domain: Dictionary) -> bool:
 static func _scoring_context(domain: Dictionary, world_state: Dictionary) -> Dictionary:
 	var domain_id: String = String(domain.get("id", ""))
 	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain)
-	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
-		String(domain.get("territory_type", "wilderness")), hex_count)
-	var value_cp: int = StrongholdRepository.get_stronghold_value_for_domain(domain_id)
+	# D-12: sufficiency is the RULER's, over his whole holding — same union the
+	# monthly tick and RulerActionCatalog._stronghold_below_minimum use, so the
+	# scorer and the candidate gate cannot disagree about whether he needs a keep.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(domain_id)
 	return {
 		"morale": int(domain.get("morale", 0)),
 		"treasury_cp": int(domain.get("treasury_cp", 0)),
 		"monthly_expenses_cp": int(domain.get("expenses_cp", 0)),
 		"current_tax_cp": int(domain.get("tax_rate_cp_per_family", 200)),
 		"garrison_needs_raising": RulerActionCatalog.garrison_needs_raising(garrison),
-		"stronghold_below_minimum": minimum_cp - value_cp >= 100,
+		"stronghold_below_minimum": int(sufficiency["shortfall_cp"]) >= 100,
 		"stronghold_ruined": String(domain.get("lifecycle_state", "active")) == "ruined_stronghold",
 		"threat_present": bool(world_state.get("threat_present", false)),
 	}

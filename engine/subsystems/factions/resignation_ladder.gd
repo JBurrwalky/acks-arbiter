@@ -95,7 +95,7 @@ static func resolve_petition_as_liege(petition_id: String, day: int) -> Dictiona
 	var resolution: String
 	if score >= 3 and not is_release_at_2tier:
 		resolution = "granted"
-		_execute_reparent(petition, kind)
+		_execute_reparent(petition, kind, day)
 	elif score >= 0:
 		resolution = "bought_off"
 		_grant_office_buyoff(vassal_owner, liege_owner, day)
@@ -177,7 +177,7 @@ static func adjudicate_appeal(petition_id: String, day: int) -> Dictionary:
 	if score >= 1:
 		sided_with = "vassal"
 		# Re-parent the petitioner to the crown.
-		_reparent_domain_to(petitioner_domain_id, sovereign_domain_id)
+		_reparent_domain_to(petitioner_domain_id, sovereign_domain_id, day)
 		# Grieve the intermediate liege against BOTH crown and ex-vassal.
 		_grieve_pair(campaign_id, intermediate_owner, sovereign_owner, day, -3)
 		_grieve_pair(campaign_id, intermediate_owner, vassal_owner, day, -3)
@@ -294,7 +294,7 @@ static func _appeal_score(sovereign_owner: String, vassal_owner: String,
 ## liege's liege; transfer → to the named liege in terms). v1: re-point
 ## domains.liege_domain_id to the new liege domain (the realms-titles path owns
 ## full chain surgery; this is the runtime cache flip).
-static func _execute_reparent(petition: Dictionary, kind: String) -> void:
+static func _execute_reparent(petition: Dictionary, kind: String, day: int) -> void:
 	var petitioner_domain_id: String = String(petition.get("petitioner_domain_id", ""))
 	var liege_domain_id: String = String(petition.get("liege_domain_id", ""))
 	var new_liege_domain_id: String = ""
@@ -303,15 +303,52 @@ static func _execute_reparent(petition: Dictionary, kind: String) -> void:
 		new_liege_domain_id = String(terms.get("new_liege_domain_id", ""))
 	else:   # release → up to the liege's liege
 		new_liege_domain_id = _liege_domain_of(liege_domain_id)
-	_reparent_domain_to(petitioner_domain_id, new_liege_domain_id)
+	_reparent_domain_to(petitioner_domain_id, new_liege_domain_id, day)
 
 
-static func _reparent_domain_to(domain_id: String, new_liege_domain_id: String) -> void:
+## R-1: the domain pointer and the appointment record must move TOGETHER. Ruling
+## R-1 makes `domains.liege_domain_id` authoritative for the realm tree and
+## `vassal_assignments` the appointment record — re-pointing only the first leaves
+## the old liege still holding an ACTIVE edge to a vassal who has left him, so he
+## goes on collecting that vassal's tribute and rolling his Favors & Duties while
+## the new liege collects nothing. While world generation left the table empty this
+## was invisible. Depart the old edge, then open one under the new liege (or leave
+## the domain independent when there is no new liege).
+static func _reparent_domain_to(
+	domain_id: String, new_liege_domain_id: String, day: int) -> void:
 	if domain_id == "":
 		return
-	CampaignRepository.db.query_with_bindings(
+	var db = CampaignRepository.db
+	db.query_with_bindings(
 		"UPDATE domains SET liege_domain_id = ? WHERE id = ?",
 		[new_liege_domain_id if new_liege_domain_id != "" else null, domain_id])
+
+	var vassal_owner: String = _owner_of_domain(domain_id)
+	if vassal_owner == "":
+		return
+	# Close every active oath this ruler holds through THIS domain.
+	if db.query_with_bindings("""
+		SELECT id FROM vassal_assignments
+		WHERE vassal_domain_id = ? AND status = 'active'
+	""", [domain_id]):
+		for row: Dictionary in db.query_result.duplicate():
+			VassalRepository.update_status(str(row.get("id", "")), "departed", day)
+	var new_liege_owner: String = _owner_of_domain(new_liege_domain_id)
+	if new_liege_owner == "" or new_liege_owner == vassal_owner:
+		return  # released to independence (or a degenerate self-edge)
+	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
+	VassalRepository.create_assignment({
+		"campaign_id": String(domain.get("campaign_id", "")),
+		"liege_character_id": new_liege_owner,
+		"vassal_character_id": vassal_owner,
+		"vassal_domain_id": domain_id,
+		"assigned_calendar_day": day,
+		"status": "active",
+		# A re-parented NPC ruler is a landed noble, not his new lord's henchman.
+		"is_henchman_vassal": false,
+		"base_loyalty_modifier": TradeRangeResolver.compute_non_henchman_base_loyalty(
+			domain_id, new_liege_owner),
+	})
 
 
 ## Buy-off: grant the vassal a Favors & Duties office (RAW +1 loyalty, §2.2) —

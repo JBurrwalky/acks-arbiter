@@ -19,6 +19,39 @@ extends RefCounted
 var _runner = null  # SessionRunner
 var _campaign_id: String = ""
 
+# ---------------------------------------------------------------------------
+# D-12 Phase B — per-tick caches
+#
+# The monthly tick resolves a CHARACTER'S DOMAIN, not a `domains` row. Every
+# cache here is keyed by `_owner_key` (the owner's character id, or `#<domain
+# id>` for an ownerless seat) and is rebuilt from scratch at the top of each
+# tick by `_reset_month_caches`.
+#
+# WHY THEY MUST BE BUILT BEFORE THE FIRST WRITE. `PersonalDomain.for_character`
+# re-reads the `domains` table, while `_save_domain` UPDATEs each parcel as the
+# tick walks it. A union computed lazily during resolution would therefore see
+# some of the character's parcels carrying LAST month's morale/families/revenue
+# and some carrying this month's — a different answer per parcel for a quantity
+# that is supposed to be one number. Pass 0 builds every union up front, before
+# anything is written.
+# ---------------------------------------------------------------------------
+
+## owner key -> PersonalDomain union (the D-12 aggregate).
+var _union_by_owner: Dictionary = {}
+## owner key -> Array[Dictionary] of this tick's parcel rows, in `domains` order.
+var _parcels_by_owner: Dictionary = {}
+## domain id -> that parcel's row, for seat lookups.
+var _parcel_rows: Dictionary = {}
+## domain id -> `_build_month_context` output (pass 1).
+var _context_by_domain: Dictionary = {}
+## owner key -> Σ THIS MONTH's revenue across his parcels. The one quantity that
+## forces the two-pass shape: RAW's personal-authority band cross-references the
+## ruler's level against his domain's income, which does not exist until every
+## parcel's revenue has been computed.
+var _revenue_by_owner: Dictionary = {}
+## owner key -> the single resolved morale bundle, mirrored to every parcel.
+var _morale_by_owner: Dictionary = {}
+
 
 func _init(runner) -> void:
 	_runner = runner
@@ -171,7 +204,26 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		ConflictParticipants.active_ruler_ids(_campaign_id), calendar_day).get("active", [])
 	var has_player_domain := false
 
-	var domain_results: Array = []
+	# -----------------------------------------------------------------------
+	# D-12 Phase B — THREE PASSES OVER THE MONTH.
+	#
+	# RAW does not permit a character to hold multiple domains: any land he
+	# personally rules is *his domain*, one record. The `domains` rows survive as
+	# PARCELS (identity + history), so the tick still walks rows — but every
+	# RAW-relevant quantity is answered over the union of a character's parcels.
+	#
+	# Pass 0  group the resolvable parcels by owner and build each owner's
+	#         PersonalDomain union BEFORE anything is written (see the cache
+	#         block at the top of this file for why the ordering is load-bearing).
+	# Pass 1  per-parcel context + revenue. Only revenue needs THIS month's
+	#         numbers, and personal authority keys on the character's TOTAL, so
+	#         every parcel's revenue must exist before any parcel's morale rolls.
+	# Pass 2  resolve. Morale is rolled ONCE per character and mirrored to every
+	#         parcel; growth, settlements, encounters and persistence stay
+	#         per-parcel, which is where that state actually lives.
+	# -----------------------------------------------------------------------
+	_reset_month_caches()
+	var resolvable: Array = []
 	for domain_data: Dictionary in domains:
 		# Phase 11B: skip terminal-state domains entirely. abandoned /
 		# lost_to_foreign rows are preserved for the audit history but no
@@ -181,14 +233,37 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		if lifecycle_state == LifecycleHandler.STATE_ABANDONED \
 			or lifecycle_state == LifecycleHandler.STATE_SALTED_TO_RUIN:
 			continue
-		var owner_v: Variant = domain_data.get("owner_character_id")
-		var owner: String = String(owner_v) if owner_v != null else ""
-		var is_player_domain: bool = not owner.is_empty() and pc_ids.has(owner)
-		has_player_domain = has_player_domain or is_player_domain
+		resolvable.append(domain_data)
+		var owner: String = _str_field(domain_data, "owner_character_id")
+		has_player_domain = has_player_domain or (
+			not owner.is_empty() and pc_ids.has(owner))
+		var key: String = _owner_key(domain_data)
+		if not _union_by_owner.has(key):
+			# The union EXCLUDES terminal parcels exactly as the filter above
+			# does, so the two lists agree about what the character holds.
+			_union_by_owner[key] = PersonalDomain.for_domain(domain_data)
+			_parcels_by_owner[key] = []
+		(_parcels_by_owner[key] as Array).append(domain_data)
+		_parcel_rows[String(domain_data.get("id", ""))] = domain_data
+
+	for domain_data: Dictionary in resolvable:
+		_month_context_for(domain_data, calendar_day)
+
+	var domain_results: Array = []
+	for domain_data: Dictionary in resolvable:
+		var owner_id: String = _str_field(domain_data, "owner_character_id")
+		var is_player_domain: bool = not owner_id.is_empty() and pc_ids.has(owner_id)
 		var resolve_opts: Dictionary = {}
-		if not is_player_domain and not active_ruler_ids.has(owner):
+		if not is_player_domain and not active_ruler_ids.has(owner_id):
 			resolve_opts = RulerBackdropStabilizer.resolution_options()
 		var result := _resolve_domain_month(domain_data, calendar_day, resolve_opts)
+		# R-7a: domain income becomes character XP. Runs BEFORE _save_domain so the
+		# earned figure and the double-award guard land in that method's single
+		# monthly UPDATE — the record and the guard commit together or not at all.
+		# STILL PER PARCEL: awarding once per CHARACTER, and dropping the XP from
+		# vassal-managed land, is R-7b (D-12 Phase F).
+		result["domain_xp_award"] = DomainXpResolver.resolve(
+			domain_data, result, calendar_day)
 		domain_results.append(result)
 		_save_domain(domain_data, result, calendar_day)
 		_emit_signals(domain_data, result)
@@ -204,6 +279,13 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		# the designated heir if any, or routes to abandonment / overlord-
 		# revert if not.
 		RulerDeathHandler.tick_succession_grace(domain_data, calendar_day)
+
+	# R-1: Favors & Duties, once per RULER, gated on the same LOD predicate the loop
+	# above used. Placed HERE — after the last `_save_domain` absolute treasury write
+	# and before RulerAI — so gift/loan transfers survive the tick and the planner
+	# sees this month's obligations. See _resolve_favors_and_duties_for_rulers.
+	var favors_duties_reports: Array = _resolve_favors_and_duties_for_rulers(
+		domains, pc_ids, active_ruler_ids, calendar_day)
 
 	# Faction FF-2.2 (gdd-faction-framework.md §6.6/§11.1): organization turns batch
 	# AFTER the syndicate/venture slots (so passthrough treasuries are already
@@ -279,6 +361,7 @@ func _handle_monthly_tick(event: ScheduledEvent) -> Dictionary:
 		"syndicate_results": syndicate_results,
 		"venture_results": venture_results,
 		"ruler_reports": ruler_reports,
+		"favors_duties_reports": favors_duties_reports,  # R-1: per-RULER, not per-domain
 		"faction_reports": faction_reports,  # Faction FF-2.2 org month
 		"faction_goals_completed": faction_goals_completed,  # Q-6
 		"rumors_decayed": rumors_decayed,  # Quest-Rumor Q-3
@@ -305,6 +388,394 @@ func _player_character_ids() -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
+# D-12 Phase B — the per-tick union (pass 0) and per-parcel context (pass 1)
+# ---------------------------------------------------------------------------
+
+## Drop every cached union / context / morale bundle. Called once at the top of
+## each monthly tick: the caches describe ONE month and a stale entry would
+## silently resolve a later month against an earlier month's numbers.
+func _reset_month_caches() -> void:
+	_union_by_owner.clear()
+	_parcels_by_owner.clear()
+	_parcel_rows.clear()
+	_context_by_domain.clear()
+	_revenue_by_owner.clear()
+	_morale_by_owner.clear()
+
+
+## The cache key for a parcel: its owner's character id under D-12, since the
+## CHARACTER is the domain. An ownerless seat (an abstract holding whose ruler
+## has not been minted, or one in succession) has no personal domain to belong
+## to, so it keys on itself and resolves alone — the same numbers it produced
+## before D-12.
+func _owner_key(domain_data: Dictionary) -> String:
+	var owner: String = _str_field(domain_data, "owner_character_id")
+	if not owner.is_empty():
+		return owner
+	return "#" + String(domain_data.get("id", ""))
+
+
+## The union for this parcel's owner, building it on demand. The demand path
+## only fires when `_resolve_domain_month` is called outside `_handle_monthly_tick`
+## (a focused test, a one-off resolution); the tick itself always populates the
+## cache in pass 0, before any write.
+func _union_for(domain_data: Dictionary) -> Dictionary:
+	var key: String = _owner_key(domain_data)
+	if not _union_by_owner.has(key):
+		_union_by_owner[key] = PersonalDomain.for_domain(domain_data)
+		_parcels_by_owner[key] = [domain_data]
+		_parcel_rows[String(domain_data.get("id", ""))] = domain_data
+	return _union_by_owner[key]
+
+
+## Pass 1: this parcel's month context, computed once and cached. Also
+## accumulates the owner's total revenue, which pass 2 needs for the RAW
+## personal-authority lookup.
+func _month_context_for(domain_data: Dictionary, calendar_day: int) -> Dictionary:
+	var domain_id: String = String(domain_data.get("id", ""))
+	if _context_by_domain.has(domain_id):
+		return _context_by_domain[domain_id]
+	var ctx: Dictionary = _build_month_context(
+		domain_data, calendar_day, _union_for(domain_data))
+	_context_by_domain[domain_id] = ctx
+	var key: String = _owner_key(domain_data)
+	_revenue_by_owner[key] = int(_revenue_by_owner.get(key, 0)) \
+		+ int((ctx["revenue"] as Dictionary).get("total", 0))
+	return ctx
+
+
+## The character's DOMAIN RECORD PAGE — his lowest-id parcel, as designated by
+## `PersonalDomain.seat_parcel_id`. It carries prior morale and the per-parcel
+## morale inputs that cannot be summed across parcels (ruler-vs-domain alignment,
+## population kind, tax and liturgy RATES, repression stance). Falls back to the
+## parcel in hand when the seat is not part of this tick — an ownerless seat, or
+## a union whose lowest-id parcel the tick did not load.
+func _seat_row(union: Dictionary, fallback: Dictionary) -> Dictionary:
+	var seat_id: String = String(union.get("seat_parcel_id", ""))
+	if seat_id.is_empty():
+		return fallback
+	var row: Variant = _parcel_rows.get(seat_id)
+	return row if row is Dictionary else fallback
+
+
+## PASS 1 — everything a parcel needs before morale can be rolled, gathered in
+## one place so pass 2 never recomputes it. Split out of `_resolve_domain_month`
+## for D-12 Phase B: the character's personal-authority band keys on the SUM of
+## his parcels' revenue, which cannot be known until every parcel has been
+## through this function.
+##
+## THIS FUNCTION IS NOT PURE and must run exactly once per parcel per month: it
+## mutates `domain_data["tribute_out_owed"]` and commits the pending
+## consecrate_fields effects it consumed. That is why pass 2 reads the cache
+## rather than calling it again.
+func _build_month_context(domain_data: Dictionary, calendar_day: int,
+		union: Dictionary) -> Dictionary:
+	var domain_id: String = String(domain_data.get("id", ""))
+	var hexes: Array = CampaignRepository.get_domain_hexes(domain_id)
+
+	# D-12: stronghold sufficiency is a property of the CHARACTER's domain, not
+	# of one parcel. RAW lets a ruler hold many strongholds "so long as their
+	# combined value secures the land", and prices non-contiguity THROUGH that
+	# sufficiency test (§noncontiguous_domains L95-98) — the minimum covers owned
+	# PLUS intervening hexes. Per-parcel evaluation defeated both halves: each
+	# parcel is internally contiguous, so intervening hexes were never counted,
+	# and a keep on parcel A could not secure parcel B however close it stood.
+	# `PersonalDomain` sums each hex's OWN RAW minimum (per-hex `hex_cells.civilization`
+	# for materialized domains, the per-parcel aggregate fallback otherwise) and
+	# sums `strongholds.cp_value` across every parcel.
+	var stronghold_value_cp: int = int(union.get("stronghold_value_cp", 0))
+	var stronghold_minimum_cp: int = int(union.get("stronghold_minimum_cp", 0))
+	var ruler: Dictionary = _build_ruler_context(domain_data)
+
+	# Phase 5 garrison wiring (2026-05-16): aggregate the actual garrison-assigned
+	# troop_units via GarrisonExpenditureCalculator. RAW §garrison L228-231:
+	# unpaid faithful followers + trained militia + scutage troops + lord-favor
+	# troops count toward the garrison cost by gp value even when no money
+	# changes hands. The calculator handles that distinction and returns the
+	# total cp value of garrison + the morale incentive bonus + below-minimum
+	# penalty. The PAID portion feeds this parcel's expenses; the MORALE signals
+	# are combined across the character's parcels in `_unified_morale_for`.
+	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain_data)
+
+	# Phase 7: tribute_in via RealmAggregator + TributeCalculator. The ruler
+	# of THIS domain may have direct vassals; tribute flows from each vassal's
+	# realm to this ruler at the rate dictated by the RAW table reduced by the
+	# efficiency factor.
+	var tribute_aggregate: Dictionary = _compute_tribute_in_for_domain(domain_data)
+	# cp. Until 2026-07-31 this read the gp-named key and fed it straight into
+	# DomainRevenueCalculator's `tribute_in_cp` parameter, crediting every liege
+	# 1/100th of the tribute actually owed. Conventions §127.
+	var tribute_in_cp: int = int(tribute_aggregate.get("total_received_cp", 0))
+
+	# Phase 7 / D-12: tribute_out_owed is recomputed each month from the vassal's
+	# realm aggregate, so growth and shrinkage flow naturally into what he owes.
+	# It is charged ONCE PER CHARACTER — see `_tribute_out_for_parcel`. We mutate
+	# the local dict so the expense calculator (which reads tribute_out_owed)
+	# picks it up; persistence happens in _save_domain.
+	var tribute_out: int = _tribute_out_for_parcel(domain_data, union)
+	domain_data["tribute_out_owed"] = tribute_out
+
+	# Phase 8: ongoing scutage owed by THIS ruler. Like tribute it is an
+	# obligation of the OATH, not of a parcel, so it rides the same seat gate.
+	var scutage_cp: int = 0
+	if String(union.get("tribute_seat_id", "")) == domain_id:
+		scutage_cp = _compute_active_scutage_cp_for_domain(domain_data)
+
+	# Phase 3: pending_investment_cp is set by oversee_investment handler on
+	# completion (migration 068); consumed and reset here.
+	var investment_cp: int = int(domain_data.get("pending_investment_cp", 0))
+
+	# Phase 10A.2: Faith block pre-resolve modifiers. consecrate_fields adds
+	# land-value bonus to this month's revenue; consecrate_ruler adds base
+	# morale bonus while its 12-month window is active.
+	var faith_modifiers: Dictionary = FaithMonthlyResolver.compute_pre_resolve_modifiers(
+		domain_id, calendar_day)
+	var faith_land_value_bonus: int = int(
+		faith_modifiers.get("consecrate_fields_bonus_per_family", 0))
+
+	# Standing levy penalties for peasants under arms — militia (RAW
+	# daw_armies_recruitment.xml:428-432) and excess-levy tribal warriors
+	# (ax_domains_of_chaos.xml:399). Read ONCE and fed to both revenue and
+	# morale so the two cannot disagree about how many peasants are levied.
+	var levy: Dictionary = LevyPenaltyCalculator.penalties_for_domain(
+		domain_id, int(domain_data.get("peasant_families", 0)))
+	var levied_peasants: int = int(levy.get("levied", 0))
+
+	var revenue := DomainRevenueCalculator.calculate_monthly_revenue(
+		domain_data, hexes, stronghold_value_cp, stronghold_minimum_cp, tribute_in_cp,
+		levied_peasants)
+
+	# Phase 10A.2: apply consecrate_fields bonus to revenue total + subcategory.
+	if faith_land_value_bonus != 0 and not revenue.get("income_gate_active", false):
+		var peasant_families: int = int(domain_data.get("peasant_families", 0))
+		var bonus_total: int = faith_land_value_bonus * peasant_families
+		revenue["consecrate_fields_bonus"] = bonus_total
+		revenue["total"] = int(revenue.get("total", 0)) + bonus_total
+		FaithMonthlyResolver.apply_pending_consecrate_fields(
+			faith_modifiers.get("consecrate_fields_fired_effect_ids", []))
+
+	return {
+		"hexes": hexes,
+		"hex_count": hexes.size(),
+		"stronghold_value_cp": stronghold_value_cp,
+		"stronghold_minimum_cp": stronghold_minimum_cp,
+		"ruler": ruler,
+		"garrison": garrison,
+		"actual_garrison_paid_cp": int(garrison.get("total_paid_cp", 0)),
+		"tribute_aggregate": tribute_aggregate,
+		"tribute_in_cp": tribute_in_cp,
+		"tribute_out": tribute_out,
+		"scutage_cp": scutage_cp,
+		"investment_cp": investment_cp,
+		"faith_ruler_morale_bonus": int(
+			faith_modifiers.get("consecrate_ruler_base_morale_bonus", 0)),
+		"levy": levy,
+		"revenue": revenue,
+	}
+
+
+## D-12 — the character's realm tribute, charged to exactly ONE parcel.
+##
+## THE DEFECT THIS CLOSES. `_compute_tribute_out_for_vassal_domain` never used
+## the parcel's families: it aggregates the whole CHARACTER's realm and always
+## did. But it was invoked once per parcel, gated only on that parcel carrying a
+## `liege_domain_id`, and the full figure was written to each. A lord holding two
+## liege-bearing parcels therefore owed his ENTIRE realm's tribute TWICE — a
+## clean N× multiplication. (`idx_vassal_assignments_unique_active` forbids two
+## parcels under the SAME liege, but two parcels under DIFFERENT lieges is
+## exactly the escheat/conquest case D-12 exists for.)
+##
+## Under personal allegiance a character has one liege and owes one tribute, so
+## the charge lands on `PersonalDomain.tribute_seat_id` — his lowest-id
+## liege-bearing parcel, stable across months because parcel ids do not change.
+## The seat also becomes the one parcel whose treasury is tested for the payment
+## loyalty roll, so a shortfall triggers one roll per character rather than N.
+##
+## Phase E replaces the derivation (`vassal_assignments.liege_character_id`
+## becomes authoritative and `domains.liege_domain_id` demotes to a derived seat
+## pointer), not the fact that there is exactly one seat.
+func _tribute_out_for_parcel(domain_data: Dictionary, union: Dictionary) -> int:
+	if String(union.get("tribute_seat_id", "")) != String(domain_data.get("id", "")):
+		return 0
+	return _compute_tribute_out_for_vassal_domain(domain_data)
+
+
+## D-12 — resolve the character's domain morale ONCE and cache it for every one
+## of his parcels.
+##
+## WHY ONE ROLL. RAW's oversize mechanic IS personal authority
+## (`acore_axioms` §personal_authority L430-449): class level cross-referenced
+## against domain INCOME, down to -4 base morale. Rolling per parcel handed a
+## 6th-level lord with one 600 gp domain the harsh band, but gave him three
+## lookups in a mild band if he split it into three 200 gp parcels — a straight
+## morale BONUS for holding land in pieces, and the RAW ceiling on how much land
+## a level can rule never bound. Summing his parcels' revenue restores it.
+##
+## WHAT COMBINES AND WHAT DOES NOT:
+##   * Revenue (authority band), stronghold value + minimum (sufficiency), and
+##     classification (worst hex) come from the union — RAW states all three over
+##     "the domain", which under D-12 is the whole holding.
+##   * Garrison and levy are RATIOS over families, so they are re-derived from
+##     summed totals rather than averaged: a lord who garrisons his populous seat
+##     lavishly and leaves a bare frontier parcel is one ruler slightly
+##     underpaying, not one earning a bonus and one taking a penalty.
+##   * Alignment mismatch, population kind, tax/liturgy rates, repression stance
+##     and prior morale cannot be summed. They are read from the SEAT parcel —
+##     the character's domain record page. A per-parcel value on a non-seat
+##     parcel is therefore invisible to morale, which is the intended
+##     consequence of "one character, one domain record", not an oversight.
+##
+## Returns {base_morale, morale, morale_tier, event_modifiers_sum,
+##          garrison_summary, union_revenue_cp}.
+func _unified_morale_for(domain_data: Dictionary, union: Dictionary,
+		opts: Dictionary) -> Dictionary:
+	var key: String = _owner_key(domain_data)
+	if _morale_by_owner.has(key):
+		return _morale_by_owner[key]
+
+	var seat: Dictionary = _seat_row(union, domain_data)
+	var parcels: Array = _parcels_by_owner.get(key, [domain_data])
+	# The seat's context, falling back to the parcel in hand — which pass 1 (or
+	# `_resolve_domain_month`'s own call) has always already built.
+	var seat_ctx: Dictionary = _context_by_domain.get(String(seat.get("id", "")),
+		_context_by_domain.get(String(domain_data.get("id", "")), {}))
+
+	# The union's classification drives BOTH the morale modifier and the garrison
+	# incentive band, so the two cannot disagree about how rough the land is.
+	var classification: String = String(union.get(
+		"worst_classification", PersonalDomain.DEFAULT_CLASSIFICATION))
+
+	var garrison_summaries: Array = []
+	var levied_total: int = 0
+	for p in parcels:
+		var pctx: Dictionary = _context_by_domain.get(String((p as Dictionary).get("id", "")), {})
+		if pctx.is_empty():
+			continue
+		garrison_summaries.append(pctx["garrison"])
+		levied_total += int((pctx["levy"] as Dictionary).get("levied", 0))
+	var combined_garrison: Dictionary = GarrisonExpenditureCalculator.combine(
+		garrison_summaries, classification)
+	var levy_penalty: int = LevyPenaltyCalculator.morale_penalty(
+		levied_total, int(union.get("peasant_families", 0)))
+
+	var base_morale: int = DomainMoraleResolver.resolve_base_morale(
+		seat, seat_ctx.get("ruler", {}), int(_revenue_by_owner.get(key, 0)),
+		int(union.get("stronghold_value_cp", 0)),
+		int(union.get("stronghold_minimum_cp", 0)),
+		int(combined_garrison.get("morale_incentive_bonus", 0)),
+		levy_penalty, classification)
+	# Phase 10A.2: consecrate_ruler 12-month buff applies +1 / -1 to base morale
+	# while the window is active. Per-parcel effect, taken from the seat.
+	base_morale += int(seat_ctx.get("faith_ruler_morale_bonus", 0))
+
+	# §8.4 backdrop auto-stabilize (gdd-ruler-ai.md): the morale ROLL sees the
+	# garrison as funded to minimum; the real per-parcel summaries still drive
+	# each parcel's expenses.
+	var morale_garrison: Dictionary = combined_garrison
+	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_GARRISON_FUNDED, false)):
+		morale_garrison = RulerBackdropStabilizer.adjust_garrison_summary(combined_garrison)
+	var event_modifiers_sum: int = _union_event_modifiers_sum(
+		union, seat, parcels, morale_garrison)
+	# §8.4 item 2: the assumed-administration grant is ONLY the +1 morale-roll
+	# modifier — added here, never via the administer_domain_completed flag
+	# (which DomainXpResolver would read as the +5% XP bonus).
+	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_ADMINISTERED, false)) \
+			and not _any_parcel_administered(parcels):
+		event_modifiers_sum += RulerBackdropStabilizer.ADMINISTER_MORALE_BONUS
+
+	# Repression is a monthly STANCE the ruler takes toward his people, and under
+	# D-12 he has one people. It fires if he repressed anywhere, at the harshest
+	# rate he paid for — the rate is cp/family, so summing across parcels would
+	# invent a stance he never took.
+	var repression_bonus: int = 0
+	var is_repressed: bool = false
+	for p in parcels:
+		var row: Dictionary = p
+		if bool(row.get("is_repressed_this_month", 0)):
+			is_repressed = true
+		repression_bonus = maxi(repression_bonus,
+			int(row.get("repression_cp_per_family_this_month", 0)))
+
+	var morale_roll: int = DiceSystem.roll_digital(6, 2, 0, "domain_morale").modified_total
+	var morale: Dictionary = DomainMoraleResolver.resolve_current_morale(
+		seat, base_morale, event_modifiers_sum,
+		repression_bonus, is_repressed, morale_roll)
+	if bool(opts.get(RulerBackdropStabilizer.OPT_NEGLECT_MORALE_FLOOR, false)):
+		morale = RulerBackdropStabilizer.apply_neglect_floor(
+			morale, int(seat.get("morale", 0)), event_modifiers_sum)
+
+	var bundle: Dictionary = {
+		"base_morale": base_morale,
+		"morale": morale,
+		"morale_tier": DomainMoraleResolver.morale_tier(int(morale["current_morale"])),
+		"event_modifiers_sum": event_modifiers_sum,
+		"garrison_summary": combined_garrison,
+		"levy_morale_penalty": levy_penalty,
+		"union_revenue_cp": int(_revenue_by_owner.get(key, 0)),
+		"seat_parcel_id": String(seat.get("id", "")),
+	}
+	_morale_by_owner[key] = bundle
+	return bundle
+
+
+## True when the ruler administered his domain this month — on ANY parcel.
+## Administering is one act by one ruler (`ax_campaign_play.xml:511`); which
+## `domains` row the activity handler happened to stamp is bookkeeping.
+func _any_parcel_administered(parcels: Array) -> bool:
+	for p in parcels:
+		if bool((p as Dictionary).get("administer_domain_completed_this_month", 0)):
+			return true
+	return false
+
+
+## D-12 — the monthly event modifiers for the character's ONE morale roll.
+## Carries RAW §monthly_event_modifiers L486-499 term for term; what D-12
+## changed is the SCOPE of each term:
+##   * tax and liturgy are per-family RATES the ruler sets, so they are read from
+##     the SEAT rather than summed (summing would multiply one policy by his
+##     parcel count).
+##   * garrison underfunding comes from the COMBINED summary.
+##   * administration fires from any parcel.
+##   * challenger and settled-lair penalties are summed across parcels — a
+##     challenger pillaging one corner of the realm shakes the whole realm, and
+##     two of them are genuinely worse than one.
+func _union_event_modifiers_sum(union: Dictionary, seat: Dictionary,
+		parcels: Array, garrison_summary: Dictionary) -> int:
+	var sum: int = 0
+	# Rates are cp/family per the 2026-05-15 currency-precision pass. RAW baseline
+	# is 1 gp/family = 100 cp/family; the modifier fires per gp of deviation.
+	sum += (int(seat.get("liturgy_rate_cp_per_family", 100)) - 100) / 100
+	# Tax bonus/penalty per L494-495 (2 gp/fam baseline = 200 cp/fam).
+	sum += (200 - int(seat.get("tax_rate_cp_per_family", 200))) / 100
+	# Garrison underpayment: -1 morale per gp/family below the universal RAW
+	# minimum, per §monthly_event_modifiers L486.
+	sum -= int(garrison_summary.get("gp_below_minimum_per_family", 0))
+	# Phase 3: +1 morale-roll modifier per `acore_axioms` §administration L499.
+	if _any_parcel_administered(parcels):
+		sum += 1
+	# The settled-lair penalty (RAW ax_domain_level_encounters §dungeons
+	# L312-321) is lair XP over FAMILIES, so under D-12 it is diluted by the
+	# character's whole population — a dragon in a duchy troubles it less than
+	# the same dragon in a single barony. Each parcel's lairs are rated against
+	# the union's families and the results summed; in practice at most one parcel
+	# has a settled lair, so the per-parcel rounding is not observable.
+	var union_families: int = int(union.get("families", 0))
+	for p in parcels:
+		var pid: String = String((p as Dictionary).get("id", ""))
+		if pid.is_empty():
+			continue
+		# Phase 9C E4: refuse-battle morale penalty from an active npc_challenger
+		# threat per RAW acore_axioms §effects_of_morale L627-630.
+		var challenger: Dictionary = DomainThreatRepository.get_active_challenger_for_domain(pid)
+		if not challenger.is_empty():
+			sum -= int(challenger.get("morale_penalty", 0))
+		if union_families > 0:
+			sum -= DomainEncounterResolver.compute_settled_lair_morale_penalty(
+				pid, union_families)
+	return sum
+
+
+# ---------------------------------------------------------------------------
 # Domain resolution (per ACKS rules — RAW-correct as of Domain Phase 0)
 # ---------------------------------------------------------------------------
 
@@ -322,143 +793,42 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 		opts: Dictionary = {}) -> Dictionary:
 	var domain_id: String = domain_data.get("id", "")
 	var domain_name: String = domain_data.get("name", "Unknown")
-	var territory: String = String(domain_data.get("territory_type", "wilderness"))
 
-	# --- Context: hexes, stronghold, ruler, additional garrison ---
-	var hexes: Array = CampaignRepository.get_domain_hexes(domain_id)
-	var hex_count: int = hexes.size()
-	# StrongholdRepository.get_stronghold_value_for_domain SUMs `strongholds.cp_value`
-	# — it is ALREADY copper. Until 2026-07-31 this line multiplied by 100 a second
-	# time under a comment claiming strongholds were gp-denominated, inflating every
-	# domain's stronghold value 100× and so holding the RAW income gate permanently
-	# open and suppressing the insufficient-stronghold morale penalty. Conventions §127.
-	var stronghold_value_cp: int = _stub_stronghold_value(domain_id)
-	# Stronghold sufficiency uses the effective hex count (owned + intervening)
-	# per RAW §noncontiguous_domains L95-98. For contiguous domains this equals
-	# `hex_count`; for noncontiguous ones it adds the connecting hexes between
-	# components so the minimum scales with the territory the strongholds must
-	# secure, not just the territory directly held.
-	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var stronghold_minimum_cp: int = _classification_minimum_cp(territory, sufficiency_hex_count)
-	var ruler: Dictionary = _build_ruler_context(domain_data)
+	# --- Context (pass 1): hexes, stronghold, ruler, garrison, tribute, revenue ---
+	# Computed once per parcel per month by `_build_month_context` and cached, so
+	# that the character's total revenue is known before ANY parcel rolls morale.
+	# Recomputing it here would double-charge tribute and re-consume the pending
+	# consecrate_fields effects — see that function's docstring.
+	var union: Dictionary = _union_for(domain_data)
+	var ctx: Dictionary = _month_context_for(domain_data, calendar_day)
+	var hexes: Array = ctx["hexes"]
+	var hex_count: int = int(ctx["hex_count"])
+	var ruler: Dictionary = ctx["ruler"]
+	var revenue: Dictionary = ctx["revenue"]
+	var investment_cp: int = int(ctx["investment_cp"])
+	var tribute_aggregate: Dictionary = ctx["tribute_aggregate"]
+	var tribute_out: int = int(ctx["tribute_out"])
 
-	# Phase 5 garrison wiring (2026-05-16): aggregate the actual garrison-assigned
-	# troop_units via GarrisonExpenditureCalculator. RAW §garrison L228-231:
-	# unpaid faithful followers + trained militia + scutage troops + lord-favor
-	# troops count toward the garrison cost by gp value even when no money
-	# changes hands. The calculator handles that distinction and returns the
-	# total cp value of garrison + the morale incentive bonus + below-minimum
-	# penalty. We feed the paid portion into the expense calculator (which
-	# clamps to the universal minimum) and the morale signals into the resolver.
-	var garrison: Dictionary = GarrisonExpenditureCalculator.compute_from_domain(domain_data)
-	var actual_garrison_paid_cp: int = int(garrison.get("total_paid_cp", 0))
-	var additional_garrison_cp_per_family: int = int(garrison.get("morale_incentive_bonus", 0))
-
-	# Phase 7: tribute_in via RealmAggregator + TributeCalculator. The ruler
-	# of THIS domain may have direct vassals; tribute flows from each vassal's
-	# realm to this ruler at the rate dictated by the RAW table reduced by the
-	# efficiency factor.
-	var tribute_aggregate: Dictionary = _compute_tribute_in_for_ruler(
-		_str_field(domain_data, "owner_character_id"))
-	# cp. Until 2026-07-31 this read the gp-named key and fed it straight into
-	# DomainRevenueCalculator's `tribute_in_cp` parameter, crediting every liege
-	# 1/100th of the tribute actually owed. Conventions §127.
-	var tribute_in_cp: int = int(tribute_aggregate.get("total_received_cp", 0))
-
-	# Phase 7: tribute_out_owed is recomputed each month based on the vassal
-	# domain's realm aggregate, so that domain growth/shrinkage flows naturally
-	# into the tribute owed. We mutate the local domain_data dict so the expense
-	# calculator (which reads tribute_out_owed) picks it up. Persistence of the
-	# updated value happens in _save_domain.
-	var tribute_out: int = _compute_tribute_out_for_vassal_domain(domain_data)
-	domain_data["tribute_out_owed"] = tribute_out
-
-	# Phase 3: pending_investment_cp is set by oversee_investment handler on
-	# completion (migration 068); consumed and reset here.
-	var investment_cp: int = int(domain_data.get("pending_investment_cp", 0))
-
-	# Phase 10A.2: Faith block pre-resolve modifiers. consecrate_fields adds
-	# land-value bonus to this month's revenue; consecrate_ruler adds base
-	# morale bonus while its 12-month window is active.
-	var faith_modifiers: Dictionary = FaithMonthlyResolver.compute_pre_resolve_modifiers(
-		domain_id, calendar_day)
-	var faith_land_value_bonus: int = int(
-		faith_modifiers.get("consecrate_fields_bonus_per_family", 0))
-	var faith_ruler_morale_bonus: int = int(
-		faith_modifiers.get("consecrate_ruler_base_morale_bonus", 0))
-
-	# Standing levy penalties for peasants under arms — militia (RAW
-	# daw_armies_recruitment.xml:428-432) and excess-levy tribal warriors
-	# (ax_domains_of_chaos.xml:399). Read ONCE and fed to both revenue and
-	# morale so the two cannot disagree about how many peasants are levied.
-	var levy: Dictionary = LevyPenaltyCalculator.penalties_for_domain(
-		domain_id, int(domain_data.get("peasant_families", 0)))
-	var levied_peasants: int = int(levy.get("levied", 0))
-
-	# --- Resolvers: revenue → expenses → morale → growth → classification ---
-	var revenue := DomainRevenueCalculator.calculate_monthly_revenue(
-		domain_data, hexes, stronghold_value_cp, stronghold_minimum_cp, tribute_in_cp,
-		levied_peasants)
-
-	# Phase 10A.2: apply consecrate_fields bonus to revenue total + subcategory.
-	if faith_land_value_bonus != 0 and not revenue.get("income_gate_active", false):
-		var peasant_families: int = int(domain_data.get("peasant_families", 0))
-		var bonus_total: int = faith_land_value_bonus * peasant_families
-		revenue["consecrate_fields_bonus"] = bonus_total
-		revenue["total"] = int(revenue.get("total", 0)) + bonus_total
-		FaithMonthlyResolver.apply_pending_consecrate_fields(
-			faith_modifiers.get("consecrate_fields_fired_effect_ids", []))
 	var expenses := DomainExpenseCalculator.calculate_monthly_expenses(
-		domain_data, actual_garrison_paid_cp, revenue["income_gate_active"])
+		domain_data, int(ctx["actual_garrison_paid_cp"]), revenue["income_gate_active"])
 
-	# Phase 8: ongoing scutage owed by THIS domain (when D is a vassal). RAW
-	# §favors_and_duties L362: "Scutage: vassal pays 1gp per family in the
-	# realm in place of military service; counts as garrison expense for the
-	# vassal." We add scutage to the expenses dict as a subcategory and bump
-	# the total so the existing ledger writer + monthly settlement flow
-	# treats it like any other expense.
-	# Scutage is RAW 1 gp/family; the helper returns cp internally.
-	var scutage_cp: int = _compute_active_scutage_cp_for_domain(domain_data)
+	# Phase 8 / D-12: ongoing scutage owed by THIS RULER. RAW §favors_and_duties
+	# L362: "Scutage: vassal pays 1gp per family in the realm in place of
+	# military service; counts as garrison expense for the vassal." The magnitude
+	# is realm-wide and the obligation belongs to the OATH, so like tribute it is
+	# charged once per character — `_build_month_context` zeroes it on every
+	# parcel but the tribute seat. Added as an expense subcategory so the ledger
+	# writer and the monthly settlement flow treat it like any other expense.
+	var scutage_cp: int = int(ctx["scutage_cp"])
 	if scutage_cp > 0:
 		expenses["scutage"] = scutage_cp
 		expenses["total"] = int(expenses.get("total", 0)) + scutage_cp
 
-	var base_morale := DomainMoraleResolver.resolve_base_morale(
-		domain_data, ruler, revenue["total"],
-		stronghold_value_cp, stronghold_minimum_cp,
-		additional_garrison_cp_per_family,
-		int(levy.get("morale_penalty", 0)))
-	# Phase 10A.2: consecrate_ruler 12-month buff applies +1 / -1 to base morale
-	# while the window is active.
-	if faith_ruler_morale_bonus != 0:
-		base_morale = int(base_morale) + faith_ruler_morale_bonus
-
-	# §8.4 backdrop auto-stabilize (gdd-ruler-ai.md): the morale ROLL sees the
-	# garrison as funded to minimum; the real garrison summary above still
-	# drives expenses.
-	var morale_garrison: Dictionary = garrison
-	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_GARRISON_FUNDED, false)):
-		morale_garrison = RulerBackdropStabilizer.adjust_garrison_summary(garrison)
-	var event_modifiers_sum: int = _event_modifiers_sum(domain_data, morale_garrison)
-	# §8.4 item 2: the assumed-administration grant is ONLY the +1 morale-roll
-	# modifier — added here, never via the administer_domain_completed flag
-	# (which _save_domain would read as the +5% XP bonus).
-	if bool(opts.get(RulerBackdropStabilizer.OPT_ASSUME_ADMINISTERED, false)) \
-			and int(domain_data.get("administer_domain_completed_this_month", 0)) == 0:
-		event_modifiers_sum += RulerBackdropStabilizer.ADMINISTER_MORALE_BONUS
-	var repression_bonus: int = int(domain_data.get(
-		"repression_cp_per_family_this_month", 0))
-	var is_repressed: bool = bool(domain_data.get(
-		"is_repressed_this_month", 0))
-	var morale_roll: int = DiceSystem.roll_digital(6, 2, 0, "domain_morale").modified_total
-	var morale := DomainMoraleResolver.resolve_current_morale(
-		domain_data, base_morale, event_modifiers_sum,
-		repression_bonus, is_repressed, morale_roll)
-	if bool(opts.get(RulerBackdropStabilizer.OPT_NEGLECT_MORALE_FLOOR, false)):
-		morale = RulerBackdropStabilizer.apply_neglect_floor(
-			morale, int(domain_data.get("morale", 0)), event_modifiers_sum)
-
-	var morale_tier: String = DomainMoraleResolver.morale_tier(morale["current_morale"])
+	# D-12: ONE morale roll for the character's domain, mirrored to every parcel.
+	var morale_bundle: Dictionary = _unified_morale_for(domain_data, union, opts)
+	var base_morale: int = int(morale_bundle["base_morale"])
+	var morale: Dictionary = morale_bundle["morale"]
+	var morale_tier: String = String(morale_bundle["morale_tier"])
 	var growth := DomainGrowthResolver.resolve_growth(
 		domain_data, revenue["total"], investment_cp, morale_tier,
 		bool(domain_data.get("is_active_adventuring_this_month", 0)),
@@ -564,13 +934,11 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 	var tribute_payment: Dictionary = _resolve_vassal_tribute_payment(
 		domain_data, tribute_out, calendar_day)
 
-	# Phase 8: Favors & Duties monthly roll for each active vassal of THIS
-	# ruler. RAW §favors_and_duties L352 ("Each month, a vassal ruler rolls
-	# once on the Favors and Duties table"). Each roll dispatches via
-	# FavorsDutiesResolver, which writes the obligation, applies mechanical
-	# effects (gift/loan treasury transfers; scutage as ongoing expense), and
-	# emits favor_or_duty_resolved.
-	var favors_duties: Array = _resolve_favors_and_duties(domain_data, calendar_day)
+	# R-1: the Favors & Duties roll USED to run here, inside the per-domain loop.
+	# It is a RULER-level event (RAW §favors_and_duties L352: "Each month, a vassal
+	# ruler rolls once on the Favors and Duties table"), so it now runs exactly once
+	# per ruler in `_resolve_favors_and_duties_for_rulers`, AFTER this loop closes.
+	# See that function for why the position matters.
 
 	# Phase 9A: domain encounters / bandits / NPC challengers / market
 	# modifier expiry. Encounters fire the RAW frequency check
@@ -616,8 +984,8 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 		"tribute_out_owed": tribute_out,
 		"tribute_payment": tribute_payment,
 		"realm_title": title_update,
-		# Phase 8: per-vassal Favors & Duties results.
-		"favors_duties": favors_duties,
+		# R-1: Favors & Duties results are no longer a per-DOMAIN key. They are
+		# reported once per ruler on the tick's `favors_duties_reports`.
 		# Phase 9A: encounter / bandit / challenger summaries.
 		"encounter_summary": encounter_summary,
 		"bandit_summary": bandit_summary,
@@ -630,6 +998,25 @@ func _resolve_domain_month(domain_data: Dictionary, calendar_day: int,
 		# RAW "without pay for a month" designation for this month, whether or
 		# not anything went unpaid (shortfall_cp == 0 in the common case).
 		"pay_shortfall": pay_shortfall,
+		# D-12: what the RAW math was actually computed over. Surfaced so the
+		# monthly report can say "this is one parcel of a 3-parcel domain, and
+		# the morale you see was rolled for the whole of it" rather than looking
+		# like a mis-scoped number.
+		"personal_domain": {
+			"character_id": String(union.get("character_id", "")),
+			"parcel_count": int(union.get("parcel_count", 1)),
+			"parcel_ids": union.get("parcel_ids", [domain_id]),
+			"seat_parcel_id": String(union.get("seat_parcel_id", domain_id)),
+			"tribute_seat_id": String(union.get("tribute_seat_id", "")),
+			"is_materialized": bool(union.get("is_materialized", false)),
+			"families": int(union.get("families", 0)),
+			"effective_hex_count": int(union.get("effective_hex_count", 0)),
+			"worst_classification": String(union.get("worst_classification", "")),
+			"stronghold_value_cp": int(union.get("stronghold_value_cp", 0)),
+			"stronghold_minimum_cp": int(union.get("stronghold_minimum_cp", 0)),
+			"union_revenue_cp": int(morale_bundle.get("union_revenue_cp", 0)),
+			"morale_rolled_on_seat": String(morale_bundle.get("seat_parcel_id", "")),
+		},
 	}
 
 
@@ -687,16 +1074,32 @@ func _save_domain(domain_data: Dictionary, result: Dictionary,
 	var prior_peasants: int = int(domain_data.get("peasant_families", 0))
 	var new_peasants: int = maxi(0, prior_peasants + int(result.get("population_growth", 0)))
 	var class_change: Dictionary = result.get("classification_change", {})
+	var prior_territory: String = String(domain_data.get("territory_type", "wilderness"))
 	var new_territory: String = String(class_change.get(
-		"new_classification", domain_data.get("territory_type", "wilderness")))
+		"new_classification", prior_territory))
 	var prior_treasury: int = int(domain_data.get("treasury_cp", 0))
 	var new_treasury: int = prior_treasury + net
 
-	# Phase 3: administer_domain bonus = +5% domain XP per acore_axioms
-	# §administration L499. Apply here, then reset the flag below.
-	var domain_xp: int = maxi(0, net)
-	if bool(domain_data.get("administer_domain_completed_this_month", 0)):
-		domain_xp = int(round(domain_xp * 1.05))
+	# D-12: a classification change is a DOMAIN-level decision with a PER-HEX
+	# consequence. Nothing else in the engine writes `hex_cells.civilization`
+	# after world generation, so without this the per-hex stronghold minimum and
+	# garrison rate would keep quoting the domain's ORIGINAL classification
+	# forever and advancement would silently do nothing. See
+	# ClassificationAdvancement.propagate_to_hexes.
+	if new_territory != prior_territory:
+		ClassificationAdvancement.propagate_to_hexes(domain_id, new_territory)
+
+	# R-7a: domain XP is now RAW's figure — net income above the RULER's gp
+	# threshold, computed and awarded by DomainXpResolver just before this call —
+	# not the raw copper net income this method used to store into a column nothing
+	# read. The Phase 3 administer_domain "+5% domain XP" moved INTO the resolver
+	# (RAW ax_campaign_play.xml:511) so it composes with the prime-requisite
+	# adjustment under a single banker's rounding; the `int(round(...))` that used
+	# to apply it here rounded half away from zero. Note migration 068 cites
+	# acore_axioms §administration L499 for that bonus and the pointer is wrong —
+	# the rule is real but lives in Axioms. The morale half of the same rule still
+	# fires from _union_event_modifiers_sum, and the flag reset below is unchanged.
+	var xp_award: Dictionary = result.get("domain_xp_award", {})
 
 	var fields := {
 		"morale": result.get("current_morale", domain_data.get("morale", 0)),
@@ -705,7 +1108,6 @@ func _save_domain(domain_data: Dictionary, result: Dictionary,
 		"revenue_cp": result.get("revenue", 0),
 		"expenses_cp": result.get("total_expenses", 0),
 		"net_income_cp": net,
-		"domain_xp_this_month": domain_xp,
 		"territory_type": new_territory,
 		# Phase 7: tribute_out_owed (recomputed each month from realm aggregate).
 		"tribute_out_owed": int(result.get("tribute_out_owed", 0)),
@@ -722,6 +1124,16 @@ func _save_domain(domain_data: Dictionary, result: Dictionary,
 		"is_repressed_this_month": 0,
 		"repression_cp_per_family_this_month": 0,
 	}
+
+	# R-7a: record the month's XP and stamp the double-award guard in the SAME
+	# UPDATE. Written only when the resolver actually ran — a skipped resolution
+	# (ownerless seat, or a re-entered tick the guard already rejected) must not
+	# overwrite a real figure with 0, and must not advance the guard day on a
+	# month it did not pay for.
+	if not xp_award.is_empty() and not bool(xp_award.get("skipped", false)):
+		fields["domain_xp_this_month"] = int(xp_award.get("earned", 0))
+		if int(xp_award.get("awarded", 0)) > 0:
+			fields["domain_xp_awarded_through_day"] = calendar_day
 
 	# Phase 11D.5 polish: population-growth refill of the tribal-warrior pool.
 	# Per gdd-tribal-warriors.md §3 + §5.5: when peasant_families grows on a
@@ -859,24 +1271,15 @@ func _write_expense_ledger(domain_id: String, calendar_day: int, expenses: Dicti
 # Resolver inputs (helpers)
 # ---------------------------------------------------------------------------
 
-## Sum the cp_value of completed strongholds in a domain. Phase 1 wired this
-## via `StrongholdRepository.get_stronghold_value_for_domain`; Phase 2+
-## may add caching or contiguous-territory enforcement at this seam.
-func _stub_stronghold_value(domain_id: String) -> int:
-	return StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-
-
-## Per-hex classification minimums per `acore_axioms` §minimum_stronghold_value
-## L88-94. RAW gp values × 100 to express as cp.
-## Total = per_hex_minimum_cp × hex_count.
-## Thin delegate to the single source of truth. This function used to carry its
-## OWN copy of the RAW §minimum_stronghold_value table (1,500,000 / 2,250,000 /
-## 3,200,000 cp per hex), duplicating `StrongholdRepository._CLASSIFICATION_MIN_CP_PER_HEX`.
-## Two copies of a RAW table can silently diverge, and the monthly tick and the
-## Stronghold sub-tab reading different minimums is exactly the class of bug the
-## 2026-07-31 audit found elsewhere. Delegating keeps one table.
-func _classification_minimum_cp(territory_type: String, hex_count: int) -> int:
-	return StrongholdRepository.classification_minimum_cp(territory_type, hex_count)
+## D-12 Phase B removed this section's two stronghold helpers.
+## `_stub_stronghold_value` (a delegate to `StrongholdRepository.get_stronghold_value_for_domain`)
+## and `_classification_minimum_cp` (a delegate to
+## `StrongholdRepository.classification_minimum_cp`) both answered PER PARCEL.
+## Sufficiency is now a property of the character's whole holding, so both
+## quantities come from `PersonalDomain` — which sums stronghold value across
+## parcels and sums each HEX's own RAW minimum over the effective (owned +
+## intervening) set. `StrongholdRepository` remains the single source of the RAW
+## §minimum_stronghold_value table.
 
 
 ## Coerces a Dictionary field to String, treating `null` as empty. SQLite
@@ -938,54 +1341,12 @@ func _has_leadership_proficiency(character_id: String) -> bool:
 	return not CampaignRepository.db.query_result.is_empty()
 
 
-## Sum the morale roll modifiers driven by the current month's domain settings.
-## Per §monthly_event_modifiers L488-499. Phase 0 wires up the modifiers we can
-## compute deterministically (tax, liturgy, tithes, garrison underpayment).
-## Pillage / occupation / new-religion are deferred to Phase 8 / Phase 10.
-##
-## [param garrison_summary] is GarrisonExpenditureCalculator's output for this
-## domain — provides `gp_below_minimum_per_family` for the garrison
-## underpayment penalty per §monthly_event_modifiers L486.
-func _event_modifiers_sum(domain_data: Dictionary, garrison_summary: Dictionary) -> int:
-	var sum: int = 0
-	# Rates are cp/family per the 2026-05-15 currency-precision pass.
-	# RAW baseline is "1 gp/family" = 100 cp/family; morale modifier fires
-	# per gp deviation, so divide the cp delta by 100.
-	var liturgy_rate_cp: int = int(domain_data.get("liturgy_rate_cp_per_family", 100))
-	sum += (liturgy_rate_cp - 100) / 100
-	# Tax bonus/penalty per L494-495 (2 gp/fam baseline = 200 cp/fam).
-	var tax_rate_cp: int = int(domain_data.get("tax_rate_cp_per_family", 200))
-	sum += (200 - tax_rate_cp) / 100
-	# Garrison underpayment: -1 morale per gp/family below the universal RAW
-	# minimum, per §monthly_event_modifiers L486. GarrisonExpenditureCalculator
-	# pre-computes the ceiling of (min_cp_per_family - actual_cp_per_family)/100.
-	sum -= int(garrison_summary.get("gp_below_minimum_per_family", 0))
-	# Phase 3: administer_domain handler sets this column on completion;
-	# +1 morale roll modifier per `acore_axioms` §administration L499.
-	if bool(domain_data.get("administer_domain_completed_this_month", 0)):
-		sum += 1
-	# Phase 9C E4: refuse-battle morale penalty from active npc_challenger
-	# threats per RAW acore_axioms §effects_of_morale L627-630 (-4 if ruler
-	# refused battle and challenger is now pillaging). Sum across all active
-	# challenger threats for this domain (typically just one).
-	var domain_id: String = String(domain_data.get("id", ""))
-	if not domain_id.is_empty():
-		var challenger: Dictionary = DomainThreatRepository.get_active_challenger_for_domain(domain_id)
-		if not challenger.is_empty():
-			sum -= int(challenger.get("morale_penalty", 0))
-	# Phase 9C polish round 4 2026-05-09: settled-lair dungeon morale penalty
-	# per RAW ax_domain_level_encounters §dungeons L312-321. Sum XP × count
-	# across active settled_lair threats, divide by total families, banker's
-	# round → subtract from event modifiers sum.
-	if not domain_id.is_empty():
-		var peasants: int = int(domain_data.get("peasant_families", 0))
-		var urban: int = int(domain_data.get("urban_families", 0))
-		var families: int = peasants + urban
-		if families > 0:
-			var lair_penalty: int = DomainEncounterResolver.compute_settled_lair_morale_penalty(
-				domain_id, families)
-			sum -= lair_penalty
-	return sum
+## D-12 Phase B replaced this section's per-parcel `_event_modifiers_sum` with
+## `_union_event_modifiers_sum`, which computes the same RAW
+## §monthly_event_modifiers L486-499 terms for the character's ONE morale roll:
+## tax and liturgy rates from his domain record page, garrison underfunding from
+## the combined summary, administration from any parcel, and challenger /
+## settled-lair penalties summed across every parcel he holds.
 
 
 # Phase 0 simplifications — Phase 2+ will surface real values.
@@ -1112,44 +1473,115 @@ func _contiguous_expansion_blocked(_domain_data: Dictionary) -> bool:
 # Phase 7: Realm aggregation, tribute, title resolution
 # ---------------------------------------------------------------------------
 
-## Compute the cp THIS ruler will receive from active vassals this month.
-## Sum each vassal's tribute base (from the vassal's own realm size), then
-## apply the liege's efficiency factor (based on liege's direct_vassal_count).
-## Returns `total_received_cp` — copper, per conventions §127.
-func _compute_tribute_in_for_ruler(ruler_character_id: String) -> Dictionary:
+## Compute the cp THIS DOMAIN receives from active vassals this month.
+##
+## TWO DIFFERENT SCOPES, and keeping them apart is the whole point of this
+## function (Jedidiah ruling 2026-08-04):
+##
+##   * The EFFICIENCY FACTOR is keyed on the CHARACTER — "the sum-total of ALL
+##     vassals paying tribute to a single character, regardless of which domain
+##     seat they are paying to". A lord holding two domains with six vassals each
+##     is a twelve-vassal lord for RAW §tribute_inefficiency L398-409, not two
+##     six-vassal lords, so he takes the 9–16 band's 66% on every payment.
+##   * The CREDIT is keyed on the DOMAIN — each vassal's tribute lands in the
+##     domain his fief is actually held of (`vassal domain -> liege_domain_id`),
+##     which is the authoritative realm pointer from ruling R-1.
+##
+## Until 2026-08-04 this was `_compute_tribute_in_for_ruler`, returning the
+## ruler's ENTIRE tribute income and crediting it to whichever domain was being
+## resolved — so a lord holding N domains banked his whole realm's tribute N
+## times a month, and N× the domain XP that flows from it. Rulers normally hold
+## exactly one domain (world generation mints a distinct character per domain),
+## which is why the multiplication stayed invisible; it becomes reachable the
+## moment a domain escheats to its liege on a vassal's death, or a conqueror
+## takes a second domain without enfeoffing anyone to rule it.
+##
+## Returns cp per conventions §127. `total_received_cp` is THIS DOMAIN's share;
+## `realm_total_received_cp` is the ruler's whole intake, for display.
+func _compute_tribute_in_for_domain(domain_data: Dictionary) -> Dictionary:
 	var summary: Dictionary = {
 		"total_received_cp": 0,
+		"realm_total_received_cp": 0,
 		"per_vassal": [],
 		"direct_vassal_count": 0,
 		"efficiency_factor": 1.0,
 	}
-	if ruler_character_id.is_empty():
+	var ruler_character_id: String = _str_field(domain_data, "owner_character_id")
+	var domain_id: String = String(domain_data.get("id", ""))
+	if ruler_character_id.is_empty() or domain_id.is_empty():
 		return summary
 	var assignments: Array = VassalRepository.list_active_for_liege(ruler_character_id)
+	# CHARACTER-WIDE count — every vassal of this lord, across every domain he
+	# holds. This is the RAW inefficiency input.
 	var direct_count: int = assignments.size()
 	summary["direct_vassal_count"] = direct_count
 	var efficiency: float = TributeCalculator.efficiency_factor(direct_count)
 	summary["efficiency_factor"] = efficiency
 	if direct_count <= 0 or efficiency <= 0.0:
 		return summary
+
+	var destinations: Dictionary = _tribute_destinations(ruler_character_id)
 	var total_cp: int = 0
+	var realm_total_cp: int = 0
 	for assn in assignments:
+		var assn_id: String = String(assn.get("id", ""))
 		var vassal_char: String = String(assn.get("vassal_character_id", ""))
 		var v_aggregate: Dictionary = RealmAggregator.aggregate(vassal_char)
 		var v_realm_families: int = int(v_aggregate.get("all_realm_families", 0))
 		var v_base_cp: int = TributeCalculator.compute_tribute_base_cp(v_realm_families)
-		# Apply liege's efficiency factor to what arrives in liege's coffers.
+		# The liege's efficiency factor applies to what arrives in his coffers.
 		var received_cp: int = MathUtils.bankers_round(float(v_base_cp) * efficiency)
+		realm_total_cp += received_cp
+		if String(destinations.get(assn_id, "")) != domain_id:
+			continue  # this vassal's fief is held of one of the lord's OTHER seats
 		total_cp += received_cp
 		summary["per_vassal"].append({
-			"vassal_assignment_id": String(assn.get("id", "")),
+			"vassal_assignment_id": assn_id,
 			"vassal_character_id": vassal_char,
 			"vassal_realm_families": v_realm_families,
 			"base_cp": v_base_cp,
 			"received_cp": received_cp,
 		})
 	summary["total_received_cp"] = total_cp
+	summary["realm_total_received_cp"] = realm_total_cp
 	return summary
+
+
+## assignment id -> the domain OF THIS RULER that the vassal's tribute is owed to.
+##
+## Normally the vassal domain's `liege_domain_id`. Two cases fall back to the
+## ruler's primary domain (his lowest-id holding — arbitrary but stable, and it
+## keeps the realm total conserved rather than quietly dropping the payment):
+## an oath with no fief attached (`vassal_domain_id` NULL), and a fief whose
+## liege pointer has drifted off this ruler's holdings.
+func _tribute_destinations(ruler_character_id: String) -> Dictionary:
+	var out: Dictionary = {}
+	var owned: Dictionary = {}
+	var primary: String = ""
+	if CampaignRepository.db.query_with_bindings(
+		"SELECT id FROM domains WHERE owner_character_id = ? ORDER BY id",
+		[ruler_character_id]
+	):
+		for row in CampaignRepository.db.query_result:
+			var did: String = String((row as Dictionary).get("id", ""))
+			owned[did] = true
+			if primary.is_empty():
+				primary = did
+	if primary.is_empty():
+		return out
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT va.id AS assignment_id, vd.liege_domain_id AS dest
+		FROM vassal_assignments va
+		LEFT JOIN domains vd ON vd.id = va.vassal_domain_id
+		WHERE va.liege_character_id = ? AND va.status = 'active'
+	""", [ruler_character_id]):
+		return out
+	for row in CampaignRepository.db.query_result:
+		var r: Dictionary = row
+		var dest_v: Variant = r.get("dest")
+		var dest: String = String(dest_v) if dest_v != null else ""
+		out[String(r.get("assignment_id", ""))] = dest if owned.has(dest) else primary
+	return out
 
 
 ## If THIS domain has a liege_domain_id, compute its tribute_out_owed for the
@@ -1282,14 +1714,70 @@ func _compute_active_scutage_cp_for_domain(domain_data: Dictionary) -> int:
 	return total_gp * 100
 
 
-## For each active vassal of THIS ruler, roll monthly on the Favors & Duties
+## R-1 — the Favors & Duties monthly roll, ONE pass per RULER, LOD-gated.
+##
+## WHY THIS IS NOT IN THE DOMAIN LOOP. RAW §favors_and_duties L352 says "Each month,
+## a vassal ruler rolls once on the Favors and Duties table" — the roll belongs to
+## the liege-vassal relationship, not to a domain. It used to run inside
+## `_resolve_domain_month` keyed on that domain's `owner_character_id`, so a ruler
+## holding N domains rolled the full table for every one of his vassals N TIMES a
+## month. While world generation left `vassal_assignments` empty the bug was
+## invisible (the lookup always returned []). R-1 fills that table, so without this
+## hoist the first generated campaign would roll a d20 per vassal per domain across
+## hundreds of off-camera realms every month — with real treasury transfers, real
+## recurring scutage and real scheduled musters behind each roll.
+##
+## WHY IT RUNS AFTER THE DOMAIN LOOP. `_save_domain` writes `treasury_cp` as an
+## ABSOLUTE `prior + net`, where `prior` came from the `domains` array fetched once
+## before the loop. A gift or loan that F&D moved into ANOTHER domain's treasury
+## mid-loop was therefore overwritten when that domain's own turn came up. Running
+## the whole pass after the loop closes puts every F&D transfer strictly after the
+## last absolute treasury write, so the transfers survive.
+##
+## LOD GATE. Only rulers the player can actually observe roll: PC-side rulers plus
+## the `RulerLodManager` active set — the same predicate the domain loop uses to
+## choose between full resolution and the §8.4 backdrop stabilizer. Backdrop realms
+## hold their obligations static until the play window reaches them.
+##
+## Returns one entry per ruler that produced results:
+##   {ruler_character_id: String, results: Array}
+func _resolve_favors_and_duties_for_rulers(
+	domains: Array,
+	pc_ids: Dictionary,
+	active_ruler_ids: Array,
+	calendar_day: int,
+) -> Array:
+	var reports: Array = []
+	var rolled: Dictionary = {}
+	for domain_data: Dictionary in domains:
+		# Terminal domains are skipped by the resolution loop; a ruler known to us
+		# ONLY through a ruined or abandoned domain does not hold court either.
+		var lifecycle_state: String = String(domain_data.get(
+			"lifecycle_state", LifecycleHandler.STATE_ACTIVE))
+		if lifecycle_state == LifecycleHandler.STATE_ABANDONED \
+			or lifecycle_state == LifecycleHandler.STATE_SALTED_TO_RUIN:
+			continue
+		var owner: String = _str_field(domain_data, "owner_character_id")
+		# `rolled` is what makes this once-per-RULER instead of once-per-domain.
+		if owner.is_empty() or rolled.has(owner):
+			continue
+		if not (pc_ids.has(owner) or active_ruler_ids.has(owner)):
+			continue
+		rolled[owner] = true
+		var results: Array = _resolve_favors_and_duties_for_ruler(owner, calendar_day)
+		if results.is_empty():
+			continue
+		reports.append({"ruler_character_id": owner, "results": results})
+	return reports
+
+
+## For each active vassal of [param ruler_id], roll monthly on the Favors & Duties
 ## table per RAW §favors_and_duties L352-372. Returns an array of per-vassal
 ## resolution dicts (passes through whatever FavorsDutiesResolver returns).
 ##
 ## Phase 8 polish: also runs the loan-repayment monthly chance (RAW L365)
 ## and the construction auto-expenditure (RAW L361) for each active vassal.
-func _resolve_favors_and_duties(domain_data: Dictionary, calendar_day: int) -> Array:
-	var ruler_id: String = _str_field(domain_data, "owner_character_id")
+func _resolve_favors_and_duties_for_ruler(ruler_id: String, calendar_day: int) -> Array:
 	if ruler_id.is_empty():
 		return []
 	var assignments: Array = VassalRepository.list_active_for_liege(ruler_id)

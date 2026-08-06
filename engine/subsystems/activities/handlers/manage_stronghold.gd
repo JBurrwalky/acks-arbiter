@@ -55,13 +55,17 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	if mode == "auto":
 		mode = "repair" if lifecycle == "ruined_stronghold" else "build"
 
-	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var minimum_cp: int = StrongholdRepository.classification_minimum_cp(
-		String(domain.get("territory_type", "wilderness")), hex_count)
+	# D-12: the target is the RULER's combined minimum over his whole holding
+	# (owned + intervening hexes, each at its own RAW rate), not this parcel's.
+	# `_build` measures the shortfall against this domain's own stronghold value,
+	# which is right — he is building HERE — but what counts as "enough" is a
+	# question about everything he holds, and it must match the monthly tick's
+	# income gate or the player would build toward a target that never opens it.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(domain_id)
 
 	if mode == "repair":
-		return _repair(character_id, domain, minimum_cp)
-	return _build(character_id, domain, minimum_cp, int(params.get("budget_cp", 0)))
+		return _repair(character_id, domain, int(sufficiency["minimum_cp"]))
+	return _build(character_id, domain, sufficiency, int(params.get("budget_cp", 0)))
 
 
 # ---------------------------------------------------------------------------
@@ -69,11 +73,15 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 @warning_ignore("integer_division")
-static func _build(character_id: String, domain: Dictionary, minimum_cp: int,
-		budget_cp: int) -> Dictionary:
+static func _build(character_id: String, domain: Dictionary,
+		sufficiency: Dictionary, budget_cp: int) -> Dictionary:
 	var domain_id: String = String(domain.get("id", ""))
-	var current_cp: int = StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-	var shortfall_cp: int = minimum_cp - current_cp
+	# D-12: BOTH sides of the shortfall are the ruler's, not this parcel's. Taking
+	# the union minimum against one parcel's value would overstate the gap by
+	# every other keep he owns and send him building forever.
+	var minimum_cp: int = int(sufficiency["minimum_cp"])
+	var current_cp: int = int(sufficiency["value_cp"])
+	var shortfall_cp: int = int(sufficiency["shortfall_cp"])
 	# A sub-gp shortfall is un-buyable at the whole-gp spend floor; treat it
 	# as sufficient rather than looping on an un-completable intent.
 	if shortfall_cp < 100:

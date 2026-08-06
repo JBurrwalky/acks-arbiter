@@ -160,12 +160,29 @@ static func get_effective_hex_count_for_domain(domain_id: String) -> int:
 	for row in hex_rows:
 		var coord := Vector2i(int(row.get("hex_q", 0)), int(row.get("hex_r", 0)))
 		owned[coord] = true
+	return owned.size() + connecting_hexes_for_set(owned).size()
+
+
+## The INTERVENING hexes a set of owned hexes needs in order to count as one
+## secured territory per RAW §noncontiguous_domains L95-98 — the strictly-internal
+## steps of the paths that join its disconnected components. Returns a set keyed
+## by Vector2i, empty when the owned set is already contiguous (or has ≤1 hex).
+##
+## Split out of `get_effective_hex_count_for_domain` for D-12: under the unified
+## personal domain the sufficiency question is asked over the union of ALL a
+## character's parcels, and the per-hex stronghold minimum needs the intervening
+## hexes' own COORDINATES (to look up each one's `hex_cells.civilization`), not
+## just how many there are. `PersonalDomain` calls this once per `map_id`; see
+## the note at that call site — a campaign has ONE rolling 6-mile map, so the
+## grouping is a namespace guard against `add_domain_hex`'s empty-`map_id`
+## sentinel, not support for holdings on separate maps.
+static func connecting_hexes_for_set(owned: Dictionary) -> Dictionary:
 	if owned.size() <= 1:
-		return owned.size()
+		return {}
 
 	var components: Array = _connected_components_axial(owned)
 	if components.size() <= 1:
-		return owned.size()
+		return {}
 
 	# Greedy Prim: start with component 0, repeatedly absorb the nearest
 	# remaining component via its shortest connecting hex-path.
@@ -203,7 +220,7 @@ static func get_effective_hex_count_for_domain(domain_id: String) -> int:
 			connected[k] = true
 		remaining.remove_at(best_target_index)
 
-	return owned.size() + connecting.size()
+	return connecting
 
 
 ## Partition an axial-coordinate hex set into connected components via BFS.

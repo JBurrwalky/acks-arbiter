@@ -387,7 +387,7 @@ func test_seam_b_triggers_fire_on_each_site_and_respect_cooldown() -> void:
 		"siege_started on a ruler's stronghold fires reassess (site 1)")
 
 	# Site 2 in the SAME game-month is suppressed by the per-ruler cooldown.
-	EventBus.domain_conquered.emit(fx.domain_id, "vassalized", "conqueror_x")
+	EventBus.domain_conquered.emit(fx.domain_id, "vassalized", "conqueror_x", fx.ruler_id)
 	for i in 6:
 		await _tree.process_frame
 	check(not fired.has("vassal_seized"),
@@ -395,7 +395,7 @@ func test_seam_b_triggers_fire_on_each_site_and_respect_cooldown() -> void:
 
 	# Advance one game-month (28 days) and retry site 2 — now it fires.
 	RulerSeamBTrigger.clear_cooldowns()  # simulate month rollover deterministically
-	EventBus.domain_conquered.emit(fx.domain_id, "vassalized", "conqueror_x")
+	EventBus.domain_conquered.emit(fx.domain_id, "vassalized", "conqueror_x", fx.ruler_id)
 	for i in 6:
 		await _tree.process_frame
 	check(fired.has("vassal_seized"),

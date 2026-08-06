@@ -73,7 +73,10 @@ static func register_listeners() -> void:
 # Signal handlers (thin — resolve ids + day, delegate to the pure entry points)
 # ===========================================================================
 
-static func _on_domain_conquered(domain_id: String, outcome: String, new_owner_id: String) -> void:
+## [param _prior_owner_id] rides the signal for R-5's benefit; this subscriber
+## works from the domain's realm rather than from either party's character id.
+static func _on_domain_conquered(domain_id: String, outcome: String, new_owner_id: String,
+		_prior_owner_id: String = "") -> void:
 	var campaign_id: String = _campaign_for_domain(domain_id)
 	if campaign_id == "":
 		return

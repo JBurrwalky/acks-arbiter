@@ -703,7 +703,7 @@ func test_e4_refuse_battle_morale_penalty_subtracts_from_event_modifiers() -> vo
 	# Verify the threat is found.
 	var t := DomainThreatRepository.get_active_challenger_for_domain(domain_id)
 	check(int(t.get("morale_penalty", 0)) == 4, "challenger morale_penalty=4")
-	# We don't directly call _event_modifiers_sum (it's an instance method); but
+	# We don't directly call _union_event_modifiers_sum (it's an instance method); but
 	# we can verify the data is in place for the production tick to subtract.
 
 
@@ -1323,10 +1323,10 @@ func test_settled_lair_morale_penalty_xp_per_family() -> void:
 
 
 func test_settled_lair_morale_penalty_subtracts_from_event_modifiers() -> void:
-	## Verify that domain_handlers._event_modifiers_sum reads the settled_lair
+	## Verify that domain_handlers._union_event_modifiers_sum reads the settled_lair
 	## penalty (via DomainEncounterResolver.compute_settled_lair_morale_penalty)
 	## and subtracts it from the morale modifier sum.
-	## Because _event_modifiers_sum is private to domain_handlers and the
+	## Because _union_event_modifiers_sum is private to domain_handlers and the
 	## Phase 9A morale resolver test path is tightly DB-coupled, we verify
 	## via the public DomainEncounterResolver.compute_settled_lair_morale_penalty
 	## directly: a domain with a settled_lair worth 200 xp + 50 fam → penalty

@@ -119,12 +119,24 @@ func _render_sufficiency() -> void:
 	if _domain_id.is_empty():
 		_sufficiency_card.add_child(_dim_label("—"))
 		return
-	var territory: String = String(_domain_data.get("territory_type", "wilderness"))
-	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
-	# domains) per RAW §noncontiguous_domains; equals owned count when contiguous.
-	var hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
-	var stronghold_value: int = StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum: int = StrongholdRepository.classification_minimum_cp(territory, hex_count)
+	# D-12: judged over the OWNER'S whole holding — combined stronghold value
+	# against the summed per-hex minimum over owned PLUS intervening hexes (RAW
+	# §noncontiguous_domains). Same union the monthly tick uses.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(_domain_id)
+	var stronghold_value: int = int(sufficiency["value_cp"])
+	var minimum: int = int(sufficiency["minimum_cp"])
+	# Say so when the figures cover more than the domain on screen, or the
+	# numbers look wrong for the parcel the player is reading.
+	if int(sufficiency["parcel_count"]) > 1:
+		var scope := _dim_label(
+			"Judged across all %d holdings of this ruler — RAW asks whether his "
+			% int(sufficiency["parcel_count"])
+			+ "strongholds' COMBINED value secures the land (%d hexes, %d of them "
+			% [int(sufficiency["effective_hex_count"]),
+				int(sufficiency["intervening_hex_count"])]
+			+ "intervening).")
+		scope.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_sufficiency_card.add_child(scope)
 
 	var pct_text: String = "—"
 	var pct: float = 0.0

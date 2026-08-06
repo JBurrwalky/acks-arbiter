@@ -353,13 +353,17 @@ static func _overlord_character_id(domain: Dictionary) -> String:
 
 
 ## Apply heir designation: transfer ownership, clear succession columns,
-## return lifecycle_state to active.
+## return lifecycle_state to active, and put the dead ruler's sub-vassals to the
+## question of whether they will serve his heir.
 static func _apply_heir(
 	domain_id: String,
 	heir_id: String,
 	heir_kind: String,
 	calendar_day: int,
 ) -> void:
+	# §106: owner_character_id is nullable — StringUtils.s is the null-safe read.
+	var prior_owner: String = StringUtils.s(
+		CampaignRepository.get_domain(domain_id).get("owner_character_id"))
 	CampaignRepository.reassign_domain_owner(domain_id, heir_id)
 	CampaignRepository.update_domain_succession_state(
 		domain_id,
@@ -368,6 +372,21 @@ static func _apply_heir(
 		"",
 		"",
 		calendar_day)
+	# R-5, "any change of liege" (Jedidiah ruling). Succession is a change of lord
+	# like any other, and the most common one in a dynastic game. Without this the
+	# sub-vassal edges keep naming the DEAD ruler as their liege — invisible while
+	# world generation left `vassal_assignments` empty, a stale pointer at a corpse
+	# once R-1 filled it.
+	#
+	# RE-POINT ONLY, NO ROLL. `resolve_succession` emits `succession_resolved`
+	# immediately after this, and `VassalLoyaltyTriggers._on_succession_resolved`
+	# already fires RAW §5.2's "liege succession" check over the HEIR's active
+	# vassals — which, thanks to the re-point above, now includes these. Rolling
+	# here too would roll each inherited vassal TWICE for one death, the second roll
+	# consuming the one-shot Grudging −1 the first had just written for the NEXT
+	# check. (Conquest is different and DOES roll in place: its trigger fires over
+	# the PRIOR owner, off whom the vassals have already moved.)
+	SubVassalLoyalty.repoint_direct_sub_vassals(domain_id, heir_id, calendar_day)
 
 
 ## Vassal-reverts-to-overlord transition: ownership transfers to the overlord
@@ -388,9 +407,18 @@ static func _revert_to_overlord(
 		for row: Dictionary in CampaignRepository.db.query_result.duplicate():
 			VassalRepository.update_status(
 				str(row.get("id", "")), "departed", calendar_day)
-	# Domain itself: owner now overlord; lifecycle back to active; clear
-	# liege_domain_id so it's no longer a vassal-domain (direct rule).
+	# R-5: the escheated domain's OWN sub-vassals now answer to the overlord — a
+	# change of liege, so they roll. Runs before the ownership move so the roll can
+	# still see who held the domain; escheat is a lawful succession, not a
+	# conquest, so it carries no acquisition penalty.
+	var prior_owner: String = StringUtils.s(
+		CampaignRepository.get_domain(domain_id).get("owner_character_id"))
 	CampaignRepository.reassign_domain_owner(domain_id, overlord_id)
+	SubVassalLoyalty.roll_for_transfer(
+		domain_id, prior_owner, overlord_id,
+		SubVassalLoyalty.ACQ_INHERITANCE, calendar_day)
+	# Domain itself: lifecycle back to active; clear liege_domain_id so it's no
+	# longer a vassal-domain (direct rule).
 	CampaignRepository.db.query_with_bindings(
 		"UPDATE domains SET liege_domain_id = NULL, updated_at = datetime('now') WHERE id = ?",
 		[domain_id])

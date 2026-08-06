@@ -103,20 +103,23 @@ func _render_headline() -> void:
 		return
 	var territory := String(_domain_data.get("territory_type", "wilderness"))
 	var hex_count: int = CampaignRepository.get_domain_hexes(_domain_id).size()
-	# Sufficiency uses effective hex count (owned + intervening for noncontiguous
-	# domains) per RAW §noncontiguous_domains L95-98; equals owned count when
-	# contiguous. The displayed hex count remains the owned count so it matches
-	# what the player sees on the map; the noncontiguity caveat is shown
-	# inline when effective > owned.
-	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(_domain_id)
-	# StrongholdRepository returns cp post-Migration 116.
-	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(_domain_id)
-	var minimum_cp := StrongholdRepository.classification_minimum_cp(territory, sufficiency_hex_count)
+	# D-12: the gate is the RULER's, not this parcel's — RAW asks whether his
+	# strongholds' COMBINED value secures the land, over owned PLUS intervening
+	# hexes (§noncontiguous_domains L95-98). Same union the monthly tick uses, so
+	# this banner can never contradict the gate the tick actually applied. The
+	# displayed hex count stays the owned count so it matches what the player
+	# sees on the map; the wider scope is spelled out inline.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(_domain_id)
+	var stronghold_value_cp: int = int(sufficiency["value_cp"])
+	var minimum_cp: int = int(sufficiency["minimum_cp"])
 	if stronghold_value_cp < minimum_cp:
-		var noncontig_note: String = ""
-		if sufficiency_hex_count > hex_count:
-			noncontig_note = " (territory is noncontiguous — %d intervening hexes added per §noncontiguous_domains)" % (
-				sufficiency_hex_count - hex_count)
+		var scope_note: String = ""
+		var intervening: int = int(sufficiency["intervening_hex_count"])
+		if intervening > 0:
+			scope_note += " (territory is noncontiguous — %d intervening hexes added per §noncontiguous_domains)" % intervening
+		if int(sufficiency["parcel_count"]) > 1:
+			scope_note += " (judged across all %d of this ruler's holdings, %d hexes in all)" % [
+				int(sufficiency["parcel_count"]), int(sufficiency["effective_hex_count"])]
 		_gate_banner.text = (
 			"⚠ Income gate active — stronghold value %s is below the %s "
 			+ "minimum for a %d-hex %s domain%s. Revenue and population growth "
@@ -124,7 +127,7 @@ func _render_headline() -> void:
 		) % [
 			Currency.format_cost(stronghold_value_cp),
 			Currency.format_cost(minimum_cp),
-			hex_count, territory, noncontig_note,
+			hex_count, territory, scope_note,
 		]
 		_gate_banner.visible = true
 	else:

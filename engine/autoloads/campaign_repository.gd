@@ -1812,6 +1812,9 @@ const _DOMAIN_MONTHLY_FIELDS := [
 	"morale", "peasant_families",
 	"treasury_cp", "revenue_cp", "expenses_cp", "net_income_cp",
 	"domain_xp_this_month", "classification_progress_families",
+	# Migration 216 (R-7a): double-award guard, stamped in the same monthly
+	# UPDATE that records domain_xp_this_month.
+	"domain_xp_awarded_through_day",
 	"territory_type", "realm_title",
 	"is_active_adventuring_this_month",
 	"is_repressed_this_month", "repression_cp_per_family_this_month",
@@ -1932,8 +1935,8 @@ func add_domain_hex(data: Dictionary) -> String:
 	# resolve to a hex_maps row.
 	if not db.query_with_bindings("""
 		INSERT INTO domain_hexes
-			(id, domain_id, map_id, hex_q, hex_r, land_value, surveyed_by, is_littoral, land_improvement_level)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(id, domain_id, map_id, hex_q, hex_r, land_value, families, surveyed_by, is_littoral, land_improvement_level)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		domain_id_str,
@@ -1941,6 +1944,13 @@ func add_domain_hex(data: Dictionary) -> String:
 		int(data.get("hex_q", 0)),
 		int(data.get("hex_r", 0)),
 		int(data.get("land_value", 5)),
+		# Migration 173 added `families` (the per-6-mile-hex population that the
+		# M4-1b vassal decomposition conserves) but this writer was never updated,
+		# so every hex it created silently carried 0. World generation inserts
+		# domain_hexes with raw SQL (`setting_materializer.gd:1614`), which is why
+		# nothing caught it — and D-12 is the first consumer to read the column,
+		# since per-hex garrison cost is families × that hex's RAW rate.
+		int(data.get("families", 0)),
 		data.get("surveyed_by", null),
 		1 if data.get("is_littoral", false) else 0,
 		int(data.get("land_improvement_level", 0)),

@@ -175,7 +175,17 @@ static func apply_prime_req_adjustment(raw_xp: int, adjustment_percent: int) -> 
 	## Uses Banker's rounding.
 	if adjustment_percent == 0:
 		return raw_xp
-	return bankers_round(float(raw_xp) * (1.0 + float(adjustment_percent) / 100.0))
+	return bankers_round(float(raw_xp) * prime_req_factor(adjustment_percent))
+
+
+static func prime_req_factor(adjustment_percent: int) -> float:
+	## The prime-requisite adjustment as a bare MULTIPLIER, for callers that must
+	## compose it with another RAW percentage before rounding. Rounding after each
+	## multiply in turn drifts; `DomainXpResolver` folds this together with the
+	## administer-domain +5% (ax_campaign_play.xml:511) so the value lands on
+	## banker's rounding exactly once. Single-modifier callers want
+	## `apply_prime_req_adjustment` above, which is defined in terms of this.
+	return 1.0 + float(adjustment_percent) / 100.0
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +280,11 @@ func calculate_domain_xp(income: int, level: int, is_henchman: bool = false) -> 
 	## is_henchman: henchmen earn 50% of domain XP.
 	##
 	## Source: acore-campaign-hijinks.xml lines 1014-1091.
+	##
+	## R-7a: engine-side income is COPPER (§127). Production callers want
+	## `calculate_domain_xp_cp` below; this gp-native form is kept because the RAW
+	## table is published in gp and a gp-in/gp-out entry point is the readable way
+	## to pin the table in tests.
 	var clamped_level := clampi(level, 0, 14)
 	var threshold: int = GP_THRESHOLD_TABLE.get(clamped_level, 25)
 	if income <= threshold:
@@ -278,3 +293,31 @@ func calculate_domain_xp(income: int, level: int, is_henchman: bool = false) -> 
 	if is_henchman:
 		return bankers_round(float(base_xp) * 0.5)
 	return base_xp
+
+
+static func calculate_domain_xp_cp(net_income_cp: int, level: int,
+		is_henchman: bool = false) -> int:
+	## R-7a: the CP-NATIVE domain XP entry point — the one production calls.
+	##
+	## Source: acore-campaign-hijinks.xml §experience_from_domain_and_mercantile_income
+	## L1030-1040 — "XP is only earned when monthly income exceeds the character's gp
+	## threshold"; "the character earns XP equal to the difference"; "a follower or
+	## henchman managing a domain earns 50% of normal domain XP".
+	##
+	## UNITS, carefully (§127). Domain net income is copper. The RAW threshold table
+	## is published in gp, so the THRESHOLD is converted UP to cp and the comparison
+	## happens entirely in integer copper — no money is ever divided, and no
+	## `cp_to_gp` helper is needed (§127 forbids one). The trailing `/ 100.0` is NOT
+	## a currency conversion: it is RAW's gp→XP RATE (1 XP per gp of income above the
+	## threshold), so it converts money into experience points and lands on banker's
+	## rounding. The henchman half-rate folds into the SAME expression so the value
+	## is rounded exactly once.
+	##
+	## `net_income_cp` may legitimately be negative (a domain running at a loss); the
+	## threshold comparison rejects it before any arithmetic.
+	var clamped_level := clampi(level, 0, 14)
+	var threshold_cp: int = int(GP_THRESHOLD_TABLE.get(clamped_level, 25)) * 100
+	if net_income_cp <= threshold_cp:
+		return 0
+	var rate := 0.5 if is_henchman else 1.0
+	return bankers_round(float(net_income_cp - threshold_cp) * rate / 100.0)

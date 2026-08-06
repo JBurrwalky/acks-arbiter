@@ -51,14 +51,21 @@ static func _on_succession_resolved(domain_id: String, new_owner_id: String, _he
 	fire_for_liege(new_owner_id, "liege_succession", _current_day())
 
 
-static func _on_domain_conquered(domain_id: String, _outcome: String, _new_owner_id: String) -> void:
-	# The domain's owner (before the conquest resolved) lost a stronghold — a
-	# §5.2 trigger for their remaining vassals. The owner may already be replaced;
-	# resolve the liege from the domain row's owner if still present.
-	var owner: String = _owner_of_domain(domain_id)
-	if owner == "":
+static func _on_domain_conquered(_domain_id: String, _outcome: String, _new_owner_id: String,
+		prior_owner_id: String) -> void:
+	# §5.2 "liege lost a stronghold": the man who LOST the domain looks weak to the
+	# vassals he still has. This used to read the owner back off the domain row —
+	# but the emit happens after `reassign_domain_owner`, so it was firing the
+	# roll over the CONQUEROR's vassals, punishing him for winning. R-5 put
+	# `prior_owner_id` on the signal precisely to fix that.
+	#
+	# The sub-vassals of the conquered domain itself are NOT double-rolled: R-5's
+	# transfer roll runs before this signal and has already re-pointed them onto
+	# the new lord (or ended their oath), so they are no longer in the prior
+	# owner's active list.
+	if prior_owner_id == "":
 		return
-	fire_for_liege(owner, "liege_lost_stronghold", _current_day())
+	fire_for_liege(prior_owner_id, "liege_lost_stronghold", _current_day())
 
 
 static func _on_treaty_broken(_treaty_id: String, breaker_realm_id: String, _victim_realm_id: String) -> void:

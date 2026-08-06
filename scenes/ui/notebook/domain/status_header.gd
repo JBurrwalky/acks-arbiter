@@ -90,13 +90,14 @@ func display(domain: Dictionary) -> void:
 	]
 	# Stronghold / garrison / treasury status.
 	var territory_type := String(domain.get("territory_type", "wilderness"))
-	var stronghold_value_cp := StrongholdRepository.get_stronghold_value_for_domain(domain_id)
-	# Sufficiency uses the effective hex count (owned + intervening for
-	# noncontiguous domains) per RAW §noncontiguous_domains L95-98; equals
-	# `hex_count` when the domain is contiguous.
-	var sufficiency_hex_count: int = StrongholdRepository.get_effective_hex_count_for_domain(domain_id)
-	var stronghold_minimum_cp := StrongholdRepository.classification_minimum_cp(
-		territory_type, sufficiency_hex_count)
+	# D-12: sufficiency is judged over the OWNER'S whole holding — combined
+	# stronghold value against the summed per-hex minimum over owned PLUS
+	# intervening hexes (RAW §noncontiguous_domains L95-98). This must agree with
+	# the monthly tick, which uses the same union; see
+	# PersonalDomain.sufficiency_for_domain.
+	var sufficiency: Dictionary = PersonalDomain.sufficiency_for_domain(domain_id)
+	var stronghold_value_cp: int = int(sufficiency["value_cp"])
+	var stronghold_minimum_cp: int = int(sufficiency["minimum_cp"])
 	var stronghold_glyph := _sufficiency_glyph(stronghold_value_cp, stronghold_minimum_cp)
 	var garrison_per_fam_gp: int = _garrison_per_family(domain)
 	var garrison_min_gp: int = _garrison_min_per_family(territory_type)

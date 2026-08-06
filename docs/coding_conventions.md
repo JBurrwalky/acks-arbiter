@@ -4809,3 +4809,213 @@ Established implementing RAW's partial-supply allocation (`daw_campaigning_armie
 - **An itemizing helper must not silently redefine its aggregate.** `SupplyCalculator.weekly_supply_cost_breakdown` returns per-unit costs plus `total_cp`, where `total_cp` stays the banker-rounded SUM and is not the sum of the banker-rounded parts — the two differ by a cp or so once modifiers produce fractions. `compute_weekly_supply_cost_cp` delegates to it and returns the identical number it always did. The allocator therefore gates "is there a shortfall?" on `total_cp` and uses the per-unit ints only to walk the roster; comparing the parts' sum to the stockpile would manufacture a phantom shortfall on a fully-supplied week.
 
 - **The RAW rules adjacent to the one you implemented are not free.** `:351-356`'s physical effects (1 hp/day, cumulative -1 to attack and damage, no natural healing, half rations sustaining indefinitely) share the supplied/unsupplied state this work builds and are still NOT implemented — `SustenanceResolver` is party-scoped ACore rations, not troop units, and `troop_units` has no hp or hunger columns. They need a migration, a DAILY cadence (this tick is weekly), and a hook into field-battle attack/damage resolution. Scoped out deliberately; the designation is the seam they will consume.
+
+## 135. Two records of one relationship must move together — the pointer and the appointment (ruling R-1, 2026-08-04)
+
+The realm tree is stored twice on purpose (Jedidiah ruling R-1): `domains.liege_domain_id` is the
+**authoritative pointer** — apex walks, tribute chains and the cascade all read it — while
+`vassal_assignments` is the **appointment record**, carrying loyalty state, obligations and the
+`is_henchman_vassal` flag. Neither is redundant, and neither may be written alone.
+
+Until R-1 only the pointer was ever written by world generation, so the appointment table was empty
+in every generated campaign. That silence hid a whole class of bug: four separate places re-pointed
+or erased `liege_domain_id` without touching the matching row, and nothing failed, because there was
+never a row to disagree with.
+
+**When you change who a domain answers to, change both, in this order:** depart the old
+`vassal_assignments` row first, then move `liege_domain_id`, then open the new row. Departing first
+matters because the cleanup query finds a domain's vassals *through* the pointer you are about to
+overwrite — erase it first and the stale edge becomes permanently unreachable, still collecting
+tribute and still rolling Favors & Duties for a lord the vassal has left.
+
+Sites that got this wrong and now do not: `RebelCoalition._repoint_domains_to_realm` (secession),
+`ResignationLadder._reparent_domain_to` (petition granted). The correct pre-existing precedents are
+`RulerDeathHandler._revert_to_overlord` and `vassal_appointment_dialog`.
+
+**Corollary — a cascade scopes on the pointer, not on the character.**
+`LifecycleHandler._cascade_vassals` used to depart every assignment where the lost domain's owner was
+the liege, which is liege-WIDE: losing one frontier barony would have dissolved a duke's entire realm.
+Scope on `vassal domain -> liege_domain_id = the lost domain`. Assignments with a NULL
+`vassal_domain_id` are personal oaths sworn to the *ruler* and must survive the loss of any one of his
+domains. **Any UI that warns the player about a cascade must count with the cascade's own predicate** —
+the abandonment dialog was quoting a liege-wide number for a domain-scoped effect, on an irreversible
+action.
+
+## 136. Relationship rows for generated worlds: one terminal sweep, not an insert per creation site (2026-08-04)
+
+`SettingMaterializer` writes `liege_domain_id` from four passes at four different moments, and Pass 3
+assigns the crown owners only *after* Pass 2 has already chained each polity's ladder to its crown. A
+relationship row needing an owner on **both** ends therefore cannot be minted beside the pointer
+write — half the edges would have no liege character yet.
+
+Mint them in **one sweep that runs after every creating pass**
+(`SettingMaterializer._materialize_vassal_edges`). It is correct by construction (every entity exists
+and owns a ruler by then), total (it picks up passes the author never thought about, including the
+6-mile leaf decompositions that run much later), and free for any future pass. It is also the only
+point at which *derived* values can be computed honestly — see below.
+
+Three things the sweep owes you:
+
+- **A loud failure on a broken invariant.** An ownerless end means ruler promotion regressed; return
+  false and let the materializer roll back rather than ship a half-recorded tree.
+- **Deduplication against partial unique indexes.** `idx_vassal_assignments_unique_active` permits one
+  active edge per (liege, vassal) character pair, so a second row *fails silently*. Track the pairs
+  you have emitted and report a collision instead of losing an edge without a trace.
+- **A SECOND pass for anything derived from the finished table.** RAW's -4 base loyalty needs
+  `TradeRangeResolver`, which resolves settlements through `RealmAggregator.aggregate` — i.e. it walks
+  the very edges being minted. Asking mid-sweep answers from a half-built tree and makes the result
+  depend on row order. Mint at the RAW default, then refine once the table is whole.
+
+**And guard derived values against level-of-detail artifacts.** `TradeRangeResolver` reads a missing
+settlement as "this ruler has no trade range" and returns the harshest modifier. Off-camera realms
+have no materialized settlements because they are *abstracted*, not because they are poor — so the
+refinement runs only for located domains whose liege actually holds a settlement. Everything else
+keeps the RAW default. A rule derived from absent data is a rule derived from your own LOD.
+
+---
+
+## 137. Experience points are not money: convert at the RATE, and award through one path (R-7a, 2026-08-05)
+
+RAW gates several XP awards on a **gp** figure — the domain/mercantile threshold table
+(`acore-campaign-hijinks.xml:1056-1078`), the 1-XP-per-2-gp stronghold construction rule (`:1015`).
+Engine income is **copper** (§127). The seam between them is where R-7a found a 100× error waiting:
+`domain_handlers.gd` stored `maxi(0, net_income_cp)` into `domain_xp_this_month` and nothing ever
+read it, so the bug was invisible for the project's whole history.
+
+- **Convert the THRESHOLD up to cp; never convert the income down to gp.** `GP_THRESHOLD_TABLE[level] * 100`
+  keeps the comparison in integer copper, which is the arithmetic-friendly form §127 exists to
+  protect. §127 deliberately provides no `cp_to_gp()` helper and this is not the exception that
+  earns one. Reference implementation: `XPAwardCalculator.calculate_domain_xp_cp`.
+
+- **The final `/ 100` is a RATE, not a currency conversion — and it is the only division allowed.**
+  RAW's rule is "1 XP per gp of income above the threshold". That converts *money into experience*,
+  which leaves the money domain entirely, so the `_cp` naming contract stops at the boundary and the
+  result is a plain XP int. Say so at the site — a bare `/ 100` next to a cp value reads as a unit
+  bug to the next person. Any other RAW rate (the henchman 50%, `:1040`) folds into the **same
+  expression** so the value lands on `bankers_round` exactly once; rounding to an int and then
+  halving drifts, and it also hides which of the two roundings you meant.
+
+- **`XpAwardService.award(character_id, amount, source_key)` is the only path that may add to
+  `characters.xp`**, and it uses the atomic `UPDATE characters SET xp = xp + ?` form. The
+  read-modify-write alternative — SELECT, add in GDScript, write the absolute total — silently
+  discards any award another subsystem made in between, and the monthly domain tick is exactly the
+  caller that makes that reachable: it pays ~1,000 rulers in one pass, interleaved with handlers
+  that also touch `characters`. Three older sites (`CombatFinalizer`, `QuestRegistry._award_xp`,
+  `BattleXpDistributor`) still roll their own six lines and are a pending conversion.
+
+- **Two RAW percentages on one figure compose into ONE multiplier and round ONCE.** Domain XP takes
+  both the administer-domain +5% (`ax_campaign_play.xml:511`) and the prime-requisite adjustment
+  (`acore-campaign-hijinks.xml:1010`). Rounding after each multiply in turn drifts, because the
+  intermediate half-rounding is then amplified by the second multiply — on a 2,990 base the two
+  orders give 3,296 and 3,297. Where a shared helper already owns one of the rules, expose its
+  **factor** so the rule keeps a single definition and the helper is rewritten in terms of it:
+  `XPAwardCalculator.prime_req_factor()` is the reference, with `apply_prime_req_adjustment()`
+  defined on top of it for every single-modifier caller.
+
+- **XP never goes in `ledger_entries`.** That table's `cp_amount` is money with a CHECK-constrained
+  category list; an XP row would violate §127's unit contract and corrupt any treasury audit that
+  sums it. `EventBus.xp_awarded` → `GameLog._on_xp_awarded` is the audit surface and already fires.
+
+- **Awarding and advancing are separate decisions.** `award()` reports whether the new total crosses
+  the threshold and stops. A **PC** gets `pending_level_up` and advances interactively, so he keeps
+  his proficiency and spell picks. A **non-PC** advances through `LevelUpEngine.apply_level_up_auto`.
+  A **`persistence_tier='named'` stub** does neither: it banks the XP in its one integer column and
+  advances when the play window promotes it, because `apply_level_up_auto` materialises proficiency,
+  power and spell rows and running that for every backdrop domain is the eager cost D-8 rejected.
+  The RAW one-level cap (`:1011`, `clamp_to_one_level`) means the award can never cover two
+  thresholds, so the advance is one call and never a loop.
+
+---
+
+## 138. A BAD CITATION IS NOT A MISSING RULE — search the corpus before you call something invented (2026-08-05)
+
+Migration 068 added `administer_domain_completed_this_month` with the comment "the monthly tick adds
++5% to `domain_xp_this_month` per `acore_axioms §administration L499`". The pointer is wrong: the
+block it names (`acore_axioms_strongholds_and_domains.xml:526-529`) grants the morale **+1** and
+defines administration *time*, with no XP percentage.
+
+R-7a followed that pointer, found nothing at the target, and **removed the bonus as fabricated. That
+was the error.** The rule is real and sits in `rules/ax_campaign_play.xml:511`: *"Rulers who
+administer their domain gain +1 on domain morale rolls and +5% on domain XP that month."* Jedidiah
+supplied the full Axioms text and it was restored the same session.
+
+The lesson is not "distrust comments" — it is about what a failed citation actually licenses:
+
+- **A citation names ONE location. RAW is a CORPUS.** Checking the cited line and stopping tests
+  whether the *pointer* is right, not whether the *rule* exists. Before concluding anything is absent
+  from RAW, grep all of `rules/` for the rule's own words — `grep -rn "5% .* domain XP" rules/` finds
+  this in one command. `acks-raw-lookup` searching by tag returns "no matches" for a section id that
+  does not exist, which is not evidence about the rule either.
+- **Precedence makes a single-file check especially unsafe** (CLAUDE.md: Axioms → HFH → APC → L&E →
+  DaW → ACore). The Axioms files carry rules that revise or extend ACore, so "not in ACore" says
+  nothing at all, and a citation that names an ACore file for an Axioms rule is a *likely* mistake
+  rather than a red flag. This one pointed at `acore_axioms_strongholds_and_domains.xml` when the
+  rule lives in `ax_campaign_play.xml` — adjacent-sounding filenames, different books.
+- **Removing a rule needs a higher bar than adding one.** Deleting a player-facing behaviour on the
+  strength of one failed lookup is a bigger claim than it looks, and if you are wrong it is
+  invisible: everything still passes, and the world is quietly poorer. When a citation does not
+  resolve, the honest report is *"this pointer is wrong and I could not find the rule — where is
+  it?"*, addressed to Jedidiah, **before** touching the behaviour.
+- **Fix the pointer where the next reader will look.** A shipped migration is not re-run and should
+  not be rewritten, so the corrected citation belongs in the live code that implements the rule —
+  here `domain_xp_resolver.gd`'s header — with a note that migration 068's citation is wrong, so the
+  next person to follow it does not repeat the deletion.
+
+## 139. Resolving an aggregate across rows: build every union BEFORE the first write, and name the carrier row (D-12 Phase B, 2026-08-06)
+
+A monthly/periodic tick that walks rows one at a time cannot compute a quantity defined over a
+*group* of those rows by asking for the group mid-walk. The domain tick learned this the hard way:
+`domains` rows are parcels, the RAW math belongs to the CHARACTER, and `PersonalDomain.for_character`
+re-reads the `domains` table while `_save_domain` is UPDATE-ing it as the loop advances.
+
+**The three rules this imposes.**
+
+1. **Build the aggregates in a pass that precedes every write.** A union computed lazily during
+   resolution sees some rows carrying last period's values and some carrying this period's — one
+   quantity, several answers, depending on iteration order. `DomainHandlers._handle_monthly_tick`
+   runs pass 0 (group + union), pass 1 (per-row context + the one figure the aggregate needs), pass 2
+   (resolve + persist). Nothing writes before pass 2.
+
+2. **Split the mutating prologue out and cache it, never re-run it.** Pass 1's context builder
+   mutates its row dict and commits consumed effects, so calling it twice double-charges. The rule is
+   not "the calculators are pure so re-running is free" — `DomainRevenueCalculator` *is* pure, and
+   `_resolve_domain_month` around it was not. Put the impure prologue in one function, say so in its
+   docstring, and have the resolution pass read the cache.
+
+3. **Pick a CARRIER row for the values that cannot be summed, and pick it deterministically.**
+   Families, income and stronghold value add up. Prior morale, an alignment, a tax RATE, a repression
+   stance do not. Designate one row — here the lowest-`id` parcel, `PersonalDomain.seat_parcel_id` —
+   as the record page those are read from, and mirror the single result back to every row so existing
+   readers keep working. **Order the carrier by `id`, not by the tick's own row order**
+   (`list_campaign_domains` is `ORDER BY created_at`, which has second resolution and is unstable for
+   rows created together). Do NOT add a column to the parent table to hold the aggregate: that widens
+   the change, and the mirror already makes every row readable.
+
+**Classify each input before you aggregate it, in three buckets, and write the bucket down:**
+
+| Bucket | Example | Combine by |
+|---|---|---|
+| Extensive (adds) | families, revenue, stronghold value, levied peasants | sum |
+| Intensive (a ratio or rate) | gp/family garrison spend, militia density, tax rate | re-derive from summed numerator and denominator — **never average the per-row answers** |
+| Categorical (neither) | alignment, population kind, repression stance | the carrier row, or an explicit rule (D-12 takes the WORST classification) |
+
+The intensive row is the one that bites. Evaluating gp/family per parcel gave one lord a morale
+*bonus* on his well-garrisoned seat and a *penalty* on his bare frontier parcel in the same month,
+out of the same purse; `GarrisonExpenditureCalculator.combine` sums `total_value_cp` and
+`peasant_families` and takes the ratio once. Summing each row's `minimum_total_cp` rather than
+recomputing a rate is what lets a mixed clanhold/civilized holding keep each parcel's own RAW floor
+and still produce one blended per-family minimum.
+
+**Moving a shared quantity onto the aggregate means moving EVERY reader, in the same change.**
+Deleting D-12's two per-parcel stronghold helpers surfaced eight other call sites still asking the
+same question per parcel — four UI surfaces, an activity handler, and two ruler-AI gates. Half a
+seam is worse than none: the Treasury banner would have contradicted the income gate it was
+explaining, and the planner would have kept proposing keeps for land the ruler's other strongholds
+already secured. Publish ONE helper (`PersonalDomain.sufficiency_for_domain`) and point everything at
+it, and grep for the old helpers' names before you delete them — the grep is the census.
+
+**A per-row charge for a quantity that was already group-scoped is an N× bug, not a rounding
+difference.** `_compute_tribute_out_for_vassal_domain` always aggregated the whole realm — and ran
+once per liege-bearing parcel, writing the full figure to each. Two parcels, two lieges, twice the
+tribute. When you find an aggregate function called inside a per-row loop, the question is not "is
+the aggregate right?" but "how many times is it charged?"
