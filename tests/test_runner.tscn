@@ -363,6 +363,7 @@
 [ext_resource type="Script" path="res://tests/test_persuade_merchants_handler.gd" id="308_persuade_merchants_handler_tests"]
 [ext_resource type="Script" path="res://tests/test_solicit_merchants_handler.gd" id="309_solicit_merchants_handler_tests"]
 [ext_resource type="Script" path="res://tests/test_locate_merchandise_handler.gd" id="310_locate_merchandise_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_trade_fixtures_ids.gd" id="600_trade_fixtures_ids_tests"]
 [ext_resource type="Script" path="res://tests/test_shipping_contract_offer_roller.gd" id="311_shipping_contract_offer_roller_tests"]
 [ext_resource type="Script" path="res://tests/test_accept_shipping_contract_handler.gd" id="312_accept_shipping_contract_handler_tests"]
 [ext_resource type="Script" path="res://tests/test_shipping_contract_workflow.gd" id="313_shipping_contract_workflow_tests"]
@@ -1556,6 +1557,9 @@ script = ExtResource("309_solicit_merchants_handler_tests")
 
 [node name="LocateMerchandiseHandlerTests" type="Node" parent="."]
 script = ExtResource("310_locate_merchandise_handler_tests")
+
+[node name="TradeFixturesIdsTests" type="Node" parent="."]
+script = ExtResource("600_trade_fixtures_ids_tests")
 
 [node name="ShippingContractOfferRollerTests" type="Node" parent="."]
 script = ExtResource("311_shipping_contract_offer_roller_tests")

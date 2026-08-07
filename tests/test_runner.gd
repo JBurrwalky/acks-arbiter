@@ -475,6 +475,8 @@ extends Node
 @onready var _persuade_merchants_handler_tests = $PersuadeMerchantsHandlerTests
 @onready var _solicit_merchants_handler_tests = $SolicitMerchantsHandlerTests
 @onready var _locate_merchandise_handler_tests = $LocateMerchandiseHandlerTests
+# 2026-08-06 — TradeFixtures id-uniqueness regression (static _suffix)
+@onready var _trade_fixtures_ids_tests = $TradeFixturesIdsTests
 # Phase 10B.2 Wave 4 — Shipping contracts (offer roller + accept handler + workflow)
 @onready var _shipping_contract_offer_roller_tests = $ShippingContractOfferRollerTests
 @onready var _accept_shipping_contract_handler_tests = $AcceptShippingContractHandlerTests
@@ -1085,6 +1087,8 @@ func run() -> void:
 			_persuade_merchants_handler_tests,
 			_solicit_merchants_handler_tests,
 			_locate_merchandise_handler_tests,
+			# 2026-08-06 — TradeFixtures id-uniqueness regression
+			_trade_fixtures_ids_tests,
 			# Phase 10B.2 Wave 4 — Shipping contracts
 			_shipping_contract_offer_roller_tests,
 			_accept_shipping_contract_handler_tests,

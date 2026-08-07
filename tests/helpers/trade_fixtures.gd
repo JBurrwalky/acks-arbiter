@@ -12,8 +12,18 @@ extends RefCounted
 ##      pinned 4d4 dice + initial customs rate.
 ##
 ## Each builder returns a Dictionary with the created IDs so tests can chain
-## further setup or assertions. Builders use a monotonic _next_id counter
-## per-instance so concurrent test suites don't collide.
+## further setup or assertions.
+##
+## ID UNIQUENESS (fixed 2026-08-06): `_suffix` is STATIC — process-wide, not
+## per-instance. Every caller does `TradeFixtures.new()` fresh inside its own
+## `_build_fixture()` helper (11 such call sites), so a per-instance counter
+## restarted at 0 on every call and emitted the SAME sequence each time
+## (`map_<ms>_1`, `pc_<ms>_2`, `party_<ms>_3`, `set_<ms>_4`). Uniqueness then
+## rested entirely on `Time.get_ticks_msec()`, so any two `build_bare()` calls
+## landing in the same millisecond produced byte-identical ids — an intermittent
+## `UNIQUE constraint failed` on characters.id / settlement_entrances.id /
+## party_members.character_id. A static counter is monotonic for the whole
+## process, which is what the cross-suite guarantee actually requires.
 ##
 ## Usage:
 ##   var fx := TradeFixtures.new()
@@ -21,7 +31,8 @@ extends RefCounted
 ##   # d == {campaign_id, map_id, settlement_id, party_id, pc_id, ...}
 
 
-var _suffix: int = 0
+## Process-wide, NOT per-instance — see the ID UNIQUENESS note above.
+static var _suffix: int = 0
 
 
 func _next_id(tag: String = "tf") -> String:
