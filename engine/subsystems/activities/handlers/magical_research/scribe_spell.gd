@@ -41,7 +41,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var target_spell_level: int = int(params.get("target_spell_level", 0))
 	var source_kind: String = String(params.get("source_kind", ""))
 	var source_ref: String = String(params.get("source_ref", ""))
-	var library_id: String = String(params.get("library_id", ""))
+	var library_id: String = StringUtils.s(params.get("library_id"))
 	if library_id.is_empty():
 		var location_ref: String = String(state.get("location_ref", ""))
 		if location_ref.begins_with("library:"):

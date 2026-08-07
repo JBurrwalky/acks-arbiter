@@ -91,7 +91,7 @@ static func _handle_spell_branch(
 	var target_spell_key: String = String(params.get("target_spell_key", ""))
 	var target_spell_level: int = int(params.get("target_spell_level", 0))
 	var gp_committed: int = int(params.get("gp_committed", 0))
-	var library_id: String = String(params.get("library_id", ""))
+	var library_id: String = StringUtils.s(params.get("library_id"))
 	# Fallback: extract library_id from location_ref ("library:<id>") if not
 	# in params (older launches that wrote it only into state.location_ref).
 	if library_id.is_empty():
@@ -306,7 +306,7 @@ static func _handle_magic_item_branch(
 	var precious_materials_gp: int = int(params.get("precious_materials_gp", 0))
 	var special_components_xp: int = int(params.get("special_components_xp", 0))
 	var gp_committed: int = int(params.get("gp_committed", 0))
-	var workshop_id: String = String(params.get("workshop_id", ""))
+	var workshop_id: String = StringUtils.s(params.get("workshop_id"))
 	# Fallback: extract workshop_id from location_ref ("workshop:<id>").
 	if workshop_id.is_empty():
 		var location_ref: String = String(state.get("location_ref", ""))
@@ -571,8 +571,8 @@ static func _handle_construct_branch(
 	var special_abilities: Array = special_abilities_v if special_abilities_v is Array else []
 	var armor_class: int = int(params.get("armor_class",
 		MagicalResearchConstruct.default_armor_class(hit_dice)))
-	var workshop_id: String = String(params.get("workshop_id", ""))
-	var library_id: String = String(params.get("library_id", ""))
+	var workshop_id: String = StringUtils.s(params.get("workshop_id"))
+	var library_id: String = StringUtils.s(params.get("library_id"))
 	var gp_committed: int = int(params.get("gp_committed", 0))
 	var location_kind: String = String(params.get("location_kind", "stronghold"))
 	var location_ref: String = String(params.get("location_ref", ""))
@@ -832,7 +832,7 @@ static func _handle_monster_branch(
 	var special_abilities: Array = special_abilities_v if special_abilities_v is Array else []
 	var additional_types_v: Variant = params.get("additional_types", [])
 	var additional_types: Array = additional_types_v if additional_types_v is Array else []
-	var laboratory_id: String = String(params.get("laboratory_id", ""))
+	var laboratory_id: String = StringUtils.s(params.get("laboratory_id"))
 	var gp_committed: int = int(params.get("gp_committed", 0))
 	var location_kind: String = String(params.get("location_kind", "laboratory"))
 	var location_ref: String = String(params.get("location_ref", ""))

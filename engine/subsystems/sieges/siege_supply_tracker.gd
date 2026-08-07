@@ -190,7 +190,9 @@ static func _count_defending_units(siege: Dictionary) -> int:
 	## If no defending army, fall back to unit_capacity (RAW L123 default-supply
 	## cadence assumes full garrison).
 	var unit_capacity: int = int(siege.get("unit_capacity", 0))
-	var defending_army_id: String = String(siege.get("defending_army_id", ""))
+	# §106: nullable `defending_army_id` — a bare String() threw and returned the
+	# int default 0 instead of the garrison-only `unit_capacity` below.
+	var defending_army_id: String = StringUtils.s(siege.get("defending_army_id"))
 	if defending_army_id.is_empty():
 		return unit_capacity
 	if not CampaignRepository.db.query_with_bindings("""

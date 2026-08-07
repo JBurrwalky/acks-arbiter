@@ -2089,7 +2089,7 @@ func check_domain_cross_scale_consistency(domain_id: String) -> Dictionary:
 	# footprint" which matches the intended on-camera-domain semantic.
 	for child_mid in owned.keys():
 		var info: Dictionary = visited_maps.get(child_mid, {})
-		var parent_id := String(info.get("parent_map_id", ""))
+		var parent_id := StringUtils.s(info.get("parent_map_id"))
 		if parent_id.is_empty():
 			continue
 		var footprint: Array = info.get("parent_hex_footprint", [])
@@ -2218,7 +2218,7 @@ func _check_consistency_against(domain_id: String, hypothetical: Dictionary) -> 
 
 	for child_mid in owned.keys():
 		var info: Dictionary = visited_maps.get(child_mid, {})
-		var parent_id := String(info.get("parent_map_id", ""))
+		var parent_id := StringUtils.s(info.get("parent_map_id"))
 		if parent_id.is_empty():
 			continue
 		var footprint: Array = info.get("parent_hex_footprint", [])
@@ -9878,7 +9878,7 @@ func promote_follower_to_henchman(follower_id: String) -> String:
 		return ""
 	if String(follower.get("status", "")) == "promoted_to_henchman":
 		# Already promoted; return the existing id.
-		return String(follower.get("promoted_to_henchman_id", ""))
+		return StringUtils.s(follower.get("promoted_to_henchman_id"))
 	var new_char_id: String = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO characters (

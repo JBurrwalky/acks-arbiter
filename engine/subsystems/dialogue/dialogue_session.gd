@@ -596,7 +596,7 @@ func _is_currently_eligible(move_id: String) -> bool:
 ## settlement -1 + grudge memory (§11.4). Does NOT reimplement hiring.
 func _submit_hire(move: Dictionary, free_text: String, params: Dictionary) -> Dictionary:
 	var mgr = _ensure_henchman_manager()
-	var employer_id := String(params.get("employer_id", _default_employer_id()))
+	var employer_id := StringUtils.s(params.get("employer_id"), _default_employer_id())
 	var settlement_id := String(params.get("settlement_id",
 		context.get("scene", {}).get("poi_id", "")))
 	var cha_mod := _employer_cha_modifier(employer_id)

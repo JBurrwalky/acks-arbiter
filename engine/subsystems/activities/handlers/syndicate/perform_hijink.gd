@@ -35,7 +35,7 @@ const KIND_DISPATCH := {
 
 static func on_complete(state: Dictionary, runner) -> Dictionary:
 	var params: Dictionary = _read_params(state)
-	var hijink_id: String = String(params.get("hijink_assignment_id", ""))
+	var hijink_id: String = StringUtils.s(params.get("hijink_assignment_id"))
 	if hijink_id.is_empty():
 		return {"summary": "perform_hijink: hijink_assignment_id missing"}
 	var row := SyndicateRepository.get_hijink(hijink_id)

@@ -262,8 +262,10 @@ static func resolve_simplified_conclusion(siege_id: String, calendar_day: int, d
 		return {"ok": false, "error": "siege_not_simplified", "current_mode": siege.get("resolution_mode")}
 	if String(siege.get("current_phase", "")) == "concluded":
 		return {"ok": false, "error": "already_concluded"}
-	var besieger_id: String = String(siege.get("besieging_army_id", ""))
-	var defender_id: String = String(siege.get("defending_army_id", ""))
+	# §106: nullable `defending_army_id` — the `not defender_id.is_empty()` branch
+	# below is the intended garrison-only path; a bare String() threw before it.
+	var besieger_id: String = StringUtils.s(siege.get("besieging_army_id"))
+	var defender_id: String = StringUtils.s(siege.get("defending_army_id"))
 	var battle_id: String = ""
 	var outcome: String = ""
 	# RAW L831-836: resolve a battle (NOT an assault) for cleanup.

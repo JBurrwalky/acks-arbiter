@@ -105,7 +105,10 @@ static func template_narration(action_id: String, context: Dictionary) -> String
 	if summary != "":
 		line += " (%s)" % summary
 	var motivation: Dictionary = _load().get("goal_motivation", {})
-	var mflavor: String = String(motivation.get(String(context.get("goal_primary", "")), "")).strip_edges()
+	# §106: `factions.goal_primary` is nullable, and the motivation table is
+	# JSON-loaded — coerce both reads rather than nesting bare String() calls.
+	var goal_key: String = StringUtils.s(context.get("goal_primary"))
+	var mflavor: String = StringUtils.s(motivation.get(goal_key)).strip_edges()
 	if mflavor != "":
 		line += " " + mflavor
 	return line

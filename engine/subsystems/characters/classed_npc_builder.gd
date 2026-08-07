@@ -143,7 +143,7 @@ func build_classed_npc(class_id: String, opts: Dictionary = {}) -> Dictionary:
 		return result
 
 	if character_type == "henchman":
-		character.employer_id = String(opts.get("employer_id", ""))
+		character.employer_id = StringUtils.s(opts.get("employer_id"))
 		character.loyalty_score = int(opts.get("morale_base", 0))
 		character.wage_cp_per_month = HenchmanTables.monthly_wage(level)
 

@@ -235,7 +235,7 @@ static func resolve(
 		"adjusted_roll": adjusted_roll,
 		"verdict": verdict,
 		"fine_cp": int(outcome.get("fine_cp", 0)),
-		"punishment_kind": String(outcome.get("punishment_kind", "")),
+		"punishment_kind": StringUtils.s(outcome.get("punishment_kind")),
 		"fine_paid": bool(outcome.get("fine_paid", false)),
 	}
 

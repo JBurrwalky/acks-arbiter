@@ -317,11 +317,11 @@ static func apply_method(siege_id: String, method: String, params: Dictionary = 
 			var mine_id: String = SiegeMiningResolver.start_mine(
 				siege_id,
 				String(params.get("side", "besieger")),
-				String(params.get("supervising_engineer_id", "")),
+				StringUtils.s(params.get("supervising_engineer_id")),
 				int(params.get("workers", 0)),
 				int(params.get("petard_damage", 0)),
 				day,
-				String(params.get("countermine_target_id", ""))
+				StringUtils.s(params.get("countermine_target_id"))
 			)
 			return {"ok": not mine_id.is_empty(), "mine_id": mine_id}
 		"reduction_mine_detonate":
@@ -376,8 +376,10 @@ static func begin_assault(siege_id: String, calendar_day: int, dice_roller: Call
 	var siege: Dictionary = SiegeRepository.get_siege(siege_id)
 	if siege.is_empty():
 		return ""
-	var besieger_id: String = String(siege.get("besieging_army_id", ""))
-	var defender_id: String = String(siege.get("defending_army_id", ""))
+	# §106: nullable `defending_army_id` — a bare String() threw here and aborted
+	# before the auto-capture branch below could run.
+	var besieger_id: String = StringUtils.s(siege.get("besieging_army_id"))
+	var defender_id: String = StringUtils.s(siege.get("defending_army_id"))
 	if besieger_id.is_empty() or defender_id.is_empty():
 		# RAW assumes both sides have a force; if no defending army (pure
 		# undefended garrison), the assault is auto-capture.
@@ -509,8 +511,12 @@ static func _begin_sally(siege_id: String, calendar_day: int, dice_roller: Calla
 	var siege: Dictionary = SiegeRepository.get_siege(siege_id)
 	if siege.is_empty():
 		return ""
-	var besieger_id: String = String(siege.get("besieging_army_id", ""))
-	var defender_id: String = String(siege.get("defending_army_id", ""))
+	# §106: `defending_army_id` is nullable (a garrison-only defence has no army),
+	# and `.get(key, default)` hands back the stored NULL rather than the default —
+	# so a bare `String(...)` here threw and aborted _begin_sally before the
+	# is_empty() guard below could reject the case cleanly.
+	var besieger_id: String = StringUtils.s(siege.get("besieging_army_id"))
+	var defender_id: String = StringUtils.s(siege.get("defending_army_id"))
 	if besieger_id.is_empty() or defender_id.is_empty():
 		return ""
 	var is_player_involved: bool = _is_player_involved_for_siege(siege)
@@ -599,8 +605,10 @@ static func _battle_outcome_to_siege_outcome(battle_outcome: String) -> String:
 
 
 static func _is_player_involved_for_siege(siege: Dictionary) -> bool:
-	var besieger_id: String = String(siege.get("besieging_army_id", ""))
-	var defender_id: String = String(siege.get("defending_army_id", ""))
+	# §106: nullable `defending_army_id` — a bare String() threw here and handed
+	# the caller the bool default (false), misreporting a player-involved siege.
+	var besieger_id: String = StringUtils.s(siege.get("besieging_army_id"))
+	var defender_id: String = StringUtils.s(siege.get("defending_army_id"))
 	return _army_is_player_involved(besieger_id) or _army_is_player_involved(defender_id)
 
 
@@ -611,7 +619,7 @@ static func _defender_is_pc_owned(siege_id: String) -> bool:
 	var siege: Dictionary = SiegeRepository.get_siege(siege_id)
 	if siege.is_empty():
 		return false
-	var defender_id: String = String(siege.get("defending_army_id", ""))
+	var defender_id: String = StringUtils.s(siege.get("defending_army_id"))   # §106: nullable
 	if defender_id.is_empty():
 		# No defender army (pure undefended garrison) — treat as NPC for auto-repair.
 		return false

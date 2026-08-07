@@ -175,7 +175,7 @@ static func _federate_vassal_forces(
 		var vassal_character_id: String = String(assn.get("vassal_character_id", ""))
 		var is_henchman: bool = int(assn.get("is_henchman_vassal", 1)) == 1
 		var base_mod: int = int(assn.get("base_loyalty_modifier", 0))
-		var v_domain_id: String = String(assn.get("vassal_domain_id", ""))
+		var v_domain_id: String = StringUtils.s(assn.get("vassal_domain_id"))
 
 		# Loyalty roll for muster — Call-to-Arms ask. Loyalty modifier: vassal's
 		# stored base_loyalty_modifier (typically 0 for henchman, -2 or -4 for

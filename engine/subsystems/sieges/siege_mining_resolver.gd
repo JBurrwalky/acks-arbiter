@@ -107,7 +107,7 @@ static func tick_construction(siege_id: String, day: int) -> Array:
 	for m in mines:
 		if String(m.get("side", "")) != "defender":
 			continue
-		var target_id: String = String(m.get("countermine_target_id", ""))
+		var target_id: String = StringUtils.s(m.get("countermine_target_id"))
 		if target_id.is_empty():
 			continue
 		var rate: int = int(m.get("construction_rate_cp_per_day", 0))

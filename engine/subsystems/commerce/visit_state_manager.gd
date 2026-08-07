@@ -79,7 +79,7 @@ static func on_party_departed_settlement(
 
 	var entry_day: int = int(visit.get("entry_calendar_day", current_calendar_day))
 	var days_at_settlement: int = maxi(1, current_calendar_day - entry_day)
-	var active_char_id: String = String(visit.get("active_character_at_entry", ""))
+	var active_char_id: String = StringUtils.s(visit.get("active_character_at_entry"))
 	var is_domain_owner: bool = MarketFeesCalculator.is_domain_owner_in_own_market(
 		active_char_id, settlement_id)
 
@@ -92,7 +92,7 @@ static func on_party_departed_settlement(
 	# 2. Moorage — exact integer cp (rate = shp × 10 cp/day; always integer).
 	var moorage_cp: int = 0
 	for ship in ShipRepository.list_ships_for_party(party_id):
-		if String((ship as Dictionary).get("moored_at_settlement_id", "")) == settlement_id:
+		if StringUtils.s((ship as Dictionary).get("moored_at_settlement_id")) == settlement_id:
 			moorage_cp += MarketFeesCalculator.moorage_cp_total(
 				int((ship as Dictionary).get("shp_max", 0)),
 				days_at_settlement,

@@ -91,11 +91,11 @@ static func is_character_at_stronghold(character_id: String, domain_id: String) 
 		# at-stronghold so test fixtures pass. UI gates this earlier via the
 		# active-entity location.
 		return true
-	var c_map := String(character.get("location_map_id", ""))
+	var c_map := StringUtils.s(character.get("location_map_id"))
 	var c_q: int = int(character.get("location_hex_q", 0))
 	var c_r: int = int(character.get("location_hex_r", 0))
 	for s in strongholds:
-		if String(s.get("location_map_id", "")) == c_map \
+		if StringUtils.s(s.get("location_map_id")) == c_map \
 				and int(s.get("location_hex_q", -9999)) == c_q \
 				and int(s.get("location_hex_r", -9999)) == c_r:
 			return true

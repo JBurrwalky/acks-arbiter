@@ -4415,13 +4415,44 @@ Phase 3 of the ruler AI (gdd-ruler-ai.md §7/§8) — patterns hardened by the a
 ## 106. `String(null)` is an invalid GDScript constructor — coerce nullable DB columns null-safely (2026-07-07)
 
 <!-- Added 2026-07-07 (Wave 1): the same crash bit three separate files across two
-     build tracks — promoted to a first-class convention. -->
+     build tracks — promoted to a first-class convention.
+     Updated 2026-08-06: Godot 4.6.1 emits a SECOND wording for the same error
+     ("Invalid call 'String' constructor"), which silently defeated the log-gate
+     grep; added the tests/ hazard + the `str_field` test-base helper. -->
 
-- **`String(x)` where `x` is a Variant `null` throws "Invalid call. Nonexistent 'String' constructor" at runtime** (not a parse error — it passes `--check-only` and only crashes when the null actually flows through). SQL-NULL columns from a raw repository row (`get_faction`/`get_character`/etc. return the raw dict, and `.get(key, default)` returns the stored `null`, NOT the default, when the key exists with a null value) are the classic source. This crashed `rebel_coalition.gd::launch()` (nullable faction alignment/religion/culture) and `hire_through_dialogue.gd::hireable_as()` (nullable `employer_id`), taking down the entire hot path each sat on.
+- **The error has TWO wordings in Godot 4.6.1 — grep for BOTH.** The same fault prints either
+
+      Invalid call. Nonexistent 'String' constructor.
+      Invalid call 'String' constructor
+
+  depending on the call site. Any log gate, CI check, or session-triage grep MUST match both spellings; matching only the older `Nonexistent` form reads a clean 0 while real aborts are present. Use `grep -nE "Invalid call '?String'? constructor|Nonexistent '?String'? constructor"`.
+- **`String(x)` where `x` is a Variant `null` throws at runtime** (not a parse error — it passes `--check-only` and only crashes when the null actually flows through). SQL-NULL columns from a raw repository row (`get_faction`/`get_character`/etc. return the raw dict, and `.get(key, default)` returns the stored `null`, NOT the default, when the key exists with a null value) are the classic source. This crashed `rebel_coalition.gd::launch()` (nullable faction alignment/religion/culture) and `hire_through_dialogue.gd::hireable_as()` (nullable `employer_id`), taking down the entire hot path each sat on.
 - **Use a null-safe coercion, never bare `String(row.get(k))`.** The project idiom is a small static helper: `static func _s(v: Variant, default_value: String = "") -> String: return default_value if v == null else str(v)`. For CHECK-constrained columns (e.g. `alignment IN ('lawful','neutral','chaotic')`), pass a valid default (`_s(faction.get("alignment"), "neutral")`), not `""`.
 - **`str(x)` is null-tolerant** (`str(null)` → `"<null>"`) where `String(null)` is not — but `"<null>"` is rarely the value you want, so prefer the `_s(v, default)` helper that returns a real default.
 - Shared-type `from_dict()` methods already coerce these (that's why round-tripping through a shared type is safe); the danger is reading a RAW repository row dict directly. Prefer the shared type; if you must read the raw row, coerce every nullable string column.
 - `--check-only` will NOT catch this (the null is a runtime value). It also false-positives on autoload identifiers (`Identifier not found: EventBus/CampaignRepository/LLMManager/GameState`) — ignore those; only the full runner (which loads autoloads) is authoritative for autoload-referencing code.
+
+### 106.1 In `tests/` this is a FALSE GREEN, not just an error (2026-08-06)
+
+- **The abort skips every remaining `check()` in that test method, and the suite still prints "all tests passed."** `check()` only counts assertions it actually reaches, so a suite that aborts halfway reports a lower `_test_count` and a `_fail_count` of 0 — indistinguishable from a clean pass unless you read the log. **A green suite result is NOT evidence that the assertions after a `String(...)` abort hold.** Two suites (`test_faction_ff4_betrayal`, `test_phase_f_npc_siege`) hid skipped assertions this way until 2026-08-06.
+- **Use `str_field(row, "col"[, fallback])` from `tests/test_suite_base.gd`**, never bare `String(row.get("col", ""))`, for any nullable column. Every suite inherits it (`tests/scenarios/scenario_runner_base.gd` extends the same base, so scenarios get it too). It reads the key with NO default and routes coercion through `StringUtils.s` — because `Dictionary.get(key, default)` returns the stored `null`, not the default, when the key exists with a SQL NULL.
+- **The assertion shape most likely to hit this is the "is it cleared?" probe** — `== ""`, `!= ""`, `.is_empty()` on a nullable column. That is precisely the case where the column IS null, so the check that most needs to run is the one guaranteed to abort instead.
+- **`str_field` takes a typed `Dictionary`**, so it will not silently accept an `Object` (whose built-in `Object.get(property)` would otherwise make `String(obj.get("x"))` compile). Cast query rows explicitly: `str_field((r as Dictionary), "domain_id")`.
+
+### 106.2 A failed INSERT is silent too — grep `UNIQUE constraint failed` and justify every hit (2026-08-06)
+
+- **godot-sqlite does NOT throw on a constraint violation.** It logs `SQL error: UNIQUE constraint failed: <table>.<col>` and returns `false`. A fixture that ignores the return value carries on holding an id for a row that was never written, so the suite runs against corrupted state and still prints "all tests passed." Same false-green family as §106.1, different mechanism.
+- **The standing gate:** `grep -c "UNIQUE constraint failed" headless_test_run.log`, then check that EVERY hit's backtrace names a deliberate negative test. As of 2026-08-06 the expected count is exactly **5**, all intentional: `test_unique_constraint_prevents_raw_duplicate`, `test_unique_living_per_master_rejects_second`, `test_create_assignment_active_uniqueness`, `test_partial_unique_index_only_one_active_per_pair`, `test_grant_unique_triple_returns_empty_on_duplicate`. A hit whose test name does NOT read as "…rejects/prevents/uniqueness/duplicate…" is a real collision.
+- **Test-fixture ids must not depend on the wall clock.** `TradeFixtures` built ids as `<tag>_<Time.get_ticks_msec()>_<counter>` with a PER-INSTANCE counter, while all 11 call sites construct a fresh helper per call — so the counter restarted at 0 every time and uniqueness rested entirely on the millisecond. Two builds in one millisecond produced byte-identical ids. **A per-instance counter gives no cross-call monotonicity; use `static var` for a process-wide counter** (`tests/helpers/trade_fixtures.gd` is the reference). Measured under mutation: 200 fresh instances yielded **1** distinct id.
+- **Prefer fixing id generation over `INSERT OR REPLACE`/`OR IGNORE` in fixtures** — those make the collision disappear from the log while leaving the shared-state bug in place.
+- Regression coverage: `tests/test_trade_fixtures_ids.gd` asserts both id-distinctness AND that the rows were actually written (a `SELECT` per built id) — the row-existence half is what catches the silent-INSERT case.
+
+### 106.3 When abort-default == success value, assert on STATE, not on the return (2026-08-06)
+
+- **A §106 abort hands the caller the return type's default (`""` / `0` / `false` / `{}`). Whenever that default is ALSO a legitimate success value, the return is useless as evidence and the bug is invisible to any test that only checks it.** Proven by mutation: `SiegeResolver.begin_assault` returns `""` both when it auto-captures an undefended stronghold AND when it crashes on the nullable `defending_army_id`. A test asserting `battle_id.is_empty()` PASSES in both cases. Only the persisted state distinguishes them — under the crash the siege stayed `current_phase='blockade'` with an empty `outcome`, instead of `'concluded'`/`'captured'`.
+- **So: assert on what the call WROTE** (the DB row, the emitted signal, the mutated dict), not merely on what it returned. Reserve return-value assertions for functions whose failure value is genuinely distinguishable.
+- **Corollary for coverage:** the bug survived because every pre-existing assault test passed a real defending army — the garrison-only branch was never executed. When a function early-returns on an "absent optional" (a nullable FK), write the test that takes that branch; it is exactly the branch the §106 crash pre-empts.
+- Reference test: `tests/test_phase_9b.gd::test_begin_assault_auto_captures_undefended_garrison`. It also asserts the NULL as an explicit PRECONDITION (`row.get("defending_army_id") == null`), so it cannot silently stop exercising the §106 path if that column binding ever changes.
 
 ## 107. Live LLM L-3 — consumer-wiring patterns (Seam A live, A6 ordered queue, NarrativeUpgrader, Seam B triggers) (2026-07-07) [PROVISIONAL]
 

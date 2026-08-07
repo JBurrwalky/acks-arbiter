@@ -178,7 +178,7 @@ static func _resolve_declare_war(campaign_id: String, ruler_id: String,
 	# Emit invasion via army-warfare: register a challenger threat against the
 	# target sovereign's personal domain, attributed to the declaring sovereign.
 	var target_realm: Dictionary = RealmRepository.get_realm(target_realm_id)
-	var target_head: String = String(target_realm.get("head_character_id", ""))
+	var target_head: String = StringUtils.s(target_realm.get("head_character_id"))
 	var threat_id: String = ""
 	if target_head != "":
 		var target_domain: Dictionary = _personal_domain_for_character(target_head)
@@ -370,8 +370,8 @@ static func _relation_index(realm_a_id: String, realm_b_id: String) -> int:
 ## Ratio of my realm's federated BR to the target's (1.0 = parity). Uses the
 ## realm heads' federated garrison BR (VassalLoyaltyResolver's helper).
 static func _power_ratio(my_realm_id: String, target_realm_id: String) -> float:
-	var my_head: String = String(RealmRepository.get_realm(my_realm_id).get("head_character_id", ""))
-	var target_head: String = String(RealmRepository.get_realm(target_realm_id).get("head_character_id", ""))
+	var my_head: String = StringUtils.s(RealmRepository.get_realm(my_realm_id).get("head_character_id"))
+	var target_head: String = StringUtils.s(RealmRepository.get_realm(target_realm_id).get("head_character_id"))
 	var my_br: float = _federated_br(my_head)
 	var target_br: float = _federated_br(target_head)
 	if target_br <= 0.0:

@@ -1069,7 +1069,7 @@ func _apply_party_hex_to_loaded_map(loaded: HexMapData) -> void:
 	var party := CampaignRepository.get_party(party_id)
 	if party.is_empty():
 		return
-	var party_map_id := String(party.get("current_map_id", ""))
+	var party_map_id := StringUtils.s(party.get("current_map_id"))
 	if party_map_id == loaded.id:
 		var q: int = int(party.get("current_hex_q", 0)) if party.get("current_hex_q") != null else 0
 		var r: int = int(party.get("current_hex_r", 0)) if party.get("current_hex_r") != null else 0
@@ -1131,7 +1131,7 @@ func _resolve_target_map_id_for_view(view_mode: int) -> String:
 	var party := CampaignRepository.get_party(party_id)
 	if party.is_empty():
 		return ""
-	var party_map_id := String(party.get("current_map_id", ""))
+	var party_map_id := StringUtils.s(party.get("current_map_id"))
 	if party_map_id.is_empty():
 		return ""
 	if view_mode == GameState.MapViewMode.REGIONAL:

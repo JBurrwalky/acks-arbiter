@@ -41,7 +41,7 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	# Ruler check — the unit's owner must match the caster, or the caster
 	# must rule the domain the unit is assigned to.
 	var owner_id: String = String(unit.get("owner_character_id", ""))
-	var domain_id: String = String(unit.get("assigned_domain_id", ""))
+	var domain_id: String = StringUtils.s(unit.get("assigned_domain_id"))
 	var domain: Dictionary = _get_domain(domain_id) if not domain_id.is_empty() else {}
 	var domain_ruler: String = String(domain.get("owner_character_id", "")) if not domain.is_empty() else ""
 	if owner_id != character_id and domain_ruler != character_id:

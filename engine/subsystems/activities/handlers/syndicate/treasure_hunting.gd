@@ -16,7 +16,7 @@ extends RefCounted
 
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
-	var hijink_id := String(state.get("hijink_assignment_id", state.get("hijink_id", "")))
+	var hijink_id := StringUtils.s(state.get("hijink_assignment_id"), StringUtils.s(state.get("hijink_id")))
 	if hijink_id.is_empty():
 		return {"summary": "treasure_hunting failed: hijink_assignment_id missing"}
 	var rng: RandomNumberGenerator = state.get("rng", null)

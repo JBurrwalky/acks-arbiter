@@ -11,7 +11,7 @@ extends RefCounted
 
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
-	var hijink_id := String(state.get("hijink_assignment_id", state.get("hijink_id", "")))
+	var hijink_id := StringUtils.s(state.get("hijink_assignment_id"), StringUtils.s(state.get("hijink_id")))
 	if hijink_id.is_empty():
 		return {"summary": "stealing failed: hijink_assignment_id missing"}
 	var rng: RandomNumberGenerator = state.get("rng", null)
@@ -70,13 +70,13 @@ static func _resolve_settlement_id(params: Dictionary) -> String:
 	var sid := String(params.get("settlement_id", ""))
 	if not sid.is_empty():
 		return sid
-	var hijink_id := String(params.get("hijink_assignment_id", params.get("hijink_id", "")))
+	var hijink_id := StringUtils.s(params.get("hijink_assignment_id"), StringUtils.s(params.get("hijink_id")))
 	if not hijink_id.is_empty():
 		var hijink := SyndicateRepository.get_hijink(hijink_id)
 		var syndicate_id := String(hijink.get("syndicate_id", ""))
 		if not syndicate_id.is_empty():
 			var syndicate := SyndicateRepository.get_syndicate(syndicate_id)
-			return String(syndicate.get("base_settlement_entrance_id", ""))
+			return StringUtils.s(syndicate.get("base_settlement_entrance_id"))
 	return ""
 
 

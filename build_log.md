@@ -41064,3 +41064,126 @@ Two intermediate runs are worth recording because each caught something real rat
 **Next session should:**
 1. Resume D-12 Phase D (directed investment, migration 217) per the 2026-08-06 Phase B entry.
 2. Optional follow-ups if a maintenance pass is wanted: the same static-catalog treatment for other per-consumer registries (SpellRegistry/ClassRegistry/ProficiencyRegistry — each needs its own §141 audit first), and the GameLog/unified_log call_deferred queue-fill noted in the morning session.
+
+## Session 2026-08-06 — §106 String(null) abort sweep: false-green tests + five latent siege-subsystem crashes
+
+**Task:** Close the three `SCRIPT ERROR: Invalid call 'String' constructor` aborts in the headless suite log. Both known suites still printed "all tests passed" because the abort skips the remaining `check()` calls rather than failing one — so establish what the skipped assertions actually assert, sweep `tests/` for the same pattern, and fix the stale log-gate grep string.
+
+**Model used:** Opus 5 for the whole session (diagnosis, sweep design, product-bug root cause, verification).
+
+**Completed:**
+- Added `str_field(data: Dictionary, key: String, fallback: String = "") -> String` to `tests/test_suite_base.gd`. Reads the key with NO default and delegates to `StringUtils.s` (conventions §127, the project's one canonical null-safe Variant->String). Every suite inherits it; `tests/scenarios/scenario_runner_base.gd` extends the same base, so scenario suites get it too. There was no such helper on the base before this session.
+- Converted 95 bare `String(row.get("col", ""))` sites across 43 test files to `str_field(row, "col")`. The candidate set was derived mechanically: parse `db/schema.sql` + all 216 migrations for nullable TEXT columns (106 of them across 173 tables), then match only call sites reading one of those columns. Comment lines that quote the broken form to DOCUMENT the hazard were deliberately excluded, as were `static func` bodies (`str_field` is an instance method — zero such sites existed).
+- Fixed FIVE `String(null)` crashes in the siege subsystem — the third abort was in PRODUCT code, not a test:
+  - `siege_resolver._begin_sally` (the one that fired, via `test_ruler_dispatch_phase_d.gd:226`)
+  - `siege_resolver.begin_assault` (public, line ~375) — the abort skipped the `conclude_siege(..., "captured", ...)` branch, so assaulting an UNDEFENDED stronghold silently did nothing instead of auto-capturing it
+  - `siege_resolver._is_player_involved_for_siege` — aborted to the bool default `false`, misclassifying a player-involved garrison-only siege as NPC
+  - `siege_resolver._defender_is_pc_owned` — aborted to `false`; matches the guard's intent, so behaviour-identical, fixed for consistency
+  - `siege_resolver_simplified.resolve_simplified_conclusion` — the `not defender_id.is_empty()` battle-cleanup branch was unreachable
+  - `siege_supply_tracker._count_defending_units` — aborted to the int default `0` instead of returning `unit_capacity`
+  All five read the nullable `sieges.defending_army_id` (NULL for a garrison-only defence; `besieging_army_id` is NOT NULL). Every one sat ONE LINE above an `is_empty()` guard written to handle exactly that case — the crash pre-empted the guard each time. Converting to `StringUtils.s` restores the intended path.
+- Updated conventions §106: it quoted only the older `Invalid call. Nonexistent 'String' constructor` wording. Godot 4.6.1 also emits `Invalid call 'String' constructor`, which is what all three live aborts printed — so the documented gate read 0 while three real aborts were present. §106 now mandates grepping BOTH spellings, with the exact `grep -nE` string.
+- Added conventions §106.1 — the tests-specific hazard: the abort is a FALSE GREEN, not merely noise, because `check()` only counts assertions it reaches, so an aborting suite reports a lower `_test_count` with `_fail_count` 0 — indistinguishable from a clean pass without reading the log.
+
+**Decisions made:**
+- `str_field` delegates to `StringUtils.s` rather than duplicating the coercion. Conventions §127 already names `StringUtils.s` the ONE canonical null-safe coercion after an earlier consolidation of 18 drifted private `_s` copies; adding a 19th body in tests would restart that drift. `str_field` is the dict-ACCESSOR shape (matching `DomainHandlers._str_field`, the reference implementation named in the task) layered over that one coercion.
+- `str_field` takes a typed `Dictionary`, deliberately. Every `Object` has a built-in `Object.get(property)`, so `String(obj.get("x"))` compiles; the typed parameter makes such a receiver fail loudly instead of silently. Query rows are cast explicitly at the call site: `str_field((r as Dictionary), "domain_id")`.
+- Reading the key with NO default is the crux, not a style choice. `Dictionary.get(key, default)` returns the STORED `null` when the key exists with a SQL NULL — the default never fires — which is exactly why every one of these sites already "had a default" and crashed anyway.
+- Scoped the product-code fix to the five sites on the proven-crashing column rather than sweeping all of `engine/`. The one that fired plus its four siblings share a column, a subsystem, and a demonstrably reachable NULL population, and each fix is behaviour-preserving w.r.t. the guard immediately below it. A general `engine/` sweep changes runtime behaviour and belongs in its own session.
+
+**Interfaces defined or changed:**
+- `TestSuiteBase.str_field(data: Dictionary, key: String, fallback: String = "") -> String` (`tests/test_suite_base.gd`). Returns `fallback` when the key is missing OR present-but-NULL; otherwise `str(value)`. This is now the required accessor for any nullable TEXT column in a test suite.
+- No production signal, method-signature, or data-shape changes. The five siege fixes are internal locals; each returns the same value the surrounding guard already intended.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- 43 test files converted to `str_field` (no assertion semantics changed).
+- Previously-dead assertions now execute: `test_faction_ff4_betrayal.test_betrayal_fires_on_field_battle_loss` recovers 4 checks (the true_stance clear, the betrayal_condition spend, the flip to friendly toward Pelagius, and the prepared covert op), and `test_phase_f_npc_siege.test_domain_not_in_active_set_is_untouched` recovers its single assertion — which was the entire point of that test.
+- MUTATION-TESTED the recovery, per the standing "a passing test is not evidence of a protecting test" discipline. A green suite proves only that nothing errored — it cannot show that a previously-skipped `check()` now RUNS. So both recovered lines were deliberately inverted in one run: `test_faction_ff4_betrayal.gd:147` (`.has("op")` -> `.has("__MUTATION_PROBE__")`) and `test_phase_f_npc_siege.gd:181` (assertion negated). Result: `578 suites passed, 2 failed`, failing at exactly those two lines. Line 147 is the LAST check in its method and sits AFTER the old abort point at 141, so its going red proves the entire 141->147 tail now executes. Mutations reverted; final run `580 suites passed, 0 failed`.
+- Baseline evidence for the record: BEFORE `579 suites passed, 1 failed` with 3 aborts; AFTER `580 suites passed, 0 failed` with 0 aborts.
+
+**Known issues:**
+- `engine/` still has **59** `String(x.get("col", ...))` sites on strictly-nullable columns — those never declared NOT NULL in any table (was 64; this session's five siege fixes closed the rest). A further ~263 sites are on columns nullable in at least one table but NOT NULL in the table actually being read: an over-broad upper bound, NOT a defect count. No known live crash among the 59; the suite is clean. Sweeping them is a separate, behaviour-affecting job. Detector committed as `tools/find_nullable_string_casts.py <dir>` (schema-derived; reports only the unambiguous set). Current readings: `tests/` **0**, `engine/` 59.
+- `test_locate_merchandise_handler` failed in the baseline run with `UNIQUE constraint failed: party_members.character_id` from `tests/helpers/trade_fixtures.gd:73` (`build_bare`), then passed in every later run. Flaky fixture collision, pre-existing, unrelated to this work — worth a look before it masks something real.
+- The `String(...)` sweep is line-based and found one multi-line call by a separate grep (`tests/test_baseline_npc_stocker.gd`). A statement-level detector would be more robust if this pattern recurs.
+
+**Next session should:**
+1. Resume D-12 Phase D (directed investment, migration 217) — the in-flight domain-acquisition work this session did not touch.
+2. Consider a scoped `engine/` §106 sweep, starting with the columns whose NULL population is a normal game state (`defending_army_id` is now done; `head_character_id`, `employer_id`, `parent_map_id`, `library_id` look similar).
+3. Investigate the flaky `party_members.character_id` UNIQUE collision in `tests/helpers/trade_fixtures.gd::build_bare`.
+
+## Session 2026-08-06 — TradeFixtures id collision: wall-clock-dependent fixture ids (flaky suite root cause)
+
+**Task:** Root-cause the intermittent `UNIQUE constraint failed: party_members.character_id` failure in `test_locate_merchandise_handler`, which failed once and then passed on three consecutive full runs of the same commit.
+
+**Model used:** Opus 5 throughout.
+
+**Completed:**
+- Root cause: `TradeFixtures._next_id()` built ids as `<tag>_<Time.get_ticks_msec()>_<_suffix>` where `_suffix` was a PER-INSTANCE counter. All 11 call sites construct a fresh `TradeFixtures.new()` inside their own `_build_fixture()` helper, so the counter restarted at 0 on every call and every `build_bare()` emitted the identical sequence `map_<ms>_1`, `pc_<ms>_2`, `party_<ms>_3`, `set_<ms>_4`. Uniqueness therefore rested ENTIRELY on the millisecond clock; any two builds landing in the same millisecond produced byte-identical ids. The file's own docstring claimed the per-instance counter existed "so concurrent test suites don't collide" — the reasoning was inverted, and that comment is now corrected in place.
+- Fixed by making the counter process-wide: `static var _suffix: int = 0` in `tests/helpers/trade_fixtures.gd`. No change at any of the 11 call sites. Rejected `INSERT OR REPLACE` in the fixture, which would have hidden the collision from the log while leaving the shared-state bug intact.
+- **The failure was wider than the reported symptom.** The failing run's log holds a CLUSTER of collisions across FOUR trade suites, all through `build_bare`: `test_buy_merchandise_handler:46` and `test_persuade_merchants_handler:53` (both `settlement_entrances.id`, at trade_fixtures.gd:90), and `test_locate_merchandise_handler:48` (`characters.id` at :64 AND `party_members.character_id` at :73). Only `locate` happened to trip an assertion — **BuyMerchandiseHandler and PersuadeMerchantsHandler both printed "all tests passed" while running against corrupted fixtures.** godot-sqlite logs a failed INSERT and returns `false` rather than throwing, so the fixture dict kept handing out ids for rows that were never written.
+- Added `tests/test_trade_fixtures_ids.gd` (registered: ext_resource + `TradeFixturesIdsTests` node in `test_runner.tscn`, `@onready var _trade_fixtures_ids_tests` + run-loop entry in `test_runner.gd`; `--import` run for the `.uid`). It asserts id-distinctness across 200 fresh instances and 40 rapid `build_bare()` calls, AND that every built row actually EXISTS via a `SELECT` per id — the row-existence half is what catches the silent-INSERT-failure case.
+- Added conventions §106.2 (sibling to §106.1): a failed INSERT is silent in godot-sqlite; the standing log gate is `grep -c "UNIQUE constraint failed"` with every hit justified against a deliberate negative test; fixture ids must not depend on the wall clock.
+
+**Decisions made:**
+- Static counter over per-test-method ids. It makes ids unique per CALL rather than per method (strictly stronger), requires no edit at the 11 call sites, and keeps the ids deterministic and readable — no RNG or UUID, so a failing id still says which builder produced it.
+- Kept `Time.get_ticks_msec()` in the id even though the static counter alone now guarantees uniqueness. It costs nothing and keeps ids sortable/greppable by build time.
+- Established a PRECISE log gate rather than "expect 0 UNIQUE errors": five UNIQUE failures are INTENTIONAL negative tests (`test_unique_constraint_prevents_raw_duplicate`, `test_unique_living_per_master_rejects_second`, `test_create_assignment_active_uniqueness`, `test_partial_unique_index_only_one_active_per_pair`, `test_grant_unique_triple_returns_empty_on_duplicate`). The gate is "count == 5 AND every backtrace names a deliberate negative test", not "count == 0".
+
+**Interfaces defined or changed:**
+- `TradeFixtures._suffix` is now `static var` (process-wide). Behavioural contract for the helper: consecutive `build_bare()` calls are guaranteed to produce distinct `pc_id` / `party_id` / `settlement_id` / `map_id` regardless of timing. Any future fixture helper that mints ids must use a static counter, not a per-instance one.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- New suite `tests/test_trade_fixtures_ids.gd` (6 checks): `test_next_id_unique_across_fresh_instances` (200 fresh instances -> 200 distinct ids) and `test_rapid_build_bare_produces_unique_rows` (40 rapid builds -> distinct pc/party/settlement ids + every row verified present in `characters` and `party_members`).
+- MUTATION-TESTED, which also served as the deterministic reproduction the original flake lacked. Reverting `static var _suffix` to `var _suffix` and running the suite produced: `200 fresh TradeFixtures instances ... got 1 distinct, 199 collision(s) e.g. pc_68977_1`; `40 rapid builds yield 30 distinct pc_ids` / 37 party_ids / 31 settlement_ids; and **55** `UNIQUE constraint failed` lines in the log (vs 5 clean). Restored, final run green. This proves the diagnosis empirically rather than by code-reading alone.
+- Evidence for the record: BEFORE (flaky run) `579 suites passed, 1 failed`, 10 UNIQUE lines (5 intentional + 5 fixture collisions). MUTATION `580 suites passed, 1 failed`, 55 UNIQUE lines. AFTER `581 suites passed, 0 failed`, 5 UNIQUE lines (all intentional), 0 §106 String aborts. 581 = 580 + the new suite.
+
+**Known issues:**
+- The `_next_id` idiom (`"<tag>_%d_%d" % [Time.get_ticks_msec(), _suffix]`) is copy-pasted into ~20 individual test suites. Those are SAFE as written — the runner instantiates each suite once, so their `_suffix` is monotonic across that suite's methods — but the pattern is one refactor away from the same bug if any of them is ever moved into a per-call helper object. Two suites (`test_market_price_resolver.gd`, `test_merchant_pool_repository.gd`) additionally share the same `mpr_` tag, so a cross-suite collision is possible in principle if both mint an id in the same millisecond at the same counter value; unobserved, low probability, not fixed.
+- No cleanup pass was added: fixtures still accumulate rows for the whole run (there is deliberately no mid-run DB wipe). Unique ids make that harmless, but a suite that COUNTS rows globally rather than by campaign_id would still be order-dependent.
+
+**Next session should:**
+1. Resume D-12 Phase D (directed investment, migration 217) — still the live domain-acquisition work.
+2. Optionally sweep `engine/` for the remaining 59 §106 strictly-nullable `String(x.get(...))` sites (`python tools/find_nullable_string_casts.py engine`), per the earlier entry this same day.
+
+## Session 2026-08-06 — §106 engine sweep: 59 nullable-column String() casts + garrison-only assault regression test
+
+**Task:** Sweep `engine/` for the remaining coding_conventions.md §106 hazard (bare `String(row.get("col", ...))` on a nullable TEXT column), going column by column so no behaviour changes silently. Completes the follow-up flagged by the earlier §106 tests sweep this same day.
+
+**Model used:** Opus 5 throughout.
+
+**Completed:**
+- Audited all **59** strictly-nullable-column sites reported by `tools/find_nullable_string_casts.py engine` (columns never declared NOT NULL in ANY table, so every hit is unambiguous). Converted all 59 to `StringUtils.s(...)`; `engine/` now reports **0**.
+- **Every site proved guarded or downstream-tolerant — nothing needed flagging as behaviour-changing.** Breakdown: ~45 had an `is_empty()` / `== ""` guard on the immediately-following lines (all 8 magical-research handlers, all 11 syndicate hijink handlers, `syndicate_launcher`, `siege_mining_resolver`, `siege_spoils_resolver`, `quest_registry._goal_matches`, `wilderness_explore_state`, `vassal_loyalty_triggers`, `campaign_repository` parent-map walks, `stand_down_tribal_warriors`); 6 pass the value to a callee that opens with an empty-check (`_federated_br` -> `if character_id == "": return 0.0`; `MarketFeesCalculator.is_domain_owner_in_own_market` -> `if character_id.is_empty(): return false`); 4 use the value only in an equality test against a real id, which `""` can never match; and `treasury.gd:94` was already protected by a `has_location` null-check above it (only `:98`, the STRONGHOLD row, was actually exposed).
+- 58 sites rewritten mechanically; **1 by hand** — `faction_action_narrator.gd:108` had a computed key nested inside another `get` (`String(motivation.get(String(context.get("goal_primary", "")), ""))`), which was excluded from the script by an explicit SKIP list and split into two coerced reads.
+- Added `test_begin_assault_auto_captures_undefended_garrison` to `tests/test_phase_9b.gd`, closing the coverage gap that let the original bug survive: **every pre-existing assault test passed a real defending army**, so the garrison-only branch was never executed.
+
+**Decisions made:**
+- **Nested `.get()` defaults must be wrapped, not passed through.** `String(state.get("a", state.get("b", "")))` became `StringUtils.s(state.get("a"), StringUtils.s(state.get("b")))`. `StringUtils.s`'s second parameter is typed `String`, but a raw `.get(k, "")` default is a `Variant` that can itself be null — passing it through unwrapped would swap a §106 crash for a type error. The rewriter strips the inner `.get`'s own default too, so the null-vs-default decision is made by `StringUtils.s` rather than by `Dictionary.get` (which returns the STORED null and never fires its default).
+- **`params` / `state` dicts are NOT exempt.** 25 of the 59 sites read handler input rather than a DB row, which at first looks safe — but `params_json` is `JSON.stringify`'d into `activity_*` tables and reparsed, and JSON round-trips null as null. They are the same hazard and were converted.
+- Left `divided_loyalty_detector.gd:229` deliberately ASYMMETRIC — `member_a_id` stays a bare `String()`, `member_b_id` is converted — because the schema is `member_a_id TEXT NOT NULL, member_b_id TEXT`. The asymmetry documents the schema; do not "tidy" it.
+- Used the public API (`start_full_siege(..., defending_army_id="")`) in the new test rather than a direct SQL insert: `SiegeRepository._null_or_string("")` returns NULL, and `start_full_siege`'s own docstring names `""` as the pure-garrison-only case — so the test exercises the real production path. It asserts the NULL as an explicit PRECONDITION, so the test cannot silently stop testing the §106 path if that binding ever changes.
+
+**Interfaces defined or changed:**
+- None. All 59 edits are internal locals or dict-field assignments; each returns the value the surrounding guard already intended.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_phase_9b.gd::test_begin_assault_auto_captures_undefended_garrison` — a garrison-only siege (NULL `defending_army_id`) assaulted via `begin_assault` must AUTO-CAPTURE: `current_phase='concluded'`, `outcome='captured'`, `concluded_calendar_day` stamped, and no field battle started.
+- MUTATION-TESTED, and this **retroactively PROVED the earlier session's claim**, which until now had been inferred from code-reading rather than observed. Reverting only `begin_assault` to the bare `String(...)` produced: `580 suites passed, 1 failed`; one abort at `siege_resolver.gd:382` in `begin_assault` (called from the new test); and the siege left at `current_phase=blockade`, `outcome=` (empty), `concluded_calendar_day=0`. So an assault on an undefended stronghold genuinely did NOTHING — the siege was not concluded, not captured, not even phase-advanced.
+- **Why this hid for so long, and the test-design lesson:** under mutation, the test's `check(battle_id.is_empty(), ...)` still PASSED — the §106 abort returns `""` (the String return default), which is byte-identical to what the legitimate auto-capture branch returns. The caller-visible return value cannot distinguish "auto-captured" from "crashed". ONLY the persisted-state assertions (`current_phase`/`outcome`/`concluded_calendar_day`) catch it. **When a function's success and failure paths return the same value, assert on the STATE it wrote, not on the return.**
+- Evidence: BEFORE the sweep `581 suites passed, 0 failed`; AFTER `581 suites passed, 0 failed`, 0 §106 aborts, 5 `UNIQUE constraint failed` (all intentional negative tests, per §106.2).
+
+**Known issues:**
+- The 59 fixed sites were STRICTLY-nullable only. A further ~263 `String(x.get("col", ...))` sites in `engine/` read a column that is nullable in at least one table but NOT NULL in the table actually being read — an over-broad upper bound produced by name-only matching, NOT a defect count. Narrowing that would need per-call-site table inference (which repository/table the row came from), which the current detector does not attempt.
+- Most of the 59 were LATENT, not proven-live: the column is nullable and the guard exists, but no in-game NULL population was demonstrated. Only the siege `defending_army_id` family had a documented normal-state NULL (garrison-only defence) and an abort actually observed in a run log. The three `characters.employer_id` reads in `henchman_lifecycle_manager` (`pay_back_wages`, `adjust_treatment`, `dismiss_henchman`) each sit at the top of their function, so a NULL employer would abort the whole call and hand the caller `{}` / `false` (a silently-failed dismissal or wage reset).
+
+**RESOLVED same session (flag withdrawn — the question was raised on a false premise).** NULL `employer_id` IS a normal state, but not for the reason guessed: `hire_through_dialogue.gd:38-41` documents that *a freshly-materialized NPC has it NULL*, and `CharacterData.from_dict` (`character_data.gd:583`) maps DB NULL <-> `""` in memory, so NULL and `""` are already the SAME value ("no employer") project-wide. Departure does NOT write NULL — `process_departure` sets `employer_id = ''` explicitly. So no data-model change is warranted in either direction: a NOT NULL constraint would break never-employed NPCs, and the guards (`if employer_id != ""`) were already correct — they were merely unreachable behind the §106 crash, which this session removed. No regression tests needed; there is no live defect.
+
+**Next session should:**
+1. Resume D-12 Phase D (directed investment, migration 217) — the live domain-acquisition work, untouched by today's three §106/fixture sessions.
+2. Settle the `characters.employer_id` NULL question above, since it decides whether three henchman-lifecycle paths are live bugs.

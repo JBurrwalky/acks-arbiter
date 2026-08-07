@@ -24,7 +24,7 @@ extends RefCounted
 
 static func on_tick(state: Dictionary, _runner) -> Dictionary:
 	var params: Dictionary = _read_params(state)
-	var hijink_id: String = String(params.get("hijink_assignment_id", ""))
+	var hijink_id: String = StringUtils.s(params.get("hijink_assignment_id"))
 	if hijink_id.is_empty():
 		return {"summary": "plan_hijink tick: hijink_assignment_id missing"}
 	var finished: bool = HijinkPlanningResolver.advance_planning(hijink_id)
@@ -35,7 +35,7 @@ static func on_tick(state: Dictionary, _runner) -> Dictionary:
 
 static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var params: Dictionary = _read_params(state)
-	var hijink_id: String = String(params.get("hijink_assignment_id", ""))
+	var hijink_id: String = StringUtils.s(params.get("hijink_assignment_id"))
 	if hijink_id.is_empty():
 		return {"summary": "plan_hijink: hijink_assignment_id missing"}
 	# Defensive: if the on_tick boundary didn't flip the state, force-flip here.

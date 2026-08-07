@@ -1941,7 +1941,7 @@ func _on_siege_concluded(siege_id: String, outcome: String) -> void:
 		and String(resolution.get("new_owner_id", "")).is_empty():
 		var inst: Dictionary = RealmRepository.instantiate_realm_for_off_map_force(
 			campaign_id, "", {}, calendar_day)
-		resolution["new_owner_id"] = String(inst.get("head_character_id", ""))
+		resolution["new_owner_id"] = StringUtils.s(inst.get("head_character_id"))
 	# Loot-and-scoot: spawn a placeholder local NPC and patch new_owner_id.
 	elif String(resolution.get("outcome", "")) == RealmRepository.OUTCOME_LOOTED_LOCAL_SUCCESSION:
 		resolution["new_owner_id"] = RealmRepository.spawn_local_succession_npc(

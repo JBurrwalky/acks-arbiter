@@ -235,7 +235,7 @@ func pay_back_wages(character_id: String) -> Dictionary:
 	if owed_cp <= 0:
 		return {"ok": true, "paid_cp": 0, "message": "no back-wages owed"}
 
-	var employer_id: String = String(char_row.get("employer_id", ""))
+	var employer_id: String = StringUtils.s(char_row.get("employer_id"))
 	# Determine party_id via the henchman's party_members row.
 	var party_id: String = ""
 	if _repo.has_method("db") or _repo.get("db") != null:
@@ -283,7 +283,7 @@ func adjust_treatment(character_id: String, treasure_share_percent: int,
 	if char_row.is_empty():
 		return {"ok": false, "message": "henchman not found"}
 	var state: Dictionary = _repo.get_henchman_state(character_id)
-	var employer_id: String = String(char_row.get("employer_id", ""))
+	var employer_id: String = StringUtils.s(char_row.get("employer_id"))
 
 	# Resolve party_id for the wallet hop.
 	var party_id: String = ""
@@ -476,7 +476,7 @@ func dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool:
 	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
 	if char_row.is_empty():
 		return false
-	var employer_id: String = String(char_row.get("employer_id", ""))
+	var employer_id: String = StringUtils.s(char_row.get("employer_id"))
 	var monthly_wage_cp: int = int(char_row.get("wage_cp_per_month", 0))
 	var state: Dictionary = _repo.get_henchman_state(character_id)
 	var unpaid_months: int = int(state.get("unpaid_months", 0))

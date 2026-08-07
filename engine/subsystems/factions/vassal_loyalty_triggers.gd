@@ -72,7 +72,7 @@ static func _on_treaty_broken(_treaty_id: String, breaker_realm_id: String, _vic
 	# The realm that BROKE a treaty looks faithless to its own vassals (§5.2
 	# "liege breaks a treaty").
 	var realm: Dictionary = RealmRepository.get_realm(breaker_realm_id)
-	var head: String = String(realm.get("head_character_id", ""))
+	var head: String = StringUtils.s(realm.get("head_character_id"))
 	if head == "":
 		return
 	fire_for_liege(head, "liege_broke_treaty", _current_day())

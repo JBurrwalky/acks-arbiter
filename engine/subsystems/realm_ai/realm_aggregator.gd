@@ -101,7 +101,7 @@ static func aggregate(ruler_character_id: String) -> Dictionary:
 		result["direct_vassals"].append({
 			"vassal_assignment_id": String(assn.get("id", "")),
 			"vassal_character_id": vassal_char,
-			"vassal_domain_id": String(assn.get("vassal_domain_id", "")),
+			"vassal_domain_id": StringUtils.s(assn.get("vassal_domain_id")),
 			"is_henchman_vassal": int(assn.get("is_henchman_vassal", 1)) == 1,
 			"families": fam,
 		})

@@ -226,7 +226,7 @@ static func _emit(d: Dictionary) -> void:
 	if not EventBus.has_signal("party_loyalty_conflict_detected"):
 		return
 	EventBus.emit_signal("party_loyalty_conflict_detected",
-		[String(d.get("member_a_id", "")), String(d.get("member_b_id", ""))],
+		[String(d.get("member_a_id", "")), StringUtils.s(d.get("member_b_id"))],
 		[String(d.get("faction_a_id", "")), String(d.get("faction_b_id", ""))],
 		String(d.get("cause", "")))
 

@@ -61,7 +61,7 @@ static func launch_order_hijink(
 		"syndicate_member_id": syndicate_member_id,
 		"hijink_kind": hijink_kind,
 		"target_id": target_id,
-		"hideout_id": String(syndicate.get("hideout_stronghold_id", "")),
+		"hideout_id": StringUtils.s(syndicate.get("hideout_stronghold_id")),
 	}
 	return executor.launch(
 		character_id, "order_hijink",
@@ -91,7 +91,7 @@ static func launch_plan_hijink(
 	var hijink := SyndicateRepository.get_hijink(hijink_assignment_id)
 	if hijink.is_empty():
 		return _err("ineligible")
-	var member_id := String(hijink.get("syndicate_member_id", ""))
+	var member_id := StringUtils.s(hijink.get("syndicate_member_id"))
 	var member := SyndicateRepository.get_member(member_id) if not member_id.is_empty() else {}
 	var level: int = int(member.get("level", 1))
 	var rng := RandomNumberGenerator.new()
@@ -135,7 +135,7 @@ static func launch_perform_hijink(
 	if hijink.is_empty():
 		return _err("ineligible")
 	var kind := String(hijink.get("hijink_kind", ""))
-	var member_id := String(hijink.get("syndicate_member_id", ""))
+	var member_id := StringUtils.s(hijink.get("syndicate_member_id"))
 	var member := SyndicateRepository.get_member(member_id) if not member_id.is_empty() else {}
 	var level: int = int(member.get("level", 1))
 	var rng := RandomNumberGenerator.new()
@@ -352,7 +352,7 @@ static func _err(code: String) -> Dictionary:
 static func _hideout_location_ref(syndicate: Dictionary) -> String:
 	if syndicate.is_empty():
 		return ""
-	var hid := String(syndicate.get("hideout_stronghold_id", ""))
+	var hid := StringUtils.s(syndicate.get("hideout_stronghold_id"))
 	if hid.is_empty():
 		return ""
 	return "stronghold:%s" % hid
@@ -361,7 +361,7 @@ static func _hideout_location_ref(syndicate: Dictionary) -> String:
 static func _settlement_location_ref(syndicate: Dictionary) -> String:
 	if syndicate.is_empty():
 		return ""
-	var sid := String(syndicate.get("base_settlement_entrance_id", ""))
+	var sid := StringUtils.s(syndicate.get("base_settlement_entrance_id"))
 	if sid.is_empty():
 		return ""
 	return "settlement_entrance:%s" % sid

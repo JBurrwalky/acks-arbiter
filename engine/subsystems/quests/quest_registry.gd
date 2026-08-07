@@ -494,7 +494,7 @@ func create_faction_quest(faction_id: String, front_npc_id: String, goal: String
 	var q := QuestData.new()
 	q.questgiver_faction_id = faction_id
 	q.questgiver_id = front_npc_id
-	q.questgiver_settlement_id = String(faction.get("seat_settlement_id", ""))
+	q.questgiver_settlement_id = StringUtils.s(faction.get("seat_settlement_id"))
 	q.questgiver_motivation = goal_key
 	q.threat_type = String(_GOAL_THREAT_TYPE.get(goal_key, "recovery"))
 	q.completion_type = "faction_goal"
@@ -571,7 +571,7 @@ func advances_faction_goal(issue: String, faction_id: String) -> bool:
 	var faction: Dictionary = _repo.get_faction(faction_id)
 	if faction.is_empty():
 		return false
-	var goal: String = String(faction.get("goal_primary", ""))
+	var goal: String = StringUtils.s(faction.get("goal_primary"))
 	if goal == "":
 		return false
 	if issue == goal:

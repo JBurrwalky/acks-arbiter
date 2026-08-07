@@ -26,10 +26,10 @@ static func on_complete(state: Dictionary, _runner) -> Dictionary:
 	var params: Dictionary = _read_params(state)
 	var boss_id: String = String(state.get("character_id", ""))
 	var syndicate_id: String = String(params.get("syndicate_id", ""))
-	var member_id: String = String(params.get("syndicate_member_id", ""))
+	var member_id: String = StringUtils.s(params.get("syndicate_member_id"))
 	var kind: String = String(params.get("hijink_kind", ""))
 	var target_id: String = String(params.get("target_id", ""))
-	var hideout_id: String = String(params.get("hideout_id", ""))
+	var hideout_id: String = StringUtils.s(params.get("hideout_id"))
 
 	if syndicate_id.is_empty() or member_id.is_empty() or kind.is_empty():
 		return {"summary": "order_hijink failed: syndicate_id / syndicate_member_id / hijink_kind required"}

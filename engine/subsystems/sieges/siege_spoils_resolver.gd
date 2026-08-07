@@ -137,7 +137,7 @@ static func _sum_monthly_wages_of_defeated_units(siege_id: String) -> int:
 		return 0
 	if CampaignRepository.db.query_result.is_empty():
 		return 0
-	var battle_id: String = String(CampaignRepository.db.query_result[0].get("related_battle_id", ""))
+	var battle_id: String = StringUtils.s(CampaignRepository.db.query_result[0].get("related_battle_id"))
 	if battle_id.is_empty():
 		return 0
 	# Sum monthly wages for defeated units in that battle. troop_units stores
