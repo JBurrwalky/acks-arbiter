@@ -68,7 +68,7 @@ func _make_ruler_with_domain(tag: String, opts: Dictionary = {}) -> Dictionary:
 		CampaignRepository.db.query_with_bindings(
 			"UPDATE domains SET location_map_id = ?, location_hex_q = 1, "
 			+ "location_hex_r = 1 WHERE id = ?",
-			[String(opts.get("location_map_id")), domain_id])
+			[str_field(opts, "location_map_id"), domain_id])
 	return {"ruler_id": ruler_id, "domain_id": domain_id}
 
 

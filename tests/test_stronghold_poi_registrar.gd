@@ -169,7 +169,7 @@ func test_cleric_stronghold_registers_as_shrine() -> void:
 		% String(poi.get("tier", "")))
 	check(String(poi.get("builder_kind", "")) == "character",
 		"cleric stronghold POI builder_kind should be 'character'")
-	check(String(poi.get("builder_character_id", "")) == TEST_CLERIC,
+	check(str_field(poi, "builder_character_id") == TEST_CLERIC,
 		"cleric stronghold POI builder_character_id should be the cleric")
 	check(String(poi.get("emerged_via", "")) == "stronghold_register",
 		"cleric stronghold POI emerged_via should be 'stronghold_register'")

@@ -120,7 +120,7 @@ func test_no_fire_on_unrelated_event() -> void:
 	check(fired.is_empty(), "an unrelated battle does not fire the betrayal")
 	# Still armed.
 	var raw: Dictionary = CampaignRepository.ff_get_stance_row(String(fx["guild"].get("id", "")), fx["orso_mirror"])
-	check(String(raw.get("betrayal_condition", "")) != "", "condition remains armed after a non-match")
+	check(str_field(raw, "betrayal_condition") != "", "condition remains armed after a non-match")
 
 
 func test_betrayal_fires_on_field_battle_loss() -> void:
@@ -138,8 +138,8 @@ func test_betrayal_fires_on_field_battle_loss() -> void:
 	# The mask drops: openly hostile to the betrayed seat, openly friendly to Pelagius.
 	var to_orso: Dictionary = CampaignRepository.ff_get_stance_row(guild_id, fx["orso_mirror"])
 	check(String(to_orso.get("public_stance", "")) == "hostile", "now openly hostile to the betrayed Orso")
-	check(String(to_orso.get("true_stance", "")) == "", "the hidden layer is cleared (treachery is realized)")
-	check(String(to_orso.get("betrayal_condition", "")) == "", "the armed condition is spent")
+	check(str_field(to_orso, "true_stance") == "", "the hidden layer is cleared (treachery is realized)")
+	check(str_field(to_orso, "betrayal_condition") == "", "the armed condition is spent")
 	var to_pel: Dictionary = CampaignRepository.ff_get_stance_row(guild_id, fx["pel_mirror"])
 	check(String(to_pel.get("public_stance", "")) == "friendly", "now openly friendly to Pelagius")
 	# The prepared free op ran against the betrayed side.

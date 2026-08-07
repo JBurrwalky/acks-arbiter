@@ -144,7 +144,7 @@ func test_happy_path_inserts_contract_and_links_cargo() -> void:
 	# Verify the cargo row is linked.
 	var cargo: Dictionary = CargoHoldRepository.get_cargo_hold(cargo_id)
 	check(not cargo.is_empty(), "cargo_holds row exists")
-	check(String(cargo.get("shipping_contract_id", "")) == contract_id,
+	check(str_field(cargo, "shipping_contract_id") == contract_id,
 		"cargo_holds.shipping_contract_id links back to contract")
 	check(String(cargo.get("source_acquisition_kind", "")) == "shipping_contract",
 		"cargo source_acquisition_kind = 'shipping_contract'")

@@ -782,7 +782,7 @@ func test_phase_9a_challenger_character_inserts_with_named_tier() -> void:
 	# Verify by looking up an active challenger row + ensuring its character record exists.
 	var ch := DomainThreatRepository.get_active_challenger_for_domain(domain_id)
 	if not ch.is_empty():
-		var char_id: String = String(ch.get("challenger_character_id", ""))
+		var char_id: String = str_field(ch, "challenger_character_id")
 		if not char_id.is_empty():
 			CampaignRepository.db.query_with_bindings(
 				"SELECT persistence_tier FROM characters WHERE id = ?", [char_id]

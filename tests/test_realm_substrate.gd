@@ -129,8 +129,8 @@ func test_create_realm_roundtrip() -> void:
 	var realm: Dictionary = RealmRepository.get_realm(REALM_A)
 	check(not realm.is_empty(), "realm row exists")
 	check(String(realm.get("name", "")) == "Test Realm A", "name roundtripped")
-	check(String(realm.get("head_character_id", "")) == APEX_OWNER, "head roundtripped")
-	check(String(realm.get("alignment", "")) == "lawful", "alignment roundtripped")
+	check(str_field(realm, "head_character_id") == APEX_OWNER, "head roundtripped")
+	check(str_field(realm, "alignment") == "lawful", "alignment roundtripped")
 	check(String(realm.get("realm_kind", "")) == "tracked", "realm_kind roundtripped")
 
 

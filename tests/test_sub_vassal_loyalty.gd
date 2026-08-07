@@ -214,7 +214,7 @@ func test_transfer_maps_band_to_edge_fate() -> void:
 				"a vassal who stays is RE-POINTED to the new lord (behavior=%s)" % behavior)
 			check(String(assignment.get("status", "")) == "active",
 				"…and his oath stays active rather than being departed and re-minted")
-			check(String(domain.get("liege_domain_id", "")) == seat,
+			check(str_field(domain, "liege_domain_id") == seat,
 				"…and his fief is still held of the same domain")
 
 

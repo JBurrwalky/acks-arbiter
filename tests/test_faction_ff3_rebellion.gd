@@ -241,7 +241,7 @@ func test_resignation_path_c_exile_reverts_domain() -> void:
 	# The domain reverted to the liege.
 	CampaignRepository.db.query_with_bindings(
 		"SELECT owner_character_id FROM domains WHERE id = ?", [vd])
-	var owner := String(CampaignRepository.db.query_result[0].get("owner_character_id", ""))
+	var owner := str_field(CampaignRepository.db.query_result[0], "owner_character_id")
 	check(owner == liege, "domain reverted to the liege, got %s" % owner)
 
 

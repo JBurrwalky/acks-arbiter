@@ -121,7 +121,7 @@ func test_found_happy_path() -> void:
 	var hideout: Dictionary = HideoutRepository.get_hideout(String(result["hideout_id"]))
 	check(int(hideout.get("cp_value", 0)) == 500000,
 		"hideout cp_value = 500,000 (Class VI min), got %d" % int(hideout.get("cp_value", 0)))
-	check(String(hideout.get("syndicate_id", "")) == String(result["syndicate_id"]),
+	check(str_field(hideout, "syndicate_id") == String(result["syndicate_id"]),
 		"hideout back-linked to its syndicate")
 
 	# Syndicate: size cap from market class; current_size == follower count;
@@ -131,7 +131,7 @@ func test_found_happy_path() -> void:
 		"syndicate_size_max = 25 (Class VI), got %d" % int(syndicate.get("syndicate_size_max", 0)))
 	check(int(syndicate.get("current_size", 0)) == fc,
 		"current_size matches follower count")
-	check(String(syndicate.get("hideout_id", "")) == String(result["hideout_id"]),
+	check(str_field(syndicate, "hideout_id") == String(result["hideout_id"]),
 		"syndicate.hideout_id points at the hideout")
 	var members: Array = SyndicateRepository.list_members(String(result["syndicate_id"]))
 	check(members.size() == fc, "spawned %d members, found %d" % [fc, members.size()])

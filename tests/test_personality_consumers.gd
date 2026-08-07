@@ -67,7 +67,7 @@ func _p(axes: Dictionary, disposition: int = 0) -> NpcPersonality:
 
 func _find(entries: Array, source_id: String) -> int:
 	for e in entries:
-		if String(e.get("source_id", "")) == source_id:
+		if str_field(e, "source_id") == source_id:
 			return int(e.get("value", 0))
 	return 0
 

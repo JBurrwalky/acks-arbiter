@@ -48,7 +48,7 @@ func seed_campaign(id: String = "scenario_campaign") -> String:
 ## field via the [param overrides] dict.
 func seed_character(id: String, overrides: Dictionary = {}) -> String:
 	var name: String = String(overrides.get("name", "Test Char " + id))
-	var alignment: String = String(overrides.get("alignment", "lawful"))
+	var alignment: String = str_field(overrides, "alignment", "lawful")
 	var race: String = String(overrides.get("race", "human"))
 	var character_class: String = String(overrides.get("character_class", "fighter"))
 	var level: int = int(overrides.get("level", 9))
@@ -74,7 +74,7 @@ func seed_domain(id: String, owner_character_id: String, overrides: Dictionary =
 	var name: String = String(overrides.get("name", "Test Domain " + id))
 	var territory_type: String = String(overrides.get("territory_type", "borderlands"))
 	var peasant_families: int = int(overrides.get("peasant_families", 500))
-	var alignment: String = String(overrides.get("alignment", "lawful"))
+	var alignment: String = str_field(overrides, "alignment", "lawful")
 	var religion: String = String(overrides.get("religion", "sun-cult"))
 	var effective_religion: String = String(overrides.get("effective_religion", religion))
 	var domain_style: String = String(overrides.get("domain_style", "civilized"))
@@ -157,7 +157,7 @@ func tick_monthly(months: int = 1) -> Array:
 
 func _resolve_one_domain_one_month(domain: Dictionary) -> Dictionary:
 	var domain_id: String = String(domain.get("id", ""))
-	var owner_id: String = String(domain.get("owner_character_id", ""))
+	var owner_id: String = str_field(domain, "owner_character_id")
 	var ruler: Dictionary = CampaignRepository.get_character(owner_id)
 	# Domain-level support data.
 	var hexes: Array = _list_hexes_for_domain(domain_id)
@@ -179,7 +179,7 @@ func _resolve_one_domain_one_month(domain: Dictionary) -> Dictionary:
 	var ruler_block: Dictionary = {
 		"cha_modifier": _cha_mod(int(ruler.get("charisma", 10))),
 		"level": int(ruler.get("level", 1)),
-		"alignment": String(ruler.get("alignment", "neutral")),
+		"alignment": str_field(ruler, "alignment", "neutral"),
 		"race": String(ruler.get("race", "human")),
 		"has_leadership_proficiency": false,
 	}
@@ -286,7 +286,7 @@ func _list_hexes_for_domain(domain_id: String) -> Array:
 
 func _domain_owner(domain_id: String) -> String:
 	var domain: Dictionary = CampaignRepository.get_domain(domain_id)
-	return String(domain.get("owner_character_id", ""))
+	return str_field(domain, "owner_character_id")
 
 
 ## Returns the classification's stronghold sufficiency minimum in cp.

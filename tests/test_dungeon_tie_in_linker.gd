@@ -105,14 +105,14 @@ func test_beastman_links_to_same_species_clanhold() -> void:
 	check(String(linked.get("allegiance_kind")) == "detachment",
 		"beastman clanhold link is a detachment (got %s)" % linked.get("allegiance_kind"))
 	var mirror_of_clan: String = FactionRegistry.ensure_realm_mirror(_cid, clan)
-	check(String(linked.get("parent_faction_id")) == mirror_of_clan,
+	check(str_field(linked, "parent_faction_id") == mirror_of_clan,
 		"parent is the clanhold realm mirror")
 
 	# The warband mirror row exists in `factions`: id == band id, scope=warband, parent set.
 	var mirror: Dictionary = CampaignRepository.get_faction(String(linked.get("band_faction_id")))
 	check(not mirror.is_empty(), "warband mirror row was created")
 	check(String(mirror.get("scope")) == "warband", "mirror scope is 'warband'")
-	check(String(mirror.get("parent_faction_id")) == mirror_of_clan, "mirror parent is the clanhold")
+	check(str_field(mirror, "parent_faction_id") == mirror_of_clan, "mirror parent is the clanhold")
 
 	# The detachment seeded the bare realm mirror's reserve for accountable replenish.
 	var clan_row: Dictionary = CampaignRepository.get_faction(mirror_of_clan)
@@ -157,7 +157,7 @@ func test_human_bandit_link_kinds_and_exile_stance() -> void:
 		var link_row: Dictionary = (res["linked"] as Array)[0]
 		var kind: String = String(link_row.get("allegiance_kind"))
 		kinds_seen[kind] = true
-		check(String(link_row.get("parent_faction_id")) == gang, "bandit parent is the brigand gang")
+		check(str_field(link_row, "parent_faction_id") == gang, "bandit parent is the brigand gang")
 		if kind == "exile" and exile_band == "":
 			exile_band = String(link_row.get("band_faction_id"))
 		if kinds_seen.has("detachment") and kinds_seen.has("tributary") and kinds_seen.has("exile"):

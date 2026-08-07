@@ -357,7 +357,7 @@ func test_eligible_targets_for_beastman_clanhold_chaotic_only() -> void:
 	var options: Array = ReligionConversionResolver.eligible_conversion_targets(TEST_DOMAIN)
 	var allowed_by_alignment: Dictionary = {}
 	for opt in options:
-		allowed_by_alignment[String(opt.get("alignment", ""))] = bool(opt.get("allowed", false))
+		allowed_by_alignment[str_field(opt, "alignment")] = bool(opt.get("allowed", false))
 	check(bool(allowed_by_alignment.get("chaotic", false)),
 		"chaotic allowed for beastman clanhold")
 	check(not bool(allowed_by_alignment.get("lawful", true)),
@@ -418,7 +418,7 @@ func test_tick_completion_at_60pct_threshold_flips_effective_religion() -> void:
 	var d_after := CampaignRepository.get_domain(TEST_DOMAIN)
 	check(String(d_after.get("effective_religion", "")) == "chaos-cult",
 		"effective_religion flipped on completion")
-	check(String(d_after.get("alignment", "")) == "chaotic",
+	check(str_field(d_after, "alignment") == "chaotic",
 		"alignment flipped on completion")
 
 

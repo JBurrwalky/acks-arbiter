@@ -314,7 +314,7 @@ func test_summarizer_writes_memory() -> void:
 	var rows := CampaignRepository.list_npc_memories(_campaign_id, npc_id, 0)
 	check(rows.size() == 1, "one memory row persisted")
 	check(String(rows[0].get("summary", "")).length() > 0, "summary is non-empty")
-	check(String(rows[0].get("attitude_after", "")) == "unfriendly", "attitude_after recorded")
+	check(str_field(rows[0], "attitude_after") == "unfriendly", "attitude_after recorded")
 
 
 func test_friendly_plus_two_all_tones() -> void:

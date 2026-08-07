@@ -341,9 +341,9 @@ func test_disburse_reward_domain_single_owner_no_level_gate() -> void:
 	check(not result.is_empty(), "domain disbursement returns a payload (Q-4 implemented it)")
 	check(String(result.get("reward_type", "")) == "domain", "payload reward_type is domain")
 	check(int(result.get("xp_awarded", -1)) == 0, "domain grant is XP-EXEMPT (§8.8)")
-	check(String(result.get("single_owner_pc_id", "")) == "pc1",
+	check(str_field(result, "single_owner_pc_id") == "pc1",
 		"the recipient PC is stamped as the forced single owner (no level gate, §9.6)")
-	check(String(repo.grants["grant1"].get("single_owner_pc_id", "")) == "pc1",
+	check(str_field(repo.grants["grant1"], "single_owner_pc_id") == "pc1",
 		"the domain_grants row records the single owner")
 	check(registry.get_quest("q_disburse_domain").status == "completed",
 		"domain disbursement transitions the quest to completed")

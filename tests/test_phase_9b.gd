@@ -75,6 +75,7 @@ func run_all_tests() -> void:
 	# Group 5: assault
 	test_begin_assault_uses_max_units_from_uc_plus_breaches()
 	test_begin_assault_emits_signal_and_writes_overrides()
+	test_begin_assault_auto_captures_undefended_garrison()
 	test_check_end_conditions_destroyed_at_zero_shp()
 	test_handle_assault_concluded_maps_battle_outcome()
 	# Group 6: simplified
@@ -405,6 +406,41 @@ func test_begin_assault_emits_signal_and_writes_overrides() -> void:
 	var overrides := FieldBattleResolver.get_siege_overrides(battle_id)
 	check(int(overrides.get("base_attack_target", 0)) == 16, "base_attack_target should be 16, got: %d" % overrides.get("base_attack_target", 0))
 	check(int(overrides.get("assaulting_attack_modifier", 0)) == -2, "assault modifier -2, got: %d" % overrides.get("assaulting_attack_modifier", 0))
+
+
+## Regression (§106, 2026-08-06): a pure-garrison-only siege stores a SQL NULL in
+## `sieges.defending_army_id` (`start_full_siege` documents "" as that case, and
+## `SiegeRepository._null_or_string` converts it to NULL). `begin_assault` read it
+## with a bare `String(...)`, which THREW and aborted the function before reaching
+## the auto-capture branch — so assaulting an undefended stronghold silently did
+## nothing and returned "" (the String return default), indistinguishable from the
+## normal "no battle started" result. Every pre-existing assault test passed a real
+## defending army, which is why this survived. Reverting the `StringUtils.s` fix in
+## `siege_resolver.begin_assault` must make this test fail.
+func test_begin_assault_auto_captures_undefended_garrison() -> void:
+	var owner := _make_character("AutoCapOwner", "pc")
+	var besieger := _make_character("AutoCapBes", "npc")
+	var stronghold := _make_stronghold(owner, 4000)
+	var bes_army := _make_army(besieger)
+	# "" defending army => NULL column => the undefended-garrison case.
+	var siege_id := SiegeResolver.start_full_siege(bes_army, stronghold, "", 0, null, 0)
+	check(not siege_id.is_empty(), "start_full_siege returned empty id for a garrison-only siege")
+	# Precondition: the column really is NULL, not "" — otherwise this test would
+	# pass without exercising the §106 path at all.
+	var row: Dictionary = SiegeRepository.get_siege(siege_id)
+	check(row.get("defending_army_id") == null,
+		"precondition: defending_army_id stored as SQL NULL, got %s" % str(row.get("defending_army_id")))
+
+	var battle_id := SiegeResolver.begin_assault(siege_id, 3, Callable())
+	check(battle_id.is_empty(), "no field battle is started when there is no defending army")
+	var after: Dictionary = SiegeRepository.get_siege(siege_id)
+	check(String(after.get("current_phase", "")) == "concluded",
+		"the assault concludes the siege; current_phase=%s" % String(after.get("current_phase", "")))
+	check(String(after.get("outcome", "")) == "captured",
+		"an undefended stronghold is AUTO-CAPTURED by the assault; outcome=%s"
+		% String(after.get("outcome", "")))
+	check(int(after.get("concluded_calendar_day", -1)) == 3,
+		"conclusion stamps the assault's calendar day; got %d" % int(after.get("concluded_calendar_day", -1)))
 
 
 func test_check_end_conditions_destroyed_at_zero_shp() -> void:

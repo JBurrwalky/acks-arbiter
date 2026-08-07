@@ -143,7 +143,7 @@ func test_negative_treasury_departures_and_survive() -> void:
 	# permanently overwritten (survive is condition-derived from treasury each month;
 	# a single deficit must not erase the org's identity — no restoration path exists).
 	check(String(res.get("goal", "")) == "survive", "the month reports a forced-survive posture")
-	check(String(after.get("goal_primary", "")) == "accumulate_wealth",
+	check(str_field(after, "goal_primary") == "accumulate_wealth",
 		"the authored goal_primary is PRESERVED, not destroyed by one deficit month")
 
 

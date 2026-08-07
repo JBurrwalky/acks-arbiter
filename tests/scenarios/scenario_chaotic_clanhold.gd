@@ -46,7 +46,7 @@ func test_chaotic_clanhold_full_flow() -> void:
 	var domain: Dictionary = CampaignRepository.get_domain(clanhold)
 	check(String(domain.get("domain_style", "")) == "clanhold",
 		"11D.1: domain_style='clanhold' persisted")
-	check(String(domain.get("alignment", "")) == "chaotic",
+	check(str_field(domain, "alignment") == "chaotic",
 		"11D.1: alignment='chaotic' persisted independently")
 
 	# --- Verify 11D.5 pool seeded to peasant_families ---

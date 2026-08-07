@@ -413,7 +413,7 @@ func test_crossbreed_success_creates_species_and_instance() -> void:
 				"species hit_dice should be 5")
 			check(int(species.get("gp_cost_total", 0)) == 10000,
 				"species gp_cost_total should be 10,000 (2000 × 5 HD + 5000 × 0)")
-			check(String(species.get("alignment", "")) == "neutral",
+			check(str_field(species, "alignment") == "neutral",
 				"species alignment should be neutral (both progenitors neutral)")
 			check(String(species.get("types_json", "")).contains("fantastic"),
 				"species types should include 'fantastic'")
@@ -497,7 +497,7 @@ func test_crossbreed_instance_accepts_all_raw_reaction_tiers() -> void:
 		check(not iid.is_empty(),
 			"crossbreed instance with initial_reaction='%s' should insert (RAW reaction tier)" % tier)
 		var row: Dictionary = CampaignRepository.get_crossbreed_instance(iid)
-		check(String(row.get("initial_reaction", "")) == tier,
+		check(str_field(row, "initial_reaction") == tier,
 			"initial_reaction should round-trip as '%s'" % tier)
 
 

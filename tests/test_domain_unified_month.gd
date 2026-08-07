@@ -126,7 +126,7 @@ func _run_tick(camp: String) -> Dictionary:
 	var tick: Dictionary = handlers._handle_monthly_tick(ev)
 	var out: Dictionary = {}
 	for r in (tick.get("presentation", {}) as Dictionary).get("domain_results", []):
-		out[String((r as Dictionary).get("domain_id", ""))] = r
+		out[str_field((r as Dictionary), "domain_id")] = r
 	return out
 
 

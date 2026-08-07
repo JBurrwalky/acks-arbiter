@@ -85,10 +85,10 @@ func test_mirror_maps_realm_fields() -> void:
 	var realm := _make_realm("Realm of Realta", "tracked", head, "lawful", "cyfar", "realta")
 	var mid := FactionRegistry.ensure_realm_mirror(_campaign_id, realm)
 	var f := CampaignRepository.get_faction(mid)
-	check(String(f.get("alignment", "")) == "lawful", "alignment mapped")
-	check(String(f.get("culture_id", "")) == "cyfar", "culture_id mapped from culture")
-	check(String(f.get("religion_id", "")) == "realta", "religion_id mapped from dominant_religion")
-	check(String(f.get("leader_npc_id", "")) == head, "leader_npc_id = head_character_id")
+	check(str_field(f, "alignment") == "lawful", "alignment mapped")
+	check(str_field(f, "culture_id") == "cyfar", "culture_id mapped from culture")
+	check(str_field(f, "religion_id") == "realta", "religion_id mapped from dominant_religion")
+	check(str_field(f, "leader_npc_id") == head, "leader_npc_id = head_character_id")
 
 
 func test_lazy_mirror_for_foreign_realm() -> void:

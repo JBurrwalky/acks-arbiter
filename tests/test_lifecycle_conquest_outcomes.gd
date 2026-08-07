@@ -342,7 +342,7 @@ func test_refused_conquest_changes_nothing() -> void:
 		"SELECT owner_character_id, treasury_cp, peasant_families FROM domains WHERE id = ?",
 		[DOMAIN_ID])
 	var row: Dictionary = CampaignRepository.db.query_result[0]
-	check(String(row.get("owner_character_id", "")) == OWNER_ID,
+	check(str_field(row, "owner_character_id") == OWNER_ID,
 		"refused conquest leaves the prior owner in place")
 	check(int(row.get("treasury_cp", -1)) == 50_000,
 		"refused conquest does not loot the treasury, got %d" % int(row.get("treasury_cp", -1)))

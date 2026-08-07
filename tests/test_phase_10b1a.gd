@@ -374,7 +374,7 @@ func test_promote_follower_to_henchman_creates_characters_row() -> void:
 	var updated_follower := CampaignRepository.get_follower(follower_id)
 	check(String(updated_follower.get("status", "")) == "promoted_to_henchman",
 		"follower status should transition to 'promoted_to_henchman'")
-	check(String(updated_follower.get("promoted_to_henchman_id", "")) == new_char_id,
+	check(str_field(updated_follower, "promoted_to_henchman_id") == new_char_id,
 		"follower.promoted_to_henchman_id should match the new characters.id")
 
 

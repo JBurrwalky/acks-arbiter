@@ -142,7 +142,7 @@ func test_alignment_column_still_present_and_checked() -> void:
 		VALUES (?, ?, ?, ?, 'wilderness', 'lawful')
 	""", [TEST_DOMAIN_A, TEST_CAMPAIGN, "Lawful Domain", TEST_CHAR])
 	var domain: Dictionary = CampaignRepository.get_domain(TEST_DOMAIN_A)
-	check(String(domain.get("alignment", "")) == "lawful",
+	check(str_field(domain, "alignment") == "lawful",
 		"alignment='lawful' roundtripped, got %s" % str(domain.get("alignment", "?")))
 	# Invalid alignment value should still be rejected by the original CHECK.
 	var ok := CampaignRepository.db.query_with_bindings("""

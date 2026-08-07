@@ -367,7 +367,7 @@ func test_launch_emits_signal_with_expected_params() -> void:
 		"params.project_kind should be 'spell'")
 	check(not String(params.get("target_spell_key", "")).is_empty(),
 		"params.target_spell_key should be non-empty")
-	check(not String(params.get("library_id", "")).is_empty(),
+	check(not str_field(params, "library_id").is_empty(),
 		"params.library_id should be non-empty")
 	# Picker queue_frees itself; no manual free.
 

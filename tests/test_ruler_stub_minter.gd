@@ -65,7 +65,7 @@ func test_mints_a_named_tier_npc() -> void:
 		"stub is persistence_tier 'named', got '%s'" % String(r.get("persistence_tier", "")))
 	check(String(r.get("character_type", "")) == "npc",
 		"stub is an npc, got '%s'" % String(r.get("character_type", "")))
-	check(String(r.get("alignment", "")) == "lawful", "alignment passes through")
+	check(str_field(r, "alignment") == "lawful", "alignment passes through")
 	var cha := int(r.get("charisma", 0))
 	check(cha >= RulerStubMinter.ABILITY_MIN and cha <= RulerStubMinter.ABILITY_MAX,
 		"charisma is a 3-18 roll, got %d" % cha)

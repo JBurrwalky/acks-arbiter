@@ -601,7 +601,7 @@ func test_favors_duties_rolls_once_per_ruler_and_only_at_active_lod() -> void:
 	var domains: Array = CampaignRepository.list_campaign_domains(camp)
 	var lord_domains: int = 0
 	for d in domains:
-		if String((d as Dictionary).get("owner_character_id", "")) == lord.ruler_id:
+		if str_field((d as Dictionary), "owner_character_id") == lord.ruler_id:
 			lord_domains += 1
 	check(lord_domains == 2,
 		"the lord holds TWO domains, so a per-domain roll would double (got %d)" % lord_domains)

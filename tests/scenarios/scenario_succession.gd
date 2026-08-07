@@ -51,7 +51,7 @@ func test_designated_heir_succession() -> void:
 	check(not bool(resolution.get("abandoned", true)),
 		"abandoned=false on designated transfer")
 	var d_after: Dictionary = CampaignRepository.get_domain(domain)
-	check(String(d_after.get("owner_character_id", "")) == heir,
+	check(str_field(d_after, "owner_character_id") == heir,
 		"ownership transferred to heir; got owner=%s"
 		% str(d_after.get("owner_character_id", "?")))
 	check(String(d_after.get("lifecycle_state", "")) == "active",
@@ -84,7 +84,7 @@ func test_vassal_reverts_to_overlord() -> void:
 	check(String(resolution.get("new_owner_id", "")) == overlord,
 		"new_owner_id == overlord; got %s" % str(resolution.get("new_owner_id", "?")))
 	var vd_after: Dictionary = CampaignRepository.get_domain(vassal_domain)
-	check(String(vd_after.get("owner_character_id", "")) == overlord,
+	check(str_field(vd_after, "owner_character_id") == overlord,
 		"vassal domain owner reassigned to overlord; got %s"
 		% str(vd_after.get("owner_character_id", "?")))
 	check(String(vd_after.get("lifecycle_state", "")) == "active",

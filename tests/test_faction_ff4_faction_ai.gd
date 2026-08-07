@@ -56,7 +56,7 @@ func test_undermine_rival_runs_a_covert_op() -> void:
 	FactionStanceService.instantiate_stance(_cid, String(org.get("id", "")),
 		String(rival.get("id", "")), "hostile", "", 0)
 	var out := FactionAI._do_undermine_rival(_cid, org, 100)
-	check(String(out.get("target_faction_id", "")) == String(rival.get("id", "")),
+	check(str_field(out, "target_faction_id") == String(rival.get("id", "")),
 		"the op targets the org's worst rival")
 	check((out.get("op", {}) as Dictionary).has("op"), "a covert op report is attached (no more FF-4 stub)")
 	check(not out.has("deferred_to"), "the handler is NOT a deferred stub")

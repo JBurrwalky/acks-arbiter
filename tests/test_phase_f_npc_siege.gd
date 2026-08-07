@@ -141,7 +141,7 @@ func test_active_lod_challenger_accepts_and_starts_siege() -> void:
 	_save_disposition(ruler, "aggressive", 0.8)
 	ThreatEscalationDriver.process_campaign_month(_campaign_id, 120, [ruler], EventScheduler.new())
 	var challenger := DomainThreatRepository.get_active_challenger_for_domain(domain)
-	check(not String(challenger.get("linked_army_id", "")).is_empty(),
+	check(not str_field(challenger, "linked_army_id").is_empty(),
 		"the challenger was fielded (linked_army_id set)")
 	check(not _active_siege_for(stronghold).is_empty(),
 		"the defender accepted → a siege started against the stronghold")
@@ -178,7 +178,7 @@ func test_domain_not_in_active_set_is_untouched() -> void:
 	var other_ruler := _make_npc("OtherRuler")   # the active ruler, unrelated to `backdrop`
 	ThreatEscalationDriver.process_campaign_month(_campaign_id, 120, [other_ruler], EventScheduler.new())
 	var challenger := DomainThreatRepository.get_active_challenger_for_domain(domain)
-	check(String(challenger.get("linked_army_id", "")).is_empty(),
+	check(str_field(challenger, "linked_army_id").is_empty(),
 		"a backdrop/non-active domain's challenger stays unfielded")
 
 
@@ -209,7 +209,7 @@ func test_retreat_into_own_stronghold_is_detected() -> void:
 	var res := RetreatResolver.resolve_retreat(army, 120)
 	check(bool(res.get("retreated_into_stronghold", false)),
 		"the defeated army retreats INTO its co-located stronghold")
-	check(String(res.get("stronghold_id", "")) == stronghold, "the retreat names the stronghold")
+	check(str_field(res, "stronghold_id") == stronghold, "the retreat names the stronghold")
 
 
 func test_npc_victor_besieges_with_supply_and_hostile_intent() -> void:

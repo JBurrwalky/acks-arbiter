@@ -206,8 +206,8 @@ func test_discovery_only_true_stance_hidden() -> void:
 		guild, s["orso_mirror"], s["pel_mirror"], s["conflict"], 200, ctx)
 	AllegianceEvaluator.apply_decision(_cid, res, 200)
 	var raw: Dictionary = CampaignRepository.ff_get_stance_row(String(guild.get("id", "")), s["orso_mirror"])
-	check(String(raw.get("true_stance", "")) == "unfriendly", "raw row holds the hidden true_stance")
-	check(String(raw.get("betrayal_condition", "")) != "", "raw row holds the betrayal_condition")
+	check(str_field(raw, "true_stance") == "unfriendly", "raw row holds the hidden true_stance")
+	check(str_field(raw, "betrayal_condition") != "", "raw row holds the betrayal_condition")
 	var public: Dictionary = FactionStanceService.get_stance(
 		String(guild.get("id", "")), s["orso_mirror"], 200)
 	check(String(public.get("public_stance", "")) == "friendly", "public API returns the FRIENDLY mask")

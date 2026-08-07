@@ -300,7 +300,7 @@ func test_eligible_heirs_for_returns_pcs_and_henchmen() -> void:
 	# the simpler v1 helper returns all active characters of the right type.
 	var by_id: Dictionary = {}
 	for h in heirs:
-		by_id[String(h.get("character_id", ""))] = h
+		by_id[str_field(h, "character_id")] = h
 	check(by_id.has(HEIR_PC_ID), "PC heir candidate present")
 	check(by_id.has(HEIR_HENCHMAN_ID), "henchman candidate present")
 	check(by_id.has(OVERLORD_ID), "overlord PC present (eligibility v1 is broad)")
@@ -311,7 +311,7 @@ func test_eligible_heirs_for_kind_chips_correct() -> void:
 	_create_domain(DOMAIN_ID, RULER_ID)
 	var heirs: Array = RulerDeathHandler.eligible_heirs_for(DOMAIN_ID)
 	for h in heirs:
-		var id: String = String(h.get("character_id", ""))
+		var id: String = str_field(h, "character_id")
 		var kind: String = String(h.get("kind", ""))
 		if id == HEIR_PC_ID or id == RULER_ID or id == OVERLORD_ID:
 			check(kind == "pc", "%s is kind=pc, got %s" % [id, kind])

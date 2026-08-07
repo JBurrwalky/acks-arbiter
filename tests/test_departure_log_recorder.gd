@@ -170,7 +170,7 @@ func test_emits_departure_log_entry_recorded_signal() -> void:
 		TEST_CAMPAIGN, "test_dlog_signal_d", 100, "established",
 		"signal test", {})
 	check(_signal_received_count == 1, "signal fired once, got %d" % _signal_received_count)
-	check(String(_signal_last_payload.get("domain_id", "")) == "test_dlog_signal_d",
+	check(str_field(_signal_last_payload, "domain_id") == "test_dlog_signal_d",
 		"signal carried domain_id")
 	check(String(_signal_last_payload.get("entry_id", "")) == id,
 		"signal carried the new entry_id")

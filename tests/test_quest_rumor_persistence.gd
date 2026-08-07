@@ -89,7 +89,7 @@ func test_quest_reward_and_domain_grant_round_trip() -> void:
 
 	var fetched_grant := CampaignRepository.get_domain_grant(grant.id)
 	check(not fetched_grant.is_empty(), "get_domain_grant should find the persisted grant")
-	check(String(fetched_grant.get("single_owner_pc_id")) == "pc_test_1",
+	check(str_field(fetched_grant, "single_owner_pc_id") == "pc_test_1",
 		"domain grant single_owner_pc_id should round-trip (no level gate, O-Q14)")
 
 

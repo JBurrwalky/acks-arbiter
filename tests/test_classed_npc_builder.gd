@@ -201,7 +201,7 @@ func test_persist_drives_repository() -> void:
 	# every equipment item was added, tagged with the new character id + resolves
 	check(fake.items_added.size() >= 1, "no equipment items added")
 	for item: Dictionary in fake.items_added:
-		check(String(item.get("character_id", "")) == new_id,
+		check(str_field(item, "character_id") == new_id,
 			"added item not tagged with character_id %s" % new_id)
 		check(_catalog.has_item(String(item.get("item_key", ""))),
 			"added item '%s' not in EquipmentCatalog" % String(item.get("item_key", "")))
@@ -266,7 +266,7 @@ func test_origin_template_id_stamped_and_roundtrips() -> void:
 	# the row written to the repository carries origin_template_id
 	check(fake.created.size() == 1, "expected exactly one created character")
 	if fake.created.size() == 1:
-		check(String((fake.created[0] as Dictionary).get("origin_template_id", "<missing>")) == template_id,
+		check(str_field((fake.created[0] as Dictionary), "origin_template_id", "<missing>") == template_id,
 			"created row origin_template_id should be %s" % template_id)
 	# the in-memory character was stamped
 	var character: CharacterData = b["character"]
@@ -350,8 +350,8 @@ func test_totem_template_creates_trained_creature() -> void:
 		"persist should create exactly one trained creature, got %d" % fake.creatures_created.size())
 	if fake.creatures_created.size() == 1:
 		var c: Dictionary = fake.creatures_created[0]
-		check(String(c.get("party_id", "")) == "party_test", "totem not bound to the party")
-		check(String(c.get("handler_id", "")) == new_id, "totem handler should be the new character")
+		check(str_field(c, "party_id") == "party_test", "totem not bound to the party")
+		check(str_field(c, "handler_id") == new_id, "totem handler should be the new character")
 		check(String(c.get("species_id", "")) == "wolf",
 			"wolf totem should resolve species_id 'wolf', got '%s'" % String(c.get("species_id", "")))
 		# placeholder flag + flavor species preserved for the future totem subsystem
@@ -390,7 +390,7 @@ func test_valuable_template_creates_value_backed_row() -> void:
 	check(valuables.size() == 1, "expected one valuables row, got %d" % valuables.size())
 	if valuables.size() == 1:
 		var v: Dictionary = valuables[0]
-		check(String(v.get("character_id", "")) == new_id, "valuable not tagged with character id")
+		check(str_field(v, "character_id") == new_id, "valuable not tagged with character id")
 		check(int(v.get("value_cp", -1)) == 2500,
 			"25gp valuable should be 2500 value_cp, got %d" % int(v.get("value_cp", -1)))
 		check(int(v.get("value_cp", -1)) >= 0, "valuable must carry an authoritative value_cp (sellable)")
@@ -412,7 +412,7 @@ func test_poison_template_adds_placeholder_dose() -> void:
 			doses.append(item)
 	check(doses.size() == 1, "expected one placeholder poison dose, got %d" % doses.size())
 	if doses.size() == 1:
-		check(String(doses[0].get("character_id", "")) == new_id, "poison dose not tagged with char id")
+		check(str_field(doses[0], "character_id") == new_id, "poison dose not tagged with char id")
 
 
 func test_flavor_items_are_intentionally_inert() -> void:

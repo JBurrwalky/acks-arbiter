@@ -173,7 +173,7 @@ func test_dismiss_routes_through_process_departure() -> void:
 	var state: Dictionary = lifecycle._repo.get_henchman_state("henchman1")
 	check(String(state.get("departure_reason", "")) == "dismissed",
 		"departure_reason should be 'dismissed', got %s" % str(state.get("departure_reason", "")))
-	check(String(state.get("departure_settlement_id", "")) == "settle1",
+	check(str_field(state, "departure_settlement_id") == "settle1",
 		"departure_settlement_id should propagate")
 
 

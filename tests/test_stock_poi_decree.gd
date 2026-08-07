@@ -164,7 +164,7 @@ func test_stock_cleric_into_temple_succeeds() -> void:
 		"stock L7 cleric into temple should succeed; error='%s'"
 		% String(result.get("error_code", "")))
 	var poi := _get_poi("stk_p_temple")
-	check(String(poi.get("stocked_character_id", "")) == TEST_CLERIC_HENCH,
+	check(str_field(poi, "stocked_character_id") == TEST_CLERIC_HENCH,
 		"stocked_character_id should be the cleric")
 
 
@@ -199,7 +199,7 @@ func test_one_character_per_poi_relocation_unassigns_prior() -> void:
 		"poi_id": "stk_p_temple_a",
 		"character_id": TEST_CLERIC_HENCH,
 	})
-	check(String(_get_poi("stk_p_temple_a").get("stocked_character_id", "")) == TEST_CLERIC_HENCH,
+	check(str_field(_get_poi("stk_p_temple_a"), "stocked_character_id") == TEST_CLERIC_HENCH,
 		"temple A should have the cleric stocked")
 	# Now stock the same cleric into temple B.
 	var result := StockPoiDecreeHandler.try_stock({
@@ -215,7 +215,7 @@ func test_one_character_per_poi_relocation_unassigns_prior() -> void:
 	var poi_a_v: Variant = _get_poi("stk_p_temple_a").get("stocked_character_id", null)
 	check(poi_a_v == null or String(poi_a_v).is_empty(),
 		"temple A should have stocked_character_id NULL after relocation")
-	check(String(_get_poi("stk_p_temple_b").get("stocked_character_id", "")) == TEST_CLERIC_HENCH,
+	check(str_field(_get_poi("stk_p_temple_b"), "stocked_character_id") == TEST_CLERIC_HENCH,
 		"temple B should now have the cleric")
 
 
@@ -233,7 +233,7 @@ func test_stock_emits_poi_stocked_signal() -> void:
 	EventBus.poi_stocked.disconnect(cb)
 	check(String(_captured.get("poi_id", "")) == "stk_p_signal",
 		"poi_stocked signal should fire with poi_id")
-	check(String(_captured.get("character_id", "")) == TEST_CLERIC_HENCH,
+	check(str_field(_captured, "character_id") == TEST_CLERIC_HENCH,
 		"poi_stocked signal should fire with character_id")
 
 

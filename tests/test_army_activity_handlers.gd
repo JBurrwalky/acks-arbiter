@@ -143,7 +143,7 @@ func test_monthly_recruitment_vagary_ticker_picks_up_recent_recruiters() -> void
 	# vagaries table.
 	var found_recruiter := false
 	for r in results:
-		if String(r.get("character_id", "")) == character_id:
+		if str_field(r, "character_id") == character_id:
 			found_recruiter = true
 			check(String(r.get("result_key", "")) == "all_quiet", "roll 50 → all_quiet")
 			break

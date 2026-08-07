@@ -253,7 +253,7 @@ func test_caught_perpetrator_round_trip() -> void:
 		"resolved_day": 106,
 	})
 	var row2 := SyndicateRepository.get_caught(cid)
-	check(String(row2.get("verdict", "")) == "conviction", "verdict written")
+	check(str_field(row2, "verdict") == "conviction", "verdict written")
 	check(int(row2.get("fine_cp", 0)) == 30_000, "fine_cp round-trips")
 
 
@@ -489,7 +489,7 @@ func test_crime_and_punishment_verdict_bands() -> void:
 	# Bank: seed to a roll we know.
 	var rng := _seeded_rng(7)
 	var result := CrimeAndPunishmentResolver.resolve(cid, 105, rng)
-	var verdict: String = String(result.get("verdict", ""))
+	var verdict: String = str_field(result, "verdict")
 	check(verdict in [
 		"punitive_conviction", "conviction", "conviction_lesser",
 		"acquittal", "acquittal_with_damages",
@@ -532,7 +532,7 @@ func test_crime_and_punishment_applies_branding_flag() -> void:
 	# To get a clean +0 outcome, we seed and inspect.
 	var rng := _seeded_rng(2)
 	var result := CrimeAndPunishmentResolver.resolve(cid, 314, rng)
-	var verdict := String(result.get("verdict", ""))
+	var verdict := str_field(result, "verdict")
 	if verdict == "conviction":
 		# Standard burglary = "branded".
 		var status := CharacterLegalStatusRepository.get_status(temp_char)
@@ -558,7 +558,7 @@ func test_crime_and_punishment_acquittal_with_damages_awards() -> void:
 	})
 	var rng := _seeded_rng(2026)
 	var result := CrimeAndPunishmentResolver.resolve(cid, 410, rng)
-	var verdict := String(result.get("verdict", ""))
+	var verdict := str_field(result, "verdict")
 	# If we landed on acquittal_with_damages, the character should have
 	# received cp into their wallet.
 	if verdict == "acquittal_with_damages":
@@ -869,7 +869,7 @@ func test_await_trial_handler_invokes_cp_resolver() -> void:
 		"caught_perpetrator_id": caught_id,
 		"time_languishing_days": 2,
 	}, 502), null)
-	check(String(result.get("verdict", "")) != "",
+	check(str_field(result, "verdict") != "",
 		"await_trial fires C&P resolver; verdict='%s'" % str(result.get("verdict")))
 	var row := SyndicateRepository.get_caught(caught_id)
 	check(int(row.get("punishment_resolved", 0)) == 1,

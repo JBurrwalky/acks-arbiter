@@ -181,7 +181,7 @@ func test_true_stance_isolation() -> void:
 	check(String(pub.get("public_stance", "")) == "friendly", "public band surfaced")
 	# The explicit audit accessor DOES expose it (dev-only).
 	var full := FactionStanceService.get_stance_full_for_audit(a, b)
-	check(String(full.get("true_stance", "")) == "hostile", "audit accessor exposes true_stance")
+	check(str_field(full, "true_stance") == "hostile", "audit accessor exposes true_stance")
 
 
 func test_audit_off_no_io() -> void:

@@ -168,7 +168,7 @@ func test_shrine_baseline_stocks_l1_or_l2_cleric() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 300
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	check(not head_id.is_empty(), "shrine should stock a head NPC")
 	if head_id.is_empty():
 		return
@@ -188,7 +188,7 @@ func test_mages_guild_hall_stocks_mage() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 400
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	check(not head_id.is_empty(), "mages_guild_hall should stock a head NPC")
 	if head_id.is_empty():
 		return
@@ -207,7 +207,7 @@ func test_mercenary_guild_hall_stocks_fighter() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 500
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	if head_id.is_empty():
 		check(false, "mercenary_guild_hall should stock a head NPC")
 		return
@@ -225,7 +225,7 @@ func test_workshop_specialist_kind_set() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 600
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	if head_id.is_empty():
 		check(false, "workshop should stock a head specialist")
 		return
@@ -242,7 +242,7 @@ func test_named_tavern_stocks_normal_man() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 700
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	if head_id.is_empty():
 		check(false, "named_tavern should stock a head NPC")
 		return
@@ -261,7 +261,7 @@ func test_baseline_head_pointer_set_on_poi() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 800
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	if head_id.is_empty():
 		check(false, "expected head NPC id")
 		return
@@ -271,8 +271,8 @@ func test_baseline_head_pointer_set_on_poi() -> void:
 	if CampaignRepository.db.query_result.is_empty():
 		check(false, "POI row should exist")
 		return
-	var stored_head: String = String(
-		CampaignRepository.db.query_result[0].get("baseline_head_npc_character_id", ""))
+	var stored_head: String = str_field(
+		CampaignRepository.db.query_result[0], "baseline_head_npc_character_id")
 	check(stored_head == head_id,
 		"POI baseline_head_npc_character_id should point at the new head NPC; got '%s' expected '%s'"
 		% [stored_head, head_id])
@@ -283,9 +283,9 @@ func test_baseline_head_pointer_set_on_poi() -> void:
 		check(String(c.get("npc_role", "")) == "baseline_placeholder",
 			"stocked NPC should have npc_role='baseline_placeholder'; got '%s'"
 			% String(c.get("npc_role", "")))
-		check(String(c.get("home_poi_id", "")) == poi_id,
+		check(str_field(c, "home_poi_id") == poi_id,
 			"stocked NPC home_poi_id should match POI; got '%s'"
-			% String(c.get("home_poi_id", "")))
+			% str_field(c, "home_poi_id"))
 
 
 ## Calling stock_poi twice on the same POI should NOT double-stock —
@@ -311,12 +311,12 @@ func test_alignment_inherits_from_domain() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1000
 	var result := BaselineNpcStocker.stock_poi(poi_id, rng)
-	var head_id := String(result.get("head_character_id", ""))
+	var head_id := str_field(result, "head_character_id")
 	if head_id.is_empty():
 		check(false, "expected head NPC id")
 		return
 	var head := _get_character(head_id)
 	# Domain alignment was 'lawful' in the fixture.
-	check(String(head.get("alignment", "")) == "lawful",
+	check(str_field(head, "alignment") == "lawful",
 		"stocked cleric alignment should match domain alignment 'lawful'; got '%s'"
-		% String(head.get("alignment", "")))
+		% str_field(head, "alignment"))

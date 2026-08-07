@@ -439,7 +439,7 @@ func test_establish_chaotic_clanhold_sets_flags() -> void:
 	var domain := CampaignRepository.get_domain(result["domain_id"])
 	check(String(domain.get("domain_style", "")) == "clanhold",
 		"domain_style = clanhold (recruit_chieftain force-locks per 11D.1)")
-	check(String(domain.get("alignment", "")) == "chaotic",
+	check(str_field(domain, "alignment") == "chaotic",
 		"alignment = chaotic")
 	check(String(domain.get("establishment_method", "")) == "recruit_chieftain",
 		"method = recruit_chieftain")

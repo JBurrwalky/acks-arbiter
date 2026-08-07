@@ -113,8 +113,8 @@ func test_instantiate_realm_for_off_map_force_creates_realm_and_head() -> void:
 	_cleanup(); _setup()
 	var result: Dictionary = RealmRepository.instantiate_realm_for_off_map_force(
 		TEST_CAMPAIGN, "Auran", {}, 100)
-	var realm_id: String = String(result.get("realm_id", ""))
-	var head_id: String = String(result.get("head_character_id", ""))
+	var realm_id: String = str_field(result, "realm_id")
+	var head_id: String = str_field(result, "head_character_id")
 	check(not realm_id.is_empty(), "realm_id returned")
 	check(not head_id.is_empty(), "head_character_id returned")
 	# Verify realm row.
@@ -123,7 +123,7 @@ func test_instantiate_realm_for_off_map_force_creates_realm_and_head() -> void:
 		"new realm has realm_kind=tracked, got %s" % String(realm.get("realm_kind", "")))
 	check(String(realm.get("culture", "")) == "Auran",
 		"culture passed through, got %s" % String(realm.get("culture", "")))
-	check(String(realm.get("head_character_id", "")) == head_id,
+	check(str_field(realm, "head_character_id") == head_id,
 		"realm.head = the spawned npc")
 	# Verify head character row.
 	CampaignRepository.db.query_with_bindings(
@@ -137,9 +137,9 @@ func test_instantiate_realm_defaults_alignment_to_chaotic() -> void:
 	_cleanup(); _setup()
 	var result: Dictionary = RealmRepository.instantiate_realm_for_off_map_force(
 		TEST_CAMPAIGN, "Foreign", {}, 100)
-	var realm: Dictionary = RealmRepository.get_realm(String(result.get("realm_id", "")))
-	check(String(realm.get("alignment", "")) == "chaotic",
-		"off-map default alignment is chaotic, got %s" % String(realm.get("alignment", "")))
+	var realm: Dictionary = RealmRepository.get_realm(str_field(result, "realm_id"))
+	check(str_field(realm, "alignment") == "chaotic",
+		"off-map default alignment is chaotic, got %s" % str_field(realm, "alignment"))
 
 
 func test_instantiate_realm_uses_head_npc_data_overrides() -> void:
@@ -152,13 +152,13 @@ func test_instantiate_realm_uses_head_npc_data_overrides() -> void:
 			"alignment": "neutral",
 		},
 		100)
-	var realm: Dictionary = RealmRepository.get_realm(String(result.get("realm_id", "")))
+	var realm: Dictionary = RealmRepository.get_realm(str_field(result, "realm_id"))
 	check(String(realm.get("name", "")) == "Custom Realm",
 		"realm name overridden, got %s" % String(realm.get("name", "")))
-	check(String(realm.get("alignment", "")) == "neutral",
-		"alignment overridden, got %s" % String(realm.get("alignment", "")))
+	check(str_field(realm, "alignment") == "neutral",
+		"alignment overridden, got %s" % str_field(realm, "alignment"))
 	CampaignRepository.db.query_with_bindings(
-		"SELECT name FROM characters WHERE id = ?", [String(result.get("head_character_id", ""))])
+		"SELECT name FROM characters WHERE id = ?", [str_field(result, "head_character_id")])
 	check(String(CampaignRepository.db.query_result[0].get("name", "")) == "Custom Warlord",
 		"head NPC name overridden, got %s" % String(CampaignRepository.db.query_result[0].get("name", "")))
 
